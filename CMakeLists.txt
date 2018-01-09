@@ -11,6 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
 )
 
+find_package(roslint REQUIRED)
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -183,14 +185,17 @@ include_directories(
 #   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
 
+
+
 #############
 ## Testing ##
 #############
 
+# Always lint
+roslint_python()
+
 if (CATKIN_ENABLE_TESTING)
-  find_package(roslint REQUIRED)
-  roslint_python()
-  roslint_add_test()
+#  roslint_add_test()
   ## Add gtest based cpp test target and link libraries
   # catkin_add_gtest(${PROJECT_NAME}-test test/test_ros_bt_py.cpp)
   # if(TARGET ${PROJECT_NAME}-test)
