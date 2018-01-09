@@ -12,7 +12,7 @@ class TestNodeData(unittest.TestCase):
         values = [
             (int, 1, [1.1, 'wrong', {'very': 'wrong'}]),
             (float, 1.5, [1, 'nope', {'extremely': 'nope'}]),
-            (str, 'good', [1, 1.5, [1,2,3]]),
+            (str, 'good', [1, 1.5, [1, 2, 3]]),
             (dict, {'a': 1, 'b': 2}, [['a', 'b', 'c'], 1.5, 'wrong']),
             (Time, Time(), [123, rospy.Duration(1.0), 'wrong'])]
 
