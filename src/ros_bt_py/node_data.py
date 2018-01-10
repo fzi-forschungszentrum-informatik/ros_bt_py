@@ -1,5 +1,6 @@
 import rospy
 
+
 class NodeData(object):
     """Represents a piece of data (input, output or option) held by a Node
 

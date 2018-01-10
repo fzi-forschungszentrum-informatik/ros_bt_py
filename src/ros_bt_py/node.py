@@ -2,6 +2,7 @@ import rospy
 
 from ros_bt_py.node_data import NodeData
 
+
 class Node(object):
     """Base class for Behavior Tree nodes
 

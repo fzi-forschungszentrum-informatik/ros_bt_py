@@ -3,6 +3,7 @@ import unittest
 from ros_bt_py.node import Node
 from ros_bt_py.nodes.passthrough_node import PassthroughNode
 
+
 class TestNode(unittest.TestCase):
     def testNewNodeIsUninitialized(self):
         node = Node()
