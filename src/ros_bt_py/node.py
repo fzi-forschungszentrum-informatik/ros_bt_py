@@ -10,11 +10,11 @@ class Node(object):
 
     def __init__(self):
         self.inputs = {}
-        self.input_setters = {}
-        self.input_mappings = {}
         self.outputs = {}
         self.options = {}
         self.subscriptions = {}
+        self.input_callbacks = {}
+        self.output_callbacks = {}
 
     def subscribe(self, output_name, callback):
         """Subscribe to changes in the named output.
@@ -32,16 +32,48 @@ class Node(object):
         if output_name not in self.outputs:
             raise KeyError('%s is not an output of %s'
                            % (output_name, type(self).__name__))
+        if output_name not in self.output_callbacks:
+            self.output_callbacks[output_name] = []
+        self.output_callbacks[output_name].append(callback)
+
+    def __wire_input(self, input_name, callback):
+        """Wire an input to be passed to some callback.
+
+        This is a lot like `subscribe`, but for input instead of output
+        data. Input callbacks are called before the step function in
+        `tick`, so any child nodes get the data they need.
+        """
+        if input_name not in self.inputs:
+            raise KeyError('%s is not an input of %s'
+                           % (input_name, type(self).__name__))
+        if input_name not in self.input_callbacks:
+            self.input_callbacks[input_name] = []
+        self.input_callbacks[input_name].append(callback)
 
     def tick(self):
-        for (key, input_provider) in self.input_mappings:
-            self.input_setters[key](input_provider)
-        for setter in self.input_setters.values():
-            if not setter.called:
-                raise Exception('Trying to tick a node without setting all inputs!')
+        for output_name in self.outputs:
+            self.outputs[output_name].reset_updated()
+
+        for input_name in self.inputs:
+            if self.inputs[input_name].updated:
+                if input_name in self.input_callbacks:
+                    for callback in self.input_callbacks[input_name]:
+                        callback(self.inputs[input_name].get())
             else:
-                setter.reset_called()
-            self.step()
+                rospy.logwarn('Running tick() with stale data!')
+            if self.inputs[input_name].get() is None:
+                raise Exception('Trying to tick a node with an unset input!')
+
+        self.step()
+
+        for output_name in self.outputs:
+            if self.outputs[output_name].updated:
+                if output_name in self.output_callbacks:
+                    for callback in self.output_callbacks[output_name]:
+                        callback(self.outputs[output_name].get())
+
+        for input_name in self.inputs:
+            self.inputs[input_name].reset_updated()
 
     def step(self):
         """
