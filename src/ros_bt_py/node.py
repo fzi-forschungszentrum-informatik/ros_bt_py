@@ -1,26 +1,39 @@
 import rospy
 
+from ros_bt_py.node_data import NodeData
 
 class Node(object):
-    IDLE = 0
-    RUNNING = 1
-    SUCCEEDED = 2
-    FAILED = 3
-    BROKEN = 4
+    """Base class for Behavior Tree nodes
+
+    Each node has a set of inputs, outputs and options.
+    """
+    class States(object):
+        UNINITIALIZED = -1
+        IDLE = 0
+        RUNNING = 1
+        SUCCEEDED = 2
+        FAILED = 3
+        BROKEN = 4
 
     def __init__(self):
+        """Prepare class members
+
+        After this finishes, the Node is *not* ready to run. You still
+        need to register inputs, outputs and potentially options and set
+        the Node's state to :const:`Node.States.IDLE`
+        """
         self.inputs = {}
         self.outputs = {}
         self.options = {}
         self.subscriptions = {}
         self.input_callbacks = {}
         self.output_callbacks = {}
+        self.state = Node.States.UNINITIALIZED
 
     def subscribe(self, output_name, callback):
         """Subscribe to changes in the named output.
 
-        :type output_name: str
-        :param output_name: identifier of the output you want to
+        :param str output_name: identifier of the output you want to
         subscribe to
 
         :param callback: a callback that takes a parameter of
@@ -36,12 +49,12 @@ class Node(object):
             self.output_callbacks[output_name] = []
         self.output_callbacks[output_name].append(callback)
 
-    def __wire_input(self, input_name, callback):
+    def _wire_input(self, input_name, callback):
         """Wire an input to be passed to some callback.
 
         This is a lot like `subscribe`, but for input instead of output
-        data. Input callbacks are called before the step function in
-        `tick`, so any child nodes get the data they need.
+        data. Input callbacks are called before the :meth:Node.step function in
+        :meth:Node.tick, so any child nodes get the data they need.
         """
         if input_name not in self.inputs:
             raise KeyError('%s is not an input of %s'
@@ -50,10 +63,7 @@ class Node(object):
             self.input_callbacks[input_name] = []
         self.input_callbacks[input_name].append(callback)
 
-    def tick(self):
-        for output_name in self.outputs:
-            self.outputs[output_name].reset_updated()
-
+    def handle_inputs(self):
         for input_name in self.inputs:
             if self.inputs[input_name].updated:
                 if input_name in self.input_callbacks:
@@ -62,25 +72,37 @@ class Node(object):
             else:
                 rospy.logwarn('Running tick() with stale data!')
             if self.inputs[input_name].get() is None:
-                raise Exception('Trying to tick a node with an unset input!')
+                raise ValueError('Trying to tick a node with an unset input!')
 
-        self.step()
-
+    def handle_outputs(self):
         for output_name in self.outputs:
             if self.outputs[output_name].updated:
                 if output_name in self.output_callbacks:
                     for callback in self.output_callbacks[output_name]:
                         callback(self.outputs[output_name].get())
 
+    def tick(self):
+        if self.state is Node.States.UNINITIALIZED:
+            raise Exception('Trying to tick uninitialized node!')
+
+        for output_name in self.outputs:
+            self.outputs[output_name].reset_updated()
+
+        self.handle_inputs()
+
+        self.state = self.step()
+
+        self.handle_outputs()
+
         for input_name in self.inputs:
             self.inputs[input_name].reset_updated()
 
     def step(self):
         """
-        Every node class must override this.
+        Every Node class must override this.
 
         This method should NOT block, ever, and return one of the
-        constants above.
+        constants from `Node.Status`.
         """
         raise NotImplementedError('Ticking a node without a step function!')
 
@@ -92,21 +114,50 @@ class Node(object):
 
         Errors to check for:
 
-        1. if any child input hasn't been assigned a getter, that's a
+        1. if any child input hasn't been wired, that's a
            **fatal** error
-        2. if a child input has been assigned a getter from a child that
+        2. if a child input has been wired to an output of a child that
            may execute after it (or never), that's a **warning**
         3. any unconnected outputs are logged for possible **debugging**
         """
         pass
 
-    def set(self, new_value):
-        if not isinstance(new_value, self._data_type):
-            raise TypeError('Expected data to be of type {}, got {} instead'.format(
-                self._data_type.__name__, type(new_value).__name__))
-        self._value = new_value
-        self.updated = True
+    def _register_inputs(self, input_map):
+        """Register a number of typed inputs for this Node
 
-    def get(self):
-        if not self.updated:
-            rospy.logwarn('Reading non-updated value!')
+        :param dict(str, type) input_map: a dictionary mapping from input names to input types,
+        i.e. ``{ 'string_input' : str, 'int_input' : int }``
+        """
+        for input_name, data_type in input_map.iteritems():
+            if input_name in self.inputs:
+                raise ValueError('Duplicate input name: %s' % input_name)
+            self.inputs[input_name] = NodeData(data_type=data_type)
+
+    def _register_outputs(self, output_map):
+        """Register a number of typed outputs for this Node
+
+        :param dict(str, type) output_map: a dictionary mapping from input names to output types,
+        i.e. ``{ 'string_output' : str, 'int_output' : int }``
+        """
+        for output_name, data_type in output_map.iteritems():
+            if output_name in self.outputs:
+                raise ValueError('Duplicate output name: %s' % output_name)
+            self.outputs[output_name] = NodeData(data_type=data_type)
+
+    def _register_options(self, option_map):
+        """Register a number of options and their values for this Node.
+
+        Options are static, meaning they cannot be changed after
+        registering them, and their types are inferred automatically
+        from the values.
+
+        :param dict(str, tuple) option_map:
+        a dictionary mapping from option names to the corresponding
+        values i.e. ``{ 'string_option' : 'Hello World!', 'int_option' : 42 }``
+        """
+        for option_name, option_value in option_map.iteritems():
+            if option_name in self.options:
+                raise ValueError('Duplicate option name: %s' % option_name)
+            self.options[option_name] = NodeData(data_type=type(option_value),
+                                                 initial_value=option_value,
+                                                 static=True)
