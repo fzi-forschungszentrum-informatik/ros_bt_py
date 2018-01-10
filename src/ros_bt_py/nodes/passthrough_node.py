@@ -11,8 +11,12 @@ class PassthroughNode(Node):
 
         self._register_inputs({'in': passthrough_type})
         self._register_outputs({'out': passthrough_type})
+
+        # Connect 'in' to 'out'
+        self._wire_input('in', self.outputs.get_callback('out'))
         self.state = Node.States.IDLE
 
+
     def step(self):
-        self.outputs['out'] = self.inputs['in']
+        # Nothing to do here other than succeed
         return Node.States.SUCCEEDED
