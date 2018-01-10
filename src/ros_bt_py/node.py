@@ -1,6 +1,6 @@
 import rospy
 
-from ros_bt_py.node_data import NodeData
+from ros_bt_py.node_data import NodeData, NodeDataMap
 
 
 class Node(object):
@@ -23,9 +23,9 @@ class Node(object):
         need to register inputs, outputs and potentially options and set
         the Node's state to :const:`Node.States.IDLE`
         """
-        self.inputs = {}
-        self.outputs = {}
-        self.options = {}
+        self.inputs = NodeDataMap()
+        self.outputs = NodeDataMap()
+        self.options = NodeDataMap()
         self.subscriptions = {}
         self.input_callbacks = {}
         self.output_callbacks = {}
@@ -66,28 +66,27 @@ class Node(object):
 
     def handle_inputs(self):
         for input_name in self.inputs:
-            if self.inputs[input_name].updated:
+            if self.inputs.is_updated(input_name):
                 if input_name in self.input_callbacks:
                     for callback in self.input_callbacks[input_name]:
-                        callback(self.inputs[input_name].get())
+                        callback(self.inputs[input_name])
             else:
                 rospy.logwarn('Running tick() with stale data!')
-            if self.inputs[input_name].get() is None:
+            if self.inputs[input_name] is None:
                 raise ValueError('Trying to tick a node with an unset input!')
 
     def handle_outputs(self):
         for output_name in self.outputs:
-            if self.outputs[output_name].updated:
+            if self.outputs.is_updated(output_name):
                 if output_name in self.output_callbacks:
                     for callback in self.output_callbacks[output_name]:
-                        callback(self.outputs[output_name].get())
+                        callback(self.outputs[output_name])
 
     def tick(self):
         if self.state is Node.States.UNINITIALIZED:
             raise Exception('Trying to tick uninitialized node!')
 
-        for output_name in self.outputs:
-            self.outputs[output_name].reset_updated()
+        self.outputs.reset_updated()
 
         self.handle_inputs()
 
@@ -95,14 +94,13 @@ class Node(object):
 
         self.handle_outputs()
 
-        for input_name in self.inputs:
-            self.inputs[input_name].reset_updated()
+        self.inputs.reset_updated()
 
     def step(self):
         """
         Every Node class must override this.
 
-        This method should NOT block, ever, and return one of the
+        This method should **NOT** block, ever, and return one of the
         constants from `Node.Status`.
         """
         raise NotImplementedError('Ticking a node without a step function!')
@@ -132,7 +130,7 @@ class Node(object):
         for input_name, data_type in input_map.iteritems():
             if input_name in self.inputs:
                 raise ValueError('Duplicate input name: %s' % input_name)
-            self.inputs[input_name] = NodeData(data_type=data_type)
+            self.inputs.add(input_name, NodeData(data_type=data_type))
 
     def _register_outputs(self, output_map):
         """Register a number of typed outputs for this Node
@@ -143,7 +141,7 @@ class Node(object):
         for output_name, data_type in output_map.iteritems():
             if output_name in self.outputs:
                 raise ValueError('Duplicate output name: %s' % output_name)
-            self.outputs[output_name] = NodeData(data_type=data_type)
+            self.outputs.add(output_name, NodeData(data_type=data_type))
 
     def _register_options(self, option_map):
         """Register a number of options and their values for this Node.
@@ -159,6 +157,6 @@ class Node(object):
         for option_name, option_value in option_map.iteritems():
             if option_name in self.options:
                 raise ValueError('Duplicate option name: %s' % option_name)
-            self.options[option_name] = NodeData(data_type=type(option_value),
-                                                 initial_value=option_value,
-                                                 static=True)
+            self.options.add(option_name, NodeData(data_type=type(option_value),
+                                                   initial_value=option_value,
+                                                   static=True))

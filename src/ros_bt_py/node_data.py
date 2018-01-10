@@ -59,3 +59,81 @@ class NodeData(object):
 
     def reset_updated(self):
         self.updated = False
+
+
+class NodeDataMap(object):
+    """Custom container class that hides :meth:NodeData.get and :meth:NodeData.set
+
+    Acts like a regular dict, with three caveats:
+
+    1. All keys must be strings
+
+    2. All values must be :class:NodeData objects
+
+    3. It is not possible to delete or overwrite values once they've
+    been added to the map. This is because the setters for values might
+    be used as callbacks elsewhere, leading to unexpected breakage!
+    """
+    def __init__(self):
+        self._map = {}
+
+    def add(self, key, value):
+        """
+        :param basestring key: The key for the new data object
+        :param NodeData value: The value of the new data object
+
+        :raises: TypeError, KeyError
+        """
+        if not isinstance(key, basestring):
+            raise TypeError('Key must be a string!')
+        if not isinstance(value, NodeData):
+            raise TypeError('Value must be a NodeData object!')
+        if key in self._map:
+            raise KeyError('Key %s is already taken!' % key)
+        self._map[key] = value
+
+    def is_updated(self, key):
+        """Check whether the data at the given key has been updated since the `updated` property was last reset
+
+        :param basestring key: Key for the data object whose updated status we want to check
+
+        :rtype: bool
+        """
+        return self._map[key].updated
+
+    def reset_updated(self):
+        """Reset the `updated` property of all data in this map.
+        """
+        for key in self._map:
+            self._map[key].reset_updated()
+
+    def get_callback(self, key):
+        """Return the setter function for the :class:NodeData object at the given key.
+
+        The usual reason to use this is wanting to wire inputs and
+        outputs (see :meth:Node.subscribe and :meth:Node._wire_input).
+
+        :raises: KeyError
+        """
+        if key not in self._map:
+            raise KeyError('No member named %s' % key)
+        return self._map[key].set
+
+    def __len__(self):
+        return len(self._map)
+
+    def __getitem__(self, key):
+        if key not in self._map:
+            raise KeyError('No member named %s' % key)
+        return self._map[key].get()
+
+    def __setitem__(self, key, value):
+        if key not in self._map:
+            raise KeyError('No member named %s' % key)
+        self._map[key].set(value)
+
+    def __iter__(self):
+        return self._map.__iter__()
+
+    def __contains__(self, key):
+        return key in self._map

@@ -19,10 +19,14 @@ class TestNode(unittest.TestCase):
         passthrough = PassthroughNode(passthrough_type=int)
 
         self.assertEqual(passthrough.state, Node.States.IDLE)
-        self.assertEqual(passthrough.inputs['in'].get(), None)
-        self.assertEqual(passthrough.outputs['out'].get(), None)
+        self.assertEqual(passthrough.inputs['in'], None)
+        self.assertEqual(passthrough.outputs['out'], None)
         self.assertRaises(ValueError, passthrough.tick)
 
-        passthrough.inputs['in'].set(42)
+        passthrough.inputs['in'] = 42
         passthrough.tick()
-        self.assertEqual(passthrough.outputs['out'].get(), 42)
+        self.assertEqual(passthrough.outputs['out'], 42)
+
+        # Ensure that changing the input does not affect the output
+        passthrough.inputs['in'] = 0
+        self.assertEqual(passthrough.outputs['out'], 42)
