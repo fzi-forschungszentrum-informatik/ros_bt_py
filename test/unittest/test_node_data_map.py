@@ -6,6 +6,7 @@ from ros_bt_py.node_data import NodeData, NodeDataMap
 class TestNodeDataMap(unittest.TestCase):
     def setUp(self):
         self.map = NodeDataMap()
+
     def testAddValue(self):
         # key is string, but value is not NodeData
         self.assertRaises(TypeError, self.map.add, key='test', value='foo')
