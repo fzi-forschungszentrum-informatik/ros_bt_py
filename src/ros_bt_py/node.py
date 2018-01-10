@@ -6,8 +6,26 @@ from ros_bt_py.node_data import NodeData, NodeDataMap
 class Node(object):
     """Base class for Behavior Tree nodes
 
-    Each node has a set of inputs, outputs and options.
-    """
+    Each node has a set of inputs, outputs and options. At every tick
+    (usually somewhere between 10 and 30 times a second),
+    :meth:Node.step is called with the appropriate data.
+
+    Nodes in a behavior Tree can be roughly divided into four classes:
+
+    Leaf Nodes
+      These do not have any children and can take one of two forms:
+      *Predicates* and *Behaviors*. *Predicates* check a condition and instantly
+      return `SUCCEEDED` or `FAILED`. *Behaviors* are more involved and may
+      return `RUNNING`, but should be interruptible (see :meth:Node.untick).
+
+    Inner Nodes
+      These too come in two flavors: *Combiners* and *Decorators*. *Combiners*
+      have multiple children and decide which of those children to run (and in
+      what fashion) based on some criteria. *Decorators* however have only a
+      single child and work with that child's result - for instance, a *Decorator*
+      could invert `FAILED` into `SUCCEEDED`.
+
+      """
     class States(object):
         UNINITIALIZED = -1
         IDLE = 0
@@ -65,6 +83,13 @@ class Node(object):
         self.input_callbacks[input_name].append(callback)
 
     def handle_inputs(self):
+        """Execute the callbacks registered by :meth:Node._wire_input
+
+        But only if an input has been updated since the last tick.
+
+        :raises: ValueError
+        If any input is unset
+        """
         for input_name in self.inputs:
             if self.inputs.is_updated(input_name):
                 if input_name in self.input_callbacks:
@@ -76,6 +101,12 @@ class Node(object):
                 raise ValueError('Trying to tick a node with an unset input!')
 
     def handle_outputs(self):
+        """Execute the callbacks registered by :meth:Node.subscribe:
+
+        But only if the output has changed during this tick (see where
+        the :meth:NodeDataMap.reset_updated is called in
+        :meth:Node.tick)
+        """
         for output_name in self.outputs:
             if self.outputs.is_updated(output_name):
                 if output_name in self.output_callbacks:
@@ -83,9 +114,18 @@ class Node(object):
                         callback(self.outputs[output_name])
 
     def tick(self):
+        """This is called every tick (ticks happen at ~10-20Hz, usually.
+
+        You should not need to override this method, but instead
+        implement :meth:Node.step in your own class.
+
+        :returns:
+        The state of the node after ticking - should be `SUCCEEDED`, `FAILED` or `RUNNING`.
+        """
         if self.state is Node.States.UNINITIALIZED:
             raise Exception('Trying to tick uninitialized node!')
 
+        # Outputs are updated in the tick. To catch that, we need to reset here.
         self.outputs.reset_updated()
 
         self.handle_inputs()
@@ -102,6 +142,9 @@ class Node(object):
 
         This method should **NOT** block, ever, and return one of the
         constants from `Node.Status`.
+
+        :returns:
+        One of the constants in :class:Node.States
         """
         raise NotImplementedError('Ticking a node without a step function!')
 

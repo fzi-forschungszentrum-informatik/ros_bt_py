@@ -2,6 +2,10 @@ from ros_bt_py.node import Node
 
 
 class PassthroughNode(Node):
+    """Pass through a piece of data
+
+    Only really useful for testing
+    """
     def __init__(self, passthrough_type):
         super(PassthroughNode, self).__init__()
 

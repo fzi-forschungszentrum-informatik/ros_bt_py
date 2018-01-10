@@ -38,6 +38,14 @@ class NodeData(object):
                                        ('#' if self.updated else ' '))
 
     def set(self, new_value):
+        """Set a new value
+
+        After calling this successfully, :py:attribute:: updated is `True`.
+        :param new_value:
+        Must be either `None` or an instance of type :py:attribute:: Node._data_type
+
+        :raises: Exception, TypeError
+        """
         if self._static:
             raise Exception('Trying to write to a static NodeData object')
         if not isinstance(new_value, self._data_type) and new_value is not None:
