@@ -160,3 +160,33 @@ class Node(object):
             self.options.add(option_name, NodeData(data_type=type(option_value),
                                                    initial_value=option_value,
                                                    static=True))
+
+    def logdebug(self, message):
+        """Wrapper for :func:rospy.logdebug
+
+        Adds this node's name and type to the given message"""
+        rospy.logdebug('%s (%s): %s', self.name, type(self).__name__, message)
+
+    def loginfo(self, message):
+        """Wrapper for :func:rospy.loginfo
+
+        Adds this node's name and type to the given message"""
+        rospy.loginfo('%s (%s): %s', self.name, type(self).__name__, message)
+
+    def logwarn(self, message):
+        """Wrapper for :func:rospy.logwarn
+
+        Adds this node's name and type to the given message"""
+        rospy.logwarn('%s (%s): %s', self.name, type(self).__name__, message)
+
+    def logerr(self, message):
+        """Wrapper for :func:rospy.logerr
+
+        Adds this node's name and type to the given message"""
+        rospy.logerr('%s (%s): %s', self.name, type(self).__name__, message)
+
+    def logfatal(self, message):
+        """Wrapper for :func:rospy.logfatal
+
+        Adds this node's name and type to the given message"""
+        rospy.logfatal('%s (%s): %s', self.name, type(self).__name__, message)
