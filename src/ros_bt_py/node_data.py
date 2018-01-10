@@ -1,10 +1,13 @@
 import rospy
 
-
 class NodeData(object):
-    """
-    Represents a piece of data (input, output or option) held by a Node
+    """Represents a piece of data (input, output or option) held by a Node
 
+    Each NodeData object is typed and will only accept new data (via its
+    :meth:NodeData.set method) if it is of the correct type.
+
+    NodeData can also be static, in which case it will never accept any
+    update, i.e. it will be stuck with the initial value.
     """
     def __init__(self, data_type, initial_value=None, static=False):
         if initial_value is None and static:
