@@ -7,8 +7,13 @@ class NodeData(object):
 
     """
     def __init__(self, data_type, initial_value=None, static=False):
+        if initial_value is None and static:
+            raise ValueError('Static NodeData must have an initial value!')
+
+        self.updated = False
         self._value = None
-        self._static = static
+        # Set this to False initially so we can call set() below
+        self._static = False
 
         # Relax type checking for string types
         if data_type is str or data_type is unicode:
@@ -17,9 +22,11 @@ class NodeData(object):
             self._data_type = data_type
 
         # use set here to ensure initial_value is the right type
-        self.set(initial_value)
-        # reset updated to False (set() set it to True)
-        self.updated = False
+        # this also sets updated to True
+        if initial_value is not None:
+            self.set(initial_value)
+        # set _static to the supplied value
+        self._static = static
 
     def __repl__(self):
         return '{!s} ({}) [{}]'.format(self._value,

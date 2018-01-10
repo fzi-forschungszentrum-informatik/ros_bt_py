@@ -29,10 +29,16 @@ class TestNodeData(unittest.TestCase):
             # should not throw
             data.set(value)
 
+    def testGet(self):
+        data = NodeData(data_type=int)
+        data.set(1)
+        self.assertEqual(data.get(), 1)
+
     def testUpdated(self):
         data = NodeData(data_type=int, initial_value=0)
 
-        self.assertFalse(data.updated)
+        # A fresh NodeData object with initial_data is updated
+        self.assertTrue(data.updated)
         data.set(1)
         self.assertTrue(data.updated)
         data.reset_updated()
@@ -41,3 +47,17 @@ class TestNodeData(unittest.TestCase):
         self.assertRaises(TypeError, data.set, 1.5)
         # Failed assignment should not set updated
         self.assertFalse(data.updated)
+        # Old value should still be there
+        self.assertEqual(data.get(), 1)
+
+        data2 = NodeData(data_type=str)
+        self.assertFalse(data2.updated)
+
+    def testWriteToStatic(self):
+        data = NodeData(data_type=str, initial_value="Hello", static=True)
+
+        self.assertRaises(Exception, data.set, "World")
+
+    def testEmptyStatic(self):
+        # Static with no initial_value should break
+        self.assertRaises(ValueError, NodeData, data_type=float, static=True)
