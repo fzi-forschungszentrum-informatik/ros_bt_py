@@ -27,12 +27,13 @@ class Node(object):
 
       """
     class States(object):
-        UNINITIALIZED = -1
-        IDLE = 0
-        RUNNING = 1
-        SUCCEEDED = 2
-        FAILED = 3
-        BROKEN = 4
+        UNINITIALIZED = 'UNINITIALIZED'
+        IDLE = 'IDLE'
+        RUNNING = 'RUNNING'
+        SUCCEEDED = 'SUCCEEDED'
+        FAILED = 'FAILED'
+        BROKEN = 'BROKEN'
+        PAUSED = 'PAUSED'
 
     def __init__(self):
         """Prepare class members
@@ -41,10 +42,10 @@ class Node(object):
         need to register inputs, outputs and potentially options and set
         the Node's state to :const:`Node.States.IDLE`
         """
+        self.name = type(self).__name__
         self.inputs = NodeDataMap()
         self.outputs = NodeDataMap()
         self.options = NodeDataMap()
-        self.subscriptions = {}
         self.input_callbacks = {}
         self.output_callbacks = {}
         self.state = Node.States.UNINITIALIZED
@@ -129,12 +130,13 @@ class Node(object):
         self.outputs.reset_updated()
 
         self.handle_inputs()
+        # Inputs are updated by other nodes' outputs
+        self.inputs.reset_updated()
 
         self.state = self.step()
-
         self.handle_outputs()
 
-        self.inputs.reset_updated()
+        return self.state
 
     def step(self):
         """
@@ -146,7 +148,71 @@ class Node(object):
         :returns:
         One of the constants in :class:Node.States
         """
-        raise NotImplementedError('Ticking a node without a step function!')
+        msg = 'Ticking a node without a step function!'
+        self.logerr(msg)
+        raise NotImplementedError(msg)
+
+    def untick(self):
+        """Calling this method signals to a node that it should stop any background tasks.
+
+        A new tick has started and this node has **not** been ticked.
+        The node's state should be `IDLE` after calling this.
+
+        The node's outputs' `updated` flags are also reset!
+
+        A class inheriting from :class:Node should override :meth:Node.stop instead of this!
+        """
+        if self.state is Node.States.UNINITIALIZED:
+            raise Exception('Trying to untick uninitialized node!')
+        self.state = self.stop()
+        if self.state != Node.States.IDLE and self.state != Node.States.PAUSED:
+            self.logwarn('untick() did not result in IDLE state, but %s' % self.state)
+
+        self.outputs.reset_updated()
+
+    def stop(self):
+        """This is called by :meth:Node.untick - override it!
+
+        After executing this method, your node should:
+
+        1. Be in the IDLE or PAUSED state, unless an error happened
+        2. Not execute any of its behavior in the background
+        3. Be ready to resume on the next call of :meth:Node.tick / :meth:Node.step
+        """
+        msg = 'Unticking a node without untick function!'
+        self.logerr(msg)
+        raise NotImplementedError(msg)
+
+    def reset(self):
+        """Use this to reset a node completely
+
+        Whereas :meth:Node.untick / :meth:Node.stop only pauses
+        execution, ready to be resumed, :meth:Node.reset means returning
+        to the same state the node was in right after construction.
+        """
+        if self.state is Node.States.UNINITIALIZED:
+            raise Exception('Trying to reset uninitialized node!')
+        self.state = self.handle_reset()
+        if self.state != Node.States.IDLE:
+            self.logerr('untick() did not result in IDLE state, but %s' % self.state)
+
+    def handle_reset(self):
+        """
+        This is called to reset the node to its initial state.
+
+        After executing this method, your node should:
+
+        1. Be in the IDLE state
+        2. Not be doing anything in the background
+        3. On the next tick, behave as if it has just been created
+
+        :returns:
+        The new state of the node (should be IDLE unless an error happened)
+        """
+        msg = 'Trying to reset a node without reset function'
+        self.logerr(msg)
+        raise NotImplementedError(msg)
+
 
     def validate(self):
         """You must also override this.

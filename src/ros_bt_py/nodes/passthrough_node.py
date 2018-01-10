@@ -20,3 +20,13 @@ class PassthroughNode(Node):
     def step(self):
         # Nothing to do here other than succeed
         return Node.States.SUCCEEDED
+
+    def stop(self):
+        return Node.States.IDLE
+
+    def handle_reset(self):
+        self.inputs['in'] = None
+        self.inputs.reset_updated()
+        self.outputs['out'] = None
+        self.outputs.reset_updated()
+        return Node.States.IDLE
