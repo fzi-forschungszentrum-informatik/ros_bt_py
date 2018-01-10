@@ -1,5 +1,3 @@
-#! /usr/bin/env python2.7
-
 from ros_bt_py.node_data import NodeData
 from std_msgs.msg import Time
 
