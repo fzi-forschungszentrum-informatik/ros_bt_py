@@ -16,7 +16,6 @@ class PassthroughNode(Node):
         self._wire_input('in', self.outputs.get_callback('out'))
         self.state = Node.States.IDLE
 
-
     def step(self):
         # Nothing to do here other than succeed
         return Node.States.SUCCEEDED

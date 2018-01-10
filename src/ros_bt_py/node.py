@@ -213,7 +213,6 @@ class Node(object):
         self.logerr(msg)
         raise NotImplementedError(msg)
 
-
     def validate(self):
         """You must also override this.
 
