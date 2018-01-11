@@ -1,6 +1,28 @@
 import rospy
 
 from ros_bt_py.node_data import NodeData, NodeDataMap
+from ros_bt_py.node_config import OptionRef
+
+
+def define_bt_node(node_config):
+    """Provide information about this Node's interface
+
+    Every class that derives, directly or indirectly, from :class:Node,
+    must be decorated with this!
+
+    :param NodeConfig node_config:
+
+    This describes your Node's interface. All inputs, outputs and
+    options defined here are automatically registered with your
+    class. You should not need to register anything manually!
+    """
+    def inner_dec(node_class):
+        for base in node_class.__bases__:
+            if hasattr(base, 'node_config') and base.node_config:
+                node_config.extend(base.node_config)
+        node_class.node_config = node_config
+        return node_class
+    return inner_dec
 
 
 class Node(object):
@@ -35,7 +57,9 @@ class Node(object):
         BROKEN = 'BROKEN'
         PAUSED = 'PAUSED'
 
-    def __init__(self):
+    node_config = None
+
+    def __init__(self, options=None):
         """Prepare class members
 
         After this finishes, the Node is *not* ready to run. You still
@@ -43,45 +67,44 @@ class Node(object):
         the Node's state to :const:`Node.States.IDLE`
         """
         self.name = type(self).__name__
-        self.inputs = NodeDataMap()
-        self.outputs = NodeDataMap()
+
+        if not self.node_config:
+            raise ValueError('Missing node_config, cannot initialize!')
+
         self.options = NodeDataMap()
-        self.input_callbacks = {}
-        self.output_callbacks = {}
-        self.state = Node.States.UNINITIALIZED
+        self._register_node_data(source_map=self.node_config.options,
+                                 target_map=self.options,
+                                 map_name='options',
+                                 allow_ref=False)
 
-    def subscribe(self, output_name, callback):
-        """Subscribe to changes in the named output.
+        # Set options from constructor parameter
+        for key, value in options.iteritems():
+            self.options[key] = value
 
-        :param str output_name: identifier of the output you want to
-        subscribe to
+        self.inputs = NodeDataMap()
+        self._register_node_data(source_map=self.node_config.inputs,
+                                 target_map=self.inputs,
+                                 map_name='inputs',
+                                 allow_ref=True)
 
-        :param callback: a callback that takes a parameter of
-        the same type as that output. This will be called after each
-        tick, if a change was made to the output
+        self.outputs = NodeDataMap()
+        self._register_node_data(source_map=self.node_config.outputs,
+                                 target_map=self.outputs,
+                                 map_name='outputs',
+                                 allow_ref=True)
 
-        :raises KeyError: if `output_name` is not a valid output
+        self.state = self.setup()
+
+    def setup(self):
+        """Use this to do custom node setup.
+
+        This is called at the end of the constructor, after all the input,
+        output and option values have been registered (and in the case of
+        options, populated)
+
+        :returns: One of the values in :class:Node.States - should be `IDLE`
         """
-        if output_name not in self.outputs:
-            raise KeyError('%s is not an output of %s'
-                           % (output_name, type(self).__name__))
-        if output_name not in self.output_callbacks:
-            self.output_callbacks[output_name] = []
-        self.output_callbacks[output_name].append(callback)
-
-    def _wire_input(self, input_name, callback):
-        """Wire an input to be passed to some callback.
-
-        This is a lot like `subscribe`, but for input instead of output
-        data. Input callbacks are called before the :meth:Node.step function in
-        :meth:Node.tick, so any child nodes get the data they need.
-        """
-        if input_name not in self.inputs:
-            raise KeyError('%s is not an input of %s'
-                           % (input_name, type(self).__name__))
-        if input_name not in self.input_callbacks:
-            self.input_callbacks[input_name] = []
-        self.input_callbacks[input_name].append(callback)
+        return Node.States.UNINITIALIZED
 
     def handle_inputs(self):
         """Execute the callbacks registered by :meth:Node._wire_input
@@ -92,14 +115,11 @@ class Node(object):
         If any input is unset
         """
         for input_name in self.inputs:
-            if self.inputs.is_updated(input_name):
-                if input_name in self.input_callbacks:
-                    for callback in self.input_callbacks[input_name]:
-                        callback(self.inputs[input_name])
-            else:
+            if not self.inputs.is_updated(input_name):
                 rospy.logwarn('Running tick() with stale data!')
             if self.inputs[input_name] is None:
                 raise ValueError('Trying to tick a node with an unset input!')
+        self.inputs.handle_subscriptions()
 
     def handle_outputs(self):
         """Execute the callbacks registered by :meth:Node.subscribe:
@@ -108,11 +128,7 @@ class Node(object):
         the :meth:NodeDataMap.reset_updated is called in
         :meth:Node.tick)
         """
-        for output_name in self.outputs:
-            if self.outputs.is_updated(output_name):
-                if output_name in self.output_callbacks:
-                    for callback in self.output_callbacks[output_name]:
-                        callback(self.outputs[output_name])
+        self.outputs.handle_subscriptions()
 
     def tick(self):
         """This is called every tick (ticks happen at ~10-20Hz, usually.
@@ -126,11 +142,24 @@ class Node(object):
         if self.state is Node.States.UNINITIALIZED:
             raise Exception('Trying to tick uninitialized node!')
 
+        unset_options = []
+        for option_name in self.options:
+            if not self.options.is_updated(option_name):
+                unset_options.append(option_name)
+        if unset_options:
+            msg = 'Trying to tick node with unset options: %s' % str(unset_options)
+            self.logerr(msg)
+            raise Exception(msg)
+        self.options.handle_subscriptions()
+
         # Outputs are updated in the tick. To catch that, we need to reset here.
         self.outputs.reset_updated()
 
+        # Inputs can override options!
         self.handle_inputs()
-        # Inputs are updated by other nodes' outputs
+        # Inputs are updated by other nodes' outputs, i.e. some time after we
+        # use them here. In some cases, inputs might be connected to child
+        # outputs (or even our own), which is why we reset before calling step()
         self.inputs.reset_updated()
 
         self.state = self.step()
@@ -229,45 +258,53 @@ class Node(object):
         """
         pass
 
-    def _register_inputs(self, input_map):
-        """Register a number of typed inputs for this Node
+    def _register_node_data(self, source_map, target_map, map_name, allow_ref):
+        """Register a number of typed :class:NodeData in the given map
 
-        :param dict(str, type) input_map: a dictionary mapping from input names to input types,
-        i.e. ``{ 'string_input' : str, 'int_input' : int }``
+        :param dict(str, type) source_map: a dictionary mapping from data keys to data types,
+        i.e. ``{ 'a_string' : str, 'an_int' : int }``
+
+        :param NodeDataMap target_map:
+        The :class:NodeDataMap to add :class:NodeData values to
+
+        :param str map_name:
+        The name of `target_map`, used for logging
+
+        :param bool allow_ref:
+        Decides whether :class:OptionRef is accepted as a type. If True, the
+        option keys referenced by any :class:OptionRef objects must
+        exist and be populated!
+
+        :raises: KeyError, ValueError
+        If any of the keys in `source_map` already exist in `target_map`,
+        raise KeyError.
+        If an OptionRef value is passed, but `allow_ref` is `False`, raise ValueError.
+        If an OptionRef references an option value that has not been set or
+        does not exist, raise KeyError.
+        If an OptionRef references an option value that does not hold a `type`,
+        raise ValueError.
         """
-        for input_name, data_type in input_map.iteritems():
-            if input_name in self.inputs:
-                raise ValueError('Duplicate input name: %s' % input_name)
-            self.inputs.add(input_name, NodeData(data_type=data_type))
+        for key, data_type in source_map.iteritems():
+            if key in target_map:
+                raise KeyError('Duplicate output name: %s' % key)
 
-    def _register_outputs(self, output_map):
-        """Register a number of typed outputs for this Node
-
-        :param dict(str, type) output_map: a dictionary mapping from input names to output types,
-        i.e. ``{ 'string_output' : str, 'int_output' : int }``
-        """
-        for output_name, data_type in output_map.iteritems():
-            if output_name in self.outputs:
-                raise ValueError('Duplicate output name: %s' % output_name)
-            self.outputs.add(output_name, NodeData(data_type=data_type))
-
-    def _register_options(self, option_map):
-        """Register a number of options and their values for this Node.
-
-        Options are static, meaning they cannot be changed after
-        registering them, and their types are inferred automatically
-        from the values.
-
-        :param dict(str, tuple) option_map:
-        a dictionary mapping from option names to the corresponding
-        values i.e. ``{ 'string_option' : 'Hello World!', 'int_option' : 42 }``
-        """
-        for option_name, option_value in option_map.iteritems():
-            if option_name in self.options:
-                raise ValueError('Duplicate option name: %s' % option_name)
-            self.options.add(option_name, NodeData(data_type=type(option_value),
-                                                   initial_value=option_value,
-                                                   static=True))
+            if isinstance(data_type, OptionRef):
+                if not allow_ref:
+                    raise ValueError('OptionRef not allowed while adding to %s' % map_name)
+                if data_type.option_key not in self.options:
+                    raise KeyError("OptionRef for %s key '%s' references invalid option key '%s'"
+                                   % (map_name, key, data_type.option_key))
+                if not self.options.is_updated(data_type.option_key):
+                    raise ValueError("OptionRef for %s key '%s' references unwritten "
+                                     "option key '%s'"
+                                     % (map_name, key, data_type.option_key))
+                if not isinstance(self.options[data_type.option_key], type):
+                    raise ValueError("OptionRef for %s key '%s' references option key '%s' "
+                                     "that does not contain a type!"
+                                     % (map_name, key, data_type.option_key))
+                target_map.add(key, NodeData(data_type=self.options[data_type.option_key]))
+            else:
+                target_map.add(key, NodeData(data_type=data_type))
 
     def logdebug(self, message):
         """Wrapper for :func:rospy.logdebug

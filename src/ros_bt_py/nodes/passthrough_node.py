@@ -1,20 +1,20 @@
-from ros_bt_py.node import Node
+from ros_bt_py.node import Node, define_bt_node
+from ros_bt_py.node_config import NodeConfig, OptionRef
 
-
+@define_bt_node(NodeConfig(
+    options={'passthrough_type': type},
+    inputs={'in': OptionRef('passthrough_type')},
+    outputs={'out': OptionRef('passthrough_type')},
+    max_children=0))
 class PassthroughNode(Node):
     """Pass through a piece of data
 
     Only really useful for testing
     """
-    def __init__(self, passthrough_type):
-        super(PassthroughNode, self).__init__()
-
-        self._register_inputs({'in': passthrough_type})
-        self._register_outputs({'out': passthrough_type})
-
+    def setup(self):
         # Connect 'in' to 'out'
-        self._wire_input('in', self.outputs.get_callback('out'))
-        self.state = Node.States.IDLE
+        self.inputs.subscribe('in', self.outputs.get_callback('out'), '.outputs[out]')
+        return Node.States.IDLE
 
     def step(self):
         # Nothing to do here other than succeed

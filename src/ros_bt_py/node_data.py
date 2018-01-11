@@ -1,23 +1,25 @@
 import rospy
 
 
+def from_string(data_type, string_value, static=False):
+    return NodeData(data_type=data_type,
+                    initial_value=data_type(string_value),
+                    static=static)
+
+
 class NodeData(object):
     """Represents a piece of data (input, output or option) held by a Node
 
     Each NodeData object is typed and will only accept new data (via its
     :meth:NodeData.set method) if it is of the correct type.
 
-    NodeData can also be static, in which case it will never accept any
-    update, i.e. it will be stuck with the initial value.
+    NodeData can also be static, in which case it will only accept one
+    update (the initial value, if not empty, counts as an update!)
     """
     def __init__(self, data_type, initial_value=None, static=False):
-        if initial_value is None and static:
-            raise ValueError('Static NodeData must have an initial value!')
-
         self.updated = False
         self._value = None
-        # Set this to False initially so we can call set() below
-        self._static = False
+        self._static = static
 
         # Relax type checking for string types
         if data_type is str or data_type is unicode:
@@ -29,8 +31,6 @@ class NodeData(object):
         # this also sets updated to True
         if initial_value is not None:
             self.set(initial_value)
-        # set _static to the supplied value
-        self._static = static
 
     def __repl__(self):
         return '{!s} ({}) [{}]'.format(self._value,
@@ -46,8 +46,8 @@ class NodeData(object):
 
         :raises: Exception, TypeError
         """
-        if self._static:
-            raise Exception('Trying to write to a static NodeData object')
+        if self._static and self.updated:
+            raise Exception('Trying to overwrite data in static NodeData object')
         if not isinstance(new_value, self._data_type) and new_value is not None:
             raise TypeError('Expected data to be of type {}, got {} instead'.format(
                 self._data_type.__name__, type(new_value).__name__))
@@ -61,7 +61,7 @@ class NodeData(object):
         last call of `reset_updated` (unless this piece of data is
         marked static, in which case we do not expect updates).
         """
-        if not self._static and not self.updated:
+        if not self.updated:
             rospy.logwarn('Reading non-updated value!')
         return self._value
 
@@ -82,8 +82,47 @@ class NodeDataMap(object):
     been added to the map. This is because the setters for values might
     be used as callbacks elsewhere, leading to unexpected breakage!
     """
-    def __init__(self):
+    def __init__(self, name='data'):
+        self._name = name
         self._map = {}
+        self._callbacks = {}
+
+    def subscribe(self, key, callback, path=''):
+        """Subscribe to changes in the value at `key`.
+
+        :param str key: the key you want to subscribe to
+
+        :param callback: a callback that takes a parameter of
+        the same type as the value at `key`. This will be called when
+        :meth:NodeDatamap.handle_subscriptions is called, if a change
+        was made to the value since the last call of :meth:NodeDataMap.reset_updated
+
+        :param str path: the tree path of the subscriber. Only used for logging.
+
+        :raises KeyError: if `key` is not a valid key
+        """
+
+        if key not in self._map:
+            raise KeyError('%s is not a key of %s'
+                           % (key, self._name))
+        if key not in self._callbacks:
+            self._callbacks[key] = []
+        self._callbacks[key].append((callback, path))
+
+    def handle_subscriptions(self):
+        """Execute the callbacks registered by :meth:NodeDataMap.subscribe:
+
+        Only executes a callback if the corresponding piece of data has
+        been updated since the last call of
+        :meth:NodeDataMap.reset_updated.
+        """
+        for key in self._map:
+            if self.is_updated(key):
+                if key in self._callbacks:
+                    for callback, path in self._callbacks[key]:
+                        rospy.logdebug('Forwarding value %s to subscriber %s',
+                                       key, path)
+                        callback(self[key])
 
     def add(self, key, value):
         """

@@ -1,4 +1,4 @@
-from ros_bt_py.node_data import NodeData
+from ros_bt_py.node_data import NodeData, from_string
 from std_msgs.msg import Time
 
 import rospy
@@ -57,5 +57,14 @@ class TestNodeData(unittest.TestCase):
         self.assertRaises(Exception, data.set, "World")
 
     def testEmptyStatic(self):
-        # Static with no initial_value should break
-        self.assertRaises(ValueError, NodeData, data_type=float, static=True)
+        # Static with no initial_value should only let us write to it once
+        data = NodeData(data_type=float, static=True)
+        self.assertFalse(data.updated)
+        data.set(4.2)
+        self.assertTrue(data.updated)
+        self.assertRaises(Exception, data.set, 1.5)
+
+    def testFromString(self):
+        string_data = from_string(int, '42')
+
+        self.assertEqual(string_data.get(), 42)
