@@ -1,6 +1,7 @@
 from ros_bt_py.node import Node, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
+
 @define_bt_node(NodeConfig(
     options={'passthrough_type': type},
     inputs={'in': OptionRef('passthrough_type')},
