@@ -1,0 +1,4 @@
+- git:
+    local-name: ros_bt_py_msgs
+    uri: "http://10.211.55.3:8000/ros_bt_py_msgs"
+    version: master
