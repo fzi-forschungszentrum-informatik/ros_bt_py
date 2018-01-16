@@ -12,19 +12,19 @@ class PassthroughNode(Node):
 
     Only really useful for testing
     """
-    def setup(self):
+    def do_setup(self):
         # Connect 'in' to 'out'
         self.inputs.subscribe('in', self.outputs.get_callback('out'), '.outputs[out]')
         return Node.States.IDLE
 
-    def step(self):
+    def do_tick(self):
         # Nothing to do here other than succeed
         return Node.States.SUCCEEDED
 
-    def stop(self):
+    def do_untick(self):
         return Node.States.IDLE
 
-    def handle_reset(self):
+    def do_reset(self):
         self.inputs['in'] = None
         self.inputs.reset_updated()
         self.outputs['out'] = None

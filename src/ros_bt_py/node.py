@@ -63,8 +63,13 @@ class Node(object):
         """Prepare class members
 
         After this finishes, the Node is *not* ready to run. You still
-        need to register inputs, outputs and potentially options and set
-        the Node's state to :const:`Node.States.IDLE`
+        need to do your own initialization in :meth:Node.do_setup.
+
+        :param dict options:
+
+        Map from option names to option values. Use these for
+        configuring your node, do not provide a custom `__init()__`
+        method!
         """
         self.name = type(self).__name__
 
@@ -96,15 +101,28 @@ class Node(object):
         self.state = self.setup()
 
     def setup(self):
-        """Use this to do custom node setup.
+        """Prepare the node to be ticked for the first time.
 
-        This is called at the end of the constructor, after all the input,
-        output and option values have been registered (and in the case of
-        options, populated)
+        This is called after all the input, output and option values
+        have been registered (and in the case of options, populated), so
+        you can use those values in your implementation of
+        :meth:Node.do_setup
 
         :returns: One of the values in :class:Node.States - should be `IDLE`
         """
-        return Node.States.UNINITIALIZED
+        return self.do_setup()
+
+    def do_setup(self):
+        """Use this to do custom node setup.
+
+        Note that this will be called once, when the tree is first
+        started, and before the first call of :meth:Node.tick.
+
+        :rtype basestring:
+        :return:
+        This method must return one of the constants in :class:Node.State
+        """
+        raise NotImplementedError('Trying to setup a node with no do_setup() method')
 
     def handle_inputs(self):
         """Execute the callbacks registered by :meth:Node._wire_input
@@ -134,7 +152,7 @@ class Node(object):
         """This is called every tick (ticks happen at ~10-20Hz, usually.
 
         You should not need to override this method, but instead
-        implement :meth:Node.step in your own class.
+        implement :meth:Node.do_tick in your own class.
 
         :returns:
         The state of the node after ticking - should be `SUCCEEDED`, `FAILED` or `RUNNING`.
@@ -167,7 +185,7 @@ class Node(object):
 
         return self.state
 
-    def step(self):
+    def do_tick(self):
         """
         Every Node class must override this.
 
@@ -177,7 +195,7 @@ class Node(object):
         :returns:
         One of the constants in :class:Node.States
         """
-        msg = 'Ticking a node without a step function!'
+        msg = 'Ticking a node without a do_tick function!'
         self.logerr(msg)
         raise NotImplementedError(msg)
 
@@ -189,17 +207,17 @@ class Node(object):
 
         The node's outputs' `updated` flags are also reset!
 
-        A class inheriting from :class:Node should override :meth:Node.stop instead of this!
+        A class inheriting from :class:Node should override :meth:Node.do_untick instead of this!
         """
         if self.state is Node.States.UNINITIALIZED:
             raise Exception('Trying to untick uninitialized node!')
-        self.state = self.stop()
+        self.state = self.do_untick()
         if self.state != Node.States.IDLE and self.state != Node.States.PAUSED:
             self.logwarn('untick() did not result in IDLE state, but %s' % self.state)
 
         self.outputs.reset_updated()
 
-    def stop(self):
+    def do_untick(self):
         """This is called by :meth:Node.untick - override it!
 
         After executing this method, your node should:
@@ -215,17 +233,18 @@ class Node(object):
     def reset(self):
         """Use this to reset a node completely
 
-        Whereas :meth:Node.untick / :meth:Node.stop only pauses
+        Whereas :meth:Node.untick / :meth:Node.do_untick only pauses
         execution, ready to be resumed, :meth:Node.reset means returning
         to the same state the node was in right after construction.
         """
         if self.state is Node.States.UNINITIALIZED:
             raise Exception('Trying to reset uninitialized node!')
-        self.state = self.handle_reset()
-        if self.state != Node.States.IDLE:
-            self.logerr('untick() did not result in IDLE state, but %s' % self.state)
+        self.state = self.do_reset()
+        if self.state != Node.States.UNINITIALIZED:
+            self.logerr('untick() did not result in UNINITIALIZED state, but %s'
+                        % self.state)
 
-    def handle_reset(self):
+    def do_reset(self):
         """
         This is called to reset the node to its initial state.
 
@@ -238,7 +257,7 @@ class Node(object):
         :returns:
         The new state of the node (should be IDLE unless an error happened)
         """
-        msg = 'Trying to reset a node without reset function'
+        msg = 'Trying to reset a node without do_reset function'
         self.logerr(msg)
         raise NotImplementedError(msg)
 

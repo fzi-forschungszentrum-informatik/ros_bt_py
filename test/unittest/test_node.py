@@ -8,28 +8,6 @@ class TestNode(unittest.TestCase):
     def TestNodeInitFails(self):
         self.assertRaises(ValueError, Node)
 
-    # def testNewNodeIsUninitialized(self):
-    #     node = Node()
-    #     self.assertEqual(node.state, Node.States.UNINITIALIZED)
-
-    # def testNewNodeCannotTick(self):
-    #     node = Node()
-    #     self.assertRaises(Exception, node.tick)
-    #     node.state = Node.States.IDLE
-    #     self.assertRaises(NotImplementedError, node.tick)
-
-    # def testNewNodeCannotUntick(self):
-    #     node = Node()
-    #     self.assertRaises(Exception, node.untick)
-    #     node.state = Node.States.IDLE
-    #     self.assertRaises(NotImplementedError, node.untick)
-
-    # def testNewNodeCannotReset(self):
-    #     node = Node()
-    #     self.assertRaises(Exception, node.reset)
-    #     node.state = Node.States.IDLE
-    #     self.assertRaises(NotImplementedError, node.reset)
-
     def testPassthroughNode(self):
         passthrough = PassthroughNode({'passthrough_type': int})
 
