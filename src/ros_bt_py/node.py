@@ -75,6 +75,7 @@ class Node(object):
 
         """
         self.name = type(self).__name__
+        self.children = []
 
         self.debug_manager = debug_manager
 
@@ -289,6 +290,54 @@ class Node(object):
         3. any unconnected outputs are logged for possible **debugging**
         """
         pass
+
+    def add_child(self, child, at_index=None):
+        """Add a child to this node at the given index
+
+        :raises: Exception, KeyError
+
+        `Exception` if the number of children after the add operation
+        would exceed the maximum number of children, `KeyError` if a
+        child of the same name already exists
+        """
+        if (self.node_config.max_children is not None
+            and len(self.children) == self.node_config.max_children):
+            error_msg = ('Trying to add child when maximum number of '
+                         'children (%d) is already present'
+                         % self.node_config.max_children)
+            self.logerr(error_msg)
+            raise Exception(error_msg)
+
+        if child.name in (child.name for child in self.children):
+            raise KeyError('Already have a child with name "%s"' % child.name)
+        if at_index is None:
+            at_index = len(self.children)
+        # Use array slicing to efficiently insert child at the correct position
+        # (the value we assign needs to be a list for this to work)
+        self.children[at_index:at_index] = [child]
+
+    def move_child(self, child_name, new_index):
+        """
+        Move the child with the name `child_name` to `new_index`
+
+        :raises: IndexError if `new_index` is invalid
+        """
+        old_index = (child.name for child in self.children).index(child_name)
+        self.children[old_index], self.children[new_index] = \
+          self.children[new_index], self.children[old_index]
+
+    def remove_child(self, child_name):
+        """Remove the child with the given name and return it.
+
+        :param basestring child_name: The name of the child to remove
+
+        :rtype: Node
+        :returns: The child that was just removed
+        """
+        child_index = (child.name for child in self.children).index(child_name)
+        tmp = self.children[child_index]
+        del self.children[child_index]
+        return tmp
 
     def _register_node_data(self, source_map, target_map, map_name, allow_ref):
         """Register a number of typed :class:NodeData in the given map
