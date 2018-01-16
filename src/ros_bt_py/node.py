@@ -332,6 +332,9 @@ class Node(object):
             else:
                 target_map.add(key, NodeData(data_type=data_type))
 
+    # Logging methods - these just use the ROS logging framework, but add the
+    # name and type of the node so it's easier to trace errors.
+
     def logdebug(self, message):
         """Wrapper for :func:rospy.logdebug
 
