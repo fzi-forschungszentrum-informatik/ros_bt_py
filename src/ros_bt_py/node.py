@@ -83,8 +83,15 @@ class Node(object):
                                  allow_ref=False)
 
         # Set options from constructor parameter
-        for key, value in options.iteritems():
-            self.options[key] = value
+        unset_option_keys = []
+        for key in self.options:
+            if options is None or key not in options:
+                unset_option_keys.append(key)
+            else:
+                self.options[key] = options[key]
+        if unset_option_keys:
+            raise ValueError('Missing options: %s'
+                             % str(unset_option_keys))
 
         self.inputs = NodeDataMap()
         self._register_node_data(source_map=self.node_config.inputs,

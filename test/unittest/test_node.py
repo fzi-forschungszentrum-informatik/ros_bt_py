@@ -8,6 +8,9 @@ class TestNode(unittest.TestCase):
     def TestNodeInitFails(self):
         self.assertRaises(ValueError, Node)
 
+    def testMissingOption(self):
+        self.assertRaises(ValueError, PassthroughNode)
+
     def testPassthroughNode(self):
         passthrough = PassthroughNode({'passthrough_type': int})
 
