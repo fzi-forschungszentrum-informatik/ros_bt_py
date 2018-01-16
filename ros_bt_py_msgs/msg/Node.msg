@@ -9,7 +9,7 @@ bool is_subtree
 string subtree_data
 # The python package the node is from
 string package
-string class
+string node_class
 
 ## These are run-time parameters
 # Each node name must be unique in its tree. This does not count for
