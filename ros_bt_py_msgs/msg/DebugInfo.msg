@@ -1,0 +1,7 @@
+uint32 current_recursion_depth
+uint32 max_recursion_depth
+uint32 window_size
+TickTime tree_tick_time
+duration target_tick_time
+TickTime[] node_tick_times
+

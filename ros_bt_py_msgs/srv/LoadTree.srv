@@ -1,0 +1,17 @@
+## Only one of tree_path, tree_string must be set!
+
+# This can be either a file:// or a package:// path. It must point to
+# a YAML file containing a seriolized ros_bt_msgs_py/Tree object
+string tree_path
+# This can be used alternatively to tree_path, to feed a YAML string
+# to the loader directly.
+string tree_string
+# Optional - you can define a preferred name, otherwise the name from
+# the YAML file (with added number(s) if the name is already taken)
+# will be used.
+string tree_name
+---
+bool success
+# The tree name might have been changed to avoid naming conflicts
+string actual_tree_name
+string error_message

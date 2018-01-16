@@ -1,0 +1,4 @@
+TreeLocation node_location
+duration avg_tick_time
+duration min_tick_time
+duration max_tick_time

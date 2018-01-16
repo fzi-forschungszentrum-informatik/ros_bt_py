@@ -1,0 +1,7 @@
+# Name of the node to remove
+TreeLocation node_location
+# If false, the node's children will be orphaned.
+bool remove_children
+---
+bool success
+string error_message
