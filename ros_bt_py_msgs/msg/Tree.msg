@@ -9,9 +9,9 @@ NodeDataWiring[] data_wirings
 # One of the constants below
 string tree_state
 
-string EDITING = 'EDITING'
-string RUNNING = 'RUNNING'
-string DEBUGGING = 'DEBUGGING'
+string EDITING = EDITING
+string TICKING = TICKING
+string DEBUGGING = DEBUGGING
 
 # These are accessible when using this tree as a subtree
 NodeDataLocation[] public_node_data

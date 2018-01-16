@@ -24,13 +24,13 @@ NodeData[] current_outputs
 # Should be one of the constants below
 string state
 
-string UNINITIALIZED = 'UNINITIALIZED'
-string IDLE = 'IDLE'
-string RUNNING = 'RUNNING'
-string SUCCEEDED = 'SUCCEEDED'
-string FAILED = 'FAILED'
-string BROKEN = 'BROKEN'
-string PAUSED = 'PAUSED'
-string DEBUG_PRE_TICK = 'DEBUG_PRE_TICK'
-string DEBUG_TICK = 'DEBUG_TICK'
-string DEBUG_POST_TICK = 'DEBUG_POST_TICK'
+string UNINITIALIZED = UNINITIALIZED
+string IDLE = IDLE
+string RUNNING = RUNNING
+string SUCCEEDED = SUCCEEDED
+string FAILED = FAILED
+string BROKEN = BROKEN
+string PAUSED = PAUSED
+string DEBUG_PRE_TICK = DEBUG_PRE_TICK
+string DEBUG_TICK = DEBUG_TICK
+string DEBUG_POST_TICK = DEBUG_POST_TICK
