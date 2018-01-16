@@ -59,7 +59,7 @@ class Node(object):
 
     node_config = None
 
-    def __init__(self, options=None):
+    def __init__(self, options=None, debug_manager=None):
         """Prepare class members
 
         After this finishes, the Node is *not* ready to run. You still
@@ -70,8 +70,13 @@ class Node(object):
         Map from option names to option values. Use these for
         configuring your node, do not provide a custom `__init()__`
         method!
+
+        :param ros_bt_py.debug_manager.DebugManager debug_manager:
+
         """
         self.name = type(self).__name__
+
+        self.debug_manager = debug_manager
 
         if not self.node_config:
             raise ValueError('Missing node_config, cannot initialize!')
@@ -164,33 +169,34 @@ class Node(object):
         :returns:
         The state of the node after ticking - should be `SUCCEEDED`, `FAILED` or `RUNNING`.
         """
-        if self.state is Node.States.UNINITIALIZED:
-            raise Exception('Trying to tick uninitialized node!')
+        with self.debug_manager.report_tick(self.name):
+            if self.state is Node.States.UNINITIALIZED:
+                raise Exception('Trying to tick uninitialized node!')
 
-        unset_options = []
-        for option_name in self.options:
-            if not self.options.is_updated(option_name):
-                unset_options.append(option_name)
-        if unset_options:
-            msg = 'Trying to tick node with unset options: %s' % str(unset_options)
-            self.logerr(msg)
-            raise Exception(msg)
-        self.options.handle_subscriptions()
+            unset_options = []
+            for option_name in self.options:
+                if not self.options.is_updated(option_name):
+                    unset_options.append(option_name)
+            if unset_options:
+                msg = 'Trying to tick node with unset options: %s' % str(unset_options)
+                self.logerr(msg)
+                raise Exception(msg)
+            self.options.handle_subscriptions()
 
-        # Outputs are updated in the tick. To catch that, we need to reset here.
-        self.outputs.reset_updated()
+            # Outputs are updated in the tick. To catch that, we need to reset here.
+            self.outputs.reset_updated()
 
-        # Inputs can override options!
-        self.handle_inputs()
-        # Inputs are updated by other nodes' outputs, i.e. some time after we
-        # use them here. In some cases, inputs might be connected to child
-        # outputs (or even our own), which is why we reset before calling step()
-        self.inputs.reset_updated()
+            # Inputs can override options!
+            self.handle_inputs()
+            # Inputs are updated by other nodes' outputs, i.e. some time after we
+            # use them here. In some cases, inputs might be connected to child
+            # outputs (or even our own), which is why we reset before calling step()
+            self.inputs.reset_updated()
 
-        self.state = self.step()
-        self.handle_outputs()
+            self.state = self.do_tick()
+            self.handle_outputs()
 
-        return self.state
+            return self.state
 
     def do_tick(self):
         """

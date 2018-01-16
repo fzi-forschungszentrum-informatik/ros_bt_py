@@ -1,5 +1,6 @@
 import unittest
 
+from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.node import Node
 from ros_bt_py.nodes.passthrough_node import PassthroughNode
 
@@ -12,7 +13,7 @@ class TestNode(unittest.TestCase):
         self.assertRaises(ValueError, PassthroughNode)
 
     def testPassthroughNode(self):
-        passthrough = PassthroughNode({'passthrough_type': int})
+        passthrough = PassthroughNode({'passthrough_type': int}, debug_manager=DebugManager())
 
         self.assertEqual(passthrough.state, Node.States.IDLE)
         self.assertEqual(passthrough.inputs['in'], None)
@@ -33,7 +34,8 @@ class TestNode(unittest.TestCase):
         # in when it was freshly created:
         passthrough.reset()
 
-        fresh_passthrough = PassthroughNode({'passthrough_type': int})
+        fresh_passthrough = PassthroughNode({'passthrough_type': int},
+                                            debug_manager=DebugManager())
 
         self.assertEqual(passthrough.inputs['in'], fresh_passthrough.inputs['in'])
         self.assertEqual(passthrough.outputs['out'], fresh_passthrough.outputs['out'])
@@ -43,7 +45,8 @@ class TestNode(unittest.TestCase):
                          fresh_passthrough.outputs.is_updated('out'))
 
     def testPassthroughNodeUntick(self):
-        passthrough = PassthroughNode({'passthrough_type': float})
+        passthrough = PassthroughNode({'passthrough_type': float},
+                                      debug_manager=DebugManager())
 
         passthrough.inputs['in'] = 1.5
         self.assertEqual(passthrough.state, Node.States.IDLE)
