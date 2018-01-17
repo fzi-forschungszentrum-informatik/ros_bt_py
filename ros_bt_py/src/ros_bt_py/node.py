@@ -21,6 +21,7 @@ def define_bt_node(node_config):
             if hasattr(base, 'node_config') and base.node_config:
                 node_config.extend(base.node_config)
         node_class.node_config = node_config
+        Node.node_classes.add(node_class)
         return node_class
     return inner_dec
 
@@ -48,6 +49,8 @@ class Node(object):
       could invert `FAILED` into `SUCCEEDED`.
 
       """
+    node_classes = set()
+
     class States(object):
         UNINITIALIZED = 'UNINITIALIZED'
         IDLE = 'IDLE'
