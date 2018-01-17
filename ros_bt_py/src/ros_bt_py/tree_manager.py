@@ -25,7 +25,7 @@ class TreeManager(object):
 
         # for each node in list
 
-          # add its children to list
+        # add its children to list
 
         # reverse list
 
@@ -77,4 +77,5 @@ class TreeManager(object):
         this will return an error.
         """
 
-    def wire_data(self, source_node_name, source_node
+    def wire_data(self, source_node_name, source_node):
+        pass

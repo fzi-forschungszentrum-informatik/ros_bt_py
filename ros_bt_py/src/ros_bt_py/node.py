@@ -301,7 +301,7 @@ class Node(object):
         child of the same name already exists
         """
         if (self.node_config.max_children is not None
-            and len(self.children) == self.node_config.max_children):
+                and len(self.children) == self.node_config.max_children):
             error_msg = ('Trying to add child when maximum number of '
                          'children (%d) is already present'
                          % self.node_config.max_children)
@@ -324,7 +324,7 @@ class Node(object):
         """
         old_index = (child.name for child in self.children).index(child_name)
         self.children[old_index], self.children[new_index] = \
-          self.children[new_index], self.children[old_index]
+            self.children[new_index], self.children[old_index]
 
     def remove_child(self, child_name):
         """Remove the child with the given name and return it.

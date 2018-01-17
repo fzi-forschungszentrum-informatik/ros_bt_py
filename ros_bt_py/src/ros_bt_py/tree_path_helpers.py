@@ -1,8 +1,9 @@
 CONTROL_CHARACTERS = {
     '/': 'path_separator',
     '[': 'index_start',
-    ']': 'index_end',
-    
+    ']': 'index_end'
+    }
+
 
 def increment_child_name(name):
     """If `name` ends in a number (of the shape '_$number'), increment that number.
@@ -26,7 +27,7 @@ def increment_child_name(name):
 
 def add_to_path(path, name):
     """Adds `name` to `path`, ensuring the resulting string is a valid path.
-    
+
     :param basestring path:
     :param basestring name:
 
@@ -34,6 +35,9 @@ def add_to_path(path, name):
     """
     pass
 
+
 def pathify(path):
     """
     Escape the Tree path control characters (see `CONTROL_CHARACTERS`)
+    """
+    pass

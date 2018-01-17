@@ -9,6 +9,7 @@ import rospy
 
 from ros_bt_py_msgs.msg import DebugInfo, TickTime, TreeLocation
 
+
 class DebugManager(object):
     def __init__(self, target_tick_frequency_hz=20.0, window_size=None):
         # TODO(nberg): Ensure this is set at least once on shutdown
@@ -88,8 +89,8 @@ class DebugManager(object):
             # Either way, ticktime_msg is now a reference to the correct item
             # in debug_info_msg
             ticktime_msg.avg_tick_time = average_duration
-            if (ticktime_msg.min_tick_time.secs == 0 and ticktime_msg.min_tick_time.nsecs == 0) \
-              or duration_greater(ticktime_msg.min_tick_time, last_duration):
+            if ((ticktime_msg.min_tick_time.secs == 0 and ticktime_msg.min_tick_time.nsecs == 0)
+                    or duration_greater(ticktime_msg.min_tick_time, last_duration)):
                 ticktime_msg.min_tick_time = last_duration
 
             if duration_greater(last_duration, ticktime_msg.max_tick_time):
@@ -104,12 +105,12 @@ class DebugManager(object):
             if node_name in self.breakpoints:
                 self.breakpoints.remove(node_name)
 
-
     def wait_for_continue(self):
         # Ensure that we're not picking up an extra continue request sent earlier
         self.continue_event.clear()
         self.continue_event.wait()
         self.continue_event.clear()
+
 
 def duration_greater(first, second):
     """Helper to compare rospy.Duration to genpy.Duration"""

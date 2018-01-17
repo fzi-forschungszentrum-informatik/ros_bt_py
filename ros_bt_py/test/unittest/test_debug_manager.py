@@ -40,14 +40,15 @@ class TestDebugManager(unittest.TestCase):
         self.assertGreater(self.manager.debug_info_msg.node_tick_times[0].max_tick_time.nsecs,
                          self.manager.debug_info_msg.node_tick_times[0].min_tick_time.nsecs)
 
-
     def testStep(self):
         self.manager.stepping = True
 
         self.x = 0
+
         def do_stuff():
             with self.manager.report_tick('foo'):
                 self.x = 1
+
         test_thread = Thread(target=do_stuff)
         test_thread.start()
         time.sleep(0.05)
