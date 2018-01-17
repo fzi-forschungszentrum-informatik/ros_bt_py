@@ -1,4 +1,0 @@
-class StaleDataException(Exception):
-    pass
-
-

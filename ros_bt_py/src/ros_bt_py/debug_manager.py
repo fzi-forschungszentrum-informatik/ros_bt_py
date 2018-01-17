@@ -80,21 +80,21 @@ class DebugManager(object):
                                  if x.node_location.node_name == node_name]
             # If there is one, take that
             if ticktime_msg_list:
-                ticktime_msg = ticktime_msg_list[0]
+                timing_msg = ticktime_msg_list[0]
             # If not, create one and add it to the list
             else:
-                ticktime_msg = TickTime(node_location=TreeLocation(node_name=node_name))
-                self.debug_info_msg.node_tick_times.append(ticktime_msg)
+                timing_msg = TickTime(node_location=TreeLocation(node_name=node_name))
+                self.debug_info_msg.node_tick_times.append(timing_msg)
 
-            # Either way, ticktime_msg is now a reference to the correct item
+            # Either way, timing_msg is now a reference to the correct item
             # in debug_info_msg
-            ticktime_msg.avg_tick_time = average_duration
-            if ((ticktime_msg.min_tick_time.secs == 0 and ticktime_msg.min_tick_time.nsecs == 0)
-                    or duration_greater(ticktime_msg.min_tick_time, last_duration)):
-                ticktime_msg.min_tick_time = last_duration
+            timing_msg.avg_tick_time = average_duration
+            if ((timing_msg.min_tick_time.secs == 0 and timing_msg.min_tick_time.nsecs == 0) or
+                    duration_greater(timing_msg.min_tick_time, last_duration)):
+                timing_msg.min_tick_time = last_duration
 
-            if duration_greater(last_duration, ticktime_msg.max_tick_time):
-                ticktime_msg.max_tick_time = last_duration
+            if duration_greater(last_duration, timing_msg.max_tick_time):
+                timing_msg.max_tick_time = last_duration
 
             self.debug_info_msg.current_recursion_depth = len(inspect.stack())
             self.debug_info_msg.max_recursion_depth = getrecursionlimit()

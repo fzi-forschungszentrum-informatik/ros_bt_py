@@ -300,8 +300,8 @@ class Node(object):
         would exceed the maximum number of children, `KeyError` if a
         child of the same name already exists
         """
-        if (self.node_config.max_children is not None
-                and len(self.children) == self.node_config.max_children):
+        if (self.node_config.max_children is not None and
+                len(self.children) == self.node_config.max_children):
             error_msg = ('Trying to add child when maximum number of '
                          'children (%d) is already present'
                          % self.node_config.max_children)
