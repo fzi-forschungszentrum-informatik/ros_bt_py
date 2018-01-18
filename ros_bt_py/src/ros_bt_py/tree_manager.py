@@ -96,31 +96,10 @@ class TreeManager(object):
         if node_msg.is_subtree:
             raise NotImplementedError('Subtree nodes are not supported yet!')
         else:
-            node_instance = Node.from_msg(node_msg)
+            node_instance = Node.from_msg(node_msg, self.nodes)
             # Set DebugManager
             node_instance.debug_manager = self.debug_manager
-            # Ensure that name is unique
-            while node_instance.name in self.nodes:
-                node_instance.name = increment_name(node_instance.name)
 
             self.nodes[node_instance.name] = node_instance
 
             return node_instance
-
-
-
-
-def increment_name(name):
-    """If `name` does not already end in a number, add "_2" to it.
-
-    Otherwise, increase the number after the underscore.
-    """
-    match = re.search('_([0-9]+)$', name)
-    prev_number = 1
-    if match:
-        prev_number = int(match.group(1))
-        # remove the entire _$number part from the name
-        name = name[:len(name) - len(match.group(0))]
-
-    name += '_%d' % (prev_number + 1)
-    return name

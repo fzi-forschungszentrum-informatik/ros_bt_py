@@ -2,10 +2,12 @@ from contextlib import contextmanager
 
 import importlib
 import jsonpickle
+import re
 
 import rospy
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
+from ros_bt_py_msgs.msg import NodeData as NodeDataMsg
 
 from ros_bt_py.node_data import NodeData, NodeDataMap
 from ros_bt_py.node_config import OptionRef
@@ -85,6 +87,7 @@ class Node(object):
 
         """
         self.name = type(self).__name__
+        self.parent_name = ''
         self.state = NodeMsg.UNINITIALIZED
         self.children = []
 
@@ -457,7 +460,7 @@ class Node(object):
         rospy.logfatal('%s (%s): %s', self.name, type(self).__name__, message)
 
     @classmethod
-    def from_msg(cls, msg):
+    def from_msg(cls, msg, node_dict=None):
         """Construct a Node from the given ROS message.
 
         This will try to import the requested node class, instantiate it
@@ -470,6 +473,11 @@ class Node(object):
         available in the current environment (but does not need to be
         imported before calling this).
 
+        :param dict node_dict:
+
+        A dictionary from node names to node instances. If you pass
+        this, make sure it contains all the children of the given node.
+
         :returns:
 
         An instance of the class named by `msg`, populated with the
@@ -477,6 +485,8 @@ class Node(object):
 
         Note that this does *not* include the node's state. Any node
         created by this will be in state UNININITIALIZED.
+
+        :raises: KeyError if any children are missing
         """
         if (msg.module not in cls.node_classes or
                 msg.node_class not in cls.node_classes[msg.module]):
@@ -495,7 +505,7 @@ class Node(object):
         # Populate options dict
         options_dict = {}
         for option in msg.options:
-            options_dict[option.key] = jsonpickle.decode(option.value_serialized)
+            options_dict[option.key] = jsonpickle.decode(option.serialized_value)
 
         # Instantiate node - this shouldn't do anything yet, since we don't
         # call setup()
@@ -504,6 +514,27 @@ class Node(object):
         # Set name from ROS message
         if msg.name:
             node_instance.name = msg.name
+
+        # If there is a dictionary of existing nodes, we can make the node name
+        # unique and populate children.
+        if node_dict:
+            # Ensure that name is unique
+            while node_instance.name in node_dict:
+                node_instance.name = increment_name(node_instance.name)
+
+            # Find children and add them
+            missing_children = []
+            for child_name in msg.child_names:
+                if child_name not in node_dict:
+                    missing_children.append(child_name)
+                    continue
+                node_instance.add_child(node_dict[child_name])
+
+            if missing_children:
+                error_msg = 'Error while instantiating node: Missing children: %s' % \
+                  str(missing_children)
+                node_instance.logerr(error_msg)
+                raise KeyError(error_msg)
 
         # Set inputs
         for input_msg in msg.current_inputs:
@@ -517,6 +548,46 @@ class Node(object):
 
         return node_instance
 
+    @classmethod
+    def to_msg(cls, instance):
+        """Populate a ROS message with the information from `instance`
+
+        Round-tripping the result through :meth:Node.from_msg should
+        yield a working node object, with the caveat that state will not
+        be preserved.
+
+        :param instance:
+
+        An instance of a node class (node classes must inherit from
+        :class:ros_bt_py.node.Node and use the `define_bt_node`
+        decorator)
+
+        :rtype: ros_bt_py_msgs.msg.Node
+        :returns:
+
+        A ROS message that describes the node.
+        """
+        node_type = type(instance)
+        return NodeMsg(is_subtree=False,
+                       module=node_type.__module__,
+                       node_class=node_type.__name__,
+                       name=instance.name,
+                       parent_name=instance.parent_name,
+                       child_names=[child.name for child in instance.children],
+                       options=[NodeDataMsg(key=key,
+                                            serialized_value=jsonpickle.encode(
+                                                instance.options[key]))
+                                for key in instance.options],
+                       current_inputs=[NodeDataMsg(key=key,
+                                                   serialized_value=jsonpickle.encode(
+                                                       instance.inputs[key]))
+                                       for key in instance.inputs],
+                       current_outputs=[NodeDataMsg(key=key,
+                                                    serialized_value=jsonpickle.encode(
+                                                        instance.outputs[key]))
+                                        for key in instance.outputs],
+                       state=instance.state)
+
 def load_node_module(package_name):
     """Import the named module at run-time.
 
@@ -528,3 +599,19 @@ def load_node_module(package_name):
         return importlib.import_module(package_name)
     except ImportError:
         return None
+
+
+def increment_name(name):
+    """If `name` does not already end in a number, add "_2" to it.
+
+    Otherwise, increase the number after the underscore.
+    """
+    match = re.search('_([0-9]+)$', name)
+    prev_number = 1
+    if match:
+        prev_number = int(match.group(1))
+        # remove the entire _$number part from the name
+        name = name[:len(name) - len(match.group(0))]
+
+    name += '_%d' % (prev_number + 1)
+    return name
