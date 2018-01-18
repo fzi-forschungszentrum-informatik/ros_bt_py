@@ -110,10 +110,6 @@ class TreeManager(object):
 
             node_class = Node.node_classes[node_msg.module][node_msg.node_class]
 
-            # Got the class, now ensure the name is unique
-            while node_msg.name in self.nodes:
-                node_msg.name = increment_name(node_msg.name)
-
             # Populate options dict
             options_dict = {}
             for option in node_msg.options:
@@ -123,7 +119,15 @@ class TreeManager(object):
             # call setup()
             node_instance = node_class(options=options_dict,
                                        debug_manager=self.debug_manager)
-            self.nodes[node_msg.name] = node_instance
+
+            # Set name from ROS message
+            if node_msg.name:
+                node_instance.name = node_msg.name
+            # Ensure that name is unique
+            while node_instance.name in self.nodes:
+                node_instance.name = increment_name(node_instance.name)
+
+            self.nodes[node_instance.name] = node_instance
 
             # Set inputs
             for input_msg in node_msg.current_inputs:

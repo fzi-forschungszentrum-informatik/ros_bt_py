@@ -16,6 +16,9 @@ class TestTreeManager(unittest.TestCase):
         # Empty this before each test, because it's global and will persist
         # otherwise.
         Node.node_classes = {}
+        # Ensure that PassthroughNode gets loaded in each test (if needed), so
+        # that the decorator code is executed and registers the node class in
+        # Node.node_classes
         if 'ros_bt_py.nodes.passthrough_node' in sys.modules:
             del sys.modules['ros_bt_py.nodes.passthrough_node']
 
@@ -32,6 +35,9 @@ class TestTreeManager(unittest.TestCase):
                                      expected)
 
         self.assertRegexpMatches(increment_name('i_like_underscores___'),
+                                 '_2')
+
+        self.assertRegexpMatches(increment_name(''),
                                  '_2')
 
     def testLoadNode(self):
@@ -53,6 +59,17 @@ class TestTreeManager(unittest.TestCase):
                          Node.node_classes[node_class.__module__][node_class.__name__])
 
         self.assertEqual(instance.options['passthrough_type'], int)
+        # Node names should default to their class name
+        self.assertEqual(instance.name, 'PassthroughNode')
+
+        # Check that the second node gets an incremented name
+        instance2 = manager.instantiate_node_from_msg(msg)
+        self.assertEqual(instance2.name, 'PassthroughNode_2')
+
+        # Explicitly set name in message
+        msg.name = 'Test Node'
+        instance3 = manager.instantiate_node_from_msg(msg)
+        self.assertEqual(instance3.name, 'Test Node')
 
     def testLoadModule(self):
         self.assertEqual(load_node_module('i.do.not.exist'), None)

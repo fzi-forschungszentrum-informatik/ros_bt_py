@@ -20,6 +20,7 @@ class TestNode(unittest.TestCase):
 
     def testPassthroughNode(self):
         passthrough = PassthroughNode({'passthrough_type': int}, debug_manager=DebugManager())
+        self.assertEqual(passthrough.name, 'PassthroughNode')
         self.assertEqual(passthrough.state, Node.States.UNINITIALIZED)
 
         passthrough.setup()
