@@ -5,6 +5,7 @@ import time
 import unittest
 
 from ros_bt_py.debug_manager import DebugManager
+from ros_bt_py.nodes.passthrough_node import PassthroughNode
 
 
 class TestDebugManager(unittest.TestCase):
@@ -21,8 +22,12 @@ class TestDebugManager(unittest.TestCase):
         self.manager = DebugManager(target_tick_frequency_hz=20.0)
         self.manager.debug = True
 
+        node = PassthroughNode({'passthrough_type': int})
+        node.setup()
+        node.name = 'foo'
+
         starting_recursion_depth = len(inspect.stack())
-        with self.manager.report_tick('foo'):
+        with self.manager.report_tick(node):
             time.sleep(0.01)
 
         self.assertEqual(self.manager.debug_info_msg.max_recursion_depth,
@@ -35,7 +40,7 @@ class TestDebugManager(unittest.TestCase):
         self.assertEqual(self.manager.debug_info_msg.node_tick_times[0].min_tick_time.nsecs,
                          self.manager.debug_info_msg.node_tick_times[0].max_tick_time.nsecs)
 
-        with self.manager.report_tick('foo'):
+        with self.manager.report_tick(node):
             time.sleep(0.05)
         self.assertGreater(self.manager.debug_info_msg.node_tick_times[0].max_tick_time.nsecs,
                            self.manager.debug_info_msg.node_tick_times[0].min_tick_time.nsecs)
@@ -45,8 +50,12 @@ class TestDebugManager(unittest.TestCase):
 
         self.x = 0
 
+        node = PassthroughNode({'passthrough_type': int})
+        node.setup()
+        node.name = 'foo'
+
         def do_stuff():
-            with self.manager.report_tick('foo'):
+            with self.manager.report_tick(node):
                 self.x = 1
 
         test_thread = Thread(target=do_stuff)

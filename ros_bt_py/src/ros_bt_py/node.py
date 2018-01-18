@@ -1,5 +1,7 @@
 import rospy
 
+from ros_bt_py_msgs.msg import Node as NodeMsg
+
 from ros_bt_py.node_data import NodeData, NodeDataMap
 from ros_bt_py.node_config import OptionRef
 
@@ -55,16 +57,6 @@ class Node(object):
 
       """
     node_classes = {}
-
-    class States(object):
-        UNINITIALIZED = 'UNINITIALIZED'
-        IDLE = 'IDLE'
-        RUNNING = 'RUNNING'
-        SUCCEEDED = 'SUCCEEDED'
-        FAILED = 'FAILED'
-        BROKEN = 'BROKEN'
-        PAUSED = 'PAUSED'
-
     node_config = None
 
     def __init__(self, options=None, debug_manager=None):
@@ -83,7 +75,7 @@ class Node(object):
 
         """
         self.name = type(self).__name__
-        self.state = Node.States.UNINITIALIZED
+        self.state = NodeMsg.UNINITIALIZED
         self.children = []
 
         self.debug_manager = debug_manager
@@ -182,8 +174,8 @@ class Node(object):
         :returns:
         The state of the node after ticking - should be `SUCCEEDED`, `FAILED` or `RUNNING`.
         """
-        with self.debug_manager.report_tick(self.name):
-            if self.state is Node.States.UNINITIALIZED:
+        with self.debug_manager.report_tick(self):
+            if self.state is NodeMsg.UNINITIALIZED:
                 raise Exception('Trying to tick uninitialized node!')
 
             unset_options = []
@@ -219,7 +211,7 @@ class Node(object):
         constants from `Node.Status`.
 
         :returns:
-        One of the constants in :class:Node.States
+        One of the constants in :class:ros_bt_py_msgs.msg.Node
         """
         msg = 'Ticking a node without a do_tick function!'
         self.logerr(msg)
@@ -235,10 +227,10 @@ class Node(object):
 
         A class inheriting from :class:Node should override :meth:Node.do_untick instead of this!
         """
-        if self.state is Node.States.UNINITIALIZED:
+        if self.state is NodeMsg.UNINITIALIZED:
             raise Exception('Trying to untick uninitialized node!')
         self.state = self.do_untick()
-        if self.state != Node.States.IDLE and self.state != Node.States.PAUSED:
+        if self.state != NodeMsg.IDLE and self.state != NodeMsg.PAUSED:
             self.logwarn('untick() did not result in IDLE state, but %s' % self.state)
 
         self.outputs.reset_updated()
@@ -263,10 +255,10 @@ class Node(object):
         execution, ready to be resumed, :meth:Node.reset means returning
         to the same state the node was in right after construction.
         """
-        if self.state is Node.States.UNINITIALIZED:
+        if self.state is NodeMsg.UNINITIALIZED:
             raise Exception('Trying to reset uninitialized node!')
         self.state = self.do_reset()
-        if self.state != Node.States.UNINITIALIZED:
+        if self.state != NodeMsg.UNINITIALIZED:
             self.logerr('untick() did not result in UNINITIALIZED state, but %s'
                         % self.state)
 

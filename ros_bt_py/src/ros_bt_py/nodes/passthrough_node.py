@@ -1,3 +1,5 @@
+from ros_bt_py_msgs.msg import Node as NodeMsg
+
 from ros_bt_py.node import Node, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
@@ -15,18 +17,18 @@ class PassthroughNode(Node):
     def do_setup(self):
         # Connect 'in' to 'out'
         self.inputs.subscribe('in', self.outputs.get_callback('out'), '.outputs[out]')
-        return Node.States.IDLE
+        return NodeMsg.IDLE
 
     def do_tick(self):
         # Nothing to do here other than succeed
-        return Node.States.SUCCEEDED
+        return NodeMsg.SUCCEEDED
 
     def do_untick(self):
-        return Node.States.IDLE
+        return NodeMsg.IDLE
 
     def do_reset(self):
         self.inputs['in'] = None
         self.inputs.reset_updated()
         self.outputs['out'] = None
         self.outputs.reset_updated()
-        return Node.States.IDLE
+        return NodeMsg.IDLE

@@ -1,5 +1,7 @@
 import unittest
 
+from ros_bt_py_msgs.msg import Node as NodeMsg
+
 from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.node import Node
 from ros_bt_py.nodes.passthrough_node import PassthroughNode
@@ -21,18 +23,18 @@ class TestNode(unittest.TestCase):
     def testPassthroughNode(self):
         passthrough = PassthroughNode({'passthrough_type': int}, debug_manager=DebugManager())
         self.assertEqual(passthrough.name, 'PassthroughNode')
-        self.assertEqual(passthrough.state, Node.States.UNINITIALIZED)
+        self.assertEqual(passthrough.state, NodeMsg.UNINITIALIZED)
 
         passthrough.setup()
 
-        self.assertEqual(passthrough.state, Node.States.IDLE)
+        self.assertEqual(passthrough.state, NodeMsg.IDLE)
         self.assertEqual(passthrough.inputs['in'], None)
         self.assertEqual(passthrough.outputs['out'], None)
         self.assertRaises(ValueError, passthrough.tick)
 
         passthrough.inputs['in'] = 42
         passthrough.tick()
-        self.assertEqual(passthrough.state, Node.States.SUCCEEDED)
+        self.assertEqual(passthrough.state, NodeMsg.SUCCEEDED)
         self.assertTrue(passthrough.outputs.is_updated('out'))
         self.assertEqual(passthrough.outputs['out'], 42)
 
@@ -60,14 +62,14 @@ class TestNode(unittest.TestCase):
         passthrough.setup()
 
         passthrough.inputs['in'] = 1.5
-        self.assertEqual(passthrough.state, Node.States.IDLE)
+        self.assertEqual(passthrough.state, NodeMsg.IDLE)
 
         passthrough.tick()
 
-        self.assertEqual(passthrough.state, Node.States.SUCCEEDED)
+        self.assertEqual(passthrough.state, NodeMsg.SUCCEEDED)
         self.assertTrue(passthrough.outputs.is_updated('out'))
 
         passthrough.untick()
 
-        self.assertEqual(passthrough.state, Node.States.IDLE)
+        self.assertEqual(passthrough.state, NodeMsg.IDLE)
         self.assertFalse(passthrough.outputs.is_updated('out'))

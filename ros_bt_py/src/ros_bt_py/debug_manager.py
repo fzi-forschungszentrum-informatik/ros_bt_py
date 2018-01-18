@@ -7,7 +7,7 @@ import time
 
 import rospy
 
-from ros_bt_py_msgs.msg import DebugInfo, TickTime, TreeLocation
+from ros_bt_py_msgs.msg import DebugInfo, Node, TickTime, TreeLocation
 
 
 class DebugManager(object):
@@ -38,7 +38,7 @@ class DebugManager(object):
         self.continue_event.set()
 
     @contextmanager
-    def report_tick(self, node_name):
+    def report_tick(self, node_instance):
         """A context manager that collects debug data from Node execution.
 
         It measures the time between the beginning and the end of the
@@ -49,10 +49,13 @@ class DebugManager(object):
         Additionally, it provides pause functionality to enable stepping
         through a tree and adding break points.
 
-        :param str node_name: The name of the node that's executing
+        :param instance: The node that's executing
         """
-        if (self.breakpoints and node_name in self.breakpoints) or self.stepping:
+        if (self.breakpoints and node_instance.name in self.breakpoints) or self.stepping:
+            old_state = node_instance.state
+            node_instance.state = Node.DEBUG_PRE_TICK
             self.wait_for_continue()
+            node_instance.state = old_state
         if self.debug:
             start_time = time.clock()
             self.debug_info_msg.current_recursion_depth = len(inspect.stack())
@@ -63,9 +66,9 @@ class DebugManager(object):
 
         if self.debug:
             end_time = time.clock()
-            if node_name not in self.tick_time_windows:
-                self.tick_time_windows[node_name] = []
-            window = self.tick_time_windows[node_name]
+            if node_instance.name not in self.tick_time_windows:
+                self.tick_time_windows[node_instance.name] = []
+            window = self.tick_time_windows[node_instance.name]
             current_window_size = len(window)
             if current_window_size == self.debug_info_msg.window_size:
                 window = window[1:]
@@ -77,13 +80,13 @@ class DebugManager(object):
 
             # Find the TickTime message for the current node in debug_info_msg
             ticktime_msg_list = [x for x in self.debug_info_msg.node_tick_times
-                                 if x.node_location.node_name == node_name]
+                                 if x.node_location.node_name == node_instance.name]
             # If there is one, take that
             if ticktime_msg_list:
                 timing_msg = ticktime_msg_list[0]
             # If not, create one and add it to the list
             else:
-                timing_msg = TickTime(node_location=TreeLocation(node_name=node_name))
+                timing_msg = TickTime(node_location=TreeLocation(node_name=node_instance.name))
                 self.debug_info_msg.node_tick_times.append(timing_msg)
 
             # Either way, timing_msg is now a reference to the correct item
@@ -99,11 +102,14 @@ class DebugManager(object):
             self.debug_info_msg.current_recursion_depth = len(inspect.stack())
             self.debug_info_msg.max_recursion_depth = getrecursionlimit()
 
-        if (self.breakpoints and node_name in self.breakpoints) or self.stepping:
+        if (self.breakpoints and node_instance.name in self.breakpoints) or self.stepping:
+            old_state = node_instance.state
+            node_instance.state = Node.DEBUG_PRE_TICK
             self.wait_for_continue()
+            node_instance.state = old_state
             # TODO(nberg): Really autoremove all breakpoints?
-            if node_name in self.breakpoints:
-                self.breakpoints.remove(node_name)
+            if node_instance.name in self.breakpoints:
+                self.breakpoints.remove(node_instance.name)
 
     def wait_for_continue(self):
         # Ensure that we're not picking up an extra continue request sent earlier
