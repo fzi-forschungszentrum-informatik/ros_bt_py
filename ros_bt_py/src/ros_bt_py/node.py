@@ -588,6 +588,7 @@ class Node(object):
                                         for key in instance.outputs],
                        state=instance.state)
 
+
 def load_node_module(package_name):
     """Import the named module at run-time.
 

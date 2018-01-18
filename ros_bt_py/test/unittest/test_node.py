@@ -39,7 +39,6 @@ class TestIncrementName(unittest.TestCase):
                                  '_2')
 
 
-
 class TestNode(unittest.TestCase):
     def TestNodeHasNoConfig(self):
         self.assertEqual(Node.node_config, None)
@@ -178,7 +177,6 @@ class TestPassthroughNode(unittest.TestCase):
         msg = Node.to_msg(node)
 
         self.assertEqual(Node.from_msg(msg), node)
-
 
     def testMsgToNodeRoundtrip(self):
         msg = NodeMsg(
