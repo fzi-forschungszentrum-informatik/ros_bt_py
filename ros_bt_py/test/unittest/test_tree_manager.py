@@ -10,6 +10,7 @@ from ros_bt_py_msgs.msg import NodeData
 from ros_bt_py.node import Node
 from ros_bt_py.tree_manager import increment_name, load_node_module, TreeManager
 
+
 class TestTreeManager(unittest.TestCase):
     def setUp(self):
         # Empty this before each test, because it's global and will persist

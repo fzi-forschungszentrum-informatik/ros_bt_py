@@ -23,7 +23,7 @@ def define_bt_node(node_config):
         node_class.node_config = node_config
         if node_class.__module__ not in Node.node_classes:
             Node.node_classes[node_class.__module__] = {
-                node_class.__name__ : node_class
+                node_class.__name__: node_class
                 }
         else:
             Node.node_classes[node_class.__module__][node_class.__name__] = node_class
