@@ -7,6 +7,15 @@ class OptionRef(object):
     def __init__(self, option_key):
         self.option_key = option_key
 
+    def __repr__(self):
+        return 'OptionRef(option_key=%r' % self.option_key
+
+    def __eq__(self, other):
+        return self.option_key == other.option_key
+
+    def __ne__(self, other):
+        return not self == other
+
 
 class NodeConfig(object):
     def __init__(self, options, inputs, outputs, max_children):
@@ -38,6 +47,22 @@ class NodeConfig(object):
         self.outputs = outputs
         self.options = options
         self.max_children = max_children
+
+    def __repr__(self):
+        return 'NodeConfig(inputs=%r, outputs=%r, options=%r, max_children=%r)' % (
+            self.inputs,
+            self.outputs,
+            self.options,
+            self.max_children)
+
+    def __eq__(self, other):
+        return (self.inputs == other.inputs and
+                self.outputs == other.outputs and
+                self.options == other.options and
+                self.max_children == other.max_children)
+
+    def __ne__(self, other):
+        return not self == other
 
     def extend(self, other):
         """Extend the input, output and option dicts with values from `other`

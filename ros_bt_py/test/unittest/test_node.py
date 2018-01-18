@@ -4,10 +4,13 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 
 from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.node import Node
+from ros_bt_py.node_config import NodeConfig, OptionRef
 from ros_bt_py.nodes.passthrough_node import PassthroughNode
 
 
 class TestNode(unittest.TestCase):
+    def TestNodeHasNoConfig(self):
+        self.assertEqual(Node.node_config, None)
     def TestNodeInitFails(self):
         self.assertRaises(ValueError, Node)
 
@@ -19,6 +22,14 @@ class TestNode(unittest.TestCase):
         self.assertTrue(PassthroughNode.__name__ in Node.node_classes[PassthroughNode.__module__])
         self.assertEqual(PassthroughNode,
                          Node.node_classes[PassthroughNode.__module__][PassthroughNode.__name__])
+
+    def testPassthroughNodeConfig(self):
+        self.assertEqual(PassthroughNode.node_config,
+                         NodeConfig(
+                             options={'passthrough_type': type},
+                             inputs={'in': OptionRef('passthrough_type')},
+                             outputs={'out': OptionRef('passthrough_type')},
+                             max_children=0))
 
     def testPassthroughNode(self):
         passthrough = PassthroughNode({'passthrough_type': int}, debug_manager=DebugManager())
