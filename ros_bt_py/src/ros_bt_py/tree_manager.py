@@ -120,7 +120,7 @@ class TreeManager(object):
             # Populate options dict
             options_dict = {}
             for option in node_msg.options:
-                options_dict[option.key] = jsonpickle.loads(option.value_serialized)
+                options_dict[option.key] = jsonpickle.decode(option.value_serialized)
 
             # Instantiate node - this shouldn't do anything yet, since we don't
             # call setup()
@@ -130,12 +130,12 @@ class TreeManager(object):
 
             # Set inputs
             for input_msg in node_msg.current_inputs:
-                node_instance.inputs[input_msg.key] = jsonpickle.loads(
+                node_instance.inputs[input_msg.key] = jsonpickle.decode(
                     input_msg.value_serialized)
 
             # Set outputs
             for output_msg in node_msg.current_outputs:
-                node_instance.outputs[output_msg.key] = jsonpickle.loads(
+                node_instance.outputs[output_msg.key] = jsonpickle.decode(
                     output_msg.value_serialized)
 
             return node_instance

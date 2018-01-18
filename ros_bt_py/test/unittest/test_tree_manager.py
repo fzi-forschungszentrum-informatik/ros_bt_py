@@ -42,7 +42,7 @@ class TestTreeManager(unittest.TestCase):
             module="ros_bt_py.nodes.passthrough_node",
             node_class="PassthroughNode",
             options=[NodeData(key='passthrough_type',
-                              value_serialized=jsonpickle.dumps(int))])
+                              value_serialized=jsonpickle.encode(int))])
         instance = manager.instantiate_node_from_msg(msg)
 
         node_class = type(instance)
