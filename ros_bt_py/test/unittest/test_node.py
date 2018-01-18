@@ -2,15 +2,22 @@ import unittest
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
 
-from ros_bt_py.debug_manager import DebugManager
-from ros_bt_py.node import Node
+from ros_bt_py.node import Node, load_node_module
 from ros_bt_py.node_config import NodeConfig, OptionRef
 from ros_bt_py.nodes.passthrough_node import PassthroughNode
 
 
 class TestNode(unittest.TestCase):
+    def testLoadModule(self):
+        self.assertEqual(load_node_module('i.do.not.exist'), None)
+
+        module = load_node_module('ros_bt_py.nodes.passthrough_node')
+        self.assertEqual(len(Node.node_classes), 1, msg=str(Node.node_classes))
+        self.assertEqual(module.__name__, Node.node_classes.keys()[0])
+
     def TestNodeHasNoConfig(self):
         self.assertEqual(Node.node_config, None)
+
     def TestNodeInitFails(self):
         self.assertRaises(ValueError, Node)
 
@@ -32,7 +39,7 @@ class TestNode(unittest.TestCase):
                              max_children=0))
 
     def testPassthroughNode(self):
-        passthrough = PassthroughNode({'passthrough_type': int}, debug_manager=DebugManager())
+        passthrough = PassthroughNode({'passthrough_type': int})
         self.assertEqual(passthrough.name, 'PassthroughNode')
         self.assertEqual(passthrough.state, NodeMsg.UNINITIALIZED)
 
@@ -57,8 +64,7 @@ class TestNode(unittest.TestCase):
         # in when it was freshly created:
         passthrough.reset()
 
-        fresh_passthrough = PassthroughNode({'passthrough_type': int},
-                                            debug_manager=DebugManager())
+        fresh_passthrough = PassthroughNode({'passthrough_type': int})
 
         self.assertEqual(passthrough.inputs['in'], fresh_passthrough.inputs['in'])
         self.assertEqual(passthrough.outputs['out'], fresh_passthrough.outputs['out'])
@@ -68,8 +74,7 @@ class TestNode(unittest.TestCase):
                          fresh_passthrough.outputs.is_updated('out'))
 
     def testPassthroughNodeUntick(self):
-        passthrough = PassthroughNode({'passthrough_type': float},
-                                      debug_manager=DebugManager())
+        passthrough = PassthroughNode({'passthrough_type': float})
         passthrough.setup()
 
         passthrough.inputs['in'] = 1.5

@@ -96,63 +96,18 @@ class TreeManager(object):
         if node_msg.is_subtree:
             raise NotImplementedError('Subtree nodes are not supported yet!')
         else:
-            if (node_msg.module not in Node.node_classes or
-                    node_msg.node_class not in Node.node_classes[node_msg.module]):
-                # If the node class was not available, try to load it
-                load_node_module(node_msg.module)
-
-            # If loading didn't work, abort
-            if (node_msg.module not in Node.node_classes or
-                    node_msg.node_class not in Node.node_classes[node_msg.module]):
-                rospy.logerr('Failed to instantiate node from message - node class '
-                             'not available. Original message:\n%s', str(node_msg))
-                return None
-
-            node_class = Node.node_classes[node_msg.module][node_msg.node_class]
-
-            # Populate options dict
-            options_dict = {}
-            for option in node_msg.options:
-                options_dict[option.key] = jsonpickle.decode(option.value_serialized)
-
-            # Instantiate node - this shouldn't do anything yet, since we don't
-            # call setup()
-            node_instance = node_class(options=options_dict,
-                                       debug_manager=self.debug_manager)
-
-            # Set name from ROS message
-            if node_msg.name:
-                node_instance.name = node_msg.name
+            node_instance = Node.from_msg(node_msg)
+            # Set DebugManager
+            node_instance.debug_manager = self.debug_manager
             # Ensure that name is unique
             while node_instance.name in self.nodes:
                 node_instance.name = increment_name(node_instance.name)
 
             self.nodes[node_instance.name] = node_instance
 
-            # Set inputs
-            for input_msg in node_msg.current_inputs:
-                node_instance.inputs[input_msg.key] = jsonpickle.decode(
-                    input_msg.value_serialized)
-
-            # Set outputs
-            for output_msg in node_msg.current_outputs:
-                node_instance.outputs[output_msg.key] = jsonpickle.decode(
-                    output_msg.value_serialized)
-
             return node_instance
 
 
-def load_node_module(package_name):
-    """Import the named module at run-time.
-
-    If the module contains any (properly decorated) node classes,
-    they will be registered and available to load via the other
-    commands in this class.
-    """
-    try:
-        return importlib.import_module(package_name)
-    except ImportError:
-        return None
 
 
 def increment_name(name):

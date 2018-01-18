@@ -8,7 +8,7 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import NodeData
 
 from ros_bt_py.node import Node
-from ros_bt_py.tree_manager import increment_name, load_node_module, TreeManager
+from ros_bt_py.tree_manager import increment_name, TreeManager
 
 
 class TestTreeManager(unittest.TestCase):
@@ -71,9 +71,3 @@ class TestTreeManager(unittest.TestCase):
         instance3 = manager.instantiate_node_from_msg(msg)
         self.assertEqual(instance3.name, 'Test Node')
 
-    def testLoadModule(self):
-        self.assertEqual(load_node_module('i.do.not.exist'), None)
-
-        module = load_node_module('ros_bt_py.nodes.passthrough_node')
-        self.assertEqual(len(Node.node_classes), 1, msg=str(Node.node_classes))
-        self.assertEqual(module.__name__, Node.node_classes.keys()[0])

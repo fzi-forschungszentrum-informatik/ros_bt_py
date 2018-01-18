@@ -1,5 +1,8 @@
 from contextlib import contextmanager
 
+import importlib
+import jsonpickle
+
 import rospy
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
@@ -434,3 +437,76 @@ class Node(object):
 
         Adds this node's name and type to the given message"""
         rospy.logfatal('%s (%s): %s', self.name, type(self).__name__, message)
+
+    @classmethod
+    def from_msg(cls, msg):
+        """Construct a Node from the given ROS message.
+
+        This will try to import the requested node class, instantiate it
+        and populate its `name`, `options`, `input` and `output` members
+        from the ROS message.
+
+        :param ros_bt_py_msgs.msg.Node msg:
+
+        A ROS message describing a node class. The node class must be
+        available in the current environment (but does not need to be
+        imported before calling this).
+
+        :returns:
+
+        An instance of the class named by `msg`, populated with the
+        values from `msg`.
+
+        Note that this does *not* include the node's state. Any node
+        created by this will be in state UNININITIALIZED.
+        """
+        if (msg.module not in cls.node_classes or
+                msg.node_class not in cls.node_classes[msg.module]):
+            # If the node class was not available, try to load it
+            load_node_module(msg.module)
+
+        # If loading didn't work, abort
+        if (msg.module not in cls.node_classes or
+                msg.node_class not in cls.node_classes[msg.module]):
+            rospy.logerr('Failed to instantiate node from message - node class '
+                         'not available. Original message:\n%s', str(msg))
+            return None
+
+        node_class = cls.node_classes[msg.module][msg.node_class]
+
+        # Populate options dict
+        options_dict = {}
+        for option in msg.options:
+            options_dict[option.key] = jsonpickle.decode(option.value_serialized)
+
+        # Instantiate node - this shouldn't do anything yet, since we don't
+        # call setup()
+        node_instance = node_class(options=options_dict)
+
+        # Set name from ROS message
+        if msg.name:
+            node_instance.name = msg.name
+
+        # Set inputs
+        for input_msg in msg.current_inputs:
+            node_instance.inputs[input_msg.key] = jsonpickle.decode(
+                input_msg.value_serialized)
+
+        # Set outputs
+        for output_msg in msg.current_outputs:
+            node_instance.outputs[output_msg.key] = jsonpickle.decode(
+                output_msg.value_serialized)
+
+        return node_instance
+
+def load_node_module(package_name):
+    """Import the named module at run-time.
+
+    If the module contains any (properly decorated) node classes,
+    they will be registered and available to load via the other
+    commands in this class.
+    """
+    try:
+        return importlib.import_module(package_name)
+    except ImportError:
+        return None
