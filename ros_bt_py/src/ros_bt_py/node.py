@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 import rospy
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
@@ -56,6 +58,11 @@ class Node(object):
       could invert `FAILED` into `SUCCEEDED`.
 
       """
+    @contextmanager
+    def dummy_report_tick(self):
+        self.loginfo('Ticking without debug manager')
+        yield
+
     node_classes = {}
     node_config = None
 
@@ -174,7 +181,11 @@ class Node(object):
         :returns:
         The state of the node after ticking - should be `SUCCEEDED`, `FAILED` or `RUNNING`.
         """
-        with self.debug_manager.report_tick(self):
+        report_tick = self.dummy_report_tick()
+        if self.debug_manager:
+            report_tick = self.debug_manager.report_tick(self)
+
+        with report_tick:
             if self.state is NodeMsg.UNINITIALIZED:
                 raise Exception('Trying to tick uninitialized node!')
 
