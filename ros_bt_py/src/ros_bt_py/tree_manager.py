@@ -99,10 +99,7 @@ class TreeManager(object):
             if (node_msg.module not in Node.node_classes or
                     node_msg.node_class not in Node.node_classes[node_msg.module]):
                 # If the node class was not available, try to load it
-                module = load_node_module(node_msg.module)
-                print(str(module))
-                print(str(Node.node_classes))
-                print()
+                load_node_module(node_msg.module)
 
             # If loading didn't work, abort
             if (node_msg.module not in Node.node_classes or
