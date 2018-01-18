@@ -83,7 +83,7 @@ class NodeDataMap(object):
     be used as callbacks elsewhere, leading to unexpected breakage!
     """
     def __init__(self, name='data'):
-        self._name = name
+        self.name = name
         self._map = {}
         self._callbacks = {}
 
@@ -104,7 +104,7 @@ class NodeDataMap(object):
 
         if key not in self._map:
             raise KeyError('%s is not a key of %s'
-                           % (key, self._name))
+                           % (key, self.name))
         if key not in self._callbacks:
             self._callbacks[key] = []
         self._callbacks[key].append((callback, path))

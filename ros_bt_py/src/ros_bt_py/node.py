@@ -93,10 +93,9 @@ class Node(object):
         if not self.node_config:
             raise ValueError('Missing node_config, cannot initialize!')
 
-        self.options = NodeDataMap()
+        self.options = NodeDataMap(name='options')
         self._register_node_data(source_map=self.node_config.options,
                                  target_map=self.options,
-                                 map_name='options',
                                  allow_ref=False)
 
         # Set options from constructor parameter
@@ -110,16 +109,14 @@ class Node(object):
             raise ValueError('Missing options: %s'
                              % str(unset_option_keys))
 
-        self.inputs = NodeDataMap()
+        self.inputs = NodeDataMap(name='inputs')
         self._register_node_data(source_map=self.node_config.inputs,
                                  target_map=self.inputs,
-                                 map_name='inputs',
                                  allow_ref=True)
 
-        self.outputs = NodeDataMap()
+        self.outputs = NodeDataMap(name='outputs')
         self._register_node_data(source_map=self.node_config.outputs,
                                  target_map=self.outputs,
-                                 map_name='outputs',
                                  allow_ref=True)
 
         # Don't setup automatically - nodes should be available as pure data
@@ -357,7 +354,7 @@ class Node(object):
         del self.children[child_index]
         return tmp
 
-    def _register_node_data(self, source_map, target_map, map_name, allow_ref):
+    def _register_node_data(self, source_map, target_map, allow_ref):
         """Register a number of typed :class:NodeData in the given map
 
         :param dict(str, type) source_map: a dictionary mapping from data keys to data types,
@@ -365,9 +362,6 @@ class Node(object):
 
         :param NodeDataMap target_map:
         The :class:NodeDataMap to add :class:NodeData values to
-
-        :param str map_name:
-        The name of `target_map`, used for logging
 
         :param bool allow_ref:
         Decides whether :class:OptionRef is accepted as a type. If True, the
@@ -389,18 +383,18 @@ class Node(object):
 
             if isinstance(data_type, OptionRef):
                 if not allow_ref:
-                    raise ValueError('OptionRef not allowed while adding to %s' % map_name)
+                    raise ValueError('OptionRef not allowed while adding to %s' % target_map.name)
                 if data_type.option_key not in self.options:
                     raise KeyError("OptionRef for %s key '%s' references invalid option key '%s'"
-                                   % (map_name, key, data_type.option_key))
+                                   % (target_map.name, key, data_type.option_key))
                 if not self.options.is_updated(data_type.option_key):
                     raise ValueError("OptionRef for %s key '%s' references unwritten "
                                      "option key '%s'"
-                                     % (map_name, key, data_type.option_key))
+                                     % (target_map.name, key, data_type.option_key))
                 if not isinstance(self.options[data_type.option_key], type):
                     raise ValueError("OptionRef for %s key '%s' references option key '%s' "
                                      "that does not contain a type!"
-                                     % (map_name, key, data_type.option_key))
+                                     % (target_map.name, key, data_type.option_key))
                 target_map.add(key, NodeData(data_type=self.options[data_type.option_key]))
             else:
                 target_map.add(key, NodeData(data_type=data_type))
