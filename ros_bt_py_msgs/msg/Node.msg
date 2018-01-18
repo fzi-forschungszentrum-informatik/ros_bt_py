@@ -7,8 +7,8 @@ bool is_subtree
 # 2. a package:// URL pointing to a YAML file
 # 3. a string that contains YAML representing a subtree
 string subtree_data
-# The python package the node is from
-string package
+# The python module the node is from
+string module
 string node_class
 
 ## These are run-time parameters

@@ -21,7 +21,12 @@ def define_bt_node(node_config):
             if hasattr(base, 'node_config') and base.node_config:
                 node_config.extend(base.node_config)
         node_class.node_config = node_config
-        Node.node_classes.add(node_class)
+        if node_class.__module__ not in Node.node_classes:
+            Node.node_classes[node_class.__module__] = {
+                node_class.__name__ : node_class
+                }
+        else:
+            Node.node_classes[node_class.__module__][node_class.__name__] = node_class
         return node_class
     return inner_dec
 
@@ -49,7 +54,7 @@ class Node(object):
       could invert `FAILED` into `SUCCEEDED`.
 
       """
-    node_classes = set()
+    node_classes = {}
 
     class States(object):
         UNINITIALIZED = 'UNINITIALIZED'
@@ -78,6 +83,7 @@ class Node(object):
 
         """
         self.name = type(self).__name__
+        self.state = Node.States.UNINITIALIZED
         self.children = []
 
         self.debug_manager = debug_manager
@@ -114,7 +120,9 @@ class Node(object):
                                  map_name='outputs',
                                  allow_ref=True)
 
-        self.state = self.setup()
+        # Don't setup automatically - nodes should be available as pure data
+        # containers before the user decides to call setup() themselves!
+        # self.state = self.setup()
 
     def setup(self):
         """Prepare the node to be ticked for the first time.
@@ -124,9 +132,10 @@ class Node(object):
         you can use those values in your implementation of
         :meth:Node.do_setup
 
-        :returns: One of the values in :class:Node.States - should be `IDLE`
+        Sets the state of the node to whatever :meth:Node.do_setup
+        returned.
         """
-        return self.do_setup()
+        self.state = self.do_setup()
 
     def do_setup(self):
         """Use this to do custom node setup.

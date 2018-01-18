@@ -1,6 +1,12 @@
 import importlib
+import re
+
+import jsonpickle
 
 import rospy
+
+from ros_bt_py.node import Node
+from ros_bt_py.debug_manager import DebugManager
 
 
 class TreeManager(object):
@@ -9,13 +15,18 @@ class TreeManager(object):
      These methods are suited (intended, even) for use as ROS service handlers.
     """
 
-    def __init__(self, package_list=None):
-        self.available_nodes = self.get_nodes_from_package_names(package_list)
+    def __init__(self, module_list=None, debug_manager=None):
+        self.debug_manager = debug_manager
+        if not self.debug_manager:
+            rospy.loginfo('Tree manager instantiated without explicit debug manager '
+                          '- building our own with default parameters')
+            self.debug_manager = DebugManager()
+        self.nodes = {}
 
-    def get_nodes_from_package_names(self, package_list):
-        if not package_list:
-            return []
-        return []
+        # Skip if module_list is empty or None
+        if module_list:
+            for module_name in module_list:
+                load_node_module(module_name)
 
     def load_tree(self, tree_path):
         pass
@@ -79,3 +90,81 @@ class TreeManager(object):
 
     def wire_data(self, source_node_name, source_node):
         pass
+
+    def instantiate_node_from_msg(self, node_msg):
+        # TODO(nberg): Subtree handling
+        if node_msg.is_subtree:
+            raise NotImplementedError('Subtree nodes are not supported yet!')
+        else:
+            if (node_msg.module not in Node.node_classes or
+                    node_msg.node_class not in Node.node_classes[node_msg.module]):
+            # If the node class was not available, try to load it
+                module = load_node_module(node_msg.module)
+                print(str(module))
+                print(str(Node.node_classes))
+                print()
+
+            # If loading didn't work, abort
+            if (node_msg.module not in Node.node_classes or
+                    node_msg.node_class not in Node.node_classes[node_msg.module]):
+                rospy.logerr('Failed to instantiate node from message - node class '
+                             'not available. Original message:\n%s', str(node_msg))
+                return None
+
+            node_class = Node.node_classes[node_msg.module][node_msg.node_class]
+
+            # Got the class, now ensure the name is unique
+            while node_msg.name in self.nodes:
+                node_msg.name = increment_name(node_msg.name)
+
+            # Populate options dict
+            options_dict = {}
+            for option in node_msg.options:
+                options_dict[option.key] = jsonpickle.loads(option.value_serialized)
+
+            # Instantiate node - this shouldn't do anything yet, since we don't
+            # call setup()
+            node_instance = node_class(options=options_dict,
+                                       debug_manager=self.debug_manager)
+            self.nodes[node_msg.name] = node_instance
+
+            # Set inputs
+            for input_msg in node_msg.current_inputs:
+                node_instance.inputs[input_msg.key] = jsonpickle.loads(
+                    input_msg.value_serialized)
+
+            # Set outputs
+            for output_msg in node_msg.current_outputs:
+                node_instance.outputs[output_msg.key] = jsonpickle.loads(
+                    output_msg.value_serialized)
+
+            return node_instance
+
+
+def load_node_module(package_name):
+    """Import the named module at run-time.
+
+    If the module contains any (properly decorated) node classes,
+    they will be registered and available to load via the other
+    commands in this class.
+    """
+    try:
+        return importlib.import_module(package_name)
+    except ImportError:
+        return None
+
+
+def increment_name(name):
+    """If `name` does not already end in a number, add "_2" to it.
+
+    Otherwise, increase the number after the underscore.
+    """
+    match = re.search('_([0-9]+)$', name)
+    prev_number = 1
+    if match:
+        prev_number = int(match.group(1))
+        # remove the entire _$number part from the name
+        name = name[:len(name) - len(match.group(0))]
+
+    name += '_%d' % (prev_number + 1)
+    return name

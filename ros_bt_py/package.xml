@@ -54,6 +54,7 @@
   <build_export_depend>rospy</build_export_depend>
   <exec_depend>rospy</exec_depend>
   <exec_depend>ros_bt_py_msgs</exec_depend>
+  <exec_depend>python-jsonpickle</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

@@ -13,10 +13,16 @@ class TestNode(unittest.TestCase):
         self.assertRaises(ValueError, PassthroughNode)
 
     def testPassthroughNodeRegistered(self):
-        self.assertTrue(PassthroughNode in Node.node_classes)
+        self.assertTrue(PassthroughNode.__module__ in Node.node_classes)
+        self.assertTrue(PassthroughNode.__name__ in Node.node_classes[PassthroughNode.__module__])
+        self.assertEqual(PassthroughNode,
+                         Node.node_classes[PassthroughNode.__module__][PassthroughNode.__name__])
 
     def testPassthroughNode(self):
         passthrough = PassthroughNode({'passthrough_type': int}, debug_manager=DebugManager())
+        self.assertEqual(passthrough.state, Node.States.UNINITIALIZED)
+
+        passthrough.setup()
 
         self.assertEqual(passthrough.state, Node.States.IDLE)
         self.assertEqual(passthrough.inputs['in'], None)
@@ -50,6 +56,7 @@ class TestNode(unittest.TestCase):
     def testPassthroughNodeUntick(self):
         passthrough = PassthroughNode({'passthrough_type': float},
                                       debug_manager=DebugManager())
+        passthrough.setup()
 
         passthrough.inputs['in'] = 1.5
         self.assertEqual(passthrough.state, Node.States.IDLE)
