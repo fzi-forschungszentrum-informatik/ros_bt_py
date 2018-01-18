@@ -32,10 +32,19 @@ class NodeData(object):
         if initial_value is not None:
             self.set(initial_value)
 
-    def __repl__(self):
+    def __repr__(self):
         return '{!s} ({}) [{}]'.format(self._value,
                                        self._data_type.__name__,
                                        ('#' if self.updated else ' '))
+
+    def __eq__(self, other):
+        return (self.updated == other.updated and
+                self._static == other._static and
+                self._value == other._value and
+                self._data_type == other._data_type)
+
+    def __ne__(self, other):
+        return not self == other
 
     def set(self, new_value):
         """Set a new value
@@ -184,3 +193,19 @@ class NodeDataMap(object):
 
     def __contains__(self, key):
         return key in self._map
+
+    def __eq__(self, other):
+        return (self.name == other.name and
+                len(self) == len(other) and
+                all([key in other for key in self]) and
+                all([other[key] == self[key] for key in self]) and
+                len(self._callbacks) == len(other._callbacks) and
+                all([key in other._callbacks for key in self._callbacks]) and
+                all([other._callbacks[key] == self._callbacks[key] for key in self._callbacks]))
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __repr__(self):
+        return 'NodeDataMap(name=%r), data:%r, callbacks:%r' % (
+            self.name, self._map, self._callbacks)

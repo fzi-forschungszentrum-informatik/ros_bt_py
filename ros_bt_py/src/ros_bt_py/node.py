@@ -399,6 +399,30 @@ class Node(object):
             else:
                 target_map.add(key, NodeData(data_type=data_type))
 
+    def __repr__(self):
+        return '%s(options=%r), parent_name:%r, state:%r, inputs:%r, outputs:%r, children:%r' % (
+            type(self).__name__,
+            {key: self.options[key] for key in self.options},
+            self.parent_name,
+            self.state,
+            self.inputs,
+            self.outputs,
+            self.children)
+
+    def __eq__(self, other):
+        return (self.name == other.name and
+                self.parent_name == other.parent_name and
+                self.state == other.state and
+                type(self).__module__ == type(other).__module__ and
+                type(self).__name__ == type(other).__name__ and
+                self.options == other.options and
+                self.inputs == other.inputs and
+                self.outputs == other.outputs and
+                self.children == other.children)
+
+    def __ne__(self, other):
+        return not self == other
+
     # Logging methods - these just use the ROS logging framework, but add the
     # name and type of the node so it's easier to trace errors.
 
