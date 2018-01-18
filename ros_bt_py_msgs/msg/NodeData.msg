@@ -1,2 +1,2 @@
 string key
-string value_serialized
+string serialized_value

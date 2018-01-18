@@ -484,12 +484,12 @@ class Node(object):
         # Set inputs
         for input_msg in msg.current_inputs:
             node_instance.inputs[input_msg.key] = jsonpickle.decode(
-                input_msg.value_serialized)
+                input_msg.serialized_value)
 
         # Set outputs
         for output_msg in msg.current_outputs:
             node_instance.outputs[output_msg.key] = jsonpickle.decode(
-                output_msg.value_serialized)
+                output_msg.serialized_value)
 
         return node_instance
 
