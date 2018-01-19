@@ -14,9 +14,8 @@ class TestLoadModule(unittest.TestCase):
     def testLoadModule(self):
         self.assertEqual(load_node_module('i.do.not.exist'), None)
 
-        module = load_node_module('ros_bt_py.nodes.passthrough_node')
-        self.assertEqual(len(Node.node_classes), 1, msg=str(Node.node_classes))
-        self.assertEqual(module.__name__, Node.node_classes.keys()[0])
+        load_node_module('ros_bt_py.nodes.passthrough_node')
+        self.assertIn('ros_bt_py.nodes.passthrough_node', Node.node_classes)
 
 
 class TestIncrementName(unittest.TestCase):

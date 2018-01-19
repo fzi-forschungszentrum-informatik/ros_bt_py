@@ -1,4 +1,3 @@
-import sys
 import unittest
 
 import jsonpickle
@@ -11,19 +10,7 @@ from ros_bt_py.tree_manager import TreeManager
 
 
 class TestTreeManager(unittest.TestCase):
-    def setUp(self):
-        # Empty this before each test, because it's global and will persist
-        # otherwise.
-        Node.node_classes = {}
-        # Ensure that PassthroughNode gets loaded in each test (if needed), so
-        # that the decorator code is executed and registers the node class in
-        # Node.node_classes
-        if 'ros_bt_py.nodes.passthrough_node' in sys.modules:
-            del sys.modules['ros_bt_py.nodes.passthrough_node']
-
     def testLoadNode(self):
-        self.assertEqual(len(Node.node_classes), 0)
-
         manager = TreeManager()
         msg = NodeMsg(
             is_subtree=False,
