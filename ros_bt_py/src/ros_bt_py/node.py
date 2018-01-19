@@ -548,45 +548,38 @@ class Node(object):
 
         return node_instance
 
-    @classmethod
-    def to_msg(cls, instance):
-        """Populate a ROS message with the information from `instance`
+    def to_msg(self):
+        """Populate a ROS message with the information from this Node
 
         Round-tripping the result through :meth:Node.from_msg should
         yield a working node object, with the caveat that state will not
         be preserved.
-
-        :param instance:
-
-        An instance of a node class (node classes must inherit from
-        :class:ros_bt_py.node.Node and use the `define_bt_node`
-        decorator)
 
         :rtype: ros_bt_py_msgs.msg.Node
         :returns:
 
         A ROS message that describes the node.
         """
-        node_type = type(instance)
+        node_type = type(self)
         return NodeMsg(is_subtree=False,
                        module=node_type.__module__,
                        node_class=node_type.__name__,
-                       name=instance.name,
-                       parent_name=instance.parent_name,
-                       child_names=[child.name for child in instance.children],
+                       name=self.name,
+                       parent_name=self.parent_name,
+                       child_names=[child.name for child in self.children],
                        options=[NodeDataMsg(key=key,
                                             serialized_value=jsonpickle.encode(
-                                                instance.options[key]))
-                                for key in instance.options],
+                                                self.options[key]))
+                                for key in self.options],
                        current_inputs=[NodeDataMsg(key=key,
                                                    serialized_value=jsonpickle.encode(
-                                                       instance.inputs[key]))
-                                       for key in instance.inputs],
+                                                       self.inputs[key]))
+                                       for key in self.inputs],
                        current_outputs=[NodeDataMsg(key=key,
                                                     serialized_value=jsonpickle.encode(
-                                                        instance.outputs[key]))
-                                        for key in instance.outputs],
-                       state=instance.state)
+                                                        self.outputs[key]))
+                                        for key in self.outputs],
+                       state=self.state)
 
 
 def load_node_module(package_name):

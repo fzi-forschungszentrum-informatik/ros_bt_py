@@ -159,7 +159,7 @@ class TestPassthroughNode(unittest.TestCase):
     def testNodeToMsg(self):
         node = PassthroughNode(options={'passthrough_type': int})
 
-        msg = Node.to_msg(node)
+        msg = node.to_msg()
 
         self.assertFalse(msg.is_subtree)
         self.assertEqual(msg.module, PassthroughNode.__module__)
@@ -174,7 +174,7 @@ class TestPassthroughNode(unittest.TestCase):
     def testNodeToMsgRoundtrip(self):
         node = PassthroughNode(options={'passthrough_type': int})
 
-        msg = Node.to_msg(node)
+        msg = node.to_msg()
 
         self.assertEqual(Node.from_msg(msg), node)
 
@@ -191,7 +191,7 @@ class TestPassthroughNode(unittest.TestCase):
 
         # Not exactly equal, since to_msg picks up the empty input and output,
         # plus the UNINITIALIZED state.
-        roundtrip_msg = Node.to_msg(instance)
+        roundtrip_msg = instance.to_msg()
         self.assertNotEqual(roundtrip_msg, msg)
 
         # Should have an empty input and output
