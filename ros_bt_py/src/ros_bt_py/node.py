@@ -10,7 +10,7 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import NodeData as NodeDataMsg
 
 from ros_bt_py.node_data import NodeData, NodeDataMap
-from ros_bt_py.node_config import OptionRef
+from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
 def define_bt_node(node_config):
@@ -609,3 +609,31 @@ def increment_name(name):
 
     name += '_%d' % (prev_number + 1)
     return name
+
+
+@define_bt_node(NodeConfig(
+    options={},
+    inputs={},
+    outputs={},
+    max_children=1))
+class Decorator(Node):
+    """Base class for Decorator nodes.
+
+    Decorators have exactly one child and somehow modify that child's
+    output. Subclasses can add inputs, outputs and options, but never
+    change `max_children`.
+    """
+    pass
+
+@define_bt_node(NodeConfig(
+    options={},
+    inputs={},
+    outputs={},
+    max_children=0))
+class Leaf(Node):
+    """Base class for leaf nodes in the tree.
+
+    Leaf nodes have no children. Subclasses can define inputs, outputs
+    and options, but never change `max_children`.
+    """
+    pass
