@@ -3,7 +3,7 @@ import random
 import unittest
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
-from ros_bt_py_msgs.msg import NodeData
+from ros_bt_py_msgs.msg import NodeData, NodeDataLocation
 
 from ros_bt_py.node import Node, load_node_module, increment_name
 from ros_bt_py.node_config import NodeConfig, OptionRef
@@ -121,6 +121,15 @@ class TestPassthroughNode(unittest.TestCase):
 
         self.assertEqual(passthrough.state, NodeMsg.IDLE)
         self.assertFalse(passthrough.outputs.is_updated('out'))
+
+    def testGetdataMap(self):
+        passthrough = PassthroughNode({'passthrough_type': float})
+
+        self.assertEqual(passthrough.get_data_map(NodeDataLocation.INPUT_DATA).name, 'inputs')
+        self.assertEqual(passthrough.get_data_map(NodeDataLocation.OUTPUT_DATA).name, 'outputs')
+        self.assertEqual(passthrough.get_data_map(NodeDataLocation.OPTION_DATA).name, 'options')
+        self.assertRaises(KeyError, passthrough.get_data_map, '')
+        self.assertRaises(KeyError, passthrough.get_data_map, 'INPUT_DATA')
 
     def testNodeFromMsg(self):
         msg = NodeMsg(

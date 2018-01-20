@@ -23,9 +23,9 @@ class NodeData(object):
 
         # Relax type checking for string types
         if data_type is str or data_type is unicode:
-            self._data_type = basestring
+            self.data_type = basestring
         else:
-            self._data_type = data_type
+            self.data_type = data_type
 
         # use set here to ensure initial_value is the right type
         # this also sets updated to True
@@ -34,14 +34,14 @@ class NodeData(object):
 
     def __repr__(self):
         return '{!s} ({}) [{}]'.format(self._value,
-                                       self._data_type.__name__,
+                                       self.data_type.__name__,
                                        ('#' if self.updated else ' '))
 
     def __eq__(self, other):
         return (self.updated == other.updated and
                 self._static == other._static and
                 self._value == other._value and
-                self._data_type == other._data_type)
+                self.data_type == other.data_type)
 
     def __ne__(self, other):
         return not self == other
@@ -51,15 +51,15 @@ class NodeData(object):
 
         After calling this successfully, :py:attribute:: updated is `True`.
         :param new_value:
-        Must be either `None` or an instance of type :py:attribute:: Node._data_type
+        Must be either `None` or an instance of type :py:attribute:: NodeData.data_type
 
         :raises: Exception, TypeError
         """
         if self._static and self.updated:
             raise Exception('Trying to overwrite data in static NodeData object')
-        if not isinstance(new_value, self._data_type) and new_value is not None:
+        if not isinstance(new_value, self.data_type) and new_value is not None:
             raise TypeError('Expected data to be of type {}, got {} instead'.format(
-                self._data_type.__name__, type(new_value).__name__))
+                self.data_type.__name__, type(new_value).__name__))
         self._value = new_value
         self.updated = True
 
@@ -94,9 +94,9 @@ class NodeDataMap(object):
     def __init__(self, name='data'):
         self.name = name
         self._map = {}
-        self._callbacks = {}
+        self.callbacks = {}
 
-    def subscribe(self, key, callback, path=''):
+    def subscribe(self, key, callback, subscriber_name=''):
         """Subscribe to changes in the value at `key`.
 
         :param str key: the key you want to subscribe to
@@ -106,7 +106,7 @@ class NodeDataMap(object):
         :meth:NodeDatamap.handle_subscriptions is called, if a change
         was made to the value since the last call of :meth:NodeDataMap.reset_updated
 
-        :param str path: the tree path of the subscriber. Only used for logging.
+        :param str subscriber_name: the name of the subscriber node. Only used for logging.
 
         :raises KeyError: if `key` is not a valid key
         """
@@ -114,9 +114,9 @@ class NodeDataMap(object):
         if key not in self._map:
             raise KeyError('%s is not a key of %s'
                            % (key, self.name))
-        if key not in self._callbacks:
-            self._callbacks[key] = []
-        self._callbacks[key].append((callback, path))
+        if key not in self.callbacks:
+            self.callbacks[key] = []
+        self.callbacks[key].append((callback, subscriber_name))
 
     def handle_subscriptions(self):
         """Execute the callbacks registered by :meth:NodeDataMap.subscribe:
@@ -127,10 +127,10 @@ class NodeDataMap(object):
         """
         for key in self._map:
             if self.is_updated(key):
-                if key in self._callbacks:
-                    for callback, path in self._callbacks[key]:
+                if key in self.callbacks:
+                    for callback, subscriber_name in self.callbacks[key]:
                         rospy.logdebug('Forwarding value %s to subscriber %s',
-                                       key, path)
+                                       key, subscriber_name)
                         callback(self[key])
 
     def add(self, key, value):
@@ -175,6 +175,14 @@ class NodeDataMap(object):
             raise KeyError('No member named %s' % key)
         return self._map[key].set
 
+    def get_type(self, key):
+        """
+        Return the type of the NodeData object at `key`
+        """
+        if key not in self._map:
+            raise KeyError('No member named %s' % key)
+        return self._map[key].data_type
+
     def __len__(self):
         return len(self._map)
 
@@ -199,13 +207,13 @@ class NodeDataMap(object):
                 len(self) == len(other) and
                 all([key in other for key in self]) and
                 all([other[key] == self[key] for key in self]) and
-                len(self._callbacks) == len(other._callbacks) and
-                all([key in other._callbacks for key in self._callbacks]) and
-                all([other._callbacks[key] == self._callbacks[key] for key in self._callbacks]))
+                len(self.callbacks) == len(other.callbacks) and
+                all([key in other.callbacks for key in self.callbacks]) and
+                all([other.callbacks[key] == self.callbacks[key] for key in self.callbacks]))
 
     def __ne__(self, other):
         return not self == other
 
     def __repr__(self):
         return 'NodeDataMap(name=%r), data:%r, callbacks:%r' % (
-            self.name, self._map, self._callbacks)
+            self.name, self._map, self.callbacks)

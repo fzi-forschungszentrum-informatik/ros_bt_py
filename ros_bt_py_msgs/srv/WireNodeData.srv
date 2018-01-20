@@ -1,4 +1,5 @@
-NodeDataWiring[] wiring
+string tree_name
+NodeDataWiring[] wirings
 ---
 bool success
 string error_message

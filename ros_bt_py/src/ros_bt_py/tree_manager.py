@@ -5,6 +5,9 @@ import jsonpickle
 
 import rospy
 
+from ros_bt_py_msgs.srv import WireNodeDataResponse
+from ros_bt_py_msgs.msg import NodeDataLocation
+
 from ros_bt_py.node import Node
 from ros_bt_py.debug_manager import DebugManager
 
@@ -88,8 +91,71 @@ class TreeManager(object):
         this will return an error.
         """
 
-    def wire_data(self, source_node_name, source_node):
-        pass
+    def wire_data(self, request):
+        response = WireNodeDataResponse(success=True)
+        # TODO(nberg): Check request.tree_name to see if the request concerns
+        # this tree or a subtree.
+        subscription_data = []
+        for wiring in request.wirings:
+            if wiring.source.node_name not in self.nodes:
+                response.success = False
+                response.error_message += 'Unable to find node %s in tree %s' % (
+                    wiring.source.node_name, request.tree_name)
+                break
+            if wiring.target.node_name not in self.nodes:
+                response.success = False
+                response.error_message += 'Unable to find node %s in tree %s' % (
+                    wiring.target.node_name, request.tree_name)
+                break
+            source_node = self.nodes[wiring.source.node_name]
+            target_node = self.nodes[wiring.target.node_name]
+            try:
+                source_map = source_node.get_data_map(wiring.source.data_kind)
+                target_map = target_node.get_data_map(wiring.target.data_kind)
+            except KeyError as exception:
+                response.success = False
+                response.error_message = str(exception)
+                break
+            if not wiring.source.data_key in source_map:
+                response.success = False
+                response.error_message = 'Source key %s.%s[%s] does not exist!' % (
+                    source_node.name,
+                    wiring.source.data_kind,
+                    wiring.source.data_key)
+                break
+            if not wiring.target.data_key in target_map:
+                response.success = False
+                response.error_message = 'Target key %s.%s[%s] does not exist!' % (
+                    target_node.name,
+                    wiring.target.data_kind,
+                    wiring.target.data_key)
+                break
+            if not issubclass(source_map.get_type(wiring.source.data_key),
+                              target_map.get_type(wiring.target.data_key)):
+                response.success = False
+                response.error_message = (
+                    'Type of %s.%s[%s] (%s) is not compatible with '
+                    'Type of %s.%s[%s] (%s)!' % (
+                        source_node.name,
+                        wiring.source.data_kind,
+                        wiring.source.data_key,
+                        source_map.get_type(wiring.source.data_key).__name__,
+                        target_node.name,
+                        wiring.target.data_kind,
+                        wiring.target.data_key,
+                        target_map.get_type(wiring.target.data_key).__name__))
+                break
+            subscription_data.append((source_map,
+                                      wiring.source.data_key,
+                                      target_map.get_callback(wiring.target.data_key),
+                                      target_node.name))
+
+        # only actually wire any data if there were no errors
+        if response.success:
+            for source_map, key, callback, name in subscription_data:
+                source_map.subscribe(key, callback, name)
+
+        return response
 
     def instantiate_node_from_msg(self, node_msg):
         # TODO(nberg): Subtree handling

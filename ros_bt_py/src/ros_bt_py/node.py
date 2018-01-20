@@ -8,6 +8,7 @@ import rospy
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import NodeData as NodeDataMsg
+from ros_bt_py_msgs.msg import NodeDataLocation
 
 from ros_bt_py.node_data import NodeData, NodeDataMap
 from ros_bt_py.node_config import NodeConfig, OptionRef
@@ -425,6 +426,24 @@ class Node(object):
 
     def __ne__(self, other):
         return not self == other
+
+    def get_data_map(self, data_kind):
+        """Return one of our NodeDataMaps by string name
+
+        :param basestring data_kind:
+
+        One of the constants in :class:ros_bt_py_msgs.msg.NodeDataLocation
+
+        :rtype: NodeDataMap
+        """
+        if data_kind == NodeDataLocation.INPUT_DATA:
+            return self.inputs
+        if data_kind == NodeDataLocation.OUTPUT_DATA:
+            return self.outputs
+        if data_kind == NodeDataLocation.OPTION_DATA:
+            return self.options
+
+        raise KeyError('%s is not a valid value to pass to Node.get_data_map()!' % data_kind)
 
     # Logging methods - these just use the ROS logging framework, but add the
     # name and type of the node so it's easier to trace errors.
