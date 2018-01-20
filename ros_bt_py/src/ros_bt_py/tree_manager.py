@@ -92,6 +92,14 @@ class TreeManager(object):
         """
 
     def wire_data(self, request):
+        """Connect the given pairs of node data to one another.
+
+        :param ros_bt_py_msgs.srv.WireNodeDataRequest request:
+
+        Contains a list of :class: ros_bt_py_msgs.msg.NodeDataWiring objects that model connections 
+
+        :returns: :class:ros_bt_py_msgs.src.WireNodeDataResponse or `None`
+        """
         response = WireNodeDataResponse(success=True)
         # TODO(nberg): Check request.tree_name to see if the request concerns
         # this tree or a subtree.
@@ -148,7 +156,9 @@ class TreeManager(object):
             subscription_data.append((source_map,
                                       wiring.source.data_key,
                                       target_map.get_callback(wiring.target.data_key),
-                                      target_node.name))
+                                      '%s.%s[%s]' % (target_node.name,
+                                                     wiring.target.data_kind,
+                                                     wiring.target.data_key)))
 
         # only actually wire any data if there were no errors
         if response.success:
