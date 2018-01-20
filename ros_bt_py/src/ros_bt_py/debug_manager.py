@@ -107,7 +107,7 @@ class DebugManager(object):
 
         if (self.breakpoints and node_instance.name in self.breakpoints) or self.stepping:
             old_state = node_instance.state
-            node_instance.state = Node.DEBUG_PRE_TICK
+            node_instance.state = Node.DEBUG_POST_TICK
             self.wait_for_continue()
             node_instance.state = old_state
             # TODO(nberg): Really autoremove all breakpoints?

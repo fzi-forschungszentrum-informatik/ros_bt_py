@@ -4,6 +4,8 @@ from threading import Thread
 import time
 import unittest
 
+from ros_bt_py_msgs.msg import Node as NodeMsg
+
 from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.nodes.passthrough_node import PassthroughNode
 
@@ -48,28 +50,31 @@ class TestDebugManager(unittest.TestCase):
     def testStep(self):
         self.manager.stepping = True
 
-        self.x = 0
 
-        node = PassthroughNode({'passthrough_type': int})
-        node.setup()
-        node.name = 'foo'
+        self.node = PassthroughNode({'passthrough_type': int},
+                                    debug_manager=self.manager)
+        self.node.setup()
+        self.node.name = 'foo'
+        self.node.inputs['in'] = 1
 
         def do_stuff():
-            with self.manager.report_tick(node):
-                self.x = 1
+            self.node.tick()
 
         test_thread = Thread(target=do_stuff)
         test_thread.start()
         time.sleep(0.05)
 
-        # Thread should be blocked on first continue -> no change in x yet
-        self.assertEqual(self.x, 0)
+        # Thread should be blocked on first continue -> the output does not
+        # have a value yet.
+        self.assertEqual(self.node.outputs['out'], None)
+        self.assertEqual(self.node.state, NodeMsg.DEBUG_PRE_TICK)
         self.assertTrue(test_thread.isAlive())
         self.manager.continue_debug()
         time.sleep(0.05)
 
-        # Now x should be changed
-        self.assertEqual(self.x, 1)
+        # Now out should be changed
+        self.assertEqual(self.node.outputs['out'], 1)
+        self.assertEqual(self.node.state, NodeMsg.DEBUG_POST_TICK)
         # Should still be waiting for second continue -> join won't work
         test_thread.join(0.01)
         self.assertTrue(test_thread.isAlive())
