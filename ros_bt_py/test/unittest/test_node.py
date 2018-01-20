@@ -82,6 +82,8 @@ class TestPassthroughNode(unittest.TestCase):
         self.assertEqual(passthrough.outputs['out'], None)
         self.assertRaises(ValueError, passthrough.tick)
 
+        self.assertRaises(Exception, passthrough.setup)
+
         passthrough.inputs['in'] = 42
         passthrough.tick()
         self.assertEqual(passthrough.state, NodeMsg.SUCCEEDED)

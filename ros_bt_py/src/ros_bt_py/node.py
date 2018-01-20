@@ -125,7 +125,7 @@ class Node(object):
 
         # Don't setup automatically - nodes should be available as pure data
         # containers before the user decides to call setup() themselves!
-        # self.state = self.setup()
+        self._setup_called = False
 
     def setup(self):
         """Prepare the node to be ticked for the first time.
@@ -137,14 +137,20 @@ class Node(object):
 
         Sets the state of the node to whatever :meth:Node.do_setup
         returned.
+
+        :raises: Exception if called more than once on the same node
         """
+        if self._setup_called:
+            raise Exception('Trying to call setup() more than once on node %s' %
+                            self.name)
         self.state = self.do_setup()
+        self._setup_called = True
 
     def do_setup(self):
         """Use this to do custom node setup.
 
         Note that this will be called once, when the tree is first
-        started, and before the first call of :meth:Node.tick.
+        started, before the first call of :meth:Node.tick.
 
         :rtype basestring:
         :return:
@@ -268,13 +274,13 @@ class Node(object):
 
         Whereas :meth:Node.untick / :meth:Node.do_untick only pauses
         execution, ready to be resumed, :meth:Node.reset means returning
-        to the same state the node was in right after construction.
+        to the same state the node was in right after calling :meth:Node.setup
         """
         if self.state is NodeMsg.UNINITIALIZED:
             raise Exception('Trying to reset uninitialized node!')
         self.state = self.do_reset()
-        if self.state != NodeMsg.UNINITIALIZED:
-            self.logerr('untick() did not result in UNINITIALIZED state, but %s'
+        if self.state != NodeMsg.IDLE:
+            self.logerr('untick() did not result in IDLE state, but %s'
                         % self.state)
 
     def do_reset(self):
