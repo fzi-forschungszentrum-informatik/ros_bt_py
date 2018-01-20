@@ -66,3 +66,33 @@ class TestNodeDataMap(unittest.TestCase):
 
         self.assertEqual(self.map['hello'], hello_string)
         self.assertTrue(self.map.is_updated('hello'))
+
+    def testSubscription(self):
+        self.map.add(key='hello', value=NodeData(data_type=str))
+
+        self.called = False
+        def callback(_):
+            self.called = True
+
+        self.map.subscribe('hello', callback)
+
+        self.assertIn('hello', self.map.callbacks)
+        self.assertEqual(len(self.map.callbacks['hello']), 1)
+
+        self.map.subscribe('hello', callback)
+        self.map.subscribe('hello', callback)
+        self.map.subscribe('hello', callback)
+
+        # Subscribing multiple times with the same callback should have no
+        # further effect.
+        self.assertEqual(len(self.map.callbacks['hello']), 1)
+
+        self.map.handle_subscriptions()
+
+        # 'hello' hasn't been changed yet, so the callback is not called
+        self.assertFalse(self.called)
+
+        self.map['hello'] = 'Hello, world!'
+        self.map.handle_subscriptions()
+
+        self.assertTrue(self.called)

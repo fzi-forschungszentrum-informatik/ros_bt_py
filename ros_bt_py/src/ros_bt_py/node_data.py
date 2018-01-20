@@ -116,6 +116,10 @@ class NodeDataMap(object):
                            % (key, self.name))
         if key not in self.callbacks:
             self.callbacks[key] = []
+        if any([callback == cb for cb, _ in self.callbacks[key]]):
+            # Do nothing if the callback we got is already registered for the
+            # given key.
+            return
         self.callbacks[key].append((callback, subscriber_name))
 
     def handle_subscriptions(self):
