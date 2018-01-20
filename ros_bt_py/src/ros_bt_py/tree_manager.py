@@ -96,7 +96,8 @@ class TreeManager(object):
 
         :param ros_bt_py_msgs.srv.WireNodeDataRequest request:
 
-        Contains a list of :class: ros_bt_py_msgs.msg.NodeDataWiring objects that model connections 
+        Contains a list of :class: ros_bt_py_msgs.msg.NodeDataWiring
+        objects that model connections
 
         :returns: :class:ros_bt_py_msgs.src.WireNodeDataResponse or `None`
         """
