@@ -11,10 +11,11 @@ from ros_bt_py_msgs.msg import DebugInfo, Node, TickTime, TreeLocation
 
 
 class DebugManager(object):
-    def __init__(self, target_tick_frequency_hz=20.0, window_size=None):
+    def __init__(self, target_tick_frequency_hz=20.0, window_size=None, tree_name=None):
         # TODO(nberg): Ensure this is set at least once on shutdown
         self.continue_event = Event()
         self.debug_info_msg = DebugInfo()
+        self.debug_info_msg.tree_name = tree_name if tree_name else ''
 
         self.debug_info_msg.target_tick_time = rospy.Duration.from_sec(
             1.0 / target_tick_frequency_hz)
@@ -24,6 +25,8 @@ class DebugManager(object):
             # tick_frequency < 1.0)
             window_size = int(math.ceil(target_tick_frequency_hz))
 
+        # TODO(nberg): Check performance, maybe hold dict of TickTime objects
+        # to reduce time spent searching
         self.debug_info_msg.window_size = window_size
         # List of node names to break on
         self.breakpoints = []
@@ -80,13 +83,13 @@ class DebugManager(object):
 
             # Find the TickTime message for the current node in debug_info_msg
             ticktime_msg_list = [x for x in self.debug_info_msg.node_tick_times
-                                 if x.node_location.node_name == node_instance.name]
+                                 if x.node_name == node_instance.name]
             # If there is one, take that
             if ticktime_msg_list:
                 timing_msg = ticktime_msg_list[0]
             # If not, create one and add it to the list
             else:
-                timing_msg = TickTime(node_location=TreeLocation(node_name=node_instance.name))
+                timing_msg = TickTime(node_name=node_instance.name)
                 self.debug_info_msg.node_tick_times.append(timing_msg)
 
             # Either way, timing_msg is now a reference to the correct item

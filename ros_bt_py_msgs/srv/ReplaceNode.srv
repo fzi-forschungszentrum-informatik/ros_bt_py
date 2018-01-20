@@ -1,4 +1,5 @@
-TreeLocation old_node_location
+string tree_name
+string old_node_name
 Node new_node
 ---
 string actual_node_name

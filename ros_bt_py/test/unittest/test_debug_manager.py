@@ -35,7 +35,7 @@ class TestDebugManager(unittest.TestCase):
         # Plus one for the context self.manager, and another one for the contextlib decorator
         self.assertEqual(self.manager.debug_info_msg.current_recursion_depth,
                          starting_recursion_depth + 2)
-        self.assertEqual(self.manager.debug_info_msg.node_tick_times[0].node_location.node_name,
+        self.assertEqual(self.manager.debug_info_msg.node_tick_times[0].node_name,
                          'foo')
         self.assertEqual(self.manager.debug_info_msg.node_tick_times[0].min_tick_time.nsecs,
                          self.manager.debug_info_msg.node_tick_times[0].max_tick_time.nsecs)

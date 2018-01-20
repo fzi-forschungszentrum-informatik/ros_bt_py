@@ -1,9 +1,10 @@
 ## Move a Node from its current position to be a child of the node at
-## new_parent_location. new_child_index determines the Node's index in
+## new_parent_name. new_child_index determines the Node's index in
 ## the new parent's children array.
+string tree_name
 
-TreeLocation node_location
-TreeLocation new_parent_location
+string node_name
+string new_parent_name
 # Follows Python convention, i.e. can be negative to count from the
 # end of the children list.
 int32 new_child_index

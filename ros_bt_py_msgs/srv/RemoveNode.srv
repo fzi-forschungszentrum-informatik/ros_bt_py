@@ -1,5 +1,6 @@
+string tree_name
 # Name of the node to remove
-TreeLocation node_location
+string node_name
 # If false, the node's children will be orphaned.
 bool remove_children
 ---
