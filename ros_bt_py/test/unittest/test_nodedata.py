@@ -5,7 +5,6 @@ import rospy
 import unittest
 
 
-
 class TestNodeData(unittest.TestCase):
     def testTypechecking(self):
         values = [

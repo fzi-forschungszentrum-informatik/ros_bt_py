@@ -50,7 +50,6 @@ class TestDebugManager(unittest.TestCase):
     def testStep(self):
         self.manager.stepping = True
 
-
         self.node = PassthroughNode({'passthrough_type': int},
                                     debug_manager=self.manager)
         self.node.setup()

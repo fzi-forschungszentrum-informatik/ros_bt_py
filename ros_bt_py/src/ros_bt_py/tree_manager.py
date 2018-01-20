@@ -124,14 +124,14 @@ class TreeManager(object):
                 response.success = False
                 response.error_message = str(exception)
                 break
-            if not wiring.source.data_key in source_map:
+            if wiring.source.data_key not in source_map:
                 response.success = False
                 response.error_message = 'Source key %s.%s[%s] does not exist!' % (
                     source_node.name,
                     wiring.source.data_kind,
                     wiring.source.data_key)
                 break
-            if not wiring.target.data_key in target_map:
+            if wiring.target.data_key not in target_map:
                 response.success = False
                 response.error_message = 'Target key %s.%s[%s] does not exist!' % (
                     target_node.name,

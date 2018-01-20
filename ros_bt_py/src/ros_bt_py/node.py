@@ -650,6 +650,7 @@ class Decorator(Node):
     """
     pass
 
+
 @define_bt_node(NodeConfig(
     options={},
     inputs={},
