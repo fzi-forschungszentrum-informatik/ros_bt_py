@@ -1,0 +1,2 @@
+class BehaviorTreeException(Exception):
+    pass
