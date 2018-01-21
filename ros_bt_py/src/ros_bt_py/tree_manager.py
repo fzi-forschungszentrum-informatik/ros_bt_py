@@ -224,7 +224,5 @@ class TreeManager(object):
             return node_instance
 
     def to_msg(self):
-        tree_msg = Tree(tree_name=self.name,
-                        nodes=[node.to_msg() for node in self.nodes.values()],
-                            tree_state=self.state)
-        return tree_msg
+        self.tree_msg.nodes = [node.to_msg() for node in self.nodes.values()]
+        return self.tree_msg
