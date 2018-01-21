@@ -96,3 +96,17 @@ class TestNodeDataMap(unittest.TestCase):
         self.map.handle_subscriptions()
 
         self.assertTrue(self.called)
+
+        self.called = False
+
+        self.map.unsubscribe('hello', callback)
+        self.assertEqual(len(self.map.callbacks['hello']), 0)
+        self.map['hello'] = 'Hello once more!'
+        self.map.handle_subscriptions()
+        self.assertFalse(self.called)
+
+        # Unsubscribe with no callback -> unsubscribe all
+        self.map.subscribe('hello', callback)
+        self.assertEqual(len(self.map.callbacks['hello']), 1)
+        self.map.unsubscribe('hello')
+        self.assertEqual(len(self.map.callbacks['hello']), 0)

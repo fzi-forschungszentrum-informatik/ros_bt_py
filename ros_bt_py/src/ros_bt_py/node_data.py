@@ -122,6 +122,45 @@ class NodeDataMap(object):
             return
         self.callbacks[key].append((callback, subscriber_name))
 
+    def unsubscribe(self, key, callback=None):
+        """Remove the given subscriber callback from `key`'s subscriber list.
+
+        :param str key: The key that `callback` is currently subscribed to
+        :param callback: The callback to remove - if `None`, remove all callbacks
+
+        :raises KeyError: if `key` is not a valid key
+        """
+        if key not in self._map:
+            raise KeyError('%s is not a key of %s'
+                           % (key, self.name))
+        if key not in self.callbacks:
+            self.callbacks[key] = []
+            rospy.loginfo('Trying to remove callback for key with no callbacks at all (%s[%s])',
+                          self.name,
+                          key)
+            return
+
+        if callback:
+            index = None
+            rospy.loginfo(str(self.callbacks))
+            for i, value in enumerate(self.callbacks[key]):
+                if value[0] == callback:
+                    index = i
+            if index is not None:
+                callback_name = self.callbacks[key].pop(index)[1]
+                rospy.loginfo('Removed callback "%s" of key %s[%s]',
+                              callback_name,
+                              self.name, key)
+            else:
+                rospy.loginfo('Trying to remove unknown callback for key %s[%s]',
+                              self.name,
+                              key)
+        else:
+            rospy.loginfo('Removing all callbacks for key %s[%s]',
+                          self.name,
+                          key)
+            self.callbacks[key] = []
+
     def handle_subscriptions(self):
         """Execute the callbacks registered by :meth:NodeDataMap.subscribe:
 
