@@ -7,6 +7,7 @@ from ros_bt_py_msgs.srv import AddNode, ControlTreeExecution, RemoveNode, WireNo
 from ros_bt_py.tree_manager import TreeManager
 from ros_bt_py.debug_manager import DebugManager
 
+
 class TreeNode(object):
     def __init__(self):
         node_module_names = rospy.get_param('~node_modules', default=[])

@@ -242,7 +242,6 @@ class Node(object):
                                      action_name,
                                      str(allowed_states)))
 
-
     def do_tick(self):
         """
         Every Node class must override this.
@@ -585,7 +584,6 @@ class Node(object):
             raise BehaviorTreeException(
                 'Failed to instantiate node from message - node class '
                 'not available. Original message:\n%s' % str(msg))
-
 
         node_class = cls.node_classes[msg.module][msg.node_class]
 

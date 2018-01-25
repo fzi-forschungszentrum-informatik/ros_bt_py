@@ -294,7 +294,7 @@ class TreeManager(object):
         # Shutdown node - this should also shutdown all children, but you
         # never know, so check later.
         self.nodes[request.node_name].shutdown()
-        names_to_remove = { request.node_name }
+        names_to_remove = {request.node_name}
         if request.remove_children:
             add_children_of = [request.node_name]
             children_added = set()
@@ -332,7 +332,6 @@ class TreeManager(object):
         response.success = True
         self.publish_info()
         return response
-
 
     def move_child(self, node_name, child_name, new_index):
         """Move the named child of a node to the given index.

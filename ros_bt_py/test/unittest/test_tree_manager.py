@@ -13,9 +13,11 @@ from ros_bt_py.tree_manager import TreeManager
 class TestTreeManager(unittest.TestCase):
     def setUp(self):
         self.tree_msg = None
+
         def set_tree_msg(msg):
             self.tree_msg = msg
         self.debug_info_msg = None
+
         def set_debug_info_msg(msg):
             self.debug_info_msg = msg
 

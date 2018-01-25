@@ -71,6 +71,7 @@ class TestNodeDataMap(unittest.TestCase):
         self.map.add(key='hello', value=NodeData(data_type=str))
 
         self.called = False
+
         def callback(_):
             self.called = True
 
