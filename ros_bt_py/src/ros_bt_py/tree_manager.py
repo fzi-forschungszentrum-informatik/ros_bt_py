@@ -105,7 +105,8 @@ class TreeManager(object):
             self._once = once
 
         root = self.find_root()
-        root.setup()
+        if root.state == NodeMsg.UNINITIALIZED:
+            root.setup()
         sleep_duration = rospy.Duration.from_sec(1.0/self.tree_msg.tick_frequency_hz)
         with self._state_lock:
             self.tree_msg.state = Tree.TICKING
@@ -159,7 +160,7 @@ class TreeManager(object):
         if self._tick_thread is not None:
             with self._state_lock:
                 is_idle = self.tree_msg.state == Tree.IDLE
-            if is_idle:
+            if is_idle and self._tick_thread.is_alive():
                 self._tick_thread.join(0.5)
                 if self._tick_thread.is_alive():
                     raise BehaviorTreeException('Tried to join tick thread with Tree state '
@@ -179,16 +180,17 @@ class TreeManager(object):
                 # Two seconds should be plenty of time to finish the current
                 # tick, if the tree has not stopped by then we're in deep
                 # trouble.
-                self._tick_thread.join(2.0)
                 if self._tick_thread.is_alive():
-                    raise BehaviorTreeException('Tried to join tick thread after requesting stop '
-                                                'but failed!')
+                    self._tick_thread.join(2.0)
+                    if self._tick_thread.is_alive():
+                        raise BehaviorTreeException('Tried to join tick thread after requesting '
+                                                    'stop, but failed!')
                 if self.tree_msg.state == Tree.IDLE:
                     response.tree_state = Tree.IDLE
                     response.success = True
                 else:
-                    response.error_message = ('Joined tick thread, but tree state is %s, '
-                                              'not IDLE' % self.tree_msg.state)
+                    response.error_message = ('Successfully stopped ticking, but tree state is '
+                                              '%s, not IDLE' % self.tree_msg.state)
                     response.success = False
                     rospy.logerr(response.error_message)
             else:
