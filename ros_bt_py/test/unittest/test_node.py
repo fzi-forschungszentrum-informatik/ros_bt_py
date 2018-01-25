@@ -166,6 +166,16 @@ class TestPassthroughNode(unittest.TestCase):
         # always uninitialized!
         self.assertEqual(Node.from_msg(msg).state, NodeMsg.UNINITIALIZED)
 
+    def testNodeFromMsgInvalidChildren(self):
+        msg = NodeMsg(
+            is_subtree=False,
+            module="ros_bt_py.nodes.passthrough_node",
+            node_class="PassthroughNode",
+            child_names=['asd'],
+            options=[NodeData(key='passthrough_type',
+                              serialized_value=jsonpickle.encode(int))])
+        self.assertRaises(KeyError, Node.from_msg, msg=msg, node_dict={})
+
     def testNodeToMsg(self):
         node = PassthroughNode(options={'passthrough_type': int})
 

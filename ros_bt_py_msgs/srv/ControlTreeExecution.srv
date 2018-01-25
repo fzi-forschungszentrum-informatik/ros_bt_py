@@ -1,0 +1,10 @@
+uint8 command
+float64 tick_frequency_hz
+
+uint8 TICK_ONCE = 1
+uint8 TICK_PERIODICALLY = 2
+uint8 STOP = 3
+---
+bool success
+string error_message
+string tree_state

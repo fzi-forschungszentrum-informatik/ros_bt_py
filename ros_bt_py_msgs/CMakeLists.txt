@@ -47,6 +47,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
      FILES
      DebugInfo.msg
+     DebugSettings.msg
      Node.msg
      NodeData.msg
      NodeDataLocation.msg
@@ -60,6 +61,7 @@ add_message_files(
 add_service_files(
   FILES
   AddNode.srv
+  ControlTreeExecution.srv
   GetAvailableNodes.srv
   GetAvailableSubtrees.srv
   InsertNode.srv

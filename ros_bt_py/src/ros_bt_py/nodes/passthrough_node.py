@@ -26,6 +26,9 @@ class PassthroughNode(Node):
     def do_untick(self):
         return NodeMsg.IDLE
 
+    def do_shutdown(self):
+        return NodeMsg.SHUTDOWN
+
     def do_reset(self):
         self.inputs['in'] = None
         self.inputs.reset_updated()

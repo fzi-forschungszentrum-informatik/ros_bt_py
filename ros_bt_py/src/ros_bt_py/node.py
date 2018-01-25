@@ -10,6 +10,7 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import NodeData as NodeDataMsg
 from ros_bt_py_msgs.msg import NodeDataLocation
 
+from ros_bt_py.exceptions import BehaviorTreeException, NodeStateError
 from ros_bt_py.node_data import NodeData, NodeDataMap
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
@@ -48,7 +49,8 @@ class Node(object):
     (usually somewhere between 10 and 30 times a second),
     :meth:Node.step is called with the appropriate data.
 
-    Nodes in a behavior Tree can be roughly divided into four classes:
+    Nodes in a behavior Tree can be roughly divided into two classes,
+    with two sub-classes each:
 
     Leaf Nodes
       These do not have any children and can take one of two forms:
@@ -62,8 +64,7 @@ class Node(object):
       what fashion) based on some criteria. *Decorators* however have only a
       single child and work with that child's result - for instance, a *Decorator*
       could invert `FAILED` into `SUCCEEDED`.
-
-      """
+    """
     @contextmanager
     def dummy_report_tick(self):
         self.loginfo('Ticking without debug manager')
@@ -138,11 +139,11 @@ class Node(object):
         Sets the state of the node to whatever :meth:Node.do_setup
         returned.
 
-        :raises: Exception if called more than once on the same node
+        :raises: BehaviorTreeException if called more than once on the same node
         """
         if self._setup_called:
-            raise Exception('Trying to call setup() more than once on node %s' %
-                            self.name)
+            raise BehaviorTreeException(
+                'Trying to call setup() more than once on node %s' % self.name)
         self.state = self.do_setup()
         self._setup_called = True
 
@@ -190,6 +191,8 @@ class Node(object):
 
         :returns:
         The state of the node after ticking - should be `SUCCEEDED`, `FAILED` or `RUNNING`.
+
+        :raises: BehaviorTreeException if a tick is impossible / not allowed
         """
         report_tick = self.dummy_report_tick()
         if self.debug_manager:
@@ -197,7 +200,7 @@ class Node(object):
 
         with report_tick:
             if self.state is NodeMsg.UNINITIALIZED:
-                raise Exception('Trying to tick uninitialized node!')
+                raise BehaviorTreeException('Trying to tick uninitialized node!')
 
             unset_options = []
             for option_name in self.options:
@@ -206,7 +209,7 @@ class Node(object):
             if unset_options:
                 msg = 'Trying to tick node with unset options: %s' % str(unset_options)
                 self.logerr(msg)
-                raise Exception(msg)
+                raise BehaviorTreeException(msg)
             self.options.handle_subscriptions()
 
             # Outputs are updated in the tick. To catch that, we need to reset here.
@@ -220,9 +223,25 @@ class Node(object):
             self.inputs.reset_updated()
 
             self.state = self.do_tick()
+            self.raise_if_in_invalid_state(allowed_states=[NodeMsg.RUNNING,
+                                                           NodeMsg.SUCCEEDED,
+                                                           NodeMsg.FAILED],
+                                           action_name='tick()')
             self.handle_outputs()
 
             return self.state
+
+    def raise_if_in_invalid_state(self, allowed_states, action_name):
+        """Raise an error if `self.state` is not in `allowed_states`"""
+        if self.state not in allowed_states:
+            raise NodeStateError('Node %s (%s) was in invalid state %s after action %s. '
+                                 'Allowed states: %s' % (
+                                     self.name,
+                                     type(self).__name__,
+                                     self.state,
+                                     action_name,
+                                     str(allowed_states)))
+
 
     def do_tick(self):
         """
@@ -247,12 +266,16 @@ class Node(object):
         The node's outputs' `updated` flags are also reset!
 
         A class inheriting from :class:Node should override :meth:Node.do_untick instead of this!
+
+        :raises: BehaviorTreeException
+          When trying to untick a node that has not been initialized yet.
         """
         if self.state is NodeMsg.UNINITIALIZED:
-            raise Exception('Trying to untick uninitialized node!')
+            raise BehaviorTreeException('Trying to untick uninitialized node!')
         self.state = self.do_untick()
-        if self.state != NodeMsg.IDLE and self.state != NodeMsg.PAUSED:
-            self.logwarn('untick() did not result in IDLE state, but %s' % self.state)
+        self.raise_if_in_invalid_state(allowed_states=[NodeMsg.IDLE,
+                                                       NodeMsg.PAUSED],
+                                       action_name='untick()')
 
         self.outputs.reset_updated()
 
@@ -275,13 +298,15 @@ class Node(object):
         Whereas :meth:Node.untick / :meth:Node.do_untick only pauses
         execution, ready to be resumed, :meth:Node.reset means returning
         to the same state the node was in right after calling :meth:Node.setup
+
+        :raises: BehaviorTreeException
+          When trying to reset a node that hasn't been initialized yet
         """
         if self.state is NodeMsg.UNINITIALIZED:
-            raise Exception('Trying to reset uninitialized node!')
+            raise BehaviorTreeException('Trying to reset uninitialized node!')
         self.state = self.do_reset()
-        if self.state != NodeMsg.IDLE:
-            self.logerr('untick() did not result in IDLE state, but %s'
-                        % self.state)
+        self.raise_if_in_invalid_state(allowed_states=[NodeMsg.IDLE],
+                                       action_name='reset()')
 
     def do_reset(self):
         """
@@ -299,6 +324,39 @@ class Node(object):
         msg = 'Trying to reset a node without do_reset function'
         self.logerr(msg)
         raise NotImplementedError(msg)
+
+    def shutdown(self):
+        """Should be called before deleting a node.
+
+        This method just calls :meth:Node.do_shutdown, which any
+        subclass must override.
+
+        This gives the node a chance to clean up any resources it might
+        be holding before getting deleted.
+        """
+        if self.state != NodeMsg.SHUTDOWN:
+            self.do_shutdown()
+            self.state = NodeMsg.SHUTDOWN
+        else:
+            self.logwarn('Shutdown called twice')
+
+        unshutdown_children = ['%s (%s), state: %s' % (child.name,
+                                                       type(child).__name__,
+                                                       child.state)
+                               for child in self.children
+                               if child.state != NodeMsg.SHUTDOWN]
+        if unshutdown_children:
+            self.logwarn('Not all children are shut down after calling shutdown(). '
+                         'List of not-shutdown children and states:\n' +
+                         '\n'.join(unshutdown_children))
+
+    def do_shutdown(self):
+        """This is called before destroying the node.
+
+        Implement this in your node class and release any resources you
+        might be holding (file pointers, ROS topic subscriptions etc.)
+        """
+        raise NotImplementedError('Trying to shut down a node without do_shutdown() method.')
 
     def validate(self):
         """You must also override this.
@@ -331,7 +389,7 @@ class Node(object):
                          'children (%d) is already present'
                          % self.node_config.max_children)
             self.logerr(error_msg)
-            raise Exception(error_msg)
+            raise BehaviorTreeException(error_msg)
 
         if child.name in (child.name for child in self.children):
             raise KeyError('Already have a child with name "%s"' % child.name)
@@ -511,7 +569,10 @@ class Node(object):
         Note that this does *not* include the node's state. Any node
         created by this will be in state UNININITIALIZED.
 
-        :raises: KeyError if any children are missing
+        :raises:
+
+        KeyError if any children are missing, BehaviorTreeException if
+        node cannot be instantiated.
         """
         if (msg.module not in cls.node_classes or
                 msg.node_class not in cls.node_classes[msg.module]):
@@ -521,9 +582,10 @@ class Node(object):
         # If loading didn't work, abort
         if (msg.module not in cls.node_classes or
                 msg.node_class not in cls.node_classes[msg.module]):
-            rospy.logerr('Failed to instantiate node from message - node class '
-                         'not available. Original message:\n%s', str(msg))
-            return None
+            raise BehaviorTreeException(
+                'Failed to instantiate node from message - node class '
+                'not available. Original message:\n%s' % str(msg))
+
 
         node_class = cls.node_classes[msg.module][msg.node_class]
 
@@ -536,17 +598,22 @@ class Node(object):
         # call setup()
         node_instance = node_class(options=options_dict)
 
-        # Set name from ROS message
+        # Set name and parent_name from ROS message
         if msg.name:
             node_instance.name = msg.name
+        if msg.parent_name:
+            node_instance.parent_name = msg.parent_name
 
         # If there is a dictionary of existing nodes, we can make the node name
         # unique and populate children.
-        if node_dict:
+        if node_dict is not None:
             # Ensure that name is unique
             while node_instance.name in node_dict:
                 node_instance.name = increment_name(node_instance.name)
 
+            # Find parent (if any) and add this node as a child
+            if node_instance.parent_name in node_dict:
+                node_dict[node_instance.parent_name].add_child(node_instance)
             # Find children and add them
             missing_children = []
             for child_name in msg.child_names:
