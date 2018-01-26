@@ -1,19 +1,19 @@
+image: shadowrobot/build-tools:trusty-indigo
 stages:
   - build
 
 sr-build-tools-build:
   stage: build
   tags:
-    - ros
+    - docker
   script:
     - export toolset_branch="master"
-    - export server_type="local"
+    - export server_type="gitlab_ci"
     - export used_modules="check_cache,code_coverage,software_tests,code_style_check"
-    - export relative_job_path=${CI_PROJECT_PATH}
-    - export unit_tests_result_dir="$relative_job_path/unit_tests"
-    - export coverage_tests_result_dir="$relative_job_path/code_coverage"
-    - export lint_result_dir="$relative_job_path/lint_results"
-    - export NOSE_COVER_PACKAGE="ros_bt_py"
+    - export unit_tests_result_dir="unit_tests"
+    - export coverage_tests_result_dir="code_coverage"
+    - export lint_result_dir="lint_results"
+    - export docker_image_name="shadowrobot/build-tools:trusty-indigo"
     - export remote_shell_script="https://raw.githubusercontent.com/T045T/sr-build-tools/$toolset_branch/bin/sr-run-ci-build.sh"
     - curl -s "$( echo "$remote_shell_script" | sed 's/#/%23/g' )" | bash /dev/stdin "$toolset_branch" $server_type $used_modules $relative_job_path
   artifacts:
