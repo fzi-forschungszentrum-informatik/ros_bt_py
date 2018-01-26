@@ -9,7 +9,7 @@ sr-build-tools-build:
     - export toolset_branch="master"
     - export server_type="local"
     - export used_modules="check_cache,code_coverage,software_tests,code_style_check"
-    - export relative_job_path=${CI_PROJECT_DIR}
+    - export relative_job_path=${CI_PROJECT_PATH}
     - export unit_tests_result_dir="$relative_job_path/unit_tests"
     - export coverage_tests_result_dir="$relative_job_path/code_coverage"
     - export lint_result_dir="$relative_job_path/lint_results"
