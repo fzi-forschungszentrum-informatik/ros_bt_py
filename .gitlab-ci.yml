@@ -4,8 +4,6 @@ stages:
 
 sr-build-tools-build:
   stage: build
-  tags:
-    - docker
   script:
     - export toolset_branch="master"
     - export server_type="gitlab_ci"
