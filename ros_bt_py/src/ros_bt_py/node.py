@@ -10,7 +10,7 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import NodeData as NodeDataMsg
 from ros_bt_py_msgs.msg import NodeDataLocation
 
-from ros_bt_py.exceptions import BehaviorTreeException, NodeStateError
+from ros_bt_py.exceptions import BehaviorTreeException, NodeStateError, NodeConfigError
 from ros_bt_py.node_data import NodeData, NodeDataMap
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
@@ -87,6 +87,10 @@ class Node(object):
 
         :param ros_bt_py.debug_manager.DebugManager debug_manager:
 
+        :raises: NodeConfigError
+
+        If anything is wrong with the node configuration defined via
+        :function:`ros_bt_py.node.define_bt_node`
         """
         self.name = type(self).__name__
         self.parent_name = ''
@@ -96,7 +100,7 @@ class Node(object):
         self.debug_manager = debug_manager
 
         if not self.node_config:
-            raise ValueError('Missing node_config, cannot initialize!')
+            raise NodeConfigError('Missing node_config, cannot initialize!')
 
         self.options = NodeDataMap(name='options')
         self._register_node_data(source_map=self.node_config.options,
@@ -376,9 +380,9 @@ class Node(object):
     def add_child(self, child, at_index=None):
         """Add a child to this node at the given index
 
-        :raises: Exception, KeyError
+        :raises: BehaviorTreeException, KeyError
 
-        `Exception` if the number of children after the add operation
+        `BehaviorTreeException` if the number of children after the add operation
         would exceed the maximum number of children, `KeyError` if a
         child of the same name already exists
         """
@@ -415,8 +419,12 @@ class Node(object):
 
         :rtype: Node
         :returns: The child that was just removed
+        :raises: KeyError if no child with that name exists
         """
-        child_index = (child.name for child in self.children).index(child_name)
+        try:
+            child_index = [child.name for child in self.children].index(child_name)
+        except ValueError:
+            raise KeyError('Node %s has no child named "%s"' % (self.name, child_name))
         tmp = self.children[child_index]
         del self.children[child_index]
         return tmp
@@ -435,33 +443,33 @@ class Node(object):
         option keys referenced by any :class:`OptionRef` objects must
         exist and be populated!
 
-        :raises: KeyError, ValueError
-        If any of the keys in `source_map` already exist in `target_map`,
-        raise KeyError.
-        If an OptionRef value is passed, but `allow_ref` is `False`, raise ValueError.
-        If an OptionRef references an option value that has not been set or
-        does not exist, raise KeyError.
-        If an OptionRef references an option value that does not hold a `type`,
-        raise ValueError.
+        :raises: NodeConfigError in any of the following cases:
+          * If any of the keys in `source_map` already exist in `target_map`
+          * If an OptionRef value is passed, but `allow_ref` is `False`
+          * If an OptionRef references an option value that has not been set or
+            does not exist
+          * If an OptionRef references an option value that does not hold a `type`
         """
         for key, data_type in source_map.iteritems():
             if key in target_map:
-                raise KeyError('Duplicate output name: %s' % key)
+                raise NodeConfigError('Duplicate output name: %s' % key)
 
             if isinstance(data_type, OptionRef):
                 if not allow_ref:
-                    raise ValueError('OptionRef not allowed while adding to %s' % target_map.name)
+                    raise NodeConfigError('OptionRef not allowed while adding to %s' %
+                                          target_map.name)
                 if data_type.option_key not in self.options:
-                    raise KeyError("OptionRef for %s key '%s' references invalid option key '%s'"
-                                   % (target_map.name, key, data_type.option_key))
+                    raise NodeConfigError('OptionRef for %s key "%s" references invalid '
+                                          'option key "%s"' %
+                                          (target_map.name, key, data_type.option_key))
                 if not self.options.is_updated(data_type.option_key):
-                    raise ValueError("OptionRef for %s key '%s' references unwritten "
-                                     "option key '%s'"
-                                     % (target_map.name, key, data_type.option_key))
+                    raise NodeConfigError('OptionRef for %s key "%s" references unwritten '
+                                          'option key "%s"' %
+                                          (target_map.name, key, data_type.option_key))
                 if not isinstance(self.options[data_type.option_key], type):
-                    raise ValueError("OptionRef for %s key '%s' references option key '%s' "
-                                     "that does not contain a type!"
-                                     % (target_map.name, key, data_type.option_key))
+                    raise NodeConfigError('OptionRef for %s key "%s" references option key '
+                                          '"%s" that does not contain a type!' %
+                                          (target_map.name, key, data_type.option_key))
                 target_map.add(key, NodeData(data_type=self.options[data_type.option_key]))
             else:
                 target_map.add(key, NodeData(data_type=data_type))
