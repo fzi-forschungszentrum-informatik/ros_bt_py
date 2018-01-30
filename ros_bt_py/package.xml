@@ -15,11 +15,7 @@
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
   <license>proprietary</license>
 
-
-  <!-- Url tags are optional, but multiple are allowed, one per tag -->
-  <!-- Optional attribute type can be: website, bugtracker, or repository -->
-  <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/ros_bt_py</url> -->
+  <url type="website">https://ids-git.fzi.de/berg/ros_bt_py</url>
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
