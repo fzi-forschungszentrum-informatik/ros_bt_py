@@ -238,6 +238,7 @@ class TestTreeManager(unittest.TestCase):
 
         self.assertTrue(self.manager.add_node(add_request).success)
         self.assertEqual(self.manager.nodes['passthrough'].inputs['in'], 42)
+        self.assertIsNone(self.manager.nodes['passthrough'].outputs['out'])
 
         execution_request = ControlTreeExecutionRequest(
             command=ControlTreeExecutionRequest.TICK_ONCE)
@@ -266,3 +267,28 @@ class TestTreeManager(unittest.TestCase):
 
         # stopping a stopped tree is fine
         self.assertTrue(self.manager.control_execution(execution_request).success)
+
+        # After resetting, output should be None again
+        execution_request.command = ControlTreeExecutionRequest.RESET
+        self.assertIsNotNone(self.manager.nodes['passthrough'].outputs['out'])
+        self.assertTrue(self.manager.control_execution(execution_request).success)
+        self.assertIsNone(self.manager.nodes['passthrough'].outputs['out'])
+
+    def testControlBrokenTree(self):
+        add_request = AddNodeRequest(tree_name='',
+                                     node=self.node_msg)
+        # Add two nodes, so there's no one root node
+        self.assertTrue(self.manager.add_node(add_request).success)
+        self.assertTrue(self.manager.add_node(add_request).success)
+
+
+        execution_request = ControlTreeExecutionRequest()
+
+        # All of these should fail, since the manager cannot find a root node
+        # to tick (or reset)
+        execution_request.command = ControlTreeExecutionRequest.TICK_ONCE
+        self.assertFalse(self.manager.control_execution(execution_request).success)
+        execution_request.command = ControlTreeExecutionRequest.TICK_PERIODICALLY
+        self.assertFalse(self.manager.control_execution(execution_request).success)
+        execution_request.command = ControlTreeExecutionRequest.RESET
+        self.assertFalse(self.manager.control_execution(execution_request).success)
