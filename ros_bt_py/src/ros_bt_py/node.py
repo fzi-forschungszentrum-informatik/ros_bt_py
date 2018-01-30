@@ -18,7 +18,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 def define_bt_node(node_config):
     """Provide information about this Node's interface
 
-    Every class that derives, directly or indirectly, from :class:Node,
+    Every class that derives, directly or indirectly, from :class:`Node`,
     must be decorated with this!
 
     :param NodeConfig node_config:
@@ -47,7 +47,7 @@ class Node(object):
 
     Each node has a set of inputs, outputs and options. At every tick
     (usually somewhere between 10 and 30 times a second),
-    :meth:Node.step is called with the appropriate data.
+    :meth:`tick` is called with the appropriate data.
 
     Nodes in a behavior Tree can be roughly divided into two classes,
     with two sub-classes each:
@@ -56,7 +56,7 @@ class Node(object):
       These do not have any children and can take one of two forms:
       *Predicates* and *Behaviors*. *Predicates* check a condition and instantly
       return `SUCCEEDED` or `FAILED`. *Behaviors* are more involved and may
-      return `RUNNING`, but should be interruptible (see :meth:Node.untick).
+      return `RUNNING`, but should be interruptible (see :meth:`untick`).
 
     Inner Nodes
       These too come in two flavors: *Combiners* and *Decorators*. *Combiners*
@@ -77,7 +77,7 @@ class Node(object):
         """Prepare class members
 
         After this finishes, the Node is *not* ready to run. You still
-        need to do your own initialization in :meth:Node.do_setup.
+        need to do your own initialization in :meth:`do_setup`.
 
         :param dict options:
 
@@ -134,9 +134,9 @@ class Node(object):
         This is called after all the input, output and option values
         have been registered (and in the case of options, populated), so
         you can use those values in your implementation of
-        :meth:Node.do_setup
+        :meth:`do_setup`
 
-        Sets the state of the node to whatever :meth:Node.do_setup
+        Sets the state of the node to whatever :meth:`do_setup`
         returned.
 
         :raises: BehaviorTreeException if called more than once on the same node
@@ -151,21 +151,21 @@ class Node(object):
         """Use this to do custom node setup.
 
         Note that this will be called once, when the tree is first
-        started, before the first call of :meth:Node.tick.
+        started, before the first call of :meth:`tick`.
 
-        :rtype basestring:
-        :return:
-        This method must return one of the constants in :class:Node.State
+        :rtype: basestring
+        :returns:
+          This method must return one of the constants in :class:`ros_bt_py_msgs.msg.Node`
         """
         raise NotImplementedError('Trying to setup a node with no do_setup() method')
 
     def handle_inputs(self):
-        """Execute the callbacks registered by :meth:Node._wire_input
+        """Execute the callbacks registered by :meth:`_wire_input`
 
         But only if an input has been updated since the last tick.
 
         :raises: ValueError
-        If any input is unset
+          If any input is unset
         """
         for input_name in self.inputs:
             if not self.inputs.is_updated(input_name):
@@ -175,11 +175,11 @@ class Node(object):
         self.inputs.handle_subscriptions()
 
     def handle_outputs(self):
-        """Execute the callbacks registered by :meth:Node.subscribe:
+        """Execute the callbacks registered by :meth:`NodeDataMap.subscribe`:
 
         But only if the output has changed during this tick (see where
-        the :meth:NodeDataMap.reset_updated is called in
-        :meth:Node.tick)
+        the :meth:`NodeDataMap.reset_updated` is called in
+        :meth:`tick`)
         """
         self.outputs.handle_subscriptions()
 
@@ -187,10 +187,10 @@ class Node(object):
         """This is called every tick (ticks happen at ~10-20Hz, usually.
 
         You should not need to override this method, but instead
-        implement :meth:Node.do_tick in your own class.
+        implement :meth:`do_tick` in your own class.
 
         :returns:
-        The state of the node after ticking - should be `SUCCEEDED`, `FAILED` or `RUNNING`.
+          The state of the node after ticking - should be `SUCCEEDED`, `FAILED` or `RUNNING`.
 
         :raises: BehaviorTreeException if a tick is impossible / not allowed
         """
@@ -250,7 +250,7 @@ class Node(object):
         constants from `Node.Status`.
 
         :returns:
-        One of the constants in :class:ros_bt_py_msgs.msg.Node
+          One of the constants in :class:`ros_bt_py_msgs.msg.Node`
         """
         msg = 'Ticking a node without a do_tick function!'
         self.logerr(msg)
@@ -264,7 +264,7 @@ class Node(object):
 
         The node's outputs' `updated` flags are also reset!
 
-        A class inheriting from :class:Node should override :meth:Node.do_untick instead of this!
+        A class inheriting from :class:`Node` should override :meth:`do_untick` instead of this!
 
         :raises: BehaviorTreeException
           When trying to untick a node that has not been initialized yet.
@@ -279,13 +279,13 @@ class Node(object):
         self.outputs.reset_updated()
 
     def do_untick(self):
-        """This is called by :meth:Node.untick - override it!
+        """This is called by :meth:`untick` - override it!
 
         After executing this method, your node should:
 
         1. Be in the IDLE or PAUSED state, unless an error happened
         2. Not execute any of its behavior in the background
-        3. Be ready to resume on the next call of :meth:Node.tick / :meth:Node.step
+        3. Be ready to resume on the next call of :meth:`tick`
         """
         msg = 'Unticking a node without untick function!'
         self.logerr(msg)
@@ -294,9 +294,9 @@ class Node(object):
     def reset(self):
         """Use this to reset a node completely
 
-        Whereas :meth:Node.untick / :meth:Node.do_untick only pauses
-        execution, ready to be resumed, :meth:Node.reset means returning
-        to the same state the node was in right after calling :meth:Node.setup
+        Whereas :meth:`untick` / :meth:`do_untick` only pauses
+        execution, ready to be resumed, :meth:`reset` means returning
+        to the same state the node was in right after calling :meth:`setup`
 
         :raises: BehaviorTreeException
           When trying to reset a node that hasn't been initialized yet
@@ -318,7 +318,7 @@ class Node(object):
         3. On the next tick, behave as if it has just been created
 
         :returns:
-        The new state of the node (should be IDLE unless an error happened)
+          The new state of the node (should be IDLE unless an error happened)
         """
         msg = 'Trying to reset a node without do_reset function'
         self.logerr(msg)
@@ -327,7 +327,7 @@ class Node(object):
     def shutdown(self):
         """Should be called before deleting a node.
 
-        This method just calls :meth:Node.do_shutdown, which any
+        This method just calls :meth:`do_shutdown`, which any
         subclass must override.
 
         This gives the node a chance to clean up any resources it might
@@ -422,17 +422,17 @@ class Node(object):
         return tmp
 
     def _register_node_data(self, source_map, target_map, allow_ref):
-        """Register a number of typed :class:NodeData in the given map
+        """Register a number of typed :class:`NodeData` in the given map
 
         :param dict(str, type) source_map: a dictionary mapping from data keys to data types,
         i.e. ``{ 'a_string' : str, 'an_int' : int }``
 
         :param NodeDataMap target_map:
-        The :class:NodeDataMap to add :class:NodeData values to
+        The :class:`NodeDataMap` to add :class:`NodeData` values to
 
         :param bool allow_ref:
-        Decides whether :class:OptionRef is accepted as a type. If True, the
-        option keys referenced by any :class:OptionRef objects must
+        Decides whether :class:`OptionRef` is accepted as a type. If True, the
+        option keys referenced by any :class:`OptionRef` objects must
         exist and be populated!
 
         :raises: KeyError, ValueError
@@ -494,8 +494,7 @@ class Node(object):
         """Return one of our NodeDataMaps by string name
 
         :param basestring data_kind:
-
-        One of the constants in :class:ros_bt_py_msgs.msg.NodeDataLocation
+          One of the constants in :class:`ros_bt_py_msgs.msg.NodeDataLocation`
 
         :rtype: NodeDataMap
         """
@@ -641,7 +640,7 @@ class Node(object):
     def to_msg(self):
         """Populate a ROS message with the information from this Node
 
-        Round-tripping the result through :meth:Node.from_msg should
+        Round-tripping the result through :meth:`Node.from_msg` should
         yield a working node object, with the caveat that state will not
         be preserved.
 

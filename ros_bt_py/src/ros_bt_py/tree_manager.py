@@ -241,7 +241,7 @@ class TreeManager(object):
         """Add the node in this request to the tree.
 
         :param ros_bt_py_msgs.srv.AddNodeRequest request:
-        A request describing the node to add.
+          A request describing the node to add.
         """
         # TODO(nberg): handle subtrees
         response = AddNodeResponse()
@@ -339,7 +339,7 @@ class TreeManager(object):
         Will fail if `new_index` is invalid.
 
         For moving a node to a different parent, see
-        :meth:TreeManager.move_node
+        :meth:`move_node`
         """
         pass
 
@@ -362,10 +362,10 @@ class TreeManager(object):
 
         :param ros_bt_py_msgs.srv.WireNodeDataRequest request:
 
-        Contains a list of :class: ros_bt_py_msgs.msg.NodeDataWiring
+        Contains a list of :class: `ros_bt_py_msgs.msg.NodeDataWiring`
         objects that model connections
 
-        :returns: :class:ros_bt_py_msgs.src.WireNodeDataResponse or `None`
+        :returns: :class:`ros_bt_py_msgs.src.WireNodeDataResponse` or `None`
         """
         response = WireNodeDataResponse(success=True)
         # TODO(nberg): Check request.tree_name to see if the request concerns
@@ -393,10 +393,10 @@ class TreeManager(object):
 
         :param ros_bt_py_msgs.srv.WireNodeDataRequest request:
 
-        Contains a list of :class: ros_bt_py_msgs.msg.NodeDataWiring
+        Contains a list of :class:`ros_bt_py_msgs.msg.NodeDataWiring`
         objects that model connections
 
-        :returns: :class:ros_bt_py_msgs.src.WireNodeDataResponse or `None`
+        :returns: :class:`ros_bt_py_msgs.src.WireNodeDataResponse` or `None`
         """
         response = WireNodeDataResponse(success=True)
         # TODO(nberg): Check request.tree_name to see if the request concerns

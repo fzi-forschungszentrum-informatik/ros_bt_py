@@ -10,10 +10,10 @@ def from_string(data_type, string_value, static=False):
 class NodeData(object):
     """Represents a piece of data (input, output or option) held by a Node
 
-    Each NodeData object is typed and will only accept new data (via its
-    :meth:NodeData.set method) if it is of the correct type.
+    Each `NodeData` object is typed and will only accept new data (via its
+    :meth:`set` method) if it is of the correct type.
 
-    NodeData can also be static, in which case it will only accept one
+    `NodeData` can also be static, in which case it will only accept one
     update (the initial value, if not empty, counts as an update!)
     """
     def __init__(self, data_type, initial_value=None, static=False):
@@ -67,7 +67,7 @@ class NodeData(object):
         """Get the current value
 
         Will log a warning if the value has not been updated since the
-        last call of `reset_updated` (unless this piece of data is
+        last call of :meth:`reset_updated` (unless this piece of data is
         marked static, in which case we do not expect updates).
         """
         if not self.updated:
@@ -79,7 +79,7 @@ class NodeData(object):
 
 
 class NodeDataMap(object):
-    """Custom container class that hides :meth:NodeData.get and :meth:NodeData.set
+    """Custom container class that hides :meth:`NodeData.get` and :meth:`NodeData.set`
 
     Acts like a regular dict, with three caveats:
 
@@ -101,10 +101,11 @@ class NodeDataMap(object):
 
         :param str key: the key you want to subscribe to
 
-        :param callback: a callback that takes a parameter of
-        the same type as the value at `key`. This will be called when
-        :meth:NodeDatamap.handle_subscriptions is called, if a change
-        was made to the value since the last call of :meth:NodeDataMap.reset_updated
+        :param callback:
+          a callback that takes a parameter of
+          the same type as the value at `key`. This will be called when
+          :meth:`handle_subscriptions` is called, if a change
+          was made to the value since the last call of :meth:`reset_updated`
 
         :param str subscriber_name: the name of the subscriber node. Only used for logging.
 
@@ -162,11 +163,11 @@ class NodeDataMap(object):
             self.callbacks[key] = []
 
     def handle_subscriptions(self):
-        """Execute the callbacks registered by :meth:NodeDataMap.subscribe:
+        """Execute the callbacks registered by :meth:`subscribe`:
 
         Only executes a callback if the corresponding piece of data has
         been updated since the last call of
-        :meth:NodeDataMap.reset_updated.
+        :meth:`reset_updated`.
         """
         for key in self._map:
             if self.is_updated(key):
@@ -210,7 +211,7 @@ class NodeDataMap(object):
         """Return the setter function for the :class:NodeData object at the given key.
 
         The usual reason to use this is wanting to wire inputs and
-        outputs (see :meth:Node.subscribe and :meth:Node._wire_input).
+        outputs (see :meth:`Node.subscribe and :meth:`Node._wire_input`).
 
         :raises: KeyError
         """

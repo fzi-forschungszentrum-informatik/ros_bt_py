@@ -68,9 +68,9 @@ class NodeConfig(object):
         """Extend the input, output and option dicts with values from `other`
 
         :raises: KeyError, ValueError
-        If any of the dicts in `other` contains keys that already exist,
-        raise `KeyError`. If `max_children` has a value different from ours,
-        raise `ValueError`.
+          If any of the dicts in `other` contains keys that already exist,
+          raise `KeyError`. If `max_children` has a value different from ours,
+          raise `ValueError`.
         """
         if self.max_children != other.max_children:
             raise ValueError('Mismatch in max_children: %s vs %s'
