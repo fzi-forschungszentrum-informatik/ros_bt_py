@@ -123,7 +123,11 @@ class TreeManager(object):
                 self._once = False
                 break
             tick_duration = time.time() - start_time
-            rospy.sleep(sleep_duration_sec - tick_duration)
+            if tick_duration <= 0:
+                rospy.logwarn('Tick took longer than set period, cannot tick at %f.2 Hz',
+                              self.tree_msg.tick_frequency_hz)
+            else:
+                rospy.sleep(sleep_duration_sec - tick_duration)
 
         with self._state_lock:
             self.tree_msg.state = Tree.IDLE
