@@ -109,8 +109,6 @@ class TreeManager(object):
         if root.state == NodeMsg.UNINITIALIZED:
             root.setup()
         sleep_duration_sec = (1.0/self.tree_msg.tick_frequency_hz)
-        with self._state_lock:
-            self.tree_msg.state = Tree.TICKING
 
         while True:
             start_time = time.time()
@@ -188,7 +186,7 @@ class TreeManager(object):
                 # tick, if the tree has not stopped by then we're in deep
                 # trouble.
                 if self._tick_thread.is_alive():
-                    self._tick_thread.join(2.0)
+                    self._tick_thread.join((1.0 / self.tree_msg.tick_frequency_hz) * 4.0)
                     if self._tick_thread.is_alive():
                         raise BehaviorTreeException('Tried to join tick thread after requesting '
                                                     'stop, but failed!')
@@ -213,14 +211,14 @@ class TreeManager(object):
                 try:
                     self.find_root()
                     self._once = True
+                    with self._state_lock:
+                        self.tree_msg.state = Tree.TICKING
                     self._tick_thread.start()
                     # Give the tick thread much more time than it should take
                     self._tick_thread.join((1.0 / self.tree_msg.tick_frequency_hz) * 4.0)
                     if self._tick_thread.is_alive():
-                        response.success = False
-                        rospy.logfatal('Unable to join tick thread for Behavior Tree %s',
-                                       self.tree_msg.name)
-                        self.tree_msg.state = Tree.ERROR
+                        raise BehaviorTreeException('Tried to join tick thread after requesting '
+                                                    'stop, but failed!')
                     else:
                         response.success = True
                         response.tree_state = Tree.IDLE
@@ -233,11 +231,17 @@ class TreeManager(object):
                 response.success = False
                 response.error_message = ('Tried to start periodic ticking when tree is '
                                           'already running, aborting')
+                response.tree_state = self.tree_msg.state
                 rospy.logwarn(response.error_message)
             else:
                 try:
                     self.find_root()
+                    with self._state_lock:
+                        self.tree_msg.state = Tree.TICKING
                     self._once = False
+                    # Use provided tick frequency, if any
+                    if request.tick_frequency_hz != 0:
+                        self.tree_msg.tick_frequency_hz = request.tick_frequency_hz
                     self._tick_thread.start()
                     response.success = True
                     response.tree_state = Tree.TICKING

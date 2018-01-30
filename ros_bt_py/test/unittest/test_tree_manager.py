@@ -247,3 +247,22 @@ class TestTreeManager(unittest.TestCase):
         self.assertEqual(response.tree_state, Tree.IDLE)
 
         self.assertEqual(self.manager.nodes['passthrough'].outputs['out'], 42)
+
+        # Start, then stop, continuous execution
+        execution_request.command = ControlTreeExecutionRequest.TICK_PERIODICALLY
+        execution_request.tick_frequency_hz = 2
+        response = self.manager.control_execution(execution_request)
+        self.assertTrue(response.success)
+        self.assertEqual(response.tree_state, Tree.TICKING)
+
+        # Trying to start ticking while the tree already is ticking should fail
+        self.assertFalse(self.manager.control_execution(execution_request).success)
+
+        # Stopping should put the tree back in the IDLE state
+        execution_request.command = ControlTreeExecutionRequest.STOP
+        response = self.manager.control_execution(execution_request)
+        self.assertTrue(response.success)
+        self.assertEqual(response.tree_state, Tree.IDLE)
+
+        # stopping a stopped tree is fine
+        self.assertTrue(self.manager.control_execution(execution_request).success)
