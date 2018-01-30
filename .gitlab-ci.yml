@@ -9,7 +9,7 @@ sr-build-tools-build:
   script:
     - export toolset_branch="master"
     - export server_type="gitlab_ci"
-    - export used_modules="check_cache,code_coverage,software_tests,code_style_check"
+    - export used_modules="check_cache,code_coverage,software_tests,code_style_check,complete_deb_check"
     - export unit_tests_result_dir="unit_tests"
     - export coverage_tests_result_dir="code_coverage"
     - export lint_result_dir="lint_results"
