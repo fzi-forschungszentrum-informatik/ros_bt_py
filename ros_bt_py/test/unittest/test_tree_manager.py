@@ -281,7 +281,6 @@ class TestTreeManager(unittest.TestCase):
         self.assertTrue(self.manager.add_node(add_request).success)
         self.assertTrue(self.manager.add_node(add_request).success)
 
-
         execution_request = ControlTreeExecutionRequest()
 
         # All of these should fail, since the manager cannot find a root node

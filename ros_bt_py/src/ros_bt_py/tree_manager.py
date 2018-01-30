@@ -94,11 +94,11 @@ class TreeManager(object):
 
         if len(possible_roots) > 1:
             raise TreeTopologyError('Tree "%s" has multiple nodes without parents. '
-                                        'Cannot tick!' % self.tree_msg.name)
+                                    'Cannot tick!' % self.tree_msg.name)
         if not possible_roots:
             raise TreeTopologyError('All nodes in tree "%s" have parents. You have '
-                                        'made a cycle, which makes the tree impossible to run!' %
-                                        self.tree_msg.name)
+                                    'made a cycle, which makes the tree impossible to run!' %
+                                    self.tree_msg.name)
         return possible_roots[0]
 
     def tick(self, once=None):
