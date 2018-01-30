@@ -15,6 +15,7 @@ string EDITING = EDITING
 string TICKING = TICKING
 string DEBUGGING = DEBUGGING
 string STOP_REQUESTED = STOP_REQUESTED
+string ERROR = ERROR
 
 # These are accessible when using this tree as a subtree
 NodeDataLocation[] public_node_data
