@@ -3,8 +3,8 @@ import unittest
 import jsonpickle
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
-from ros_bt_py_msgs.msg import NodeData, NodeDataWiring, NodeDataLocation
-from ros_bt_py_msgs.srv import WireNodeDataRequest, AddNodeRequest, RemoveNodeRequest
+from ros_bt_py_msgs.msg import NodeData, NodeDataWiring, NodeDataLocation, Tree
+from ros_bt_py_msgs.srv import WireNodeDataRequest, AddNodeRequest, RemoveNodeRequest, ControlTreeExecutionRequest
 
 from ros_bt_py.node import Node
 from ros_bt_py.tree_manager import TreeManager
@@ -213,6 +213,7 @@ class TestTreeManager(unittest.TestCase):
                                                         serialized_value=jsonpickle.encode(42)))
 
         response = self.manager.add_node(add_request)
+        self.assertTrue(response.success)
 
         self.manager.tick(once=True)
         self.assertEqual(self.manager.nodes[response.actual_node_name].outputs['out'], 42)
@@ -227,3 +228,22 @@ class TestTreeManager(unittest.TestCase):
                          node in self.tree_msg.nodes if node.name == response.actual_node_name))
         self.assertEqual(jsonpickle.decode(node_msg.current_inputs[0].serialized_value), 42)
         self.assertEqual(jsonpickle.decode(node_msg.current_outputs[0].serialized_value), 42)
+
+    def testControlTree(self):
+        add_request = AddNodeRequest(tree_name='',
+                                     node=self.node_msg)
+        add_request.node.name = 'passthrough'
+        add_request.node.current_inputs.append(NodeData(key='in',
+                                                        serialized_value=jsonpickle.encode(42)))
+
+        self.assertTrue(self.manager.add_node(add_request).success)
+        self.assertEqual(self.manager.nodes['passthrough'].inputs['in'], 42)
+
+        execution_request = ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.TICK_ONCE)
+
+        response = self.manager.control_execution(execution_request)
+        self.assertTrue(response.success)
+        self.assertEqual(response.tree_state, Tree.IDLE)
+
+        self.assertEqual(self.manager.nodes['passthrough'].outputs['out'], 42)

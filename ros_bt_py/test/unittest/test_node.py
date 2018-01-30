@@ -5,6 +5,7 @@ import unittest
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import NodeData, NodeDataLocation
 
+from ros_bt_py.exceptions import BehaviorTreeException, NodeConfigError
 from ros_bt_py.node import Node, load_node_module, increment_name
 from ros_bt_py.node_config import NodeConfig, OptionRef
 from ros_bt_py.nodes.passthrough_node import PassthroughNode
@@ -39,11 +40,11 @@ class TestIncrementName(unittest.TestCase):
 
 
 class TestNode(unittest.TestCase):
-    def TestNodeHasNoConfig(self):
+    def testNodeHasNoConfig(self):
         self.assertEqual(Node.node_config, None)
 
-    def TestNodeInitFails(self):
-        self.assertRaises(ValueError, Node)
+    def testNodeInitFails(self):
+        self.assertRaises(NodeConfigError, Node)
 
     def testMissingOption(self):
         self.assertRaises(ValueError, PassthroughNode)
@@ -69,6 +70,9 @@ class TestPassthroughNode(unittest.TestCase):
         self.assertEqual(passthrough.inputs.name, 'inputs')
         self.assertEqual(passthrough.outputs.name, 'outputs')
         self.assertEqual(passthrough.options.name, 'options')
+
+    def testInitWithInvalidParams(self):
+        self.assertRaises(TypeError, PassthroughNode, {'passthrough_type': 1})
 
     def testPassthroughNode(self):
         passthrough = PassthroughNode({'passthrough_type': int})
@@ -132,6 +136,20 @@ class TestPassthroughNode(unittest.TestCase):
         self.assertEqual(passthrough.get_data_map(NodeDataLocation.OPTION_DATA).name, 'options')
         self.assertRaises(KeyError, passthrough.get_data_map, '')
         self.assertRaises(KeyError, passthrough.get_data_map, 'INPUT_DATA')
+
+    def testAddChild(self):
+        """It should be impossible to add children to a PassthroughNode"""
+        passthrough = PassthroughNode({'passthrough_type': float})
+
+        self.assertRaises(BehaviorTreeException, passthrough.add_child,
+                          PassthroughNode({'passthrough_type':float}))
+
+    def testRemoveChild(self):
+        """Removing a child from PassthroughNode should fail"""
+        passthrough = PassthroughNode({'passthrough_type': float})
+
+        self.assertRaises(KeyError, passthrough.remove_child,
+                          'foo')
 
     def testNodeFromMsg(self):
         msg = NodeMsg(
