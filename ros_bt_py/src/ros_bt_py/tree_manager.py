@@ -9,7 +9,7 @@ from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, ControlTreeExecution
 from ros_bt_py_msgs.msg import Tree
 from ros_bt_py_msgs.msg import Node as NodeMsg
 
-from ros_bt_py.exceptions import BehaviorTreeException
+from ros_bt_py.exceptions import BehaviorTreeException, TreeTopologyError
 from ros_bt_py.node import Node, load_node_module
 from ros_bt_py.debug_manager import DebugManager
 
@@ -87,16 +87,16 @@ class TreeManager(object):
     def find_root(self):
         """Find the root node of the tree
 
-        :raises: `BehaviorTreeException` if either no root or multiple roots are found
+        :raises: `TreeTopologyError` if either no root or multiple roots are found
         """
         # Find root node
         possible_roots = [node for node in self.nodes.itervalues() if node.parent_name == '']
 
         if len(possible_roots) > 1:
-            raise BehaviorTreeException('Tree "%s" has multiple nodes without parents. '
+            raise TreeTopologyError('Tree "%s" has multiple nodes without parents. '
                                         'Cannot tick!' % self.tree_msg.name)
         if not possible_roots:
-            raise BehaviorTreeException('All nodes in tree "%s" have parents. You have '
+            raise TreeTopologyError('All nodes in tree "%s" have parents. You have '
                                         'made a cycle, which makes the tree impossible to run!' %
                                         self.tree_msg.name)
         return possible_roots[0]
@@ -225,7 +225,7 @@ class TreeManager(object):
                     else:
                         response.success = True
                         response.tree_state = Tree.IDLE
-                except BehaviorTreeException, e:
+                except TreeTopologyError, e:
                     response.success = False
                     response.error_message = str(e)
                     response.tree_state = self.tree_msg.state
@@ -248,7 +248,7 @@ class TreeManager(object):
                     self._tick_thread.start()
                     response.success = True
                     response.tree_state = Tree.TICKING
-                except BehaviorTreeException, e:
+                except TreeTopologyError, e:
                     response.success = False
                     response.error_message = str(e)
                     response.tree_state = self.tree_msg.state
@@ -266,7 +266,7 @@ class TreeManager(object):
                         self.tree_msg.state = Tree.IDLE
                     response.success = True
                     response.tree_state = self.tree_msg.state
-                except BehaviorTreeException, e:
+                except TreeTopologyError, e:
                     response.success = False
                     response.error_message = str(e)
                     response.tree_state = self.tree_msg.state

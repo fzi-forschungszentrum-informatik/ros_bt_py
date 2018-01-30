@@ -8,3 +8,7 @@ class NodeConfigError(BehaviorTreeException):
 
 class NodeStateError(BehaviorTreeException):
     pass
+
+
+class TreeTopologyError(BehaviorTreeException):
+    pass
