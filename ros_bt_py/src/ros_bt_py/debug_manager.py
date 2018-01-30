@@ -83,7 +83,7 @@ class DebugManager(object):
             self.wait_for_continue()
             node_instance.state = old_state
         if self.debug_settings_msg.collect_debug_info:
-            start_time = time.clock()
+            start_time = time.time()
             with self._lock:
                 self._debug_info_msg.current_recursion_depth = len(inspect.stack())
                 self._debug_info_msg.max_recursion_depth = getrecursionlimit()
@@ -92,7 +92,7 @@ class DebugManager(object):
         yield
 
         if self.debug_settings_msg.collect_debug_info:
-            end_time = time.clock()
+            end_time = time.time()
             if node_instance.name not in self.tick_time_windows:
                 self.tick_time_windows[node_instance.name] = []
             window = self.tick_time_windows[node_instance.name]
