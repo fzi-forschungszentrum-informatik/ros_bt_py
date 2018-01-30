@@ -249,6 +249,24 @@ class TreeManager(object):
                     response.success = False
                     response.error_message = str(e)
                     response.tree_state = self.tree_msg.state
+        elif request.command == ControlTreeExecutionRequest.RESET:
+            if self._tick_thread.is_alive() or self.tree_msg.state == Tree.TICKING:
+                response.success = False
+                response.error_message = ('Tried to reset tree while it is running, aborting')
+                response.tree_state = self.tree_msg.state
+                rospy.logwarn(response.error_message)
+            else:
+                try:
+                    root = self.find_root()
+                    root.reset()
+                    with self._state_lock:
+                        self.tree_msg.state = Tree.IDLE
+                    response.success = True
+                    response.tree_state = self.tree_msg.state
+                except BehaviorTreeException, e:
+                    response.success = False
+                    response.error_message = str(e)
+                    response.tree_state = self.tree_msg.state
         else:
             response.error_message = 'Received unknown command %d' % request.command
             rospy.logerr(response.error_message)
