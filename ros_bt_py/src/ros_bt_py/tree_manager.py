@@ -127,6 +127,9 @@ class TreeManager(object):
             else:
                 rospy.sleep(sleep_duration_sec - tick_duration)
 
+        # Ensure all nodes are stopped and not doing anything in
+        # the background.
+        root.untick()
         with self._state_lock:
             self.tree_msg.state = Tree.IDLE
 
