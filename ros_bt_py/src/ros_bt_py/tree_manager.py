@@ -1,4 +1,5 @@
 from threading import Thread, Lock
+import time
 
 import rospy
 
@@ -107,11 +108,12 @@ class TreeManager(object):
         root = self.find_root()
         if root.state == NodeMsg.UNINITIALIZED:
             root.setup()
-        sleep_duration = rospy.Duration.from_sec(1.0/self.tree_msg.tick_frequency_hz)
+        sleep_duration_sec = (1.0/self.tree_msg.tick_frequency_hz)
         with self._state_lock:
             self.tree_msg.state = Tree.TICKING
 
         while True:
+            start_time = time.time()
             with self._state_lock:
                 if self.tree_msg.state == Tree.STOP_REQUESTED:
                     break
@@ -120,7 +122,8 @@ class TreeManager(object):
             if self._once:
                 self._once = False
                 break
-            rospy.sleep(sleep_duration)
+            tick_duration = time.time() - start_time
+            rospy.sleep(sleep_duration_sec - tick_duration)
 
         with self._state_lock:
             self.tree_msg.state = Tree.IDLE
