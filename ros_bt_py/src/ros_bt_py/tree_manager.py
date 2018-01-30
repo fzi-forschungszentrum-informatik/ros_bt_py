@@ -214,8 +214,16 @@ class TreeManager(object):
                     self.find_root()
                     self._once = True
                     self._tick_thread.start()
-                    response.success = True
-                    response.tree_state = Tree.TICKING
+                    # Give the tick thread much more time than it should take
+                    self._tick_thread.join((1.0 / self.tree_msg.tick_frequency_hz) * 4.0)
+                    if self._tick_thread.is_alive():
+                        response.success = False
+                        rospy.logfatal('Unable to join tick thread for Behavior Tree %s',
+                                       self.tree_msg.name)
+                        self.tree_msg.state = Tree.ERROR
+                    else:
+                        response.success = True
+                        response.tree_state = Tree.IDLE
                 except BehaviorTreeException, e:
                     response.success = False
                     response.error_message = str(e)
