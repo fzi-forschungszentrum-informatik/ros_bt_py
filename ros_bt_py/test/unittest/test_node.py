@@ -142,7 +142,7 @@ class TestPassthroughNode(unittest.TestCase):
         passthrough = PassthroughNode({'passthrough_type': float})
 
         self.assertRaises(BehaviorTreeException, passthrough.add_child,
-                          PassthroughNode({'passthrough_type':float}))
+                          PassthroughNode({'passthrough_type': float}))
 
     def testRemoveChild(self):
         """Removing a child from PassthroughNode should fail"""
