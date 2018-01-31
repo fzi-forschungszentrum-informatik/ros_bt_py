@@ -66,7 +66,7 @@ class Node(object):
       could invert `FAILED` into `SUCCEEDED`.
     """
     @contextmanager
-    def dummy_report_tick(self):
+    def _dummy_report_tick(self):
         self.loginfo('Ticking without debug manager')
         yield
 
@@ -171,7 +171,7 @@ class Node(object):
         """
         raise NotImplementedError('Trying to setup a node with no _do_setup() method')
 
-    def handle_inputs(self):
+    def _handle_inputs(self):
         """Execute the callbacks registered by :meth:`_wire_input`
 
         But only if an input has been updated since the last tick.
@@ -186,7 +186,7 @@ class Node(object):
                 raise ValueError('Trying to tick a node with an unset input!')
         self.inputs.handle_subscriptions()
 
-    def handle_outputs(self):
+    def _handle_outputs(self):
         """Execute the callbacks registered by :meth:`NodeDataMap.subscribe`:
 
         But only if the output has changed during this tick (see where
@@ -206,7 +206,7 @@ class Node(object):
 
         :raises: BehaviorTreeException if a tick is impossible / not allowed
         """
-        report_tick = self.dummy_report_tick()
+        report_tick = self._dummy_report_tick()
         if self.debug_manager:
             report_tick = self.debug_manager.report_tick(self)
 
@@ -228,7 +228,7 @@ class Node(object):
             self.outputs.reset_updated()
 
             # Inputs can override options!
-            self.handle_inputs()
+            self._handle_inputs()
             # Inputs are updated by other nodes' outputs, i.e. some time after we
             # use them here. In some cases, inputs might be connected to child
             # outputs (or even our own), which is why we reset before calling step()
@@ -239,7 +239,7 @@ class Node(object):
                                                            NodeMsg.SUCCEEDED,
                                                            NodeMsg.FAILED],
                                            action_name='tick()')
-            self.handle_outputs()
+            self._handle_outputs()
 
             return self.state
 
