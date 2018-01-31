@@ -743,3 +743,18 @@ class Leaf(Node):
     and options, but never change `max_children`.
     """
     pass
+
+
+@define_bt_node(NodeConfig(
+    options={},
+    inputs={},
+    outputs={},
+    max_children=None))
+class FlowControl(Node):
+    """Base class for flow control nodes
+
+    Flow control nodes (mostly Sequence, Fallback and their derivatives)
+    can have an unlimited number of children and each have a unique set
+    of rules for when to tick which of their children.
+    """
+    pass
