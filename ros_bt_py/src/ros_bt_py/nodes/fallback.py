@@ -9,7 +9,7 @@ from ros_bt_py.node_config import NodeConfig
     inputs={},
     outputs={},
     max_children=None))
-class Sequence(FlowControl):
+class Fallback(FlowControl):
     def do_setup(self):
         for child in self.children:
             child.setup()
@@ -18,16 +18,17 @@ class Sequence(FlowControl):
         if not self.children:
             self.logwarn('Ticking without children. Is this really what you want?')
             return NodeMsg.FAILED
-        # Tick children until one returns FAILED or RUNNING
+        # Tick children until one returns SUCCEEDED or RUNNING
         for index, child in enumerate(self.children):
             result = child.tick()
-            if result != NodeMsg.SUCCEEDED:
-                # untick all children after the one that hasn't succeeded
+            if result == NodeMsg.SUCCEEDED or result == NodeMsg.RUNNING:
+                # untick all children after the one that triggered this
+                # condition
                 for untick_child in self.children[index + 1:]:
                     untick_child.untick()
                 return result
-        # If all children succeeded, we too succeed
-        return NodeMsg.SUCCEEDED
+        # If all children failed, we too fail
+        return NodeMsg.FAILED
 
     def do_untick(self):
         for child in self.children:
