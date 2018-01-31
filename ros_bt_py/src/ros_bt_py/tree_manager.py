@@ -352,7 +352,7 @@ class TreeManager(object):
             if self.nodes[name].state != NodeMsg.SHUTDOWN:
                 parent_name = self.nodes[name].parent_name
                 rospy.logwarn('Node %s was not shut down. Check parent node %s (%s) '
-                              'for proper implementation of do_shutdown()',
+                              'for proper implementation of _do_shutdown()',
                               name,
                               parent_name,
                               type(self.nodes[parent_name]).__name__)

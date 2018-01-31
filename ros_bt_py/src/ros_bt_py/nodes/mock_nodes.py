@@ -15,7 +15,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
              'untick_count': int},
     max_children=0))
 class MockLeaf(Leaf):
-    def do_setup(self):
+    def _do_setup(self):
         self.outputs['current_index'] = 0
         self.outputs['tick_count'] = 0
         self.outputs['untick_count'] = 0
@@ -27,7 +27,7 @@ class MockLeaf(Leaf):
                 raise NodeConfigError('Provided output value "%s" is not of output type %s' %
                                       (str(value), self.options['output_type'].__name__))
 
-    def do_tick(self):
+    def _do_tick(self):
         self.outputs['out'] = self.options['output_values'][self.outputs['current_index']]
         new_state = self.options['state_values'][self.outputs['current_index']]
         # Increment index (and roll over if necessary
@@ -37,18 +37,18 @@ class MockLeaf(Leaf):
         self.outputs['tick_count'] = self.outputs['tick_count'] + 1
         return new_state
 
-    def do_untick(self):
+    def _do_untick(self):
         # We leave current_index untouched, so paused is the most semantically
         # correct state
         self.outputs['untick_count'] = self.outputs['untick_count'] + 1
         return NodeMsg.PAUSED
 
-    def do_reset(self):
+    def _do_reset(self):
         self.outputs['current_index'] = 0
         self.outputs['tick_count'] = 0
         self.outputs['untick_count'] = 0
 
         return NodeMsg.IDLE
 
-    def do_shutdown(self):
+    def _do_shutdown(self):
         self.outputs['current_index'] = 0

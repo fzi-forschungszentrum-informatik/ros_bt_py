@@ -77,7 +77,7 @@ class Node(object):
         """Prepare class members
 
         After this finishes, the Node is *not* ready to run. You still
-        need to do your own initialization in :meth:`do_setup`.
+        need to do your own initialization in :meth:`_do_setup`.
 
         :param dict options:
 
@@ -146,9 +146,9 @@ class Node(object):
         This is called after all the input, output and option values
         have been registered (and in the case of options, populated), so
         you can use those values in your implementation of
-        :meth:`do_setup`
+        :meth:`_do_setup`
 
-        Sets the state of the node to whatever :meth:`do_setup`
+        Sets the state of the node to whatever :meth:`_do_setup`
         returned.
 
         :raises: BehaviorTreeException if called more than once on the same node
@@ -156,10 +156,10 @@ class Node(object):
         if self._setup_called:
             raise BehaviorTreeException(
                 'Trying to call setup() more than once on node %s' % self.name)
-        self.state = self.do_setup()
+        self.state = self._do_setup()
         self._setup_called = True
 
-    def do_setup(self):
+    def _do_setup(self):
         """Use this to do custom node setup.
 
         Note that this will be called once, when the tree is first
@@ -169,7 +169,7 @@ class Node(object):
         :returns:
           This method must return one of the constants in :class:`ros_bt_py_msgs.msg.Node`
         """
-        raise NotImplementedError('Trying to setup a node with no do_setup() method')
+        raise NotImplementedError('Trying to setup a node with no _do_setup() method')
 
     def handle_inputs(self):
         """Execute the callbacks registered by :meth:`_wire_input`
@@ -199,7 +199,7 @@ class Node(object):
         """This is called every tick (ticks happen at ~10-20Hz, usually.
 
         You should not need to override this method, but instead
-        implement :meth:`do_tick` in your own class.
+        implement :meth:`_do_tick` in your own class.
 
         :returns:
           The state of the node after ticking - should be `SUCCEEDED`, `FAILED` or `RUNNING`.
@@ -234,7 +234,7 @@ class Node(object):
             # outputs (or even our own), which is why we reset before calling step()
             self.inputs.reset_updated()
 
-            self.state = self.do_tick()
+            self.state = self._do_tick()
             self.raise_if_in_invalid_state(allowed_states=[NodeMsg.RUNNING,
                                                            NodeMsg.SUCCEEDED,
                                                            NodeMsg.FAILED],
@@ -254,7 +254,7 @@ class Node(object):
                                      action_name,
                                      str(allowed_states)))
 
-    def do_tick(self):
+    def _do_tick(self):
         """
         Every Node class must override this.
 
@@ -264,7 +264,7 @@ class Node(object):
         :returns:
           One of the constants in :class:`ros_bt_py_msgs.msg.Node`
         """
-        msg = 'Ticking a node without a do_tick function!'
+        msg = 'Ticking a node without a _do_tick function!'
         self.logerr(msg)
         raise NotImplementedError(msg)
 
@@ -276,21 +276,21 @@ class Node(object):
 
         The node's outputs' `updated` flags are also reset!
 
-        A class inheriting from :class:`Node` should override :meth:`do_untick` instead of this!
+        A class inheriting from :class:`Node` should override :meth:`_do_untick` instead of this!
 
         :raises: BehaviorTreeException
           When trying to untick a node that has not been initialized yet.
         """
         if self.state is NodeMsg.UNINITIALIZED:
             raise BehaviorTreeException('Trying to untick uninitialized node!')
-        self.state = self.do_untick()
+        self.state = self._do_untick()
         self.raise_if_in_invalid_state(allowed_states=[NodeMsg.IDLE,
                                                        NodeMsg.PAUSED],
                                        action_name='untick()')
 
         self.outputs.reset_updated()
 
-    def do_untick(self):
+    def _do_untick(self):
         """This is called by :meth:`untick` - override it!
 
         After executing this method, your node should:
@@ -306,7 +306,7 @@ class Node(object):
     def reset(self):
         """Use this to reset a node completely
 
-        Whereas :meth:`untick` / :meth:`do_untick` only pauses
+        Whereas :meth:`untick` / :meth:`_do_untick` only pauses
         execution, ready to be resumed, :meth:`reset` means returning
         to the same state the node was in right after calling :meth:`setup`
 
@@ -315,11 +315,11 @@ class Node(object):
         """
         if self.state is NodeMsg.UNINITIALIZED:
             raise BehaviorTreeException('Trying to reset uninitialized node!')
-        self.state = self.do_reset()
+        self.state = self._do_reset()
         self.raise_if_in_invalid_state(allowed_states=[NodeMsg.IDLE],
                                        action_name='reset()')
 
-    def do_reset(self):
+    def _do_reset(self):
         """
         This is called to reset the node to its initial state.
 
@@ -332,21 +332,21 @@ class Node(object):
         :returns:
           The new state of the node (should be IDLE unless an error happened)
         """
-        msg = 'Trying to reset a node without do_reset function'
+        msg = 'Trying to reset a node without _do_reset function'
         self.logerr(msg)
         raise NotImplementedError(msg)
 
     def shutdown(self):
         """Should be called before deleting a node.
 
-        This method just calls :meth:`do_shutdown`, which any
+        This method just calls :meth:`_do_shutdown`, which any
         subclass must override.
 
         This gives the node a chance to clean up any resources it might
         be holding before getting deleted.
         """
         if self.state != NodeMsg.SHUTDOWN:
-            self.do_shutdown()
+            self._do_shutdown()
             self.state = NodeMsg.SHUTDOWN
         else:
             self.logwarn('Shutdown called twice')
@@ -361,13 +361,13 @@ class Node(object):
                          'List of not-shutdown children and states:\n' +
                          '\n'.join(unshutdown_children))
 
-    def do_shutdown(self):
+    def _do_shutdown(self):
         """This is called before destroying the node.
 
         Implement this in your node class and release any resources you
         might be holding (file pointers, ROS topic subscriptions etc.)
         """
-        raise NotImplementedError('Trying to shut down a node without do_shutdown() method.')
+        raise NotImplementedError('Trying to shut down a node without _do_shutdown() method.')
 
     def validate(self):
         """You must also override this.

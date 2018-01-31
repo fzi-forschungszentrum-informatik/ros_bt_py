@@ -34,11 +34,11 @@ class Sequence(FlowControl):
     If a Sequence has no children, its :meth:`tick` method will always
     return FAILED.
     """
-    def do_setup(self):
+    def _do_setup(self):
         for child in self.children:
             child.setup()
 
-    def do_tick(self):
+    def _do_tick(self):
         if not self.children:
             self.logwarn('Ticking without children. Is this really what you want?')
             return NodeMsg.FAILED
@@ -53,16 +53,16 @@ class Sequence(FlowControl):
         # If all children succeeded, we too succeed
         return NodeMsg.SUCCEEDED
 
-    def do_untick(self):
+    def _do_untick(self):
         for child in self.children:
             child.untick()
         return NodeMsg.IDLE
 
-    def do_reset(self):
+    def _do_reset(self):
         for child in self.children:
             child.reset()
         return NodeMsg.IDLE
 
-    def do_shutdown(self):
+    def _do_shutdown(self):
         for child in self.children:
             child.shutdown()

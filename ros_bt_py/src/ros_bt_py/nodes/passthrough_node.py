@@ -14,22 +14,22 @@ class PassthroughNode(Node):
 
     Only really useful for testing
     """
-    def do_setup(self):
+    def _do_setup(self):
         # Connect 'in' to 'out'
         self.inputs.subscribe('in', self.outputs.get_callback('out'), '.outputs[out]')
         return NodeMsg.IDLE
 
-    def do_tick(self):
+    def _do_tick(self):
         # Nothing to do here other than succeed
         return NodeMsg.SUCCEEDED
 
-    def do_untick(self):
+    def _do_untick(self):
         return NodeMsg.IDLE
 
-    def do_shutdown(self):
+    def _do_shutdown(self):
         pass
 
-    def do_reset(self):
+    def _do_reset(self):
         self.inputs['in'] = None
         self.inputs.reset_updated()
         self.outputs['out'] = None

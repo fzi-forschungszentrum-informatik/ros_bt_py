@@ -10,11 +10,11 @@ from ros_bt_py.node_config import NodeConfig
     outputs={},
     max_children=None))
 class Fallback(FlowControl):
-    def do_setup(self):
+    def _do_setup(self):
         for child in self.children:
             child.setup()
 
-    def do_tick(self):
+    def _do_tick(self):
         if not self.children:
             self.logwarn('Ticking without children. Is this really what you want?')
             return NodeMsg.FAILED
@@ -30,16 +30,16 @@ class Fallback(FlowControl):
         # If all children failed, we too fail
         return NodeMsg.FAILED
 
-    def do_untick(self):
+    def _do_untick(self):
         for child in self.children:
             child.untick()
         return NodeMsg.IDLE
 
-    def do_reset(self):
+    def _do_reset(self):
         for child in self.children:
             child.reset()
         return NodeMsg.IDLE
 
-    def do_shutdown(self):
+    def _do_shutdown(self):
         for child in self.children:
             child.shutdown()
