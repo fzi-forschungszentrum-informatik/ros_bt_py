@@ -4,6 +4,7 @@ from ros_bt_py.exceptions import NodeConfigError
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
+
 @define_bt_node(NodeConfig(
     options={'output_type': type,
              'state_values': list,
@@ -32,7 +33,7 @@ class MockLeaf(Leaf):
         new_state = self.options['state_values'][self.outputs['current_index']]
         # Increment index (and roll over if necessary
         self.outputs['current_index'] = ((self.outputs['current_index'] + 1) %
-                                     len(self.options['state_values']))
+                                         len(self.options['state_values']))
 
         self.outputs['tick_count'] = self.outputs['tick_count'] + 1
         return new_state

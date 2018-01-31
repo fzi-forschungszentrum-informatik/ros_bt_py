@@ -5,6 +5,7 @@ from ros_bt_py_msgs.msg import Node
 
 from ros_bt_py.nodes.mock_nodes import MockLeaf
 
+
 class TestMockLeaf(unittest.TestCase):
     def setUp(self):
         self.state_output_pairs = [(Node.RUNNING, 1),
