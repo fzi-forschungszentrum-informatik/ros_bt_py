@@ -12,22 +12,22 @@ from ros_bt_py.node_config import NodeConfig
 class Sequence(FlowControl):
     """Flow control node that succeeds when all children succeed.
 
-    At every call of :meth:`Node.tick`, it ticks all of its children in
+    At every call of :meth:`tick`, it ticks all of its children in
     order until one of three things happens:
 
     1. A node returns FAILED:
 
        In this case, the sequence also returns FAILED, and calls
-       :meth:`Node.untick` on all remaining children.
+       :meth:`ros_bt_py.node.Node.untick` on all remaining children.
 
     2. A node returns RUNNING:
 
        Just as with FAILED, the sequence will also return RUNNING and call
-       :meth:`Node.untick` on all remaining children.
+       :meth:`ros_bt_py.node.Node.untick` on all remaining children.
 
     3. All nodes return SUCCEEDED:
 
-       The Sequence will return SUCCEEDED
+       The Sequence will also return SUCCEEDED.
 
     *Special case:*
 

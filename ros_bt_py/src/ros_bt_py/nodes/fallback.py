@@ -10,6 +10,30 @@ from ros_bt_py.node_config import NodeConfig
     outputs={},
     max_children=None))
 class Fallback(FlowControl):
+    """Flow control node that succeeds when any one of its children succeeds.
+
+    At every call of :meth:`tick`, it ticks all of its children in
+    order until one of three things happens:
+
+    1. A node returns SUCCEEDED:
+
+       In this case, the sequence also returns SUCCEEDED, and calls
+       :meth:`ros_bt_py.node.Node.untick` on all remaining children.
+
+    2. A node returns RUNNING:
+
+       Just as with SUCCEEDED, the sequence will also return RUNNING and call
+       :meth:`ros_bt_py.node.Node.untick` on all remaining children.
+
+    3. All nodes return FAILED:
+
+       The Sequence will also return FAILED.
+
+    *Special case:*
+
+    If a Fallback has no children, its :meth:`tick` method will always
+    return FAILED.
+    """
     def _do_setup(self):
         for child in self.children:
             child.setup()
