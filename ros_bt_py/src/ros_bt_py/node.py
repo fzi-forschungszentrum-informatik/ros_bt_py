@@ -73,7 +73,7 @@ class Node(object):
     node_classes = {}
     node_config = None
 
-    def __init__(self, options=None, debug_manager=None):
+    def __init__(self, options=None, debug_manager=None, name=None):
         """Prepare class members
 
         After this finishes, the Node is *not* ready to run. You still
@@ -87,12 +87,20 @@ class Node(object):
 
         :param ros_bt_py.debug_manager.DebugManager debug_manager:
 
+        :param str name:
+
+        Name of the node - defaults to None, in which case the node name
+        is set to the name of its class.
+
         :raises: NodeConfigError
 
         If anything is wrong with the node configuration defined via
         :function:`ros_bt_py.node.define_bt_node`
         """
-        self.name = type(self).__name__
+        if name is not None:
+            self.name = name
+        else:
+            self.name = type(self).__name__
         self.parent_name = ''
         self.state = NodeMsg.UNINITIALIZED
         self.children = []
