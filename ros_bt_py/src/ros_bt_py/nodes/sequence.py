@@ -10,6 +10,30 @@ from ros_bt_py.node_config import NodeConfig
     outputs={},
     max_children=None))
 class Sequence(FlowControl):
+    """Flow control node that succeeds when all children succeed.
+
+    At every call of :meth:`Node.tick`, it ticks all of its children in
+    order until one of three things happens:
+
+    1. A node returns FAILED:
+
+       In this case, the sequence also returns FAILED, and calls
+       :meth:`Node.untick` on all remaining children.
+
+    2. A node returns RUNNING:
+
+       Just as with FAILED, the sequence will also return RUNNING and call
+       :meth:`Node.untick` on all remaining children.
+
+    3. All nodes return SUCCEEDED:
+
+       The Sequence will return SUCCEEDED
+
+    *Special case:*
+
+    If a Sequence has no children, its :meth:`tick` method will always
+    return FAILED.
+    """
     def do_setup(self):
         for child in self.children:
             child.setup()
