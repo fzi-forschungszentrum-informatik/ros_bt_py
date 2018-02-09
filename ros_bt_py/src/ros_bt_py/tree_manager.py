@@ -3,7 +3,7 @@ import time
 
 import rospy
 
-from ros_bt_py_msgs.srv import RemoveNodeRequest
+from ros_bt_py_msgs.srv import RemoveNodeRequest, WireNodeDataRequest
 from ros_bt_py_msgs.srv import WireNodeDataResponse, AddNodeResponse, RemoveNodeResponse
 from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, ControlTreeExecutionResponse
 from ros_bt_py_msgs.srv import SetExecutionModeResponse
@@ -182,7 +182,8 @@ class TreeManager(object):
 
         :param ros_bt_py_msgs.srv.ControlTreeExecutionRequest request:
 
-        Can request a tick, periodic ticking, or stopping.
+        Can request a tick, periodic ticking, or to stop or reset the
+        entire tree.
         """
         response = ControlTreeExecutionResponse(success=False)
         if self._tick_thread is not None:
@@ -379,6 +380,14 @@ class TreeManager(object):
                 self.nodes[name].shutdown()
             del self.nodes[name]
 
+        # Unwire wirings that have removed nodes as source or target
+        unwire_resp = self.unwire_data(WireNodeDataRequest(
+            tree_name=self.tree_msg.name,
+            wirings=[wiring for wiring in self.tree_msg.data_wirings
+                     if (wiring.source.node_name in names_to_remove or
+                         wiring.target.node_name in names_to_remove)]))
+
+
         # Keep tree_msg up-to-date
         self.tree_msg.nodes = [node for node in self.tree_msg.nodes
                                if node.name in names_to_remove]
@@ -416,6 +425,7 @@ class TreeManager(object):
         only if `new_node` supports that number of children. Otherwise,
         this will return an error.
         """
+        pass
 
     def wire_data(self, request):
         """Connect the given pairs of node data to one another.
