@@ -58,6 +58,25 @@ class DebugManager(object):
             self._debug_info_msg.target_tick_time = rospy.Duration.from_sec(
                 1.0 / frequency_hz)
 
+    def set_execution_mode(self, single_step, collect_performance_data):
+        with self._lock:
+            self._debug_settings_msg.single_step = single_step
+            self._debug_settings_msg.collect_performance_data = collect_performance_data
+
+    def modify_breakpoints(self, add=None, remove=None, remove_all=False):
+        with self._lock:
+            if remove_all:
+                self._debug_settings_msg.breakpoint_names = []
+            if remove:
+                for bp in remove:
+                    if bp in self._debug_settings_msg.breakpoint_names:
+                        self._debug_settings_msg.breakpoint_names.remove(bp)
+            if add:
+                for bp in add:
+                    if bp not in self._debug_settings_msg.breakpoint_names:
+                        self._debug_settings_msg.breakpoint_names.append(bp)
+            return self._debug_settings_msg.breakpoint_names
+
     def continue_debug(self):
         self.continue_event.set()
 
@@ -123,33 +142,31 @@ class DebugManager(object):
             # in debug_info_msg
             timing_msg.avg_tick_time = average_duration
             if ((timing_msg.min_tick_time.secs == 0 and timing_msg.min_tick_time.nsecs == 0) or
-                    duration_greater(timing_msg.min_tick_time, last_duration)):
+                    _duration_greater(timing_msg.min_tick_time, last_duration)):
                 timing_msg.min_tick_time = last_duration
 
-            if duration_greater(last_duration, timing_msg.max_tick_time):
+            if _duration_greater(last_duration, timing_msg.max_tick_time):
                 timing_msg.max_tick_time = last_duration
 
             with self._lock:
                 self._debug_info_msg.current_recursion_depth = len(inspect.stack())
                 self._debug_info_msg.max_recursion_depth = getrecursionlimit()
 
-        if ((self.debug_settings_msg.breakpoint_names and
-             node_instance.name in self.debug_settings_msg.breakpoint_names) or
-                self.debug_settings_msg.single_step):
+        if ((self._debug_settings_msg.breakpoint_names and
+             node_instance.name in self._debug_settings_msg.breakpoint_names) or
+                self._debug_settings_msg.single_step):
             old_state = node_instance.state
             node_instance.state = Node.DEBUG_POST_TICK
             self.wait_for_continue()
             node_instance.state = old_state
             # TODO(nberg): Really autoremove all breakpoints?
-            if node_instance.name in self.debug_settings_msg.breakpoint_names:
-                self.debug_settings_msg.breakpoint_names.remove(node_instance.name)
+            if node_instance.name in self._debug_settings_msg.breakpoint_names:
+                self._debug_settings_msg.breakpoint_names.remove(node_instance.name)
 
     def wait_for_continue(self):
         # If we have a publish callback, publish debug info
         if self.publish_debug_info:
-            with self._lock:
-                debug_msg_copy = deepcopy(self._debug_info_msg)
-            self.publish_debug_info(debug_msg_copy)
+            self.publish_debug_info(self.get_debug_info_msg())
         # Ensure that we're not picking up an extra continue request sent earlier
         self.continue_event.clear()
         self.continue_event.wait()
@@ -160,6 +177,6 @@ class DebugManager(object):
             return deepcopy(self._debug_info_msg)
 
 
-def duration_greater(first, second):
+def _duration_greater(first, second):
     """Helper to compare rospy.Duration to genpy.Duration"""
     return first.secs >= second.secs and first.nsecs > second.nsecs

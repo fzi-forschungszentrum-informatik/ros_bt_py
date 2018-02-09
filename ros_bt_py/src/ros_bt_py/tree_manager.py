@@ -6,6 +6,8 @@ import rospy
 from ros_bt_py_msgs.srv import RemoveNodeRequest
 from ros_bt_py_msgs.srv import WireNodeDataResponse, AddNodeResponse, RemoveNodeResponse
 from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, ControlTreeExecutionResponse
+from ros_bt_py_msgs.srv import SetExecutionModeResponse
+from ros_bt_py_msgs.srv import ModifyBreakpointsResponse
 from ros_bt_py_msgs.msg import Tree
 from ros_bt_py_msgs.msg import Node as NodeMsg
 
@@ -156,6 +158,24 @@ class TreeManager(object):
                 safe_node_names.extend(cycle_candidates)
 
         return nodes_in_cycles
+
+    def set_execution_mode(self, request):
+        """Set the parameters of our :class:`DebugManager`
+
+        :param request ros_bt_msgs.srv.SetExecutionModeRequest:
+
+        """
+        self.debug_manager.set_execution_mode(
+            request.single_step,
+            request.collect_performance_data)
+        return SetExecutionModeResponse()
+
+    def modify_breakpoints(self, request):
+        return ModifyBreakpointsResponse(
+            current_breakpoints=self.debug_manager.modify_breakpoints(
+                add=request.add,
+                remove=request.remove,
+                remove_all=request.remove_all))
 
     def control_execution(self, request):
         """Control tree execution.

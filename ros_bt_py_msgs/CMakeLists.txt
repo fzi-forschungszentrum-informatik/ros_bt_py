@@ -27,9 +27,11 @@ add_service_files(
   GetAvailableSubtrees.srv
   InsertNode.srv
   LoadTree.srv
+  ModifyBreakpoints.srv
   MoveNode.srv
   RemoveNode.srv
   ReplaceNode.srv
+  SetExecutionMode.srv
   WireNodeData.srv
   )
 
