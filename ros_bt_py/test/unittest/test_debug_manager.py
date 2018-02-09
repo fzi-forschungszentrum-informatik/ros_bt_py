@@ -22,7 +22,7 @@ class TestDebugManager(unittest.TestCase):
 
     def testReport(self):
         self.manager = DebugManager(target_tick_frequency_hz=20.0)
-        self.manager.debug_settings_msg.collect_debug_info = True
+        self.manager._debug_settings_msg.collect_performance_data = True
 
         node = PassthroughNode({'passthrough_type': int})
         node.setup()
@@ -48,7 +48,7 @@ class TestDebugManager(unittest.TestCase):
                            self.manager.get_debug_info_msg().node_tick_times[0].min_tick_time.nsecs)
 
     def testStep(self):
-        self.manager.debug_settings_msg.single_step = True
+        self.manager._debug_settings_msg.single_step = True
 
         self.node = PassthroughNode({'passthrough_type': int},
                                     debug_manager=self.manager)
