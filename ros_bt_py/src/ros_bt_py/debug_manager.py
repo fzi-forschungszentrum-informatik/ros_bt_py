@@ -39,11 +39,11 @@ class DebugManager(object):
         # or we'll deadlock!
         self.set_tick_frequency(target_tick_frequency_hz)
 
-        self.debug_settings_msg = DebugSettings(
+        self._debug_settings_msg = DebugSettings(
             # List of node names to break on
             breakpoint_names=[],
             # Only collect analytics if this is True
-            collect_debug_info=False,
+            collect_performance_data=False,
             # if True, wait for a continue request before and after every tick
             single_step=False)
 
@@ -75,14 +75,14 @@ class DebugManager(object):
 
         :param instance: The node that's executing
         """
-        if ((self.debug_settings_msg.breakpoint_names and
-             node_instance.name in self.debug_settings_msg.breakpoint_names) or
-                self.debug_settings_msg.single_step):
+        if ((self._debug_settings_msg.breakpoint_names and
+             node_instance.name in self._debug_settings_msg.breakpoint_names) or
+                self._debug_settings_msg.single_step):
             old_state = node_instance.state
             node_instance.state = Node.DEBUG_PRE_TICK
             self.wait_for_continue()
             node_instance.state = old_state
-        if self.debug_settings_msg.collect_debug_info:
+        if self._debug_settings_msg.collect_performance_data:
             start_time = time.time()
             with self._lock:
                 self._debug_info_msg.current_recursion_depth = len(inspect.stack())
@@ -91,7 +91,7 @@ class DebugManager(object):
         # Contextmanager'ed code is executed here
         yield
 
-        if self.debug_settings_msg.collect_debug_info:
+        if self._debug_settings_msg.collect_performance_data:
             end_time = time.time()
             if node_instance.name not in self.tick_time_windows:
                 self.tick_time_windows[node_instance.name] = []
