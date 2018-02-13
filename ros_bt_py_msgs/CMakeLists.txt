@@ -48,5 +48,5 @@ add_service_files(
    )
 
 catkin_package(
-  CATKIN_DEPENDS message_generation
+  CATKIN_DEPENDS message_runtime
   )
