@@ -1,2 +1,2 @@
-[run]
+[report]
 include = *src/ros_bt_py*
