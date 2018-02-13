@@ -138,7 +138,6 @@ class Node(object):
 
         # Don't setup automatically - nodes should be available as pure data
         # containers before the user decides to call setup() themselves!
-        self._setup_called = False
 
     def setup(self):
         """Prepare the node to be ticked for the first time.
@@ -151,11 +150,12 @@ class Node(object):
         Sets the state of the node to whatever :meth:`_do_setup`
         returned.
 
-        :raises: BehaviorTreeException if called more than once on the same node
+        :raises: BehaviorTreeException if called when the node is not UNINITIALIZED or SHUTDOWN
         """
-        if self._setup_called:
+        if self.state != NodeMsg.UNINITIALIZED and self.state != NodeMsg.SHUTDOWN:
             raise BehaviorTreeException(
-                'Trying to call setup() more than once on node %s' % self.name)
+                'Calling setup() is only allowed in states %s and %s, but node %s is in state %s'
+                % (NodeMsg.UNINITIALIZED, NodeMsg.SHUTDOWN, self.name, self.state))
         self.state = self._do_setup()
         self._setup_called = True
 
