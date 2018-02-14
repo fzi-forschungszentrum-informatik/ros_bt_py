@@ -4,6 +4,7 @@ string name
 # A string pointing to the YAML file this tree was read from, if
 # any. Can be a file:// or a package:// string.
 string path
+string root_name
 Node[] nodes
 NodeDataWiring[] data_wirings
 float64 tick_frequency_hz
