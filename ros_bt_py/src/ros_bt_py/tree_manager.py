@@ -407,11 +407,17 @@ class TreeManager(object):
             children_added = set()
             while add_children_of:
                 name = add_children_of.pop()
+                if name not in self.nodes:
+                    response.success = False
+                    response.error_message = ('Error while removing children of node %s: '
+                                              'No node with name %s in tree %s' %
+                                              (request.node_name, name, self.tree_msg.name))
+                    return response
                 if name not in children_added:
-                    names_to_remove |= {child_name for child_name
-                                        in self.nodes[name].children.iterkeys()}
-                    add_children_of.append(child_name for child_name
-                                           in self.nodes[name].children.iterkeys())
+                    names_to_remove |= {child.name for child
+                                        in self.nodes[name].children}
+                    add_children_of.extend([child.name for child
+                                            in self.nodes[name].children])
         else:
             # If we're not removing the children, at least delete their parent_name
             for child in self.nodes[request.node_name].children:
@@ -615,5 +621,5 @@ class TreeManager(object):
         return name
 
     def to_msg(self):
-        self.tree_msg.nodes = [node.to_msg() for node in self.nodes.values()]
+        self.tree_msg.nodes = [node.to_msg() for node in self.nodes.itervalues()]
         return self.tree_msg
