@@ -103,6 +103,12 @@ class TreeManager(object):
                                     self.tree_msg.name)
         return possible_roots[0]
 
+    def tick_report_exceptions(self):
+        try:
+            self.tick()
+        except Exception, e:
+            rospy.logerr('Encountered error while ticking tree: %s', e)
+
     def tick(self, once=None):
         if once is not None:
             self._once = once
@@ -198,7 +204,7 @@ class TreeManager(object):
         # Make a new tick thread if there isn't one or the old one has been
         # successfully joined.
         if self._tick_thread is None or not self._tick_thread.is_alive():
-            self._tick_thread = Thread(target=self.tick)
+            self._tick_thread = Thread(target=self.tick_report_exceptions)
 
         if request.command == ControlTreeExecutionRequest.STOP:
             with self._state_lock:
