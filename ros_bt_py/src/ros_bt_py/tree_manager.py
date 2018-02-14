@@ -65,9 +65,6 @@ class TreeManager(object):
             for module_name in module_list:
                 load_node_module(module_name)
 
-    def load_tree(self, tree_path):
-        pass
-
     def load_tree_from_string(self, tree_string):
         # fill initial list of nodes with all the nodes that have no parent
 
@@ -173,6 +170,13 @@ class TreeManager(object):
                 safe_node_names.extend(cycle_candidates)
 
         return nodes_in_cycles
+
+    ####################
+    # Service Handlers #
+    ####################
+
+    def load_tree(self, tree_path):
+        pass
 
     def set_execution_mode(self, request):
         """Set the parameters of our :class:`DebugManager`
@@ -443,7 +447,6 @@ class TreeManager(object):
                      if (wiring.source.node_name in names_to_remove or
                          wiring.target.node_name in names_to_remove)]))
 
-
         # Keep tree_msg up-to-date
         self.tree_msg.nodes = [node for node in self.tree_msg.nodes
                                if node.name in names_to_remove]
@@ -546,6 +549,10 @@ class TreeManager(object):
 
         self.publish_info()
         return response
+
+    #########################
+    # Service Handlers Done #
+    #########################
 
     def _extract_subscription_data(self, request):
         """Extract the data necessary to act on a `WireNodeDataRequest`
