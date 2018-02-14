@@ -194,6 +194,11 @@ class TestTreeManager(unittest.TestCase):
         response = self.manager.add_node(broken_add)
         self.assertFalse(response.success)
 
+    def testAddWithMissingParent(self):
+        self.assertFalse(self.manager.add_node(AddNodeRequest(tree_name='',
+                                                              node=self.node_msg,
+                                                              parent_name='foo')).success)
+
     def testRemoveNode(self):
         instance = self.manager.instantiate_node_from_msg(self.node_msg)
 

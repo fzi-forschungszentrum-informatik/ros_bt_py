@@ -12,3 +12,7 @@ class NodeStateError(BehaviorTreeException):
 
 class TreeTopologyError(BehaviorTreeException):
     pass
+
+
+class MissingParentError(BehaviorTreeException):
+    pass

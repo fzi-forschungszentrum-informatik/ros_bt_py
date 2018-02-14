@@ -11,7 +11,7 @@ from ros_bt_py_msgs.srv import ModifyBreakpointsResponse
 from ros_bt_py_msgs.msg import Tree
 from ros_bt_py_msgs.msg import Node as NodeMsg
 
-from ros_bt_py.exceptions import BehaviorTreeException, TreeTopologyError
+from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, TreeTopologyError
 from ros_bt_py.node import Node, load_node_module
 from ros_bt_py.debug_manager import DebugManager
 
@@ -113,6 +113,13 @@ class TreeManager(object):
         if once is not None:
             self._once = once
 
+        # First check for nodes with missing parents
+        orphans = ['"%s"(parent: "%s")' % (node.name, node.parent_name)
+                       for node in self.nodes.itervalues()
+                       if node.parent_name and node.parent_name not in self.nodes]
+        if orphans:
+            raise MissingParentError('The following nodes\' parents are missing: %s'
+                                     % ', '.join(orphans))
         root = self.find_root()
         if root.state == NodeMsg.UNINITIALIZED:
             root.setup()
