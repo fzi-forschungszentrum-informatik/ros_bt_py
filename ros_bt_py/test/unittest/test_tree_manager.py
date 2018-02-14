@@ -344,6 +344,10 @@ class TestTreeManager(unittest.TestCase):
         self.assertTrue(self.manager.control_execution(execution_request).success)
         self.assertIsNone(self.manager.nodes['passthrough'].outputs['out'])
 
+        execution_request.command = ControlTreeExecutionRequest.SHUTDOWN
+        self.assertTrue(self.manager.control_execution(execution_request).success)
+        self.assertEqual(self.manager.nodes['passthrough'].state, NodeMsg.SHUTDOWN)
+
     def testControlBrokenTree(self):
         add_request = AddNodeRequest(tree_name='',
                                      node=self.node_msg)

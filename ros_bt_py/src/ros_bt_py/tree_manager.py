@@ -120,7 +120,7 @@ class TreeManager(object):
         root = self.find_root()
         with self._state_lock:
             self.tree_msg.root_name = root.name
-        if root.state == NodeMsg.UNINITIALIZED:
+        if root.state == NodeMsg.UNINITIALIZED or root.state == NodeMsg.SHUTDOWN:
             root.setup()
         sleep_duration_sec = (1.0/self.tree_msg.tick_frequency_hz)
 
@@ -219,7 +219,8 @@ class TreeManager(object):
         if self._tick_thread is None or not self._tick_thread.is_alive():
             self._tick_thread = Thread(target=self.tick_report_exceptions)
 
-        if request.command == ControlTreeExecutionRequest.STOP:
+        if (request.command == ControlTreeExecutionRequest.STOP
+                or request.command == ControlTreeExecutionRequest.SHUTDOWN):
             with self._state_lock:
                 is_ticking = self.tree_msg.state == Tree.TICKING
             if is_ticking:
@@ -245,6 +246,14 @@ class TreeManager(object):
                 rospy.loginfo('Received stop command, but tree was not running')
                 response.success = True
                 response.tree_state = self.tree_msg.state
+
+            if request.command == ControlTreeExecutionRequest.SHUTDOWN:
+                try:
+                    root = self.find_root()
+                    root.shutdown()
+                except TreeTopologyError, e:
+                    response.success = False
+                    response.error_message = str(e)
         elif request.command == ControlTreeExecutionRequest.TICK_ONCE:
             if self._tick_thread.is_alive() or self.tree_msg.state == Tree.TICKING:
                 response.success = False

@@ -5,6 +5,7 @@ uint8 TICK_ONCE = 1
 uint8 TICK_PERIODICALLY = 2
 uint8 STOP = 3
 uint8 RESET = 4
+uint8 SHUTDOWN = 5
 ---
 bool success
 string error_message
