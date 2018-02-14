@@ -101,6 +101,7 @@ class Node(object):
             self.name = name
         else:
             self.name = type(self).__name__
+        # Only used to make finding the root of the tree easier
         self.parent_name = ''
         self.state = NodeMsg.UNINITIALIZED
         self.children = []
@@ -409,6 +410,7 @@ class Node(object):
         # Use array slicing to efficiently insert child at the correct position
         # (the value we assign needs to be a list for this to work)
         self.children[at_index:at_index] = [child]
+        child.parent_name = self.name
 
     def move_child(self, child_name, new_index):
         """
@@ -557,7 +559,7 @@ class Node(object):
         rospy.logfatal('%s (%s): %s', self.name, type(self).__name__, message)
 
     @classmethod
-    def from_msg(cls, msg, node_dict=None):
+    def from_msg(cls, msg):
         """Construct a Node from the given ROS message.
 
         This will try to import the requested node class, instantiate it
@@ -570,11 +572,6 @@ class Node(object):
         available in the current environment (but does not need to be
         imported before calling this).
 
-        :param dict node_dict:
-
-        A dictionary from node names to node instances. If you pass
-        this, make sure it contains all the children of the given node.
-
         :returns:
 
         An instance of the class named by `msg`, populated with the
@@ -585,7 +582,7 @@ class Node(object):
 
         :raises:
 
-        KeyError if the parent is missing, BehaviorTreeException if
+        BehaviorTreeException if
         node cannot be instantiated.
         """
         if (msg.module not in cls.node_classes or
@@ -604,42 +601,38 @@ class Node(object):
 
         # Populate options dict
         options_dict = {}
-        for option in msg.options:
-            options_dict[option.key] = jsonpickle.decode(option.serialized_value)
+        try:
+            for option in msg.options:
+                options_dict[option.key] = jsonpickle.decode(option.serialized_value)
+        except ValueError, e:
+            raise BehaviorTreeException('Failed to instantiate node from message: %s' %
+                                        str(e))
 
         # Instantiate node - this shouldn't do anything yet, since we don't
         # call setup()
         node_instance = node_class(options=options_dict)
 
-        # Set name and parent_name from ROS message
+        # Set name from ROS message
         if msg.name:
             node_instance.name = msg.name
-        if msg.parent_name:
-            node_instance.parent_name = msg.parent_name
-
-        # If there is a dictionary of existing nodes, we can make the node name
-        # unique and populate children.
-        if node_dict is not None:
-            # Ensure that name is unique
-            while node_instance.name in node_dict:
-                node_instance.name = increment_name(node_instance.name)
-
-            # Find parent (if any) and add this node as a child
-            if node_instance.parent_name and node_instance.parent_name in node_dict:
-                node_dict[node_instance.parent_name].add_child(node_instance)
-            else:
-                raise KeyError("Parent %s of node %s does not exist!" %
-                               (node_instance.parent_name, node_instance.name))
 
         # Set inputs
-        for input_msg in msg.current_inputs:
-            node_instance.inputs[input_msg.key] = jsonpickle.decode(
-                input_msg.serialized_value)
+        try:
+            for input_msg in msg.current_inputs:
+                node_instance.inputs[input_msg.key] = jsonpickle.decode(
+                    input_msg.serialized_value)
+        except ValueError, e:
+            raise BehaviorTreeException('Failed to instantiate node from message: %s' %
+                                        str(e))
 
         # Set outputs
-        for output_msg in msg.current_outputs:
-            node_instance.outputs[output_msg.key] = jsonpickle.decode(
-                output_msg.serialized_value)
+        try:
+            for output_msg in msg.current_outputs:
+                node_instance.outputs[output_msg.key] = jsonpickle.decode(
+                    output_msg.serialized_value)
+        except ValueError, e:
+            raise BehaviorTreeException('Failed to instantiate node from message: %s' %
+                                        str(e))
 
         return node_instance
 
@@ -660,7 +653,7 @@ class Node(object):
                        module=node_type.__module__,
                        node_class=node_type.__name__,
                        name=self.name,
-                       parent_name=self.parent_name,
+                       child_names=[child.name for child in self.children],
                        options=[NodeDataMsg(key=key,
                                             serialized_value=jsonpickle.encode(
                                                 self.options[key]))

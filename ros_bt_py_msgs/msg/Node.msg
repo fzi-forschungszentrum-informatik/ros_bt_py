@@ -15,7 +15,6 @@ string node_class
 # Each node name must be unique in its tree. This does not count for
 # subtrees, as they're handled separately.
 string name
-string parent_name
 # Order is important for child_names!
 string[] child_names
 NodeData[] options

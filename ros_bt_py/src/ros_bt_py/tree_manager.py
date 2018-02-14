@@ -12,7 +12,7 @@ from ros_bt_py_msgs.msg import Tree
 from ros_bt_py_msgs.msg import Node as NodeMsg
 
 from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, TreeTopologyError
-from ros_bt_py.node import Node, load_node_module
+from ros_bt_py.node import Node, load_node_module, increment_name
 from ros_bt_py.debug_manager import DebugManager
 
 
@@ -121,6 +121,8 @@ class TreeManager(object):
             raise MissingParentError('The following nodes\' parents are missing: %s'
                                      % ', '.join(orphans))
         root = self.find_root()
+        with self._state_lock:
+            self.tree_msg.root_name = root.name
         if root.state == NodeMsg.UNINITIALIZED:
             root.setup()
         sleep_duration_sec = (1.0/self.tree_msg.tick_frequency_hz)
@@ -323,9 +325,38 @@ class TreeManager(object):
             instance = self.instantiate_node_from_msg(request.node)
             response.success = True
             response.actual_node_name = instance.name
-        except (BehaviorTreeException, KeyError) as exc:
+        except BehaviorTreeException as exc:
             response.success = False
             response.error_message = str(exc)
+            return response
+
+        # Add node as child of the named parent, if any
+        if request.parent_name:
+            if request.parent_name not in self.nodes:
+                response.success = False
+                response.error_message = ('Parent %s of node %s does not exist!' %
+                                          (request.parent_name, instance.name))
+                # Remove node from tree
+                self.remove_node(RemoveNodeRequest(node_name=instance.name,
+                                                   remove_children=False))
+                return response
+            else:
+                self.nodes[request.parent_name].add_child(instance)
+
+        # Add children from msg to node
+        missing_children = []
+        for child_name in request.node.child_names:
+            if child_name in self.nodes:
+                instance.add_child(self.nodes[child_name])
+            else:
+                missing_children.append(child_name)
+        if missing_children:
+            response.success = False
+            response.error_message = ('Children for node %s are not in tree: %s' %
+                                      (instance.name, str(missing_children)))
+            # Remove node from tree
+            self.remove_node(RemoveNodeRequest(node_name=instance.name,
+                                               remove_children=False))
 
         nodes_in_cycles = self.find_nodes_in_cycles()
         if nodes_in_cycles:
@@ -337,7 +368,9 @@ class TreeManager(object):
                                        response.actual_node_name,
                                        str(nodes_in_cycles)))
             # Remove node from tree
-            self.remove_node(RemoveNodeRequest(node_name=instance.name, remove_children=True))
+            self.remove_node(RemoveNodeRequest(node_name=instance.name,
+                                               remove_children=False))
+            return response
         self.publish_info()
         return response
 
@@ -379,6 +412,10 @@ class TreeManager(object):
                                         in self.nodes[name].children.iterkeys()}
                     add_children_of.append(child_name for child_name
                                            in self.nodes[name].children.iterkeys())
+        else:
+            # If we're not removing the children, at least delete their parent_name
+            for child in self.nodes[request.node_name].children:
+                child.parent_name = ''
         for name in names_to_remove:
             # Check if node is already in shutdown state. If not, call
             # shutdown, but warn, because the parent node should have
@@ -562,13 +599,20 @@ class TreeManager(object):
         if node_msg.is_subtree:
             raise NotImplementedError('Subtree nodes are not supported yet!')
         else:
-            node_instance = Node.from_msg(node_msg, self.nodes)
+            node_instance = Node.from_msg(node_msg)
+            node_instance.name = self.make_name_unique(node_instance.name)
+
             # Set DebugManager
             node_instance.debug_manager = self.debug_manager
 
             self.nodes[node_instance.name] = node_instance
 
             return node_instance
+
+    def make_name_unique(self, name):
+        while name in self.nodes:
+            name = increment_name(name)
+        return name
 
     def to_msg(self):
         self.tree_msg.nodes = [node.to_msg() for node in self.nodes.values()]
