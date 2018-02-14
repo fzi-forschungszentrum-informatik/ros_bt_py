@@ -585,7 +585,7 @@ class Node(object):
 
         :raises:
 
-        KeyError if any children are missing, BehaviorTreeException if
+        KeyError if the parent is missing, BehaviorTreeException if
         node cannot be instantiated.
         """
         if (msg.module not in cls.node_classes or
@@ -625,21 +625,11 @@ class Node(object):
                 node_instance.name = increment_name(node_instance.name)
 
             # Find parent (if any) and add this node as a child
-            if node_instance.parent_name in node_dict:
+            if node_instance.parent_name and node_instance.parent_name in node_dict:
                 node_dict[node_instance.parent_name].add_child(node_instance)
-            # Find children and add them
-            missing_children = []
-            for child_name in msg.child_names:
-                if child_name not in node_dict:
-                    missing_children.append(child_name)
-                    continue
-                node_instance.add_child(node_dict[child_name])
-
-            if missing_children:
-                error_msg = 'Error while instantiating node: Missing children: %s' % \
-                  str(missing_children)
-                node_instance.logerr(error_msg)
-                raise KeyError(error_msg)
+            else:
+                raise KeyError("Parent %s of node %s does not exist!" %
+                               (node_instance.parent_name, node_instance.name))
 
         # Set inputs
         for input_msg in msg.current_inputs:
@@ -671,7 +661,6 @@ class Node(object):
                        node_class=node_type.__name__,
                        name=self.name,
                        parent_name=self.parent_name,
-                       child_names=[child.name for child in self.children],
                        options=[NodeDataMsg(key=key,
                                             serialized_value=jsonpickle.encode(
                                                 self.options[key]))
