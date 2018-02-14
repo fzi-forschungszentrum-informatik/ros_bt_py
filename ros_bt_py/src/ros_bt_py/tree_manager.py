@@ -206,9 +206,9 @@ class TreeManager(object):
             if is_ticking:
                 with self._state_lock:
                     self.tree_msg.state = Tree.STOP_REQUESTED
-                # Two seconds should be plenty of time to finish the current
-                # tick, if the tree has not stopped by then we're in deep
-                # trouble.
+                # Four times the allowed period should be plenty of time to
+                # finish the current tick, if the tree has not stopped by then
+                # we're in deep trouble.
                 if self._tick_thread.is_alive():
                     self._tick_thread.join((1.0 / self.tree_msg.tick_frequency_hz) * 4.0)
                     if self._tick_thread.is_alive():
