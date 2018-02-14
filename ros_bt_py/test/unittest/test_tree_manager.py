@@ -7,17 +7,17 @@ from ros_bt_py_msgs.msg import NodeData, NodeDataWiring, NodeDataLocation, Tree
 from ros_bt_py_msgs.srv import WireNodeDataRequest, AddNodeRequest, RemoveNodeRequest, ControlTreeExecutionRequest
 
 from ros_bt_py.node import Node
+from ros_bt_py.nodes.sequence import Sequence
 from ros_bt_py.tree_manager import TreeManager
 
 
 class TestTreeManager(unittest.TestCase):
     def setUp(self):
         self.tree_msg = None
-
         def set_tree_msg(msg):
             self.tree_msg = msg
-        self.debug_info_msg = None
 
+        self.debug_info_msg = None
         def set_debug_info_msg(msg):
             self.debug_info_msg = msg
 
@@ -27,8 +27,14 @@ class TestTreeManager(unittest.TestCase):
             is_subtree=False,
             module='ros_bt_py.nodes.passthrough_node',
             node_class='PassthroughNode',
+            current_inputs=[NodeData(key='in',
+                                     serialized_value=jsonpickle.encode(42))],
             options=[NodeData(key='passthrough_type',
                               serialized_value=jsonpickle.encode(int))])
+        self.sequence_msg = NodeMsg(
+            is_subtree=False,
+            module='ros_bt_py.nodes.sequence',
+            node_class='Sequence')
 
     def testLoadNode(self):
         _ = self.manager.instantiate_node_from_msg(self.node_msg)
@@ -199,6 +205,21 @@ class TestTreeManager(unittest.TestCase):
                                                               node=self.node_msg,
                                                               parent_name='foo')).success)
 
+    def testAddMultiple(self):
+        add_request = AddNodeRequest(tree_name='',
+                                     node=self.sequence_msg)
+        response = self.manager.add_node(add_request)
+
+        self.assertEqual(len(self.manager.nodes), 1)
+        self.assertTrue(response.success)
+
+        add_request = AddNodeRequest(tree_name='',
+                                     node=self.node_msg,
+                                     parent_name=response.actual_node_name)
+        response = self.manager.add_node(add_request)
+        self.assertEqual(len(self.manager.nodes), 2)
+        self.assertTrue(response.success)
+
     def testRemoveNode(self):
         instance = self.manager.instantiate_node_from_msg(self.node_msg)
 
@@ -210,6 +231,49 @@ class TestTreeManager(unittest.TestCase):
         # Second remove will fail, there's nothing left to remove.
         response = self.manager.remove_node(remove_request)
         self.assertFalse(response.success)
+
+    def testRemoveParent(self):
+        add_response = self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.sequence_msg))
+
+        self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.node_msg,
+                           parent_name=add_response.actual_node_name))
+
+        self.assertEqual(len(self.manager.nodes), 2)
+
+        remove_response = self.manager.remove_node(
+            RemoveNodeRequest(node_name=add_response.actual_node_name,
+                              remove_children=False))
+
+        self.assertTrue(remove_response.success)
+        self.assertEqual(len(self.manager.nodes), 1)
+
+        self.manager.tick(once=True)
+        root_node = [node for node in self.tree_msg.nodes
+                         if node.name == self.tree_msg.root_name][0]
+        self.assertEqual(root_node.state, NodeMsg.SUCCEEDED)
+
+    def testRemoveParentAndChildren(self):
+        add_response = self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.sequence_msg))
+
+        self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.node_msg,
+                           parent_name=add_response.actual_node_name))
+
+        self.assertEqual(len(self.manager.nodes), 2)
+
+        remove_response = self.manager.remove_node(
+            RemoveNodeRequest(node_name=add_response.actual_node_name,
+                                           remove_children=True))
+
+        self.assertTrue(remove_response.success, remove_response.error_message)
+        self.assertEqual(len(self.manager.nodes), 0)
 
     def testTick(self):
         add_request = AddNodeRequest(tree_name='',
