@@ -698,6 +698,32 @@ def increment_name(name):
     return name
 
 
+def is_valid_node_message(msg, node_dict=None):
+    """Check whether a message contains a valid message definition.
+
+    Tries to instantiate the node using :meth:`Node.from_msg` and
+    returns a tuple `(success, error_message)`.
+
+    :param ros_bt_py_msgs.msg.Node node: The message to check
+
+    :param dict node_dict:
+
+    If given, check missing parent errors against this dictionary. If
+    not given, those errors are ignored since of course there's no
+    parent.
+    """
+    try:
+        Node.from_msg(msg, node_dict)
+        return (True, '')
+    except KeyError, e:
+        if node_dict is None:
+            return (True, '')
+        else:
+            return (False, str(e))
+    except BehaviorTreeException, e:
+        return (False, str(e))
+
+
 @define_bt_node(NodeConfig(
     options={},
     inputs={},
