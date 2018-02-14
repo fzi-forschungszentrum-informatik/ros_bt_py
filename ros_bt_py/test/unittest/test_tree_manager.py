@@ -14,10 +14,11 @@ from ros_bt_py.tree_manager import TreeManager
 class TestTreeManager(unittest.TestCase):
     def setUp(self):
         self.tree_msg = None
+        self.debug_info_msg = None
+
         def set_tree_msg(msg):
             self.tree_msg = msg
 
-        self.debug_info_msg = None
         def set_debug_info_msg(msg):
             self.debug_info_msg = msg
 
@@ -253,7 +254,7 @@ class TestTreeManager(unittest.TestCase):
 
         self.manager.tick(once=True)
         root_node = [node for node in self.tree_msg.nodes
-                         if node.name == self.tree_msg.root_name][0]
+                     if node.name == self.tree_msg.root_name][0]
         self.assertEqual(root_node.state, NodeMsg.SUCCEEDED)
 
     def testRemoveParentAndChildren(self):
@@ -270,7 +271,7 @@ class TestTreeManager(unittest.TestCase):
 
         remove_response = self.manager.remove_node(
             RemoveNodeRequest(node_name=add_response.actual_node_name,
-                                           remove_children=True))
+                              remove_children=True))
 
         self.assertTrue(remove_response.success, remove_response.error_message)
         self.assertEqual(len(self.manager.nodes), 0)

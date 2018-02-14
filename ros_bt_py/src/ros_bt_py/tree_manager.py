@@ -112,8 +112,8 @@ class TreeManager(object):
 
         # First check for nodes with missing parents
         orphans = ['"%s"(parent: "%s")' % (node.name, node.parent_name)
-                       for node in self.nodes.itervalues()
-                       if node.parent_name and node.parent_name not in self.nodes]
+                   for node in self.nodes.itervalues()
+                   if node.parent_name and node.parent_name not in self.nodes]
         if orphans:
             raise MissingParentError('The following nodes\' parents are missing: %s'
                                      % ', '.join(orphans))
