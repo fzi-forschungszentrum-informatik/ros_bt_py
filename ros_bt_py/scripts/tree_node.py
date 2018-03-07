@@ -44,6 +44,9 @@ class TreeNode(object):
         self.unwire_data_service = rospy.Service('unwire_data',
                                                  WireNodeData,
                                                  self.tree_manager.unwire_data)
+        self.modify_breakpoints_service = rospy.Service('modify_breakpoints',
+                                                        ModifyBreakpoints,
+                                                        self.tree_manager.modify_breakpoints)
 
         self.control_tree_execution_service = rospy.Service('control_tree_execution',
                                                             ControlTreeExecution,
