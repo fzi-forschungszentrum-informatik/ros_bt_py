@@ -1,15 +1,18 @@
 from threading import Thread, Lock
 import time
+import jsonpickle
 
 import rospy
 
 from ros_bt_py_msgs.srv import RemoveNodeRequest, WireNodeDataRequest
 from ros_bt_py_msgs.srv import WireNodeDataResponse, AddNodeResponse, RemoveNodeResponse
 from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, ControlTreeExecutionResponse
+from ros_bt_py_msgs.srv import GetAvailableNodesResponse
 from ros_bt_py_msgs.srv import SetExecutionModeResponse
 from ros_bt_py_msgs.srv import ModifyBreakpointsResponse
 from ros_bt_py_msgs.msg import Tree
 from ros_bt_py_msgs.msg import Node as NodeMsg
+from ros_bt_py_msgs.msg import NodeData
 
 from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, TreeTopologyError
 from ros_bt_py.node import Node, load_node_module, increment_name
@@ -557,6 +560,50 @@ class TreeManager(object):
                 self.tree_msg.data_wirings.remove(wiring)
 
         self.publish_info()
+        return response
+
+    def get_available_nodes(self, request):
+        """List the types of nodes that are currently known
+
+        This includes all nodes from modules that were passed to our
+        constructor in `module_list`, ones from modules that nodes have
+        been successfully loaded from since launch, and ones from
+        modules explicitly asked for in `request.node_modules`
+
+        :param ros_bt_py_msgs.srv.GetAvailableNodesRequest request:
+
+        If `request.node_modules` is not empty, try to load those
+        modules before responding.
+
+        :returns: :class:`ros_bt_py_msgs.src.GetAvailableNodesResponse` or `None`
+        """
+        response = GetAvailableNodesResponse()
+        for module_name in request.node_modules:
+            if module_name and load_node_module(module_name) is None:
+                response.success = False
+                response.error_message = 'Failed to import module %s' % module_name
+                return response
+
+        def to_node_data(map):
+            return [NodeData(key=name,
+                             serialized_value=jsonpickle.encode(type_or_ref))
+                        for (name, type_or_ref) in map.iteritems()]
+
+        for (module, nodes) in Node.node_classes.iteritems():
+            for (class_name, node_class) in nodes.iteritems():
+                max_children = node_class.node_config.max_children
+                max_children = -1 if max_children is None else max_children
+                response.available_nodes.append(NodeMsg(
+                    module=module,
+                    node_class=class_name,
+                    max_children=max_children,
+                    name=class_name,
+                    options=to_node_data(node_class.node_config.options),
+                    inputs=to_node_data(node_class.node_config.inputs),
+                    outputs=to_node_data(node_class.node_config.outputs)
+                    ))
+
+        response.success = True
         return response
 
     #########################

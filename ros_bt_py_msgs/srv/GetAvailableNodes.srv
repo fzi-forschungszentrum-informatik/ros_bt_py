@@ -1,6 +1,6 @@
 # Python package names that contain Node classes. If this is empty,
 # fall back to a list of packages provided by a ROS parameter.
-string[] node_packages
+string[] node_modules
 ---
 Node[] available_nodes
 bool success

@@ -678,7 +678,7 @@ def load_node_module(package_name):
     """
     try:
         return importlib.import_module(package_name)
-    except ImportError:
+    except (ImportError, ValueError):
         return None
 
 

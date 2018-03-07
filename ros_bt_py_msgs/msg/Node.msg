@@ -11,6 +11,10 @@ string subtree_data
 string module
 string node_class
 
+# The maximum amount of children this node supports, where -1 means
+# infinite children
+int32 max_children
+
 ## These are run-time parameters
 # Each node name must be unique in its tree. This does not count for
 # subtrees, as they're handled separately.

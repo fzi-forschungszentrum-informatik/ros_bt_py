@@ -4,7 +4,7 @@ import jsonpickle
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import NodeData, NodeDataWiring, NodeDataLocation, Tree
-from ros_bt_py_msgs.srv import WireNodeDataRequest, AddNodeRequest, RemoveNodeRequest, ControlTreeExecutionRequest
+from ros_bt_py_msgs.srv import WireNodeDataRequest, AddNodeRequest, RemoveNodeRequest, ControlTreeExecutionRequest, GetAvailableNodesRequest
 
 from ros_bt_py.node import Node
 from ros_bt_py.nodes.sequence import Sequence
@@ -365,3 +365,12 @@ class TestTreeManager(unittest.TestCase):
         self.assertFalse(self.manager.control_execution(execution_request).success)
         execution_request.command = ControlTreeExecutionRequest.RESET
         self.assertFalse(self.manager.control_execution(execution_request).success)
+
+    def testGetAvailableNodes(self):
+        request = GetAvailableNodesRequest(node_modules=['ros_bt_py.nodes.passthrough_node'])
+
+        response = self.manager.get_available_nodes(request)
+        self.assertTrue(response.success, response.error_message)
+        self.assertGreaterEqual(len(response.available_nodes), 1)
+
+        self.assertIn("PassthroughNode", [node.node_class for node in response.available_nodes])
