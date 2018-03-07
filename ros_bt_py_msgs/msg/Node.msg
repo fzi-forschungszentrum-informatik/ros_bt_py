@@ -18,8 +18,8 @@ string name
 # Order is important for child_names!
 string[] child_names
 NodeData[] options
-NodeData[] current_inputs
-NodeData[] current_outputs
+NodeData[] inputs
+NodeData[] outputs
 # Should be one of the constants below
 string state
 

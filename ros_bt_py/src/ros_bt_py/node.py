@@ -618,7 +618,7 @@ class Node(object):
 
         # Set inputs
         try:
-            for input_msg in msg.current_inputs:
+            for input_msg in msg.inputs:
                 node_instance.inputs[input_msg.key] = jsonpickle.decode(
                     input_msg.serialized_value)
         except ValueError, e:
@@ -627,7 +627,7 @@ class Node(object):
 
         # Set outputs
         try:
-            for output_msg in msg.current_outputs:
+            for output_msg in msg.outputs:
                 node_instance.outputs[output_msg.key] = jsonpickle.decode(
                     output_msg.serialized_value)
         except ValueError, e:
@@ -658,14 +658,14 @@ class Node(object):
                                             serialized_value=jsonpickle.encode(
                                                 self.options[key]))
                                 for key in self.options],
-                       current_inputs=[NodeDataMsg(key=key,
-                                                   serialized_value=jsonpickle.encode(
-                                                       self.inputs[key]))
-                                       for key in self.inputs],
-                       current_outputs=[NodeDataMsg(key=key,
-                                                    serialized_value=jsonpickle.encode(
-                                                        self.outputs[key]))
-                                        for key in self.outputs],
+                       inputs=[NodeDataMsg(key=key,
+                                           serialized_value=jsonpickle.encode(
+                                               self.inputs[key]))
+                                   for key in self.inputs],
+                       outputs=[NodeDataMsg(key=key,
+                                            serialized_value=jsonpickle.encode(
+                                                self.outputs[key]))
+                                    for key in self.outputs],
                        state=self.state)
 
 

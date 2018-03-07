@@ -28,8 +28,8 @@ class TestTreeManager(unittest.TestCase):
             is_subtree=False,
             module='ros_bt_py.nodes.passthrough_node',
             node_class='PassthroughNode',
-            current_inputs=[NodeData(key='in',
-                                     serialized_value=jsonpickle.encode(42))],
+            inputs=[NodeData(key='in',
+                             serialized_value=jsonpickle.encode(42))],
             options=[NodeData(key='passthrough_type',
                               serialized_value=jsonpickle.encode(int))])
         self.sequence_msg = NodeMsg(
@@ -279,8 +279,8 @@ class TestTreeManager(unittest.TestCase):
     def testTick(self):
         add_request = AddNodeRequest(tree_name='',
                                      node=self.node_msg)
-        add_request.node.current_inputs.append(NodeData(key='in',
-                                                        serialized_value=jsonpickle.encode(42)))
+        add_request.node.inputs.append(NodeData(key='in',
+                                                serialized_value=jsonpickle.encode(42)))
 
         response = self.manager.add_node(add_request)
         self.assertTrue(response.success)
@@ -296,15 +296,15 @@ class TestTreeManager(unittest.TestCase):
                        node in self.tree_msg.nodes])
         node_msg = next((node for
                          node in self.tree_msg.nodes if node.name == response.actual_node_name))
-        self.assertEqual(jsonpickle.decode(node_msg.current_inputs[0].serialized_value), 42)
-        self.assertEqual(jsonpickle.decode(node_msg.current_outputs[0].serialized_value), 42)
+        self.assertEqual(jsonpickle.decode(node_msg.inputs[0].serialized_value), 42)
+        self.assertEqual(jsonpickle.decode(node_msg.outputs[0].serialized_value), 42)
 
     def testControlTree(self):
         add_request = AddNodeRequest(tree_name='',
                                      node=self.node_msg)
         add_request.node.name = 'passthrough'
-        add_request.node.current_inputs.append(NodeData(key='in',
-                                                        serialized_value=jsonpickle.encode(42)))
+        add_request.node.inputs.append(NodeData(key='in',
+                                                serialized_value=jsonpickle.encode(42)))
 
         self.assertTrue(self.manager.add_node(add_request).success)
         self.assertEqual(self.manager.nodes['passthrough'].inputs['in'], 42)

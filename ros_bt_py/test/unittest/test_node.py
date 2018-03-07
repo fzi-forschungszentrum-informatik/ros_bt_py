@@ -170,8 +170,8 @@ class TestPassthroughNode(unittest.TestCase):
             is_subtree=False,
             module="ros_bt_py.nodes.passthrough_node",
             node_class="PassthroughNode",
-            current_inputs=[NodeData(key="in",
-                                     serialized_value=jsonpickle.encode(42))],
+            inputs=[NodeData(key="in",
+                             serialized_value=jsonpickle.encode(42))],
             options=[NodeData(key='passthrough_type',
                               serialized_value=jsonpickle.encode(int))])
         instance = Node.from_msg(msg)
@@ -210,7 +210,7 @@ class TestPassthroughNode(unittest.TestCase):
             is_subtree=False,
             module="ros_bt_py.nodes.passthrough_node",
             node_class="PassthroughNode",
-            current_inputs=[NodeData(key="in", serialized_value='nope')],
+            inputs=[NodeData(key="in", serialized_value='nope')],
             options=[NodeData(key="passthrough_type",
                               serialized_value=jsonpickle.encode(int))])
         self.assertRaises(BehaviorTreeException, Node.from_msg, msg)
@@ -226,8 +226,8 @@ class TestPassthroughNode(unittest.TestCase):
         self.assertEqual(len(msg.options), len(node.options))
         self.assertEqual(msg.options[0].key, 'passthrough_type')
         self.assertEqual(jsonpickle.decode(msg.options[0].serialized_value), int)
-        self.assertEqual(len(msg.current_inputs), len(node.inputs))
-        self.assertEqual(len(msg.current_outputs), len(node.outputs))
+        self.assertEqual(len(msg.inputs), len(node.inputs))
+        self.assertEqual(len(msg.outputs), len(node.outputs))
         self.assertEqual(msg.state, node.state)
 
     def testNodeToMsgRoundtrip(self):
@@ -254,11 +254,11 @@ class TestPassthroughNode(unittest.TestCase):
         self.assertNotEqual(roundtrip_msg, msg)
 
         # Should have an empty input and output
-        self.assertEqual(len(roundtrip_msg.current_inputs), 1)
-        self.assertEqual(len(roundtrip_msg.current_outputs), 1)
+        self.assertEqual(len(roundtrip_msg.inputs), 1)
+        self.assertEqual(len(roundtrip_msg.outputs), 1)
 
-        roundtrip_msg.current_inputs = []
-        roundtrip_msg.current_outputs = []
+        roundtrip_msg.inputs = []
+        roundtrip_msg.outputs = []
         roundtrip_msg.state = ''
 
         self.assertEqual(roundtrip_msg, msg)

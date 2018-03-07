@@ -367,7 +367,7 @@ class TreeManager(object):
             response.success = False
             response.error_message = ('Children for node %s are not in tree: %s' %
                                       (instance.name, str(missing_children)))
-            # Remove node from tree
+            # Remove node from tree to restore state before insertion attempt
             self.remove_node(RemoveNodeRequest(node_name=instance.name,
                                                remove_children=False))
 
