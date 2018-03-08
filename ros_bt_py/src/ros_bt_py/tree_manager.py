@@ -108,6 +108,9 @@ class TreeManager(object):
             self.tick()
         except Exception, e:
             rospy.logerr('Encountered error while ticking tree: %s', e)
+            with self._state_lock:
+                self.tree_msg.state = Tree.IDLE
+
 
     def tick(self, once=None):
         if once is not None:
