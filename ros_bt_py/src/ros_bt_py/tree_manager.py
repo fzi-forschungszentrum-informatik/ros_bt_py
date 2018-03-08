@@ -456,6 +456,10 @@ class TreeManager(object):
                               parent_name,
                               type(self.nodes[parent_name]).__name__)
                 self.nodes[name].shutdown()
+
+            # If we have a parent, remove the node from that parent
+            if self.nodes[name].parent_name and self.nodes[name].parent_name in self.nodes:
+                self.nodes[self.nodes[name].parent_name].remove_child(name)
             del self.nodes[name]
 
         # Unwire wirings that have removed nodes as source or target
