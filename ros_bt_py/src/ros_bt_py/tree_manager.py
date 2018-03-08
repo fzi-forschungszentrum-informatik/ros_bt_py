@@ -327,6 +327,9 @@ class TreeManager(object):
             rospy.logerr(response.error_message)
             response.success = False
 
+
+        self.publish_info()
+
         return response
 
     def add_node(self, request):
