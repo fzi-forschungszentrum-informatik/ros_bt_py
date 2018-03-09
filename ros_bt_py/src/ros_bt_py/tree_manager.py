@@ -6,6 +6,7 @@ import rospy
 
 from ros_bt_py_msgs.srv import RemoveNodeRequest, WireNodeDataRequest
 from ros_bt_py_msgs.srv import WireNodeDataResponse, AddNodeResponse, RemoveNodeResponse
+from ros_bt_py_msgs.srv import ContinueResponse
 from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, ControlTreeExecutionResponse
 from ros_bt_py_msgs.srv import GetAvailableNodesResponse
 from ros_bt_py_msgs.srv import SetExecutionModeResponse
@@ -194,6 +195,19 @@ class TreeManager(object):
             request.single_step,
             request.collect_performance_data)
         return SetExecutionModeResponse()
+
+    def debug_step(self, request):
+        """Continue execution
+
+        If single step mode is enabled, advance a single step. If we're
+        currently stopped at a breakpoint, continue to the next, if
+        any. If we're not stopped at all, do nothing.
+
+        :param request ros_bt_msgs.srv.ContinueRequest:
+        """
+        # TODO(nberg): Add more logic to at least warn if we're not stopped
+        self.debug_manager.continue_debug()
+        return ContinueResponse(success=True)
 
     def modify_breakpoints(self, request):
         return ModifyBreakpointsResponse(
