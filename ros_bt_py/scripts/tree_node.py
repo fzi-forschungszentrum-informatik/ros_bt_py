@@ -3,7 +3,7 @@
 import rospy
 
 from ros_bt_py_msgs.msg import Tree, DebugInfo
-from ros_bt_py_msgs.srv import AddNode, ControlTreeExecution, ModifyBreakpoints, RemoveNode, WireNodeData, GetAvailableNodes
+from ros_bt_py_msgs.srv import AddNode, ControlTreeExecution, ModifyBreakpoints, RemoveNode, WireNodeData, GetAvailableNodes, SetExecutionMode, Continue
 from ros_bt_py.tree_manager import TreeManager
 from ros_bt_py.debug_manager import DebugManager
 
@@ -55,6 +55,14 @@ class TreeNode(object):
         self.get_available_nodes_service = rospy.Service('~get_available_nodes',
                                                          GetAvailableNodes,
                                                          self.tree_manager.get_available_nodes)
+
+        self.set_execution_mode_service = rospy.Service('~debug/set_execution_mode',
+                                                        SetExecutionMode,
+                                                        self.tree_manager.set_execution_mode)
+
+        self.continue_servcice = rospy.Service('~debug/continue',
+                                               Continue,
+                                               self.tree_manager.debug_step)
 
 if __name__ == '__main__':
     rospy.init_node('tree_node')
