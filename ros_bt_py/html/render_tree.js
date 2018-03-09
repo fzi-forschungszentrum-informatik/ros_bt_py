@@ -28,7 +28,126 @@ function render() {
   onTreeUpdate(tree_msg);
 }
 
+function delete_node() {
+  var node_name = document.getElementById("node_delete_selector").value;
+  new ROSLIB.Service({
+    ros: ros,
+    name: '/tree_node/remove_node',
+    serviceType: 'ros_bt_py_msgs/RemoveNode'
+  }).callService(
+    new ROSLIB.ServiceRequest({
+      node_name: node_name,
+      remove_children: document.getElementById("node_delete_children").checked
+    }),
+    function(response) {
+      if (response.success) {
+        console.log('removed node ' + node_name + ' successfully');
+      }
+      else {
+        console.log('failed to remove node ' + node_name + ' : ' + response.error_message);
+      }
+    });
+}
+
+function add_node() {
+  var node_map = {
+    'sequence': {
+      is_subtree: false,
+      module: 'ros_bt_py.nodes.sequence',
+      node_class: 'Sequence',
+      name: 'sequence',
+      child_names: []
+    },
+    'fallback': {
+      is_subtree: false,
+      module: 'ros_bt_py.nodes.fallback',
+      node_class: 'Fallback',
+      name: 'fallback',
+      child_names: []
+    },
+    'succeeder': {
+      is_subtree: false,
+      module: 'ros_bt_py.nodes.mock_nodes',
+      node_class: 'MockLeaf',
+      name: 'succeeder',
+      options: [
+        {
+          key: 'output_type',
+          serialized_value: '{"py/type": "__builtin__.str"}'
+        },
+        {
+          key: 'state_values',
+          serialized_value: '["SUCCEEDED"]'
+        },
+        {
+          key: 'output_values',
+          serialized_value: '["Yay!"]'
+        },
+      ],
+      child_names: []
+    },
+    'failer': {
+      is_subtree: false,
+      module: 'ros_bt_py.nodes.mock_nodes',
+      node_class: 'MockLeaf',
+      name: 'failer',
+      options: [
+        {
+          key: 'output_type',
+          serialized_value: '{"py/type": "__builtin__.str"}'
+        },
+        {
+          key: 'state_values',
+          serialized_value: '["FAILED"]'
+        },
+        {
+          key: 'output_values',
+          serialized_value: '["Noooo :("]'
+        },
+      ],
+      child_names: []
+    }
+  };
+
+  var node_msg = node_map[document.getElementById('node_type').value];
+
+    new ROSLIB.Service({
+    ros: ros,
+    name: '/tree_node/add_node',
+    serviceType: 'ros_bt_py_msgs/AddNode'
+  }).callService(
+    new ROSLIB.ServiceRequest({
+      tree_name: '',
+      parent_name: document.getElementById('new_node_parents').value,
+      node: node_msg
+    }),
+    function(response) {
+      if (response.success) {
+        console.log('Added node to tree as ' + response.actual_node_name);
+      }
+      else {
+        console.log('Failed to add node ' + node_msg.name + ': '
+                    + response.error_message);
+      }
+    });
+}
+
 function onTreeUpdate(tree_msg) {
+  // Update the node selection dropdowns
+  var add_options = function(id) {
+    var parents = d3.select(id)
+        .selectAll("option")
+        .data(tree_msg.nodes, node => node.name);
+    parents.enter()
+      .append("option")
+      .attr("value", d => d.name)
+      .text(d => d.name);
+    parents.exit().remove();
+  }
+  add_options("#new_node_parents");
+  add_options("#node_delete_selector");
+
+  // Update the visual tree
   var parents = {};
   var node_dict = {};
   // Find parents for all nodes once
@@ -184,8 +303,8 @@ function onTreeUpdate(tree_msg) {
     .data(root.descendants(), function(node) {return node.id;})
     .transition()
     .duration(200)
-  // animate to actual position
       .attr("transform", function(d) {
+        // animate to actual position
         return "translate(" + d.x + "," + d.y + ")";
       })
 
@@ -220,11 +339,140 @@ function onTreeUpdate(tree_msg) {
     });
 
   console.log(root);
+}
 
+function step() {
+  new ROSLIB.Service({
+    ros: ros,
+    name: '/tree_node/debug/continue',
+    serviceType: 'ros_bt_py_msgs/Continue'
+  }).callService(
+    new ROSLIB.ServiceRequest({}),
+    function(response) {
+      if (response.success) {
+        console.log('stepped successfully');
+      }
+      else {
+        console.log('stepping failed');
+      }
+    });
+}
+function tick() {
+  new ROSLIB.Service({
+    ros: ros,
+    name: '/tree_node/control_tree_execution',
+    serviceType: 'ros_bt_py_msgs/ControlTreeExecution'
+  }).callService(
+    new ROSLIB.ServiceRequest({
+      command: 1 // TICK_ONCE
+    }),
+    function(response) {
+      if (response.success) {
+        console.log('ticked successfully');
+      }
+      else {
+        console.log('single tick failed');
+      }
+    });
+}
+
+function tick_periodically() {
+  new ROSLIB.Service({
+    ros: ros,
+    name: '/tree_node/control_tree_execution',
+    serviceType: 'ros_bt_py_msgs/ControlTreeExecution'
+  }).callService(
+    new ROSLIB.ServiceRequest({
+      command: 2, // TICK_PERIODICALLY
+      tick_frequency_hz: 0.5
+    }),
+    function(response) {
+      if (response.success) {
+        console.log('started ticking successfully');
+      }
+      else {
+        console.log('starting periodic tick failed');
+      }
+    });
+}
+
+function stop_tick() {
+  new ROSLIB.Service({
+    ros: ros,
+    name: '/tree_node/control_tree_execution',
+    serviceType: 'ros_bt_py_msgs/ControlTreeExecution'
+  }).callService(
+    new ROSLIB.ServiceRequest({
+      command: 3 // STOP
+    }),
+    function(response) {
+      if (response.success) {
+        console.log('stopped successfully');
+      }
+      else {
+        console.log('stopping failed');
+      }
+    });
+}
+
+function shutdown() {
+  new ROSLIB.Service({
+    ros: ros,
+    name: '/tree_node/control_tree_execution',
+    serviceType: 'ros_bt_py_msgs/ControlTreeExecution'
+  }).callService(
+    new ROSLIB.ServiceRequest({
+      command: 5 // SHUTDOWN
+    }),
+    function(response) {
+      if (response.success) {
+        console.log('shutdown successful');
+      }
+      else {
+        console.log('shutdown failed');
+      }
+    });
+}
+
+function step() {
+  new ROSLIB.Service({
+    ros: ros,
+    name: '/tree_node/debug/continue',
+    serviceType: 'ros_bt_py_msgs/Continue'
+  }).callService(
+    new ROSLIB.ServiceRequest({}),
+    function(response) {
+      if (response.success) {
+        console.log('stepped successfully');
+      }
+      else {
+        console.log('stepping failed');
+      }
+    });
+}
+
+function change_debug_mode(enable) {
+  new ROSLIB.Service({
+    ros: ros,
+    name: '/tree_node/debug/set_execution_mode',
+    serviceType: 'ros_bt_py_msgs/SetExecutionMode'
+  }).callService(
+    new ROSLIB.ServiceRequest({
+      single_step: enable,
+      collect_performance_data: true
+    }),
+    function(response) {
+      if (enable) {
+        console.log('enabled stepping');
+      }
+      else {
+        console.log('disabled stepping');
+      }
+    });
 }
 
 function init() {
-  var ros = new ROSLIB.Ros({
+  window.ros = new ROSLIB.Ros({
     url : 'ws://10.211.55.3:9090'
   });
   ros.on('connection', function() {

@@ -3,7 +3,12 @@
 <head>
 <meta charset="utf-8">
 <style>
-
+.box {
+border: 3px solid;
+margin: 5px;
+padding: 10px;
+}
+  
 .node {
   cursor: pointer;
 }
@@ -31,5 +36,39 @@
 </head>
 <body onload="init()">
   <svg width="800" height="600"></svg>
+  <div id="controls" class="box">
+    <h4>Controls</h4>
+  <div>
+    <input type="checkbox" id="debugging" onchange="change_debug_mode(this.checked);">
+    <label for="debugging">Debug</label>
+    </div>
+  <button onclick="step()">Step</button>
+  <button onclick="tick()">Tick</button>
+  <button onclick="tick_periodically()">Tick Periodically</button>
+  <button onclick="stop()">Stop Ticking</button>
+  <button onclick="shutdown()">Shut Down Tree (needed to add new nodes)</button>
+  </div>
+  <div id="add_node" class="box">
+    <h4>Add Node</h4>
+    <select id="new_node_parents" name="new_node_parents">
+    </select>
+    <select id="node_type" name="node_type">
+      <option value="sequence">Sequence</option>
+      <option value="fallback">Fallback</option>
+      <option value="succeeder">Succeeder</option>
+      <option value="failer">Failer</option>
+    </select>
+    <button onclick="add_node();">Add</button>
+  </div>
+  <div id="remove_node" class="box">
+    <h4>Remove Node</h4>
+    <select id="node_delete_selector" name="node_delete_selector">
+    </select>
+    <div>
+      <input type="checkbox" id="node_delete_children">
+      <label for="node_delete_children">Delete Children</label>
+    </div>
+    <button onclick="delete_node()">Delete Node</button>
+  </div>
 </body>
 </html>
