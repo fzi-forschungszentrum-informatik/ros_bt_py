@@ -32,27 +32,27 @@ class TreeNode(object):
                                         publish_tree_callback=self.tree_pub.publish,
                                         publish_debug_info_callback=self.debug_info_pub.publish)
 
-        self.add_node_service = rospy.Service('add_node',
+        self.add_node_service = rospy.Service('~add_node',
                                               AddNode,
                                               self.tree_manager.add_node)
-        self.remove_node_service = rospy.Service('remove_node',
+        self.remove_node_service = rospy.Service('~remove_node',
                                                  RemoveNode,
                                                  self.tree_manager.remove_node)
-        self.wire_data_service = rospy.Service('wire_data',
+        self.wire_data_service = rospy.Service('~wire_data',
                                                WireNodeData,
                                                self.tree_manager.wire_data)
-        self.unwire_data_service = rospy.Service('unwire_data',
+        self.unwire_data_service = rospy.Service('~unwire_data',
                                                  WireNodeData,
                                                  self.tree_manager.unwire_data)
-        self.modify_breakpoints_service = rospy.Service('modify_breakpoints',
+        self.modify_breakpoints_service = rospy.Service('~debug/modify_breakpoints',
                                                         ModifyBreakpoints,
                                                         self.tree_manager.modify_breakpoints)
 
-        self.control_tree_execution_service = rospy.Service('control_tree_execution',
+        self.control_tree_execution_service = rospy.Service('~control_tree_execution',
                                                             ControlTreeExecution,
                                                             self.tree_manager.control_execution)
 
-        self.get_available_nodes_service = rospy.Service('get_available_nodes',
+        self.get_available_nodes_service = rospy.Service('~get_available_nodes',
                                                          GetAvailableNodes,
                                                          self.tree_manager.get_available_nodes)
 
