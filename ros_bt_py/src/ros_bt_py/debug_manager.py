@@ -78,7 +78,16 @@ class DebugManager(object):
             return self._debug_settings_msg.breakpoint_names
 
     def continue_debug(self):
+        # TODO(nberg): Make sure event can't get set ahead of time if nobody is
+        # waiting for it (should be fine, since wait_for_continue clears it
+        # first)
         self.continue_event.set()
+
+
+    def is_debugging(self):
+        with self._lock:
+            return (self._debug_settings_msg.breakpoint_names or
+                        self._debug_settings_msg.single_step)
 
     @contextmanager
     def report_tick(self, node_instance):
@@ -94,9 +103,7 @@ class DebugManager(object):
 
         :param instance: The node that's executing
         """
-        if ((self._debug_settings_msg.breakpoint_names and
-             node_instance.name in self._debug_settings_msg.breakpoint_names) or
-                self._debug_settings_msg.single_step):
+        if (self.is_debugging()):
             old_state = node_instance.state
             node_instance.state = Node.DEBUG_PRE_TICK
             self.wait_for_continue()
@@ -152,9 +159,8 @@ class DebugManager(object):
                 self._debug_info_msg.current_recursion_depth = len(inspect.stack())
                 self._debug_info_msg.max_recursion_depth = getrecursionlimit()
 
-        if ((self._debug_settings_msg.breakpoint_names and
-             node_instance.name in self._debug_settings_msg.breakpoint_names) or
-                self._debug_settings_msg.single_step):
+        if (self.is_debugging()):
+            self.wait_for_continue()
             old_state = node_instance.state
             node_instance.state = Node.DEBUG_POST_TICK
             self.wait_for_continue()

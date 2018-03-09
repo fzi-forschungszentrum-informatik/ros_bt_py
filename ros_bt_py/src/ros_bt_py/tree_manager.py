@@ -250,7 +250,14 @@ class TreeManager(object):
                 # finish the current tick, if the tree has not stopped by then
                 # we're in deep trouble.
                 if self._tick_thread.is_alive():
+                    # Give the tick thread some time to finish
                     self._tick_thread.join((1.0 / self.tree_msg.tick_frequency_hz) * 4.0)
+                    # If we're debugging (and ROS is not shutting down), keep
+                    # sleepin until the thread finishes
+                    while(self._tick_thread.is_alive()
+                              and not rospy.is_shutdown()
+                              and self.debug_manager.is_debugging()):
+                        self._tick_thread.join((1.0 / self.tree_msg.tick_frequency_hz) * 4.0)
                     if self._tick_thread.is_alive():
                         raise BehaviorTreeException('Tried to join tick thread after requesting '
                                                     'stop, but failed!')
@@ -286,8 +293,14 @@ class TreeManager(object):
                     with self._state_lock:
                         self.tree_msg.state = Tree.TICKING
                     self._tick_thread.start()
-                    # Give the tick thread much more time than it should take
+                    # Give the tick thread some time to finish
                     self._tick_thread.join((1.0 / self.tree_msg.tick_frequency_hz) * 4.0)
+                    # If we're debugging (and ROS is not shutting down), keep
+                    # sleepin until the thread finishes
+                    while(self._tick_thread.is_alive()
+                              and not rospy.is_shutdown()
+                              and self.debug_manager.is_debugging()):
+                        self._tick_thread.join((1.0 / self.tree_msg.tick_frequency_hz) * 4.0)
                     if self._tick_thread.is_alive():
                         raise BehaviorTreeException('Tried to join tick thread after requesting '
                                                     'stop, but failed!')

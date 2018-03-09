@@ -4,7 +4,7 @@ import jsonpickle
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import NodeData, NodeDataWiring, NodeDataLocation, Tree
-from ros_bt_py_msgs.srv import WireNodeDataRequest, AddNodeRequest, RemoveNodeRequest, ControlTreeExecutionRequest, GetAvailableNodesRequest
+from ros_bt_py_msgs.srv import WireNodeDataRequest, AddNodeRequest, RemoveNodeRequest, ControlTreeExecutionRequest, GetAvailableNodesRequest, SetExecutionModeRequest, ContinueRequest
 
 from ros_bt_py.node import Node
 from ros_bt_py.nodes.sequence import Sequence
