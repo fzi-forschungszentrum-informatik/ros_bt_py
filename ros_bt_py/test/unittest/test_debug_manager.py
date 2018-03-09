@@ -73,12 +73,19 @@ class TestDebugManager(unittest.TestCase):
 
         # Now out should be changed
         self.assertEqual(self.node.outputs['out'], 1)
-        self.assertEqual(self.node.state, NodeMsg.DEBUG_POST_TICK)
+        self.assertEqual(self.node.state, NodeMsg.SUCCEEDED)
         # Should still be waiting for second continue -> join won't work
         test_thread.join(0.01)
         self.assertTrue(test_thread.isAlive())
 
+        # Continue to DEBUG_POST_TICK - this is only to show in the tree where
+        # the debug handler is - no other changes since the previous continue
+        self.manager.continue_debug()
+        time.sleep(0.05)
+        self.assertEqual(self.node.state, NodeMsg.DEBUG_POST_TICK)
         self.manager.continue_debug()
         # This join should work
         test_thread.join(0.01)
         self.assertFalse(test_thread.isAlive())
+        # The node state should be restored after the last continue
+        self.assertEqual(self.node.state, NodeMsg.SUCCEEDED)
