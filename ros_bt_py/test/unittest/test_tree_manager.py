@@ -376,20 +376,3 @@ class TestTreeManager(unittest.TestCase):
         self.assertGreaterEqual(len(response.available_nodes), 1)
 
         self.assertIn("PassthroughNode", [node.node_class for node in response.available_nodes])
-
-    def testTickAfterDebugChange(self):
-        add_request = AddNodeRequest(tree_name='',
-                                     node=self.sequence_msg)
-        # Add a node
-        self.assertTrue(self.manager.add_node(add_request).success)
-
-        self.manager.set_execution_mode(SetExecutionModeRequest(single_step = False))
-
-        execution_request = ControlTreeExecutionRequest()
-
-        # All of these should fail, since the manager cannot find a root node
-        # to tick (or reset)
-        execution_request.command = ControlTreeExecutionRequest.TICK_ONCE
-        response = self.manager.control_execution(execution_request)
-        self.assertTrue(response.success, "Failed with error '%s'" % response.error_message)
-

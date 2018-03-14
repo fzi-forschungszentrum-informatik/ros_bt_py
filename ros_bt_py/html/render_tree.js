@@ -182,8 +182,8 @@ function onTreeUpdate(tree_msg) {
       })(tree_msg.nodes);
 
   root.sort(function(a, b) {
-    if (a.height !== b.height) {
-      return a.height - b.height;
+    if (a.depth !== b.depth) {
+      return b.depth - a.depth;
     }
     if (a.parent !== b.parent) {
       a = a.parent;

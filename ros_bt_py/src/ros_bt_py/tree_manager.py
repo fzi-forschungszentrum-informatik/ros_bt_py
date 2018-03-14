@@ -410,10 +410,6 @@ class TreeManager(object):
             self.remove_node(RemoveNodeRequest(node_name=instance.name,
                                                remove_children=False))
 
-        # if node is listed as someone's child, add it
-        for node in self.nodes.itervalues():
-            pass #if 
-
         nodes_in_cycles = self.find_nodes_in_cycles()
         if nodes_in_cycles:
             response.success = False
