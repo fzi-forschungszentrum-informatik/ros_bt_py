@@ -86,7 +86,7 @@ class DebugManager(object):
     def is_debugging(self):
         with self._lock:
             return (self._debug_settings_msg.breakpoint_names or
-                        self._debug_settings_msg.single_step)
+                    self._debug_settings_msg.single_step)
 
     @contextmanager
     def report_tick(self, node_instance):

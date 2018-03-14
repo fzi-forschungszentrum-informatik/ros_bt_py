@@ -376,3 +376,4 @@ class TestTreeManager(unittest.TestCase):
         self.assertGreaterEqual(len(response.available_nodes), 1)
 
         self.assertIn("PassthroughNode", [node.node_class for node in response.available_nodes])
+
