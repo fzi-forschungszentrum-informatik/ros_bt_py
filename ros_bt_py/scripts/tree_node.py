@@ -3,7 +3,8 @@
 import rospy
 
 from ros_bt_py_msgs.msg import Tree, DebugInfo
-from ros_bt_py_msgs.srv import AddNode, ControlTreeExecution, ModifyBreakpoints, RemoveNode, WireNodeData, GetAvailableNodes, SetExecutionMode, Continue
+from ros_bt_py_msgs.srv import AddNode, ControlTreeExecution, ModifyBreakpoints, RemoveNode, \
+     WireNodeData, GetAvailableNodes, SetExecutionMode, Continue
 from ros_bt_py.tree_manager import TreeManager
 from ros_bt_py.debug_manager import DebugManager
 

@@ -112,7 +112,6 @@ class TreeManager(object):
             with self._state_lock:
                 self.tree_msg.state = Tree.IDLE
 
-
     def tick(self, once=None):
         if once is not None:
             self._once = once
@@ -239,8 +238,8 @@ class TreeManager(object):
         if self._tick_thread is None or not self._tick_thread.is_alive():
             self._tick_thread = Thread(target=self.tick_report_exceptions)
 
-        if (request.command == ControlTreeExecutionRequest.STOP
-                or request.command == ControlTreeExecutionRequest.SHUTDOWN):
+        if (request.command == ControlTreeExecutionRequest.STOP or
+                request.command == ControlTreeExecutionRequest.SHUTDOWN):
             with self._state_lock:
                 is_ticking = self.tree_msg.state == Tree.TICKING
             if is_ticking:
@@ -254,9 +253,9 @@ class TreeManager(object):
                     self._tick_thread.join((1.0 / self.tree_msg.tick_frequency_hz) * 4.0)
                     # If we're debugging (and ROS is not shutting down), keep
                     # sleepin until the thread finishes
-                    while(self._tick_thread.is_alive()
-                              and not rospy.is_shutdown()
-                              and self.debug_manager.is_debugging()):
+                    while (self._tick_thread.is_alive() and
+                           not rospy.is_shutdown() and
+                           self.debug_manager.is_debugging()):
                         self._tick_thread.join((1.0 / self.tree_msg.tick_frequency_hz) * 4.0)
                     if self._tick_thread.is_alive():
                         raise BehaviorTreeException('Tried to join tick thread after requesting '
@@ -281,6 +280,9 @@ class TreeManager(object):
                 except TreeTopologyError, e:
                     response.success = False
                     response.error_message = str(e)
+
+            self.publish_info()
+
         elif request.command == ControlTreeExecutionRequest.TICK_ONCE:
             if self._tick_thread.is_alive() or self.tree_msg.state == Tree.TICKING:
                 response.success = False
@@ -297,9 +299,9 @@ class TreeManager(object):
                     self._tick_thread.join((1.0 / self.tree_msg.tick_frequency_hz) * 4.0)
                     # If we're debugging (and ROS is not shutting down), keep
                     # sleepin until the thread finishes
-                    while(self._tick_thread.is_alive()
-                              and not rospy.is_shutdown()
-                              and self.debug_manager.is_debugging()):
+                    while (self._tick_thread.is_alive() and
+                           not rospy.is_shutdown() and
+                           self.debug_manager.is_debugging()):
                         self._tick_thread.join((1.0 / self.tree_msg.tick_frequency_hz) * 4.0)
                     if self._tick_thread.is_alive():
                         raise BehaviorTreeException('Tried to join tick thread after requesting '
@@ -311,6 +313,7 @@ class TreeManager(object):
                     response.success = False
                     response.error_message = str(e)
                     response.tree_state = self.tree_msg.state
+
         elif request.command == ControlTreeExecutionRequest.TICK_PERIODICALLY:
             if self._tick_thread.is_alive() or self.tree_msg.state == Tree.TICKING:
                 response.success = False
@@ -334,6 +337,7 @@ class TreeManager(object):
                     response.success = False
                     response.error_message = str(e)
                     response.tree_state = self.tree_msg.state
+
         elif request.command == ControlTreeExecutionRequest.RESET:
             if self._tick_thread.is_alive() or self.tree_msg.state == Tree.TICKING:
                 response.success = False
@@ -352,13 +356,12 @@ class TreeManager(object):
                     response.success = False
                     response.error_message = str(e)
                     response.tree_state = self.tree_msg.state
+
+            self.publish_info()
         else:
             response.error_message = 'Received unknown command %d' % request.command
             rospy.logerr(response.error_message)
             response.success = False
-
-
-        self.publish_info()
 
         return response
 
@@ -406,6 +409,10 @@ class TreeManager(object):
             # Remove node from tree to restore state before insertion attempt
             self.remove_node(RemoveNodeRequest(node_name=instance.name,
                                                remove_children=False))
+
+        # if node is listed as someone's child, add it
+        for node in self.nodes.itervalues():
+            pass #if 
 
         nodes_in_cycles = self.find_nodes_in_cycles()
         if nodes_in_cycles:
@@ -624,7 +631,7 @@ class TreeManager(object):
         def to_node_data(map):
             return [NodeData(key=name,
                              serialized_value=jsonpickle.encode(type_or_ref))
-                        for (name, type_or_ref) in map.iteritems()]
+                    for (name, type_or_ref) in map.iteritems()]
 
         for (module, nodes) in Node.node_classes.iteritems():
             for (class_name, node_class) in nodes.iteritems():

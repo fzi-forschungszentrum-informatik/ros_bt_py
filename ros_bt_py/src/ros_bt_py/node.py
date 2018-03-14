@@ -661,11 +661,11 @@ class Node(object):
                        inputs=[NodeDataMsg(key=key,
                                            serialized_value=jsonpickle.encode(
                                                self.inputs[key]))
-                                   for key in self.inputs],
+                               for key in self.inputs],
                        outputs=[NodeDataMsg(key=key,
                                             serialized_value=jsonpickle.encode(
                                                 self.outputs[key]))
-                                    for key in self.outputs],
+                                for key in self.outputs],
                        state=self.state)
 
 

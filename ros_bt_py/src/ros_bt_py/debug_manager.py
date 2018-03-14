@@ -83,7 +83,6 @@ class DebugManager(object):
         # first)
         self.continue_event.set()
 
-
     def is_debugging(self):
         with self._lock:
             return (self._debug_settings_msg.breakpoint_names or
