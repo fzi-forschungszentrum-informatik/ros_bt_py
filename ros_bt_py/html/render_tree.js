@@ -111,7 +111,7 @@ function add_node() {
 
   var node_msg = node_map[document.getElementById('node_type').value];
 
-    new ROSLIB.Service({
+  new ROSLIB.Service({
     ros: ros,
     name: '/tree_node/add_node',
     serviceType: 'ros_bt_py_msgs/AddNode'
@@ -163,7 +163,22 @@ function onTreeUpdate(tree_msg) {
     "child_names": []
   };
   tree_msg.nodes.push(forest_root);
-  var root = d3.stratify()
+  // Update the visual tree
+  var parents = {};
+  var node_dict = {};
+  // Find parents for all nodes once
+  (function(){
+    for (var i in tree_msg.nodes) {
+      var node = tree_msg.nodes[i];
+      node_dict[node.name] = node;
+      for (var j in node.child_names) {
+        parents[node.child_names[j]] = node.name;
+      }
+    }
+  })();
+
+  var root = d3
+      .stratify()
       .id(function(node) {
         return node.name;
       })
@@ -171,11 +186,9 @@ function onTreeUpdate(tree_msg) {
         // undefined if it has no parent - does that break the layout?
         if (node.name in parents) {
           return parents[node.name];
-        }
-        else if (node.name === forest_root.name) {
+        } else if (node.name === forest_root.name) {
           return undefined;
-        }
-        else {
+        } else {
           forest_root.child_names.push(node.name);
           return forest_root.name;
         }
@@ -195,40 +208,67 @@ function onTreeUpdate(tree_msg) {
       console.log("shouldn't happen");
     }
     var child_list = a.parent.data.child_names;
-    return (child_list.findIndex(x => x == a.data.name)
-            - child_list.findIndex(x => x == b.data.name));
+    return (
+      child_list.findIndex(x => x == a.data.name) -
+        child_list.findIndex(x => x == b.data.name)
+    );
   });
-
 
   var svg = d3.select("svg"),
       width = +svg.attr("width"),
       height = +svg.attr("height");
-  var g_edge = svg.selectAll("g.edges")
-      .data([null]);
-  g_edge = g_edge.enter()
+  var g_edge = svg.selectAll("g.edges").data([null]);
+  g_edge = g_edge
+    .enter()
     .append("g")
     .attr("class", "edges")
     .attr("transform", "translate(0,40)")
     .merge(g_edge);
 
-  var g_vertex = svg.selectAll("g.vertices")
-      .data([null]);
-  g_vertex = g_vertex.enter()
+  var g_vertex = svg.selectAll("g.vertices").data([null]);
+  g_vertex = g_vertex
+    .enter()
     .append("g")
     .attr("class", "vertices")
     .attr("transform", "translate(0,40)")
     .merge(g_vertex);
 
+  var node = g_vertex
+      .selectAll(".node")
+      .data(root.descendants(), function(node) {
+        return node.id;
+      });
 
-  var findExistingParent = function(d) {
-    while(d._entering && d.parent) {
-      d = d.parent;
-    }
-    return d;
-  };
+  node.exit().remove();
+
+  var nodeEnter = node.enter();
+
+  drawNodes(nodeEnter);
+
+  node = nodeEnter.merge(node);
+
+  updateNodes(node);
+
+  // Find the maximum size of all the nodes, for layout purposes
+  var max_size = [0,0];
+  g_vertex.selectAll('.btnode').data(root.descendants(), d => d.id)
+    .each(function(d, index){
+      var rect = this.getBoundingClientRect();
+      d._size = rect;
+      max_size[0] = Math.max(max_size[0], rect.width);
+      max_size[1] = Math.max(max_size[1], rect.height);
+      this.parentElement.setAttribute('width', rect.width);
+      this.parentElement.setAttribute('height', rect.height);
+    });
+  //max_size = [max_size[0] + 30, max_size[1] + 30];
+  // Calculate node positions
+
+  var tree_size = [width - max_size[0], height - (40 + max_size[1])];
 
   var tree = d3.tree()
-      .size([width - 160, height - 160])(root);
+      .size(tree_size)
+  //.nodeSize(max_size)
+  (root);
 
   var link = g_edge.selectAll(".link")
       .data(tree.links(), function(d) { return '' + d.source.id + d.target.id; });
@@ -239,15 +279,17 @@ function onTreeUpdate(tree_msg) {
   });
 
   link = link
-      .enter().append("path")
-      .attr("class", "link")
-      .attr("d", d3.linkVertical()
-            .x(function(d) {
-              return findExistingParent(d).x;
-            })
-            .y(function(d) {
-              return findExistingParent(d).y;
-            }))
+    .enter().append("path")
+    .attr("class", "link")
+    .attr("d", d3.linkVertical()
+          .source(function(d) {
+            var parent = findExistingParent(d.source);
+            return [parent.x, parent.y + parent._size.height];
+          })
+          .target(function(d) {
+            var parent = findExistingParent(d.target);
+            return [parent.x, parent.y];
+          }))
     .merge(link);
 
   link.each(function(d) {
@@ -258,44 +300,15 @@ function onTreeUpdate(tree_msg) {
   link.transition()
     .duration(200).
     attr("d", d3.linkVertical()
-         .x(function(d) {
-           return d.x;
+         .source(function(d) {
+           var parent = findExistingParent(d.source);
+           return [parent.x, parent.y + parent._size.height];
          })
-         .y(function(d) {
-           return d.y;
+         .target(function(d) {
+           var parent = findExistingParent(d.target);
+           return [parent.x, parent.y];
          }));
 
-
-  var node = g_vertex.selectAll(".node")
-      .data(root.descendants(), function(node) {return node.id;});
-
-  node.exit().remove();
-
-  var nodeEnter = node
-      .enter();
-
-  nodeEnter.each(function(d) {
-    d._entering = true;
-  });
-  var nodeG = nodeEnter.append("g")
-    .attr("class", function(d) {
-      return "node" + (d.children ? " node--internal" : " node--leaf");
-    })
-    .attr("transform", function(d) {
-      // Start at parent position
-      var p = findExistingParent(d);
-      return "translate(" + p.x + "," + p.y + ")";
-    });
-  nodeG.append("circle")
-    .attr("r", 5.0);
-
-  nodeG.append("text")
-      .attr("dy", 3);
-
-  node = nodeEnter.merge(node);
-  node.each(function(d) {
-    d._entering = false;
-  });
 
   // new selection, now with the elements we just added with enter()
   // above
@@ -303,43 +316,94 @@ function onTreeUpdate(tree_msg) {
     .data(root.descendants(), function(node) {return node.id;})
     .transition()
     .duration(200)
-      .attr("transform", function(d) {
-        // animate to actual position
-        return "translate(" + d.x + "," + d.y + ")";
-      })
-
-  node.select("circle")
-    .style("fill", function(d) {
-      switch (d.data.state){
-  	  case "SUCCEEDED":
-        return "#090";
-      case "FAILED":
-        return "#900";
-      case "RUNNING":
-    	  return "#990";
-      case "IDLE":
-    	  return "#009";
-      default:
-    	  return "#999";
-      }
+    .attr("transform", function(d) {
+      // animate to actual position
+      return "translate(" + (d.x - d._size.width / 2.0) + "," + d.y + ")";
     });
-
-  node.select("text")
-    .attr("x", function(d) {
-      return d.children ? -16 : 0;
-    })
-    .attr("y", function(d) {
-      return d.children ? 0 : 20;
-    })
-    .style("text-anchor", function(d) {
-      return d.children ? "end" : "middle";
-    })
-    .text(function(d) {
-      return d.id + ': ' + d.data.state;
-    });
-
   console.log(root);
-}
+};
+
+var drawNodes = function(selection) {
+  selection.each(function(d) {
+    d._entering = true;
+    d._show = true;
+    d.x = 0;
+    d.y = 0;
+  });
+
+  var fo = selection.append('foreignObject')
+      .attr("class", function(d) {
+        return "node" + (d.children ? " node--internal" : " node--leaf");
+      })
+      .attr("transform", function(d) {
+        // Start at parent position
+        var p = findExistingParent(d);
+        return "translate(" + p.x + "," + p.y + ")";
+      });
+
+  selection.each(function(d) {
+    d._entering = false;
+  });
+  var div = fo
+      .append("xhtml:div")
+      .attr("class", "btnode");
+  div.append("h3").html(d => d.id)
+    .attr("class", "node_name");
+
+  var table = div.append("table");
+
+  // Append a table element and fill it with values, if any
+  var appendTable = function(el, clss, name) {
+    el
+      .append("thead")
+      .append("tr")
+      .append("th")
+      .text(name);
+    el
+      .append("tbody")
+      .attr("class", clss);
+  };
+
+
+  appendTable(table, "options", "Options");
+  appendTable(table, "inputs", "Inputs");
+  appendTable(table, "outputs", "Outputs");
+
+};
+
+var updateNodes = function(selection) {
+  // Update name
+  selection.selectAll(".node_name").html(function(d) {
+    return d.id;
+  });
+  fillTables(d3.selectAll("tbody"));
+};
+
+var fillTables = function(tbody) {
+  var rows = tbody.selectAll(".node_data")
+      .data(function(d) {
+        var clss = this.getAttribute("class");
+        return d.data[clss] || [];
+      }, d => d.key);
+
+  rows.exit().remove();
+  // create new rows
+  var enter = rows.enter();
+  var tr = enter.append("tr").attr("class", "node_data");
+  tr
+    .append("td")
+    .attr("class", "key");
+  tr
+    .append("td")
+    .attr("class", "value");
+  rows = enter.merge(rows);
+
+  // Update all rows with new data
+  rows.selectAll(".key")
+    .text(d=> d.key);
+  rows.selectAll(".value")
+    .text(d => d.serialized_value);
+};
 
 function step() {
   new ROSLIB.Service({
@@ -486,3 +550,11 @@ function init() {
     console.log('Connected & subscribed');
   });
 }
+
+function findExistingParent(d) {
+  while (d._entering && d.parent) {
+    d = d.parent;
+  }
+  return d;
+}
+
