@@ -1,0 +1,74 @@
+.box {
+    border: 3px solid;
+    margin: 5px;
+    padding: 10px;
+}
+
+.node {
+    cursor: pointer;
+}
+
+.node circle {
+    fill: #fff;
+    stroke: steelblue;
+    stroke-width: 1.5px;
+}
+
+.node text {
+    font: 10px sans-serif;
+}
+
+.link {
+    fill: none;
+    stroke: #ccc;
+    stroke-width: 1.5px;
+}
+.btnode{
+  font-family: sans-serif;
+  display: inline-block;
+  background: #2a2d36;
+  border: solid;
+  border-width: 6px;
+  border-color: #4E5666;
+  color: #eff0f4;
+}
+
+tbody {
+  color: #CECFD2;
+}
+
+.btnode h3 {
+  margin: 4px;
+}
+
+tbody tr {
+  background: #313740;
+}
+
+td.key {
+  font-weight: bold;
+}
+
+tbody tr:hover {
+  background: #3A414C;
+}
+
+td {
+  //border: solid;
+  vertical-align: top;
+}
+
+th {
+  text-align: left;
+}
+
+.json {
+  white-space: pre;
+}
+td pre {
+  margin: 0;
+}
+
+table {
+  margin: 4px;
+}

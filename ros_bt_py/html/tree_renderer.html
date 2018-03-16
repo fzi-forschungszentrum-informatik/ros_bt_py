@@ -1,52 +1,25 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="utf-8">
-<style>
-.box {
-border: 3px solid;
-margin: 5px;
-padding: 10px;
-}
-  
-.node {
-  cursor: pointer;
-}
-
-.node circle {
-  fill: #fff;
-  stroke: steelblue;
-  stroke-width: 1.5px;
-}
-
-.node text {
-  font: 10px sans-serif;
-}
-
-.link {
-  fill: none;
-  stroke: #ccc;
-  stroke-width: 1.5px;
-}
-
-</style>
-<script src="https://d3js.org/d3.v4.js"></script>
-<script src="https://static.robotwebtools.org/roslibjs/current/roslib.js"></script>
-<script src="render_tree.js"></script>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="tree_renderer.css" />
+  <script src="https://d3js.org/d3.v4.js"></script>
+  <script src="https://static.robotwebtools.org/roslibjs/current/roslib.js"></script>
+  <script src="render_tree.js"></script>
 </head>
 <body onload="init()">
   <svg width="800" height="600"></svg>
   <div id="controls" class="box">
     <h4>Controls</h4>
-  <div>
-    <input type="checkbox" id="debugging" onchange="change_debug_mode(this.checked);">
-    <label for="debugging">Debug</label>
+    <div>
+      <input type="checkbox" id="debugging" onchange="change_debug_mode(this.checked);">
+      <label for="debugging">Debug</label>
     </div>
-  <button onclick="step()">Step</button>
-  <button onclick="tick()">Tick</button>
-  <button onclick="tick_periodically()">Tick Periodically</button>
-  <button onclick="stop()">Stop Ticking</button>
-  <button onclick="shutdown()">Shut Down Tree (needed to add new nodes)</button>
+    <button onclick="step()">Step</button>
+    <button onclick="tick()">Tick</button>
+    <button onclick="tick_periodically()">Tick Periodically</button>
+    <button onclick="stop()">Stop Ticking</button>
+    <button onclick="shutdown()">Shut Down Tree (needed to add new nodes)</button>
   </div>
   <div id="add_node" class="box">
     <h4>Add Node</h4>
