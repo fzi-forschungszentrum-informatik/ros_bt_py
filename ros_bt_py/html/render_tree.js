@@ -245,7 +245,12 @@ function onTreeUpdate(tree_msg) {
 
   drawNodes(nodeEnter);
 
-  node = nodeEnter.merge(node);
+  // node = nodeEnter.merge(node);
+  node = g_vertex
+    .selectAll(".btnode")
+    .data(root.descendants(), function(node) {
+      return node.id;
+    });
 
   updateNodes(node);
 
@@ -284,11 +289,11 @@ function onTreeUpdate(tree_msg) {
     .attr("d", d3.linkVertical()
           .source(function(d) {
             var parent = findExistingParent(d.source);
-            return [parent.x, parent.y + parent._size.height];
+            return [Math.round(parent.x), Math.round(parent.y + parent._size.height)];
           })
           .target(function(d) {
             var parent = findExistingParent(d.target);
-            return [parent.x, parent.y];
+            return [Math.round(parent.x), Math.round(parent.y)];
           }))
     .merge(link);
 
@@ -302,11 +307,11 @@ function onTreeUpdate(tree_msg) {
     attr("d", d3.linkVertical()
          .source(function(d) {
            var parent = findExistingParent(d.source);
-           return [parent.x, parent.y + parent._size.height];
+           return [Math.round(parent.x), Math.round(parent.y + parent._size.height)];
          })
          .target(function(d) {
            var parent = findExistingParent(d.target);
-           return [parent.x, parent.y];
+           return [Math.round(parent.x), Math.round(parent.y)];
          }));
 
 
@@ -318,7 +323,7 @@ function onTreeUpdate(tree_msg) {
     .duration(200)
     .attr("transform", function(d) {
       // animate to actual position
-      return "translate(" + (d.x - d._size.width / 2.0) + "," + d.y + ")";
+      return "translate(" + Math.round(d.x - d._size.width / 2.0) + "," + Math.round(d.y) + ")";
     });
   console.log(root);
 };
@@ -338,7 +343,7 @@ var drawNodes = function(selection) {
       .attr("transform", function(d) {
         // Start at parent position
         var p = findExistingParent(d);
-        return "translate(" + p.x + "," + p.y + ")";
+        return "translate(" + Math.round(p.x) + "," + Math.round(p.y) + ")";
       });
 
   selection.each(function(d) {
@@ -347,62 +352,64 @@ var drawNodes = function(selection) {
   var div = fo
       .append("xhtml:div")
       .attr("class", "btnode");
-  div.append("h3").html(d => d.id)
-    .attr("class", "node_name");
-
-  var table = div.append("table");
-
-  // Append a table element and fill it with values, if any
-  var appendTable = function(el, clss, name) {
-    el
-      .append("thead")
-      .append("tr")
-      .append("th")
-      .text(name);
-    el
-      .append("tbody")
-      .attr("class", clss);
-  };
-
-
-  appendTable(table, "options", "Options");
-  appendTable(table, "inputs", "Inputs");
-  appendTable(table, "outputs", "Outputs");
-
 };
 
 var updateNodes = function(selection) {
   // Update name
-  selection.selectAll(".node_name").html(function(d) {
+  var title = selection.selectAll(".node_name").data(function(d) {
+    return [d];
+  });
+  title = title.enter().append("h3").attr("class", "node_name").merge(title);
+  title.html(function(d) {
     return d.id;
   });
-  fillTables(d3.selectAll("tbody"));
+
+  var container = selection.selectAll(".table_container").data(d => [d]);
+  container = container.enter()
+    .append("div")
+    .attr("class", "table_container")
+    .merge(container);
+
+  var tables = container.selectAll("table").data(function(d) {
+    return d3.entries({
+      inputs: d.data.inputs || [],
+      outputs: d.data.outputs || [],
+      options: d.data.options || []
+    });
+  }, d => d.key);
+  tables = tables.enter().append("table").attr("class", d => [d.key]).merge(tables);
+
+  tables.selectAll("thead").data(d=>[d]).enter()
+    .append("thead")
+    .append("tr")
+    .append("th")
+    .text(d => d.key);
+  tables.selectAll("tbody").data(d=>[d]).enter()
+    .append("tbody")
+    .attr("class", d => d.key);
+
+  fillTables(tables.select("tbody"));
 };
 
 var fillTables = function(tbody) {
   var rows = tbody.selectAll(".node_data")
       .data(function(d) {
-        var clss = this.getAttribute("class");
-        return d.data[clss] || [];
+        return d.value;
       }, d => d.key);
 
   rows.exit().remove();
   // create new rows
-  var enter = rows.enter();
-  var tr = enter.append("tr").attr("class", "node_data");
-  tr
-    .append("td")
-    .attr("class", "key");
-  tr
-    .append("td")
-    .attr("class", "value");
-  rows = enter.merge(rows);
+  rows = rows.enter().append("tr").attr("class", "node_data").merge(rows);
 
-  // Update all rows with new data
-  rows.selectAll(".key")
-    .text(d=> d.key);
-  rows.selectAll(".value")
-    .text(d => d.serialized_value);
+  var keys = rows.selectAll(".key").data(d => [d.key]);
+  keys.exit().remove();
+  keys = keys.enter().append("td").attr("class", "key").merge(keys);
+  keys.text(d => d);
+
+  var values = rows.selectAll(".value").data(d => [d.serialized_value]);
+  values.exit().remove();
+  values = values.enter().append("td").attr("class", "value").merge(values);
+  values.text(d => d);
 };
 
 function step() {
