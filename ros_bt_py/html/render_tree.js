@@ -275,13 +275,18 @@ function onTreeUpdate(tree_msg) {
   //.nodeSize(max_size)
   (root);
 
+  // Move new nodes to their starting positions
+  g_vertex.selectAll(".node").data(root.descendants(), d => d.id)
+    .filter(d => d._entering)
+    .attr("transform", function(d) {
+      // Start at parent position
+      var p = findExistingParent(d);
+      return "translate(" + Math.round(p.x) + "," + Math.round(p.y) + ") scale(0.1)";
+    });
+
   var link = g_edge.selectAll(".link")
       .data(tree.links(), function(d) { return '' + d.source.id + d.target.id; });
   link.exit().remove();
-  link.enter().each(function(d) {
-    d.source._entering = true;
-    d.target._entering = true;
-  });
 
   link = link
     .enter().append("path")
@@ -297,34 +302,67 @@ function onTreeUpdate(tree_msg) {
           }))
     .merge(link);
 
-  link.each(function(d) {
-    d.source._entering = false;
-    d.target._entering = false;
+  g_vertex.selectAll(".node").each(function(d) {
+    d._entering = false;
   });
 
   link.transition()
-    .duration(200).
+    .duration(250).
     attr("d", d3.linkVertical()
          .source(function(d) {
-           var parent = findExistingParent(d.source);
-           return [Math.round(parent.x), Math.round(parent.y + parent._size.height)];
+           return [Math.round(d.source.x), Math.round(d.source.y + d.source._size.height)];
          })
          .target(function(d) {
-           var parent = findExistingParent(d.target);
-           return [Math.round(parent.x), Math.round(parent.y)];
+           return [Math.round(d.target.x), Math.round(d.target.y)];
          }));
 
 
   // new selection, now with the elements we just added with enter()
   // above
   node = g_vertex.selectAll(".node")
-    .data(root.descendants(), function(node) {return node.id;})
-    .transition()
-    .duration(200)
+    .data(root.descendants(), function(node) {return node.id;});
+
+  var t = d3.transition()
+      .duration(250);
+  node.transition(t)
     .attr("transform", function(d) {
       // animate to actual position
-      return "translate(" + Math.round(d.x - d._size.width / 2.0) + "," + Math.round(d.y) + ")";
+      return "translate(" + Math.round(d.x - d._size.width / 2.0) + "," + Math.round(d.y) + ") scale(1.0)";
     });
+
+  node
+    .selectAll(".btnode")
+    .transition(t)
+    .ease(d3.easeQuad)
+    // Update color based on node state
+    .style("border-color", function(d) {
+    switch (d.data.state) {
+    case "RUNNING": {
+      return "#ffc107";
+    }
+    case "IDLE":{
+      return "#007bff";
+    }
+    case "SUCCEEDED": {
+      return "#28a745";
+    }
+    case "FAILED": {
+      return "#dc3545";
+    }
+    case "DEBUG_PRE_TICK":
+    case "DEBUG_POST_TICK":
+    case "DEBUG_TICK": {
+      return "#17a2b8";
+    }
+    case "SHUTDOWN": {
+      return "#7c1e27";
+    }
+    case "UNINITIALIZED":
+    default: {
+      return "#4E5666";
+    }
+    };
+  });
   console.log(root);
 };
 
@@ -339,16 +377,8 @@ var drawNodes = function(selection) {
   var fo = selection.append('foreignObject')
       .attr("class", function(d) {
         return "node" + (d.children ? " node--internal" : " node--leaf");
-      })
-      .attr("transform", function(d) {
-        // Start at parent position
-        var p = findExistingParent(d);
-        return "translate(" + Math.round(p.x) + "," + Math.round(p.y) + ")";
       });
 
-  selection.each(function(d) {
-    d._entering = false;
-  });
   var div = fo
       .append("xhtml:div")
       .attr("class", "btnode");
