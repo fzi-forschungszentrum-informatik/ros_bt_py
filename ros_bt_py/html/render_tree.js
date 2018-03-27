@@ -133,6 +133,12 @@ function add_node() {
 }
 
 function onTreeUpdate(tree_msg) {
+  // Disable all editing buttons unless tree is in EDITABLE state.
+  d3.select("#add_node_btn")
+    .attr("disabled", tree_msg.state === "EDITABLE" ? null : true);
+  d3.select("#delete_node_btn")
+    .attr("disabled", tree_msg.state === "EDITABLE" ? null : true);
+
   // Update the node selection dropdowns
   var add_options = function(id) {
     var parents = d3.select(id)
@@ -531,6 +537,25 @@ function shutdown() {
       }
       else {
         console.log('shutdown failed');
+      }
+    });
+}
+
+function reset() {
+  new ROSLIB.Service({
+    ros: ros,
+    name: '/tree_node/control_tree_execution',
+    serviceType: 'ros_bt_py_msgs/ControlTreeExecution'
+  }).callService(
+    new ROSLIB.ServiceRequest({
+      command: 4 // RESET
+    }),
+    function(response) {
+      if (response.success) {
+        console.log('reset successful');
+      }
+      else {
+        console.log('reset failed');
       }
     });
 }

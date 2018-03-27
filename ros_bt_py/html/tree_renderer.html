@@ -19,6 +19,7 @@
     <button onclick="tick()">Tick</button>
     <button onclick="tick_periodically()">Tick Periodically</button>
     <button onclick="stop()">Stop Ticking</button>
+    <button onclick="reset()">Reset tree</button>
     <button onclick="shutdown()">Shut Down Tree (needed to add new nodes)</button>
   </div>
   <div id="add_node" class="box">
@@ -31,7 +32,7 @@
       <option value="succeeder">Succeeder</option>
       <option value="failer">Failer</option>
     </select>
-    <button onclick="add_node();">Add</button>
+    <button id="add_node_btn" onclick="add_node();">Add</button>
   </div>
   <div id="remove_node" class="box">
     <h4>Remove Node</h4>
@@ -41,7 +42,7 @@
       <input type="checkbox" id="node_delete_children">
       <label for="node_delete_children">Delete Children</label>
     </div>
-    <button onclick="delete_node()">Delete Node</button>
+    <button id="delete_node_btn" onclick="delete_node()">Delete Node</button>
   </div>
 </body>
 </html>
