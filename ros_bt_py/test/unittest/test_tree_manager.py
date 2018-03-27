@@ -6,7 +6,7 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import NodeData, NodeDataWiring, NodeDataLocation, Tree
 from ros_bt_py_msgs.srv import WireNodeDataRequest, AddNodeRequest, RemoveNodeRequest, \
      ControlTreeExecutionRequest, GetAvailableNodesRequest, SetExecutionModeRequest, \
-     ContinueRequest
+     SetOptionsRequest, ContinueRequest
 
 from ros_bt_py.node import Node
 from ros_bt_py.nodes.sequence import Sequence
@@ -377,6 +377,42 @@ class TestTreeManager(unittest.TestCase):
 
         self.assertIn("PassthroughNode", [node.node_class for node in response.available_nodes])
 
+    def testSetOptions(self):
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.node_msg))))
+        # There's only one node...
+        node = self.tree_msg.nodes[0]
+        # and it only has one option
+        self.assertEqual(node.options[0].serialized_value, jsonpickle.encode(int))
+
+        # unparseable values should fail
+        self.assertFalse(get_success(self.manager.set_options(
+            SetOptionsRequest(tree_name='', node_name='PassthroughNode',
+                              options=[NodeData(key='passthrough_type',
+                                               serialized_value='invalid_value')]))))
+
+        # assigning values to invalid keys should fail too
+        self.assertFalse(get_success(self.manager.set_options(
+            SetOptionsRequest(tree_name='', node_name='PassthroughNode',
+                              options=[NodeData(key='invalid_key',
+                                               serialized_value=jsonpickle.encode(str))]))))
+
+        # assigning values of the wrong type should also fail
+        self.assertFalse(get_success(self.manager.set_options(
+            SetOptionsRequest(tree_name='', node_name='PassthroughNode',
+                              options=[NodeData(key='passthrough_type',
+                                               serialized_value=jsonpickle.encode(
+                                                   'I am not a type, but a string!'))]))))
+
+        # finally, this is valid :)
+        self.assertTrue(get_success(self.manager.set_options(
+            SetOptionsRequest(tree_name='', node_name='PassthroughNode',
+                              options=[NodeData(key='passthrough_type',
+                                               serialized_value=jsonpickle.encode(str))]))))
+        node = self.tree_msg.nodes[0]
+        self.assertEqual(node.options[0].serialized_value, jsonpickle.encode(str))
+
     def testEnforceEditable(self):
         add_request = AddNodeRequest(tree_name='',
                                      node=self.node_msg)
@@ -397,6 +433,8 @@ class TestTreeManager(unittest.TestCase):
         self.assertFalse(get_success(self.manager.remove_node(
             RemoveNodeRequest(node_name='first',
                               remove_children=False))))
+        self.assertFalse(get_success(self.manager.set_options(
+            SetOptionsRequest(node_name='first', options=[]))))
         # TODO(nberg): test other editing services here as they're implemented
 
         # But after shutting it down, we can edit it again

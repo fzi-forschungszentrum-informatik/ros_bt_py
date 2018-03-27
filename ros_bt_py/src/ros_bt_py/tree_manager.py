@@ -10,6 +10,7 @@ from ros_bt_py_msgs.srv import ContinueResponse
 from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, ControlTreeExecutionResponse
 from ros_bt_py_msgs.srv import GetAvailableNodesResponse
 from ros_bt_py_msgs.srv import SetExecutionModeResponse
+from ros_bt_py_msgs.srv import SetOptionsResponse
 from ros_bt_py_msgs.srv import ModifyBreakpointsResponse
 from ros_bt_py_msgs.msg import Tree
 from ros_bt_py_msgs.msg import Node as NodeMsg
@@ -544,6 +545,56 @@ class TreeManager(object):
         response.success = True
         self.publish_info()
         return response
+
+    @is_edit_service
+    def set_options(self, request):
+        if request.node_name not in self.nodes:
+            return SetOptionsResponse(
+                success=False,
+                error_message='Unable to find node %s in tree %s' % (
+                    request.node_name,
+                    request.tree_name))
+
+        node = self.nodes[request.node_name]
+        unknown_options = []
+        incompatible_options = []
+        try:
+            deserialized_options = dict((option.key, jsonpickle.decode(option.serialized_value))
+                                        for option in request.options)
+        except ValueError, e:
+            return SetOptionsResponse(success=False,
+                                      error_message='Failed to deserialize option value: %s' % str(e))
+        # Find any options values that
+        # a) the node does not expect
+        # b) have the wrong type
+        for key, value in deserialized_options.iteritems():
+            if key not in node.options:
+                unknown_options.append(key)
+                continue
+
+            required_type = node.options.get_type(key)
+            if not isinstance(value, required_type):
+                incompatible_options.append((key, required_type.__name__))
+
+        error_strings = []
+        if unknown_options:
+            error_strings.append('Unknown option keys: %s' % str(unknown_options))
+        if incompatible_options:
+            error_strings.append('Incompatible option keys:\n' + '\n'.join(
+                ['Key %s has type %s, should be %s' % (
+                    key,
+                    type(deserialized_options[key]).__name__,
+                    required_type_name) for key, required_type_name in incompatible_options]))
+        if error_strings:
+            return SetOptionsResponse(
+                success=False,
+                error_message='\n'.join(error_strings))
+
+        for key, value in deserialized_options.iteritems():
+            node.options[key] = value
+
+        self.publish_info()
+        return SetOptionsResponse(success=True)
 
     @is_edit_service
     def move_child(self, node_name, child_name, new_index):

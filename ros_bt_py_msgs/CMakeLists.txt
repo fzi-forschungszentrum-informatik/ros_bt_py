@@ -33,6 +33,7 @@ add_service_files(
   RemoveNode.srv
   ReplaceNode.srv
   SetExecutionMode.srv
+  SetOptions.srv
   WireNodeData.srv
   )
 
