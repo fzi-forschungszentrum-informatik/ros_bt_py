@@ -20,6 +20,26 @@ from ros_bt_py.node import Node, load_node_module, increment_name
 from ros_bt_py.debug_manager import DebugManager
 
 
+def is_edit_service(func):
+    """Decorator for all tree editing service handlers.
+
+    This allows the common behavior of responding with a response
+    that has success=False and an error_message, relying on all
+    editing services to have at least those two members.
+    """
+    def service_handler(self, request):
+        with self._state_lock:
+            if self.tree_msg.state != Tree.EDITABLE:
+                return {
+                    'success': False,
+                    'error_message': ('Cannot edit tree in state %s. You need to '
+                                      'shut down the tree to enable editing.'
+                                          % self.tree_msg.state)
+                    }
+        return func(self, request)
+    return service_handler
+
+
 class TreeManager(object):
     """Provide methods to manage a Behavior Tree
 
@@ -60,7 +80,7 @@ class TreeManager(object):
         self.tree_msg.tick_frequency_hz = tick_frequency_hz
 
         with self._state_lock:
-            self.tree_msg.state = Tree.IDLE
+            self.tree_msg.state = Tree.EDITABLE
 
         self._tick_thread = None
 
@@ -68,6 +88,8 @@ class TreeManager(object):
         if module_list:
             for module_name in module_list:
                 load_node_module(module_name)
+
+        self.publish_info()
 
     def load_tree_from_string(self, tree_string):
         # fill initial list of nodes with all the nodes that have no parent
@@ -273,6 +295,7 @@ class TreeManager(object):
                 response.success = True
                 response.tree_state = self.tree_msg.state
 
+            # actually shut down the tree
             if request.command == ControlTreeExecutionRequest.SHUTDOWN:
                 try:
                     root = self.find_root()
@@ -280,6 +303,11 @@ class TreeManager(object):
                 except TreeTopologyError, e:
                     response.success = False
                     response.error_message = str(e)
+
+                # Now the tree is editable again - all nodes are in a state
+                # where they must be initialized.
+                with self._state_lock:
+                    self.tree_msg.state = Tree.EDITABLE
 
             self.publish_info()
 
@@ -365,6 +393,7 @@ class TreeManager(object):
 
         return response
 
+    @is_edit_service
     def add_node(self, request):
         """Add the node in this request to the tree.
 
@@ -373,6 +402,7 @@ class TreeManager(object):
         """
         # TODO(nberg): handle subtrees
         response = AddNodeResponse()
+
         try:
             instance = self.instantiate_node_from_msg(request.node)
             response.success = True
@@ -426,6 +456,7 @@ class TreeManager(object):
         self.publish_info()
         return response
 
+    @is_edit_service
     def insert_node(self, parent_name, previous_child_name, child_node):
         """Insert `child_node` in between two nodes
 
@@ -434,6 +465,7 @@ class TreeManager(object):
         """
         pass
 
+    @is_edit_service
     def remove_node(self, request):
         """Remove the node identified by `request.node_name` from the tree.
 
@@ -513,6 +545,7 @@ class TreeManager(object):
         self.publish_info()
         return response
 
+    @is_edit_service
     def move_child(self, node_name, child_name, new_index):
         """Move the named child of a node to the given index.
 
@@ -523,12 +556,14 @@ class TreeManager(object):
         """
         pass
 
+    @is_edit_service
     def move_node(self, node_name, new_parent_name, child_index=None):
         """Move the named node to a different parent and insert it at the given index.
 
         """
         pass
 
+    @is_edit_service
     def replace_node(self, old_node_name, new_node):
         """Replace the named node with `new_node`.
 
@@ -538,6 +573,7 @@ class TreeManager(object):
         """
         pass
 
+    @is_edit_service
     def wire_data(self, request):
         """Connect the given pairs of node data to one another.
 
@@ -569,6 +605,7 @@ class TreeManager(object):
         self.publish_info()
         return response
 
+    @is_edit_service
     def unwire_data(self, request):
         """Disconnect the given pairs of node data.
 

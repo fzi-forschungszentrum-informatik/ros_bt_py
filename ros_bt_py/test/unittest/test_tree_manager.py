@@ -362,18 +362,62 @@ class TestTreeManager(unittest.TestCase):
         # All of these should fail, since the manager cannot find a root node
         # to tick (or reset)
         execution_request.command = ControlTreeExecutionRequest.TICK_ONCE
-        self.assertFalse(self.manager.control_execution(execution_request).success)
+        self.assertFalse(get_success(self.manager.control_execution(execution_request)))
         execution_request.command = ControlTreeExecutionRequest.TICK_PERIODICALLY
-        self.assertFalse(self.manager.control_execution(execution_request).success)
+        self.assertFalse(get_success(self.manager.control_execution(execution_request)))
         execution_request.command = ControlTreeExecutionRequest.RESET
-        self.assertFalse(self.manager.control_execution(execution_request).success)
+        self.assertFalse(get_success(self.manager.control_execution(execution_request)))
 
     def testGetAvailableNodes(self):
         request = GetAvailableNodesRequest(node_modules=['ros_bt_py.nodes.passthrough_node'])
 
         response = self.manager.get_available_nodes(request)
-        self.assertTrue(response.success, response.error_message)
+        self.assertTrue(get_success(response), get_error_message(response))
         self.assertGreaterEqual(len(response.available_nodes), 1)
 
         self.assertIn("PassthroughNode", [node.node_class for node in response.available_nodes])
 
+    def testEnforceEditable(self):
+        add_request = AddNodeRequest(tree_name='',
+                                     node=self.node_msg)
+        add_request.node.name = 'first'
+
+        self.assertEqual(self.tree_msg.state, "EDITABLE")
+        self.assertTrue(get_success(self.manager.add_node(add_request)))
+
+        self.assertTrue(self.manager.control_execution(ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.TICK_ONCE)))
+
+        add_request.node.name = 'second'
+        # The tree is not editable after ticking once
+        self.assertNotEqual(self.tree_msg.state, "EDITABLE")
+        # Neither by adding...
+        self.assertFalse(get_success(self.manager.add_node(add_request)))
+        # Nor deleting a node
+        self.assertFalse(get_success(self.manager.remove_node(
+            RemoveNodeRequest(node_name='first',
+                              remove_children=False))))
+        # TODO(nberg): test other editing services here as they're implemented
+
+        # But after shutting it down, we can edit it again
+        self.assertTrue(self.manager.control_execution(ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.SHUTDOWN)))
+
+        self.assertEqual(self.tree_msg.state, "EDITABLE")
+        self.assertTrue(get_success(self.manager.add_node(add_request)))
+        self.assertTrue(get_success(self.manager.remove_node(
+            RemoveNodeRequest(node_name='first',
+                              remove_children=False))))
+
+
+def get_success(response):
+    if isinstance(response, dict):
+        return response['success']
+
+    return response.success
+
+def get_error_message(response):
+    if isinstance(response, dict):
+        return response['error_message']
+
+    return response.error_message

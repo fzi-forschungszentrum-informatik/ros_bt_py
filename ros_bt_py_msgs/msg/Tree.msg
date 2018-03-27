@@ -12,7 +12,7 @@ float64 tick_frequency_hz
 string state
 
 string IDLE = IDLE
-string EDITING = EDITING
+string EDITABLE = EDITABLE
 string TICKING = TICKING
 string DEBUGGING = DEBUGGING
 string STOP_REQUESTED = STOP_REQUESTED
