@@ -34,7 +34,7 @@ def is_edit_service(func):
                     'success': False,
                     'error_message': ('Cannot edit tree in state %s. You need to '
                                       'shut down the tree to enable editing.'
-                                          % self.tree_msg.state)
+                                      % self.tree_msg.state)
                     }
         return func(self, request)
     return service_handler
