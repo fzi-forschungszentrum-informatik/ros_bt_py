@@ -390,26 +390,26 @@ class TestTreeManager(unittest.TestCase):
         self.assertFalse(get_success(self.manager.set_options(
             SetOptionsRequest(tree_name='', node_name='PassthroughNode',
                               options=[NodeData(key='passthrough_type',
-                                               serialized_value='invalid_value')]))))
+                                                serialized_value='invalid_value')]))))
 
         # assigning values to invalid keys should fail too
         self.assertFalse(get_success(self.manager.set_options(
             SetOptionsRequest(tree_name='', node_name='PassthroughNode',
                               options=[NodeData(key='invalid_key',
-                                               serialized_value=jsonpickle.encode(str))]))))
+                                                serialized_value=jsonpickle.encode(str))]))))
 
         # assigning values of the wrong type should also fail
         self.assertFalse(get_success(self.manager.set_options(
             SetOptionsRequest(tree_name='', node_name='PassthroughNode',
                               options=[NodeData(key='passthrough_type',
-                                               serialized_value=jsonpickle.encode(
+                                                serialized_value=jsonpickle.encode(
                                                    'I am not a type, but a string!'))]))))
 
         # finally, this is valid :)
         self.assertTrue(get_success(self.manager.set_options(
             SetOptionsRequest(tree_name='', node_name='PassthroughNode',
                               options=[NodeData(key='passthrough_type',
-                                               serialized_value=jsonpickle.encode(str))]))))
+                                                serialized_value=jsonpickle.encode(str))]))))
         node = self.tree_msg.nodes[0]
         self.assertEqual(node.options[0].serialized_value, jsonpickle.encode(str))
 
