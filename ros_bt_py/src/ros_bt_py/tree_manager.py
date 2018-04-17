@@ -346,7 +346,7 @@ class TreeManager(object):
                         response.success = True
                     elif self.tree_msg.state == Tree.ERROR:
                         response.error_message = ('Error during single tick: %s'
-                                                      % str(self._last_error))
+                                                  % str(self._last_error))
                         response.success = False
                         rospy.logerr(response.error_message)
                     else:

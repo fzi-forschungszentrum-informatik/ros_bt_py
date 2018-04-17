@@ -172,7 +172,7 @@ class Node(object):
         """
 
         msg = ('Trying to setup a node of type %s without _do_setup function!'
-                   % self.__class__.__name__)
+               % self.__class__.__name__)
         rospy.logerr(msg)
         raise NotImplementedError(msg)
 
@@ -270,7 +270,7 @@ class Node(object):
           One of the constants in :class:`ros_bt_py_msgs.msg.Node`
         """
         msg = ('Ticking a node of type %s without _do_tick function!'
-                   % self.__class__.__name__)
+               % self.__class__.__name__)
         rospy.logerr(msg)
         raise NotImplementedError(msg)
 
@@ -306,7 +306,7 @@ class Node(object):
         3. Be ready to resume on the next call of :meth:`tick`
         """
         msg = ('Unticking a node of type %s without _do_untick function!'
-                   % self.__class__.__name__)
+               % self.__class__.__name__)
         self.logerr(msg)
         raise NotImplementedError(msg)
 
@@ -340,7 +340,7 @@ class Node(object):
           The new state of the node (should be IDLE unless an error happened)
         """
         msg = ('Resetting a node of type %s without _do_reset function!'
-                   % self.__class__.__name__)
+               % self.__class__.__name__)
         self.logerr(msg)
         raise NotImplementedError(msg)
 
@@ -376,7 +376,7 @@ class Node(object):
         might be holding (file pointers, ROS topic subscriptions etc.)
         """
         msg = ('Shutting down a node of type %s without _do_shutdown function!'
-                   % self.__class__.__name__)
+               % self.__class__.__name__)
         self.logerr(msg)
         raise NotImplementedError(msg)
 
