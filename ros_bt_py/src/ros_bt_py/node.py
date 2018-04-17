@@ -173,7 +173,7 @@ class Node(object):
 
         msg = ('Trying to setup a node of type %s without _do_setup function!'
                % self.__class__.__name__)
-        rospy.logerr(msg)
+        self.logerr(msg)
         raise NotImplementedError(msg)
 
     def _handle_inputs(self):
@@ -186,7 +186,7 @@ class Node(object):
         """
         for input_name in self.inputs:
             if not self.inputs.is_updated(input_name):
-                rospy.logwarn('Running tick() with stale data!')
+                self.logwarn('Running tick() with stale data!')
             if self.inputs[input_name] is None:
                 raise ValueError('Trying to tick a node with an unset input!')
         self.inputs.handle_subscriptions()
@@ -271,7 +271,7 @@ class Node(object):
         """
         msg = ('Ticking a node of type %s without _do_tick function!'
                % self.__class__.__name__)
-        rospy.logerr(msg)
+        self.logerr(msg)
         raise NotImplementedError(msg)
 
     def untick(self):
