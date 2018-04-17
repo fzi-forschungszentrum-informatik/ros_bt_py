@@ -234,12 +234,16 @@ class Node(object):
 
             # Inputs can override options!
             self._handle_inputs()
-            # Inputs are updated by other nodes' outputs, i.e. some time after we
-            # use them here. In some cases, inputs might be connected to child
-            # outputs (or even our own), which is why we reset before calling step()
-            self.inputs.reset_updated()
 
             self.state = self._do_tick()
+
+            # Inputs are updated by other nodes' outputs, i.e. some time after
+            # we use them here. In some cases, inputs might be connected to
+            # child outputs (or even our own). If they are, update information
+            # is lost, unless it is processed after all child ticks in the same
+            # cycle!
+            self.inputs.reset_updated()
+
             self.raise_if_in_invalid_state(allowed_states=[NodeMsg.RUNNING,
                                                            NodeMsg.SUCCEEDED,
                                                            NodeMsg.FAILED],
