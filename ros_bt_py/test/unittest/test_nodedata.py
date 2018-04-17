@@ -72,7 +72,7 @@ class TestNodeData(unittest.TestCase):
     def testAppendToList(self):
         # This test exists mostly to document this behavior.
         # Beware, this can break staticness!
-        data = NodeData(data_type=list, initial_value=[], static = False)
+        data = NodeData(data_type=list, initial_value=[], static=False)
         data.get().append(1)
 
         self.assertEqual([1], data.get())

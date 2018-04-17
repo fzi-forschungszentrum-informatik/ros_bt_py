@@ -5,8 +5,8 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import NodeData, NodeDataLocation
 
 from ros_bt_py.exceptions import BehaviorTreeException, NodeConfigError
-
 from ros_bt_py.nodes.getters import GetListItem
+
 
 class TestGetters(unittest.TestCase):
     def testListGetter(self):
@@ -21,7 +21,7 @@ class TestGetters(unittest.TestCase):
         # Index 3 is out of bounds in a single element array
         self.assertEqual(NodeMsg.FAILED, getter.tick())
 
-        getter.inputs['list'] = [1,2,3,4]
+        getter.inputs['list'] = [1, 2, 3, 4]
 
         # Now index 3 points to 4
         self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
