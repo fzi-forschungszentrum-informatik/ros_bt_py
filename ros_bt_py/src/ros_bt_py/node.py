@@ -170,7 +170,11 @@ class Node(object):
         :returns:
           This method must return one of the constants in :class:`ros_bt_py_msgs.msg.Node`
         """
-        raise NotImplementedError('Trying to setup a node with no _do_setup() method')
+
+        msg = ('Trying to setup a node of type %s without _do_setup function!'
+                   % self.__class__.__name__)
+        rospy.logerr(msg)
+        raise NotImplementedError(msg)
 
     def _handle_inputs(self):
         """Execute the callbacks registered by :meth:`_wire_input`
@@ -265,8 +269,9 @@ class Node(object):
         :returns:
           One of the constants in :class:`ros_bt_py_msgs.msg.Node`
         """
-        msg = 'Ticking a node without a _do_tick function!'
-        self.logerr(msg)
+        msg = ('Ticking a node of type %s without _do_tick function!'
+                   % self.__class__.__name__)
+        rospy.logerr(msg)
         raise NotImplementedError(msg)
 
     def untick(self):
@@ -300,7 +305,8 @@ class Node(object):
         2. Not execute any of its behavior in the background
         3. Be ready to resume on the next call of :meth:`tick`
         """
-        msg = 'Unticking a node without untick function!'
+        msg = ('Unticking a node of type %s without _do_untick function!'
+                   % self.__class__.__name__)
         self.logerr(msg)
         raise NotImplementedError(msg)
 
@@ -333,7 +339,8 @@ class Node(object):
         :returns:
           The new state of the node (should be IDLE unless an error happened)
         """
-        msg = 'Trying to reset a node without _do_reset function'
+        msg = ('Resetting a node of type %s without _do_reset function!'
+                   % self.__class__.__name__)
         self.logerr(msg)
         raise NotImplementedError(msg)
 
@@ -368,7 +375,10 @@ class Node(object):
         Implement this in your node class and release any resources you
         might be holding (file pointers, ROS topic subscriptions etc.)
         """
-        raise NotImplementedError('Trying to shut down a node without _do_shutdown() method.')
+        msg = ('Shutting down a node of type %s without _do_shutdown function!'
+                   % self.__class__.__name__)
+        self.logerr(msg)
+        raise NotImplementedError(msg)
 
     def validate(self):
         """You must also override this.
