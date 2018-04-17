@@ -20,6 +20,7 @@ class Topic(Leaf):
         self._subscriber = rospy.Subscriber(self.options['topic_name'],
                                             self.options['topic_type'],
                                             self._callback)
+        return NodeMsg.IDLE
 
     def _callback(self, msg):
         with self._lock:
