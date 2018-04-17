@@ -80,6 +80,7 @@ class TreeManager(object):
         self.tree_msg.name = name if name else ''
         self.tree_msg.tick_frequency_hz = tick_frequency_hz
 
+        self._last_error = None
         with self._state_lock:
             self.tree_msg.state = Tree.EDITABLE
 
@@ -133,7 +134,8 @@ class TreeManager(object):
         except Exception, e:
             rospy.logerr('Encountered error while ticking tree: %s', e)
             with self._state_lock:
-                self.tree_msg.state = Tree.IDLE
+                self._last_error = e
+                self.tree_msg.state = Tree.ERROR
 
     def tick(self, once=None):
         if once is not None:
@@ -286,6 +288,10 @@ class TreeManager(object):
                 if self.tree_msg.state == Tree.IDLE:
                     response.tree_state = Tree.IDLE
                     response.success = True
+                elif self.tree_msg.state == Tree.ERROR:
+                    response.error_message = ('Error stopping tick: %s' % str(self._last_error))
+                    response.success = False
+                    rospy.logerr(response.error_message)
                 else:
                     response.error_message = ('Successfully stopped ticking, but tree state is '
                                               '%s, not IDLE' % self.tree_msg.state)
@@ -335,9 +341,19 @@ class TreeManager(object):
                     if self._tick_thread.is_alive():
                         raise BehaviorTreeException('Tried to join tick thread after requesting '
                                                     'stop, but failed!')
-                    else:
-                        response.success = True
+                    if self.tree_msg.state == Tree.IDLE:
                         response.tree_state = Tree.IDLE
+                        response.success = True
+                    elif self.tree_msg.state == Tree.ERROR:
+                        response.error_message = ('Error during single tick: %s'
+                                                      % str(self._last_error))
+                        response.success = False
+                        rospy.logerr(response.error_message)
+                    else:
+                        response.error_message = ('Successfully stopped ticking, but tree state '
+                                                  'is %s, not IDLE' % self.tree_msg.state)
+                        response.success = False
+                        rospy.logerr(response.error_message)
                 except TreeTopologyError, e:
                     response.success = False
                     response.error_message = str(e)
