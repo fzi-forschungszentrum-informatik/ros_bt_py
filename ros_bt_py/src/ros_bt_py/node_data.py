@@ -74,6 +74,9 @@ class NodeData(object):
             rospy.logwarn('Reading non-updated value!')
         return self._value
 
+    def set_updated(self):
+        self.updated = True
+
     def reset_updated(self):
         self.updated = False
 
@@ -200,6 +203,13 @@ class NodeDataMap(object):
         :rtype: bool
         """
         return self._map[key].updated
+
+    def set_updated(self, key):
+        """Set the `updated` property for the given datum"""
+        if key in self._map:
+            self._map[key].set_updated()
+        else:
+            raise KeyError('No member named %s' % key)
 
     def reset_updated(self):
         """Reset the `updated` property of all data in this map.
