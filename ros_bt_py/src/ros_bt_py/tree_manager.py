@@ -1,4 +1,4 @@
-from threading import Thread, Lock
+from threading import Thread, Lock, RLock
 import time
 import jsonpickle
 
@@ -24,9 +24,16 @@ from ros_bt_py.debug_manager import DebugManager
 def is_edit_service(func):
     """Decorator for all tree editing service handlers.
 
-    This allows the common behavior of responding with a response
-    that has success=False and an error_message, relying on all
-    editing services to have at least those two members.
+    This allows the common behavior of responding with a response that
+    has success=False and an error_message if the tree is not
+    currently editable, relying on all editing service responses to
+    have at least those two members.
+
+    It also ensures that all edits are atomic, i.e. external service
+    calls cannot interweave. The lock used to ensure this is a
+    `threading.RLock`, which means the service handlers *can* call
+    each other if need be.
+
     """
     def service_handler(self, request):
         with self._state_lock:
@@ -37,7 +44,8 @@ def is_edit_service(func):
                                       'shut down the tree to enable editing.'
                                       % self.tree_msg.state)
                     }
-        return func(self, request)
+        with self._edit_lock:
+            return func(self, request)
     return service_handler
 
 
@@ -74,6 +82,7 @@ class TreeManager(object):
         self.nodes = {}
 
         self._state_lock = Lock()
+        self._edit_lock = RLock()
         self._once = False
 
         self.tree_msg = Tree()
