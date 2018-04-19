@@ -40,10 +40,10 @@ class TestTreeManager(unittest.TestCase):
             node_class='Sequence')
 
     def testLoadNode(self):
-        _ = self.manager.instantiate_node_from_msg(self.node_msg)
-        _ = self.manager.instantiate_node_from_msg(self.node_msg)
+        _ = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
+        _ = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
         self.node_msg.name = 'Test Node'
-        _ = self.manager.instantiate_node_from_msg(self.node_msg)
+        _ = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
 
         self.assertIn('PassthroughNode', self.manager.nodes)
         self.assertIn('PassthroughNode_2', self.manager.nodes)
@@ -51,9 +51,9 @@ class TestTreeManager(unittest.TestCase):
 
     def testWireData(self):
         self.node_msg.name = 'source_node'
-        self.manager.instantiate_node_from_msg(self.node_msg)
+        self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
         self.node_msg.name = 'target_node'
-        self.manager.instantiate_node_from_msg(self.node_msg)
+        self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
 
         self.assertIn('source_node', self.manager.nodes)
         self.assertIn('target_node', self.manager.nodes)
@@ -74,9 +74,9 @@ class TestTreeManager(unittest.TestCase):
 
     def testWireWithInvalidKey(self):
         self.node_msg.name = 'source_node'
-        self.manager.instantiate_node_from_msg(self.node_msg)
+        self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
         self.node_msg.name = 'target_node'
-        self.manager.instantiate_node_from_msg(self.node_msg)
+        self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
 
         self.assertIn('source_node', self.manager.nodes)
         self.assertIn('target_node', self.manager.nodes)
@@ -96,9 +96,9 @@ class TestTreeManager(unittest.TestCase):
 
     def testWireWithInvalidNodeName(self):
         self.node_msg.name = 'source_node'
-        self.manager.instantiate_node_from_msg(self.node_msg)
+        self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
         self.node_msg.name = 'target_node'
-        self.manager.instantiate_node_from_msg(self.node_msg)
+        self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
 
         self.assertIn('source_node', self.manager.nodes)
         self.assertIn('target_node', self.manager.nodes)
@@ -122,9 +122,9 @@ class TestTreeManager(unittest.TestCase):
         If there's an error while handling any pair, none of the wirings must be applied!
         """
         self.node_msg.name = 'source_node'
-        self.manager.instantiate_node_from_msg(self.node_msg)
+        self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
         self.node_msg.name = 'target_node'
-        self.manager.instantiate_node_from_msg(self.node_msg)
+        self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
 
         self.assertIn('source_node', self.manager.nodes)
         self.assertIn('target_node', self.manager.nodes)
@@ -169,9 +169,9 @@ class TestTreeManager(unittest.TestCase):
         self.assertFalse(response.success)
 
         self.node_msg.name = 'source_node'
-        self.manager.instantiate_node_from_msg(self.node_msg)
+        self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
         self.node_msg.name = 'target_node'
-        self.manager.instantiate_node_from_msg(self.node_msg)
+        self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
 
         response = self.manager.unwire_data(wire_request)
         # The nodes and keys exist. There aren't any callbacks to remove, but
@@ -223,8 +223,37 @@ class TestTreeManager(unittest.TestCase):
         self.assertEqual(len(self.manager.nodes), 2)
         self.assertTrue(response.success)
 
+    def testAddRenaming(self):
+        add_request = AddNodeRequest(tree_name='',
+                                     node=self.sequence_msg)
+        response = self.manager.add_node(add_request)
+
+        self.assertEqual(len(self.manager.nodes), 1)
+        self.assertTrue(response.success)
+
+        # Add the same node again - since allow_rename should default
+        # to false, this will fail.
+        response = self.manager.add_node(add_request)
+
+        self.assertEqual(len(self.manager.nodes), 1)
+        self.assertFalse(response.success)
+
+        # Same with allow_rename set to False explicitly
+        add_request.allow_rename = False
+        response = self.manager.add_node(add_request)
+
+        self.assertEqual(len(self.manager.nodes), 1)
+        self.assertFalse(response.success)
+
+        # But it should work if we set allow_rename to True
+        add_request.allow_rename = True
+        response = self.manager.add_node(add_request)
+
+        self.assertEqual(len(self.manager.nodes), 2)
+        self.assertTrue(response.success)
+
     def testRemoveNode(self):
-        instance = self.manager.instantiate_node_from_msg(self.node_msg)
+        instance = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
 
         remove_request = RemoveNodeRequest(node_name=instance.name)
 
@@ -352,7 +381,8 @@ class TestTreeManager(unittest.TestCase):
 
     def testControlBrokenTree(self):
         add_request = AddNodeRequest(tree_name='',
-                                     node=self.node_msg)
+                                     node=self.node_msg,
+                                     allow_rename=True)
         # Add two nodes, so there's no one root node
         self.assertTrue(self.manager.add_node(add_request).success)
         self.assertTrue(self.manager.add_node(add_request).success)

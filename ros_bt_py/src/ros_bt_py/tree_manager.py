@@ -430,7 +430,7 @@ class TreeManager(object):
         response = AddNodeResponse()
 
         try:
-            instance = self.instantiate_node_from_msg(request.node)
+            instance = self.instantiate_node_from_msg(request.node, request.allow_rename)
             response.success = True
             response.actual_node_name = instance.name
         except BehaviorTreeException as exc:
@@ -816,13 +816,18 @@ class TreeManager(object):
 
         return subscription_data
 
-    def instantiate_node_from_msg(self, node_msg):
+    def instantiate_node_from_msg(self, node_msg, allow_rename):
         # TODO(nberg): Subtree handling
         if node_msg.is_subtree:
             raise NotImplementedError('Subtree nodes are not supported yet!')
         else:
             node_instance = Node.from_msg(node_msg)
-            node_instance.name = self.make_name_unique(node_instance.name)
+            if node_instance.name in self.nodes:
+                if allow_rename:
+                    node_instance.name = self.make_name_unique(node_instance.name)
+                else:
+                    raise BehaviorTreeException('Node with name "%s" exists already'
+                                                % node_instance.name)
 
             # Set DebugManager
             node_instance.debug_manager = self.debug_manager
