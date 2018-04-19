@@ -1,9 +1,13 @@
 from threading import Thread, Lock, RLock
 import time
 import jsonpickle
+import yaml
 
+import genpy
 import rospy
+import rospkg
 
+from ros_bt_py_msgs.srv import LoadTreeResponse
 from ros_bt_py_msgs.srv import RemoveNodeRequest, WireNodeDataRequest
 from ros_bt_py_msgs.srv import WireNodeDataResponse, AddNodeResponse, RemoveNodeResponse
 from ros_bt_py_msgs.srv import ContinueResponse
@@ -215,8 +219,100 @@ class TreeManager(object):
     # Service Handlers #
     ####################
 
-    def load_tree(self, tree_path):
-        pass
+    @is_edit_service
+    def load_tree(self, request):
+        """Load a tree from the given message (which may point to a file)
+
+        `request.tree` describes the tree to be loaded, including
+        nodes, wirings and public node data.
+
+        If the `Tree` message itself isn't populated, but contains a
+        `path` to load a tree from, we open the file it points to and
+        load that.
+
+        """
+        response = LoadTreeResponse()
+        tree = request.tree
+        rospack = rospkg.RosPack()
+        while not tree.nodes:
+            # TODO(nberg): Save visited file names to find loops
+
+            # as long as we don't have any nodes, the tree message is
+            # just a pointer to a file containing the actual tree, so
+            # load that file.
+            file_path = ''
+            if not tree.path:
+                response.success = False
+                response.error_message = ('Trying to load tree, but found no nodes and no path '
+                                          'to read from: %s') % str(tree)
+                return response
+            if tree.path.startswith('file://'):
+                file_path = tree.path[len('file://'):]
+            elif tree.path.startswith('package://'):
+                package_name = tree.path[len('package://'):].split('/', maxsplit=1)[0]
+                package_path = rospack.get_path(package_name)
+                file_path = package_path + tree.path[len('package://')
+                                                     + len(package_name):]
+            else:
+                response.success = False
+                response.error_message = ('Tree path "%s" is malformed. It needs to start with '
+                                          'either "file://" or "package://"') % tree.path
+                return response
+
+            # load tree file and parse yaml, then convert to Tree message
+            with open(file_path, 'r') as tree_file:
+                data = yaml.load_all(tree_file)
+                read_data = False
+                for d in data:
+                    if not read_data:
+                        tree = Tree()
+                        genpy.message.fill_message_args(tree, d, keys={})
+                        read_data = True
+                    else:
+                        response.success = False
+                        response.error_message = ('Tree YAML file must contain '
+                                                  'exactly one YAML object!')
+                        return response
+                if not read_data:
+                    response.success = False
+                    response.error_message = ('No data in YAML file %s!' % file_path)
+
+        # we should have a tree message with all the info we need now
+
+        # add nodes whose children exist already, until all nodes are there
+        while len(self.nodes) != len(tree.nodes):
+            added = 0
+            # find nodes whose children are all in the tree already, then add them
+            for node in (node for node in tree.nodes
+                         if all((name in self.nodes for name in node.child_names))):
+                try:
+                    instance = self.instantiate_node_from_msg(node, allow_rename=False)
+                    for child_name in node.child_names:
+                        instance.add_child(self.nodes[child_name])
+                    self.nodes[node.name] = instance
+                    added += 1
+                except BehaviorTreeException as exc:
+                    response.success = False
+                    response.error_message = str(exc)
+                    return response
+            if added == 0:
+                response.success = False
+                response.error_message = 'Unable to add all nodes to tree.'
+                return response
+
+        # All nodes are added, now do the wiring
+        wire_response = self.wire_data(WireNodeDataRequest(tree_name=tree.name,
+                                                           wirings=tree.data_wirings))
+        if not wire_response.success:
+            response.success = False
+            response.error_message = wire_response.error_message
+            return response
+
+        self.tree_msg = tree
+        # Ensure Tree is idle after loading
+        with self._state_lock:
+            self.tree_msg.state = Tree.IDLE
+        return False
 
     def set_execution_mode(self, request):
         """Set the parameters of our :class:`DebugManager`

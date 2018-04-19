@@ -1,8 +1,9 @@
 # A descriptive name for this tree. At runtime, this is chosen by the
 # tree manager node.
 string name
-# A string pointing to the YAML file this tree was read from, if
-# any. Can be a file:// or a package:// string.
+# A string pointing to a YAML file to read a tree from, if
+# any. Can be a file:// or a package:// string. Please don't build
+# infinite loops using this.
 string path
 string root_name
 Node[] nodes
