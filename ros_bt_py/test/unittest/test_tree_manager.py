@@ -6,7 +6,7 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import NodeData, NodeDataWiring, NodeDataLocation, Tree
 from ros_bt_py_msgs.srv import WireNodeDataRequest, AddNodeRequest, RemoveNodeRequest, \
      ControlTreeExecutionRequest, GetAvailableNodesRequest, SetExecutionModeRequest, \
-     SetOptionsRequest, ContinueRequest
+     SetOptionsRequest, ContinueRequest, LoadTreeRequest
 
 from ros_bt_py.node import Node
 from ros_bt_py.nodes.sequence import Sequence
@@ -476,6 +476,18 @@ class TestTreeManager(unittest.TestCase):
         self.assertTrue(get_success(self.manager.remove_node(
             RemoveNodeRequest(node_name='first',
                               remove_children=False))))
+
+    def testLoadFromFile(self):
+        load_request = LoadTreeRequest(tree=Tree(name='from_file',
+                                                 path='package://ros_bt_py/etc/trees/test.yaml'))
+        response = self.manager.load_tree(load_request)
+
+        self.assertTrue(response.success, response.error_message)
+        # test.yaml contains a sequence, two succeeders, a fallback and a failer
+        self.assertEqual(len(self.manager.nodes), 5)
+
+        self.assertTrue(get_success(self.manager.control_execution(ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.TICK_ONCE))))
 
 
 def get_success(response):

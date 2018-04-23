@@ -249,7 +249,7 @@ class TreeManager(object):
             if tree.path.startswith('file://'):
                 file_path = tree.path[len('file://'):]
             elif tree.path.startswith('package://'):
-                package_name = tree.path[len('package://'):].split('/', maxsplit=1)[0]
+                package_name = tree.path[len('package://'):].split('/', 1)[0]
                 package_path = rospack.get_path(package_name)
                 file_path = package_path + tree.path[len('package://') + len(package_name):]
             else:
@@ -283,7 +283,8 @@ class TreeManager(object):
             added = 0
             # find nodes whose children are all in the tree already, then add them
             for node in (node for node in tree.nodes
-                         if all((name in self.nodes for name in node.child_names))):
+                         if (node.name not in self.nodes
+                                 and all((name in self.nodes for name in node.child_names)))):
                 try:
                     instance = self.instantiate_node_from_msg(node, allow_rename=False)
                     for child_name in node.child_names:
@@ -311,7 +312,9 @@ class TreeManager(object):
         # Ensure Tree is idle after loading
         with self._state_lock:
             self.tree_msg.state = Tree.IDLE
-        return False
+
+        response.success = True
+        return response
 
     def set_execution_mode(self, request):
         """Set the parameters of our :class:`DebugManager`
