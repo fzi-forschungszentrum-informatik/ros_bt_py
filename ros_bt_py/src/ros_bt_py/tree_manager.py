@@ -251,8 +251,7 @@ class TreeManager(object):
             elif tree.path.startswith('package://'):
                 package_name = tree.path[len('package://'):].split('/', maxsplit=1)[0]
                 package_path = rospack.get_path(package_name)
-                file_path = package_path + tree.path[len('package://')
-                                                     + len(package_name):]
+                file_path = package_path + tree.path[len('package://') + len(package_name):]
             else:
                 response.success = False
                 response.error_message = ('Tree path "%s" is malformed. It needs to start with '
