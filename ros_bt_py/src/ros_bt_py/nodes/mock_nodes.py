@@ -24,9 +24,14 @@ class MockLeaf(Leaf):
         if len(self.options['state_values']) != len(self.options['output_values']):
             raise NodeConfigError('state_values and output_values must have the same length!')
         for value in self.options['output_values']:
-            if not isinstance(value, self.options['output_type']):
-                raise NodeConfigError('Provided output value "%s" is not of output type %s but %s' %
-                                      (str(value), self.options['output_type'].__name__, type(value).__name__))
+            try:
+                self.outputs['out'] = value
+            except TypeError, e:
+                raise NodeConfigError('Provided output value "%s (%s)" is not compatible with '
+                                      'output type %s' %
+                                      (str(value), type(value).__name__,
+                                           self.options['output_type'].__name__))
+            self.outputs['out'] = None
 
     def _do_tick(self):
         self.outputs['out'] = self.options['output_values'][self.outputs['current_index']]
