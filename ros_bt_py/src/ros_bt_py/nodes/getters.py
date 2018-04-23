@@ -16,6 +16,12 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
     max_children=1))
 class GetListItem(Decorator):
     def _do_setup(self):
+        for child in self.children:
+            child.setup()
+            # We have a child, so set list to an empty list. We're avoiding an
+            # error this way because we know what we're doing, don't use this
+            # gratuitously!
+            self.inputs['list'] = []
         return NodeMsg.IDLE
 
     def _do_tick(self):
@@ -32,8 +38,6 @@ class GetListItem(Decorator):
                             % (self.options['index'], self.inputs['list']))
                 return NodeMsg.FAILED
         else:
-            if self.outputs['item'] is None:
-                return NodeMsg.RUNNING
             if self.options['succeed_on_stale_data']:
                 return NodeMsg.SUCCEEDED
             else:
