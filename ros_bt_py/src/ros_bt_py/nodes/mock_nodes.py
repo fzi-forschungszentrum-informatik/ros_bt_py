@@ -30,7 +30,7 @@ class MockLeaf(Leaf):
                 raise NodeConfigError('Provided output value "%s (%s)" is not compatible with '
                                       'output type %s' %
                                       (str(value), type(value).__name__,
-                                           self.options['output_type'].__name__))
+                                       self.options['output_type'].__name__))
             self.outputs['out'] = None
 
     def _do_tick(self):

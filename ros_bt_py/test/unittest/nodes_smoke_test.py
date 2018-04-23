@@ -1,5 +1,6 @@
 import unittest
 
+
 class TestNodeImport(unittest.TestCase):
     """Simple smoke test for all node classes
 
@@ -17,4 +18,3 @@ class TestNodeImport(unittest.TestCase):
         from ros_bt_py.nodes.passthrough_node import PassthroughNode
         from ros_bt_py.nodes.sequence import Sequence
         from ros_bt_py.nodes.topic import Topic
-
