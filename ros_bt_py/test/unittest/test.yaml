@@ -1,0 +1,131 @@
+name: ''
+path: ''
+root_name: ''
+nodes: 
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.mock_nodes"
+    node_class: "MockLeaf"
+    max_children: 0
+    name: "succeeder"
+    child_names: []
+    options: 
+      - 
+        key: "state_values"
+        serialized_value: "[\"SUCCEEDED\"]"
+      - 
+        key: "output_type"
+        serialized_value: "{\"py/type\": \"__builtin__.str\"}"
+      - 
+        key: "output_values"
+        serialized_value: "[\"Yay!\"]"
+    inputs: []
+    outputs: 
+      - 
+        key: "current_index"
+        serialized_value: "null"
+      - 
+        key: "tick_count"
+        serialized_value: "null"
+      - 
+        key: "untick_count"
+        serialized_value: "null"
+      - 
+        key: "out"
+        serialized_value: "null"
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.mock_nodes"
+    node_class: "MockLeaf"
+    max_children: 0
+    name: "succeeder_2"
+    child_names: []
+    options: 
+      - 
+        key: "state_values"
+        serialized_value: "[\"SUCCEEDED\"]"
+      - 
+        key: "output_type"
+        serialized_value: "{\"py/type\": \"__builtin__.str\"}"
+      - 
+        key: "output_values"
+        serialized_value: "[\"Yay!\"]"
+    inputs: []
+    outputs: 
+      - 
+        key: "current_index"
+        serialized_value: "null"
+      - 
+        key: "tick_count"
+        serialized_value: "null"
+      - 
+        key: "untick_count"
+        serialized_value: "null"
+      - 
+        key: "out"
+        serialized_value: "null"
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.fallback"
+    node_class: "Fallback"
+    max_children: 0
+    name: "fallback"
+    child_names: [failer, succeeder_2]
+    options: []
+    inputs: []
+    outputs: []
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.mock_nodes"
+    node_class: "MockLeaf"
+    max_children: 0
+    name: "failer"
+    child_names: []
+    options: 
+      - 
+        key: "state_values"
+        serialized_value: "[\"FAILED\"]"
+      - 
+        key: "output_type"
+        serialized_value: "{\"py/type\": \"__builtin__.str\"}"
+      - 
+        key: "output_values"
+        serialized_value: "[\"Noooo :(\"]"
+    inputs: []
+    outputs: 
+      - 
+        key: "current_index"
+        serialized_value: "null"
+      - 
+        key: "tick_count"
+        serialized_value: "null"
+      - 
+        key: "untick_count"
+        serialized_value: "null"
+      - 
+        key: "out"
+        serialized_value: "null"
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    max_children: 0
+    name: "sequence"
+    child_names: [succeeder, fallback]
+    options: []
+    inputs: []
+    outputs: []
+    state: "UNINITIALIZED"
+data_wirings: []
+tick_frequency_hz: 20.0
+state: "EDITABLE"
+public_node_data: []
