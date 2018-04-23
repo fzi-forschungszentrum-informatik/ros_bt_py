@@ -451,8 +451,8 @@ class TestTreeManager(unittest.TestCase):
         self.assertEqual(self.tree_msg.state, "EDITABLE")
         self.assertTrue(get_success(self.manager.add_node(add_request)))
 
-        self.assertTrue(self.manager.control_execution(ControlTreeExecutionRequest(
-            command=ControlTreeExecutionRequest.TICK_ONCE)))
+        self.assertTrue(get_success(self.manager.control_execution(ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.TICK_ONCE))))
 
         add_request.node.name = 'second'
         # The tree is not editable after ticking once
@@ -468,8 +468,8 @@ class TestTreeManager(unittest.TestCase):
         # TODO(nberg): test other editing services here as they're implemented
 
         # But after shutting it down, we can edit it again
-        self.assertTrue(self.manager.control_execution(ControlTreeExecutionRequest(
-            command=ControlTreeExecutionRequest.SHUTDOWN)))
+        self.assertTrue(get_success(self.manager.control_execution(ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.SHUTDOWN))))
 
         self.assertEqual(self.tree_msg.state, "EDITABLE")
         self.assertTrue(get_success(self.manager.add_node(add_request)))
