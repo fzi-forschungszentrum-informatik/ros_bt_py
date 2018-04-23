@@ -356,8 +356,10 @@ class Node(object):
 
         This gives the node a chance to clean up any resources it might
         be holding before getting deleted.
+
+        :meth:`_do_shutdown` will not be called if the node has not been initialized yet.
         """
-        if self.state != NodeMsg.SHUTDOWN:
+        if self.state != NodeMsg.SHUTDOWN or self.state == NodeMsg.UNINITIALIZED:
             self._do_shutdown()
             self.state = NodeMsg.SHUTDOWN
         else:

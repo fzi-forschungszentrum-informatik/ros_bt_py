@@ -34,10 +34,8 @@ class Topic(Leaf):
         return NodeMsg.SUCCEEDED
 
     def _do_shutdown(self):
-        # If we initialized the node, unsubscribe from the topic. Otherwise,
-        # there's nothing to do here.
-        if self.state != NodeMsg.UNINITIALIZED:
-            self._subscriber.unregister()
+        # Unsubscribe from the topic so we don't receive further updates
+        self._subscriber.unregister()
 
     def _do_reset(self):
         # discard the last received message, nothing else to reset
