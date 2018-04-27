@@ -259,7 +259,13 @@ class TreeManager(object):
                 return response
 
             # load tree file and parse yaml, then convert to Tree message
-            with open(file_path, 'r') as tree_file:
+            try:
+                tree_file = open(file_path, 'r')
+            except IOError, e:
+                response.success = False
+                response.error_message = ('Error opening file %s: %s' % (file_path, str(e)))
+                return response
+            with tree_file:
                 data = yaml.load_all(tree_file)
                 read_data = False
                 for d in data:

@@ -478,11 +478,21 @@ class TestTreeManager(unittest.TestCase):
                               remove_children=False))))
 
     def testLoadFromFile(self):
+        load_request = LoadTreeRequest(tree=Tree(
+            name='from_file',
+            path='/notareal.file'))
+        self.assertFalse(get_success(self.manager.load_tree(load_request)))
+
+        load_request = LoadTreeRequest(tree=Tree(
+            name='from_file',
+            path='package://ros_bt_py/etc/trees/notareal.file'))
+        self.assertFalse(get_success(self.manager.load_tree(load_request)))
+
         load_request = LoadTreeRequest(tree=Tree(name='from_file',
                                                  path='package://ros_bt_py/etc/trees/test.yaml'))
         response = self.manager.load_tree(load_request)
 
-        self.assertTrue(response.success, response.error_message)
+        self.assertTrue(get_success(response), response.error_message)
         # test.yaml contains a sequence, two succeeders, a fallback and a failer
         self.assertEqual(len(self.manager.nodes), 5)
 
