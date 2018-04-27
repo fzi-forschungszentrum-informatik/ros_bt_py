@@ -37,3 +37,38 @@
     imports are still icky...
 
     Or: Scan modules / submodules for subclasses of Node
+
+# Implementation of Subtrees
+## Action interface
+The lifetime of the action implicitly defines the lifetime of the tree on the server.
+
+Two options:
+
+1. Action call means "run this tree (with these - unchanging - inputs)
+   until it succeeds"
+
+   Feedback contains tree state after each tick
+
+2. Action call means "load this tree"
+
+   Feedback returns the ROS namespace for the services to control this
+   tree (potential leaking of Service IDs over time? roscore might not
+   like that)
+
+## Subtree Node
+Needs to wrap Action Interface
+
+## Local / Remote execution
+Implemented via decorator.
+
+The subtree node itself has an input (or option? decide whether
+options should really be static) for action server address.
+
+Decorator decides what server to use (remote, local, which remote?) &
+sets input of subtree node.
+
+Caveats:
+
+* Decorator cannot switch server while subtree is running
+* Add subtree groups that cannot be executed on different robots?
+  (e.g. "walk to target" & "pick up target")
