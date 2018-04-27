@@ -49,7 +49,7 @@ class TestGetters(unittest.TestCase):
         list_provider = MockLeaf(
             options={'output_type': list,
                      'state_values': [NodeMsg.SUCCEEDED],
-                     'output_values': [[1,2,3,4]]})
+                     'output_values': [[1, 2, 3, 4]]})
 
         getter.add_child(list_provider)
         list_provider.outputs.subscribe('out', getter.inputs.get_callback('list'))

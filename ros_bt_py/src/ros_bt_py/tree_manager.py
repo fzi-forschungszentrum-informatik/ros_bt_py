@@ -283,8 +283,8 @@ class TreeManager(object):
             added = 0
             # find nodes whose children are all in the tree already, then add them
             for node in (node for node in tree.nodes
-                         if (node.name not in self.nodes
-                             and all((name in self.nodes for name in node.child_names)))):
+                         if (node.name not in self.nodes and
+                             all((name in self.nodes for name in node.child_names)))):
                 try:
                     instance = self.instantiate_node_from_msg(node, allow_rename=False)
                     for child_name in node.child_names:
