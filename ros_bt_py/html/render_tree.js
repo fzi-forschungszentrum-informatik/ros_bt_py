@@ -119,7 +119,8 @@ function add_node() {
     new ROSLIB.ServiceRequest({
       tree_name: '',
       parent_name: document.getElementById('new_node_parents').value,
-      node: node_msg
+      node: node_msg,
+      allow_rename: true
     }),
     function(response) {
       if (response.success) {
