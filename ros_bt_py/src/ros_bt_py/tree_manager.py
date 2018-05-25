@@ -778,11 +778,11 @@ class TreeManager(object):
             for source_map, key, callback, name in subscription_data:
                 source_map.subscribe(key, callback, name)
 
-        # We made it here, so all the Wirings should be valid. Time to save
-        # them.
-        self.tree_msg.data_wirings.extend(request.wirings)
+            # We made it here, so all the Wirings should be valid. Time to save
+            # them.
+            self.tree_msg.data_wirings.extend(request.wirings)
 
-        self.publish_info()
+            self.publish_info()
         return response
 
     @is_edit_service
@@ -810,13 +810,13 @@ class TreeManager(object):
             for source_map, key, callback, _ in subscription_data:
                 source_map.unsubscribe(key, callback)
 
-        # We've removed these NodeDataWirings, so remove them from tree_msg as
-        # well.
-        for wiring in request.wirings:
-            if wiring in self.tree_msg.data_wirings:
-                self.tree_msg.data_wirings.remove(wiring)
+            # We've removed these NodeDataWirings, so remove them from tree_msg as
+            # well.
+            for wiring in request.wirings:
+                if wiring in self.tree_msg.data_wirings:
+                    self.tree_msg.data_wirings.remove(wiring)
 
-        self.publish_info()
+            self.publish_info()
         return response
 
     def get_available_nodes(self, request):
@@ -841,10 +841,10 @@ class TreeManager(object):
                 response.error_message = 'Failed to import module %s' % module_name
                 return response
 
-        def to_node_data(map):
+        def to_node_data(data_map):
             return [NodeData(key=name,
                              serialized_value=jsonpickle.encode(type_or_ref))
-                    for (name, type_or_ref) in map.iteritems()]
+                    for (name, type_or_ref) in data_map.iteritems()]
 
         for (module, nodes) in Node.node_classes.iteritems():
             for (class_name, node_class) in nodes.iteritems():
