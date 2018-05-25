@@ -636,6 +636,7 @@ class TreeManager(object):
             # If we're not removing the children, at least delete their parent_name
             for child in self.nodes[request.node_name].children:
                 child.parent_name = ''
+                child.parent = None
         for name in names_to_remove:
             # Check if node is already in shutdown state. If not, call
             # shutdown, but warn, because the parent node should have

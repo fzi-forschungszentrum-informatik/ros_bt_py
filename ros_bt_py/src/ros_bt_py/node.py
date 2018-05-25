@@ -9,6 +9,7 @@ import rospy
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import NodeData as NodeDataMsg
 from ros_bt_py_msgs.msg import NodeDataLocation
+from ros_bt_py_msgs.msg import Tree
 
 from ros_bt_py.exceptions import BehaviorTreeException, NodeStateError, NodeConfigError
 from ros_bt_py.node_data import NodeData, NodeDataMap
@@ -102,9 +103,12 @@ class Node(object):
         else:
             self.name = type(self).__name__
         # Only used to make finding the root of the tree easier
+        self.parent = None
         self.parent_name = ''
         self.state = NodeMsg.UNINITIALIZED
         self.children = []
+
+        self.subscriptions = []
 
         self.debug_manager = debug_manager
 
@@ -427,6 +431,10 @@ class Node(object):
         # (the value we assign needs to be a list for this to work)
         self.children[at_index:at_index] = [child]
         child.parent_name = self.name
+        child.parent = self
+
+        # return self to allow chaining of addChild calls
+        return self
 
     def move_child(self, child_name, new_index):
         """
@@ -453,6 +461,7 @@ class Node(object):
             raise KeyError('Node %s has no child named "%s"' % (self.name, child_name))
         tmp = self.children[child_index]
         del self.children[child_index]
+        tmp.parent = None
         return tmp
 
     def _register_node_data(self, source_map, target_map, allow_ref):
@@ -652,7 +661,144 @@ class Node(object):
 
         return node_instance
 
+    def get_children_recursive(self):
+        yield self
+        for child in self.children:
+            for x in child.get_children_recursive():
+                yield x
+
+    def get_subtree_msg(self):
+        """Populate a TreeMsg with the subtree rooted at this node
+
+        This can be used to "shove" a subtree to a different host, by
+        using that host's load_tree service.
+
+        The subtree message will have public node data for every piece
+        of node data that is wired to a node outside the subtree.
+        """
+        subtree = Tree(name=("%s_subtree" % self.name),
+                       root_name=self.name,
+                       state=Tree.IDLE)
+
+        subtree.nodes = [node.to_msg() for node in self.get_children_recursive()]
+
+        return subtree
+
+    def find_node(self, other_name):
+        """Try to find the node with the given name in the tree
+
+        This is not a particularly cheap operation, since it ascends
+        the tree up to the root and then recursively descends back
+        until it finds the node.  Probably best not to use it in a
+        tick function.
+        """
+        root = self
+        while root.parent is not None:
+            root = root.parent
+
+        for node in root.get_children_recursive():
+            if node.name == other_name:
+                return node
+
+        return None
+
+    def subscribe(self, source_loc, target_loc, cb):
+        """Subscribe to a piece of Nodedata this node has.
+
+        Call this on a node to *subscribe to NodeData **from** that
+        node*!
+
+        :param `ros_bt_py_msgs.msg.NodeDataLocation` source_loc:
+          Indicates the piece of NodeData the client wants to
+          subscribe to.  If `source_loc.node_name` does not match
+          ours, or the location is otherwise invalid, this will raise
+          a KeyError.
+
+        :param `ros_bt_py_msgs.msg.NodeDataLocation` target_loc:
+           The position in the tree of the target NodeData. Used to
+           keep track of subscribers.
+
+        :param cb:
+          Callback that will be called when
+          :meth:`ros_bt_py.NodeData.handle_subscriptions` is called.
+
+          Make sure this accepts a parameter of the same type as the
+          NodeData you're subscribing to!
+
+        :raises: KeyError
+
+        """
+        if source.data_key not in source_map:
+            raise BehaviorTreeException('Source key %s.%s[%s] does not exist!' % (
+                source_node.name,
+                wiring.source.data_kind,
+                wiring.source.data_key))
+
+        if wiring.target.data_key not in target_map:
+            raise BehaviorTreeException('Target key %s.%s[%s] does not exist!' % (
+                target_node.name,
+                wiring.target.data_kind,
+                wiring.target.data_key))
+        if not issubclass(source_map.get_type(wiring.source.data_key),
+                          target_map.get_type(wiring.target.data_key)):
+            raise BehaviorTreeException((
+                'Type of %s.%s[%s] (%s) is not compatible with '
+                'Type of %s.%s[%s] (%s)!' % (
+                    source_node.name,
+                    wiring.source.data_kind,
+                    wiring.source.data_key,
+                    source_map.get_type(wiring.source.data_key).__name__,
+                    target_node.name,
+                    wiring.target.data_kind,
+                    wiring.target.data_key,
+                    target_map.get_type(wiring.target.data_key).__name__)))
+
+
+    def wire_data(self, source, target):
+        """Wire a piece of Nodedata from another node to this node.
+
+        Call this on a node to *connect it to NodeData from
+        **another** node*!
+
+        :param `ros_bt_py_msgs.msg.NodeDataLocation` source:
+          Indicates the piece of NodeData we want to subscribe to. If
+          we cannot find a node named `source.node_name`, or the
+          location is otherwise invalid, this will raise a KeyError.
+
+        :param `ros_bt_py_msgs.msg.NodeDataLocation` target:
+           The position *inside this node* we want to wire *to*.
+
+        :raises: KeyError
+        """
+        if target.node_name != self.name:
+            raise KeyError('%s: Trying to wire to another node (%s)' % (self.name,
+                                                                        target.node_name))
+
+        for old_source, old_target in self.subscriptions:
+            if old_target == target:
+                if old_source == source:
+                    raise BehaviorTreeException('Duplicate subscription!')
+                self.logwarn('Subscribing to two different sources for key %s[%s]'
+                             % (target.data_kind, target.data_key))
+        source_node = self.find_node(source.node_name)
+
+        try:
+            target_map = self.get_data_map(target.data_kind)
+        except KeyError as exception:
+            raise BehaviorTreeException(str(exception))
+
+        if target.data_key not in target_map:
+            raise BehaviorTreeException('Target key %s.%s[%s] does not exist!' % (
+                self.name,
+                target.data_kind,
+                target.data_key))
+
+        source_node.subscribe(source, target, target_map.get_callback(target.data_key))
+
+        self.subscriptions.append((source, target))
+
     def to_msg(self):
+
         """Populate a ROS message with the information from this Node
 
         Round-tripping the result through :meth:`Node.from_msg` should
