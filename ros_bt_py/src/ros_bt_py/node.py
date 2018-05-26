@@ -109,6 +109,7 @@ class Node(object):
         self.children = []
 
         self.subscriptions = []
+        self.subscribers = []
 
         self.debug_manager = debug_manager
 
@@ -702,7 +703,7 @@ class Node(object):
 
         return None
 
-    def subscribe(self, source_loc, target_loc, cb):
+    def _subscribe(self, wiring, cb, expected_type):
         """Subscribe to a piece of Nodedata this node has.
 
         Call this on a node to *subscribe to NodeData **from** that
@@ -728,33 +729,55 @@ class Node(object):
         :raises: KeyError
 
         """
-        if source.data_key not in source_map:
-            raise BehaviorTreeException('Source key %s.%s[%s] does not exist!' % (
-                source_node.name,
-                wiring.source.data_kind,
-                wiring.source.data_key))
+        if wiring.source.node_name != self.name:
+            raise KeyError('%s: Trying to subscribe to another node (%s)' %
+                           (self.name, source.node_name))
 
-        if wiring.target.data_key not in target_map:
-            raise BehaviorTreeException('Target key %s.%s[%s] does not exist!' % (
-                target_node.name,
-                wiring.target.data_kind,
-                wiring.target.data_key))
+        source_map = self.get_data_map(wiring.source.data_kind)
+
         if not issubclass(source_map.get_type(wiring.source.data_key),
-                          target_map.get_type(wiring.target.data_key)):
+                          expected_type):
             raise BehaviorTreeException((
                 'Type of %s.%s[%s] (%s) is not compatible with '
                 'Type of %s.%s[%s] (%s)!' % (
-                    source_node.name,
+                    self.name,
                     wiring.source.data_kind,
                     wiring.source.data_key,
                     source_map.get_type(wiring.source.data_key).__name__,
-                    target_node.name,
+                    wiring.target.node_name,
                     wiring.target.data_kind,
                     wiring.target.data_key,
-                    target_map.get_type(wiring.target.data_key).__name__)))
+                    expected_type.__name__)))
 
+        source_map = self.get_data_map(wiring.source.data_kind)
 
-    def wire_data(self, source, target):
+        if wiring.source.data_key not in source_map:
+            raise BehaviorTreeException('Source key %s.%s[%s] does not exist!' % (
+                self.name,
+                wiring.source.data_kind,
+                wiring.source.data_key))
+
+        if not issubclass(source_map.get_type(wiring.source.data_key),
+                          expected_type):
+            raise BehaviorTreeException((
+                'Type of %s.%s[%s] (%s) is not compatible with '
+                'Type of %s.%s[%s] (%s)!' % (
+                    self.name,
+                    wiring.source.data_kind,
+                    wiring.source.data_key,
+                    source_map.get_type(wiring.source.data_key).__name__,
+                    wiring.target.node_.name,
+                    wiring.target.data_kind,
+                    wiring.target.data_key,
+                    expected_type)))
+
+        source_map.subscribe(wiring.source.data_key, cb, '%s.%s[%s]' %
+                             (wiring.target.node_name,
+                              wiring.target.data_kind,
+                              wiring.target.data_key))
+        self.subscribers.append((wiring.target, cb, expected_type))
+
+    def wire_data(self, wiring):
         """Wire a piece of Nodedata from another node to this node.
 
         Call this on a node to *connect it to NodeData from
@@ -770,32 +793,59 @@ class Node(object):
 
         :raises: KeyError
         """
-        if target.node_name != self.name:
+        if wiring.target.node_name != self.name:
             raise KeyError('%s: Trying to wire to another node (%s)' % (self.name,
                                                                         target.node_name))
 
-        for old_source, old_target in self.subscriptions:
-            if old_target == target:
-                if old_source == source:
+        for sub in self.subscriptions:
+            if sub.target == wiring.target:
+                if sub.source == wiring.source:
                     raise BehaviorTreeException('Duplicate subscription!')
                 self.logwarn('Subscribing to two different sources for key %s[%s]'
-                             % (target.data_kind, target.data_key))
-        source_node = self.find_node(source.node_name)
-
+                             % (wiring.target.data_kind, wiring.target.data_key))
+        source_node = self.find_node(wiring.source.node_name)
         try:
-            target_map = self.get_data_map(target.data_kind)
+            source_map = self.get_data_map(wiring.source.data_kind)
         except KeyError as exception:
             raise BehaviorTreeException(str(exception))
 
-        if target.data_key not in target_map:
+        if wiring.source.data_key not in source_map:
+            raise BehaviorTreeException('Source key %s.%s[%s] does not exist!' % (
+                source_node.name,
+                wiring.source.data_kind,
+                wiring.source.data_key))
+
+        try:
+            target_map = self.get_data_map(wiring.target.data_kind)
+        except KeyError as exception:
+            raise BehaviorTreeException(str(exception))
+
+        if wiring.target.data_key not in target_map:
             raise BehaviorTreeException('Target key %s.%s[%s] does not exist!' % (
                 self.name,
-                target.data_kind,
-                target.data_key))
+                wiring.target.data_kind,
+                wiring.target.data_key))
 
-        source_node.subscribe(source, target, target_map.get_callback(target.data_key))
+        source_node._subscribe(wiring,
+                               target_map.get_callback(wiring.target.data_key),
+                               target_map.get_type(wiring.target.data_key))
 
-        self.subscriptions.append((source, target))
+        if not issubclass(source_map.get_type(wiring.source.data_key),
+                          target_map.get_type(wiring.target.data_key)):
+            raise BehaviorTreeException((
+                'Type of %s.%s[%s] (%s) is not compatible with '
+                'Type of %s.%s[%s] (%s)!' % (
+                    source_node.name,
+                    wiring.source.data_kind,
+                    wiring.source.data_key,
+                    source_map.get_type(wiring.source.data_key).__name__,
+                    self.name,
+                    wiring.target.data_kind,
+                    wiring.target.data_key,
+                    target_map.get_type(wiring.target.data_key).__name__)))
+
+
+        self.subscriptions.append(wiring)
 
     def to_msg(self):
 
