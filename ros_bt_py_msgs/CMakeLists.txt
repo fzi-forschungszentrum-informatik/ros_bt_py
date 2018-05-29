@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(ros_bt_py_msgs)
 
 find_package(catkin REQUIRED COMPONENTS
+  actionlib_msgs
   message_generation)
 
 ## Generate messages in the 'msg' folder
@@ -45,7 +46,7 @@ add_action_files(
 
 ## Generate added messages and services with any dependencies listed here
  generate_messages(
-   DEPENDENCIES
+   DEPENDENCIES actionlib_msgs
    )
 
 catkin_package(
