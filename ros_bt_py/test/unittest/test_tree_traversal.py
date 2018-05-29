@@ -73,7 +73,7 @@ class TestTreeTraversal(unittest.TestCase):
         wiring.source.node_name = 'inner_leaf_1'
         wiring.source.data_kind = NodeDataLocation.OUTPUT_DATA
         wiring.source.data_key = 'out'
-        
+
         wiring.target.node_name = 'passthrough'
         wiring.target.data_kind = NodeDataLocation.INPUT_DATA
         wiring.target.data_key = 'in'
@@ -83,5 +83,8 @@ class TestTreeTraversal(unittest.TestCase):
         self.root.tick()
 
         self.assertEqual(self.passthrough.inputs['in'], self.inner_leaf_1.outputs['out'])
+        self.assertEqual(len(self.passthrough.subscriptions), 1)
+        self.assertEqual(len(self.passthrough.subscribers), 0)
 
-        
+        self.assertEqual(len(self.inner_leaf_1.subscriptions), 0)
+        self.assertEqual(len(self.inner_leaf_1.subscribers), 1)
