@@ -709,50 +709,51 @@ class Node(object):
         Call this on a node to *subscribe to NodeData **from** that
         node*!
 
-        :param `ros_bt_py_msgs.msg.NodeDataLocation` source_loc:
-          Indicates the piece of NodeData the client wants to
-          subscribe to.  If `source_loc.node_name` does not match
-          ours, or the location is otherwise invalid, this will raise
-          a KeyError.
+        :param `ros_bt_py_msgs.msg.NodeDataWiring` wiring:
 
-        :param `ros_bt_py_msgs.msg.NodeDataLocation` target_loc:
-           The position in the tree of the target NodeData. Used to
-           keep track of subscribers.
+        Defines the source and target of the subscribe operation.
+        `wiring.source` must point to a valid data key in this node
+        (`self`).  `wiring.target` is not checked here (because it's
+        only used to label subscriptions), but it should also point to a
+        valid data key of a node in the tree.
 
         :param cb:
-          Callback that will be called when
-          :meth:`ros_bt_py.NodeData.handle_subscriptions` is called.
 
-          Make sure this accepts a parameter of the same type as the
-          NodeData you're subscribing to!
+        A callback function that will be called whenever there's an updated
+        value for the key (and this node receives a tick)
 
-        :raises: KeyError
+        :param `type` expected_type:
 
+        The type that the subscriber expects our piece of data to
+        have. If it doesn't match the type of the data at the requested
+        key, raise a `BehaviorTreeException`.
+
+        :raises:
+
+        KeyError if the requested data location is not in this node, or
+        the requested key does not exist in this node.
+
+        BehaviorTreeException if `expected_type` and the actual type of
+        the data are incompatible.
         """
         if wiring.source.node_name != self.name:
             raise KeyError('%s: Trying to subscribe to another node (%s)' %
                            (self.name, source.node_name))
 
-        source_map = self.get_data_map(wiring.source.data_kind)
-
-        if not issubclass(source_map.get_type(wiring.source.data_key),
-                          expected_type):
-            raise BehaviorTreeException((
-                'Type of %s.%s[%s] (%s) is not compatible with '
-                'Type of %s.%s[%s] (%s)!' % (
-                    self.name,
-                    wiring.source.data_kind,
-                    wiring.source.data_key,
-                    source_map.get_type(wiring.source.data_key).__name__,
-                    wiring.target.node_name,
-                    wiring.target.data_kind,
-                    wiring.target.data_key,
-                    expected_type.__name__)))
+        for sub, cb, cb_type in self.subscribers:
+            if sub.target == wiring.target:
+                if sub.source == wiring.source:
+                    raise BehaviorTreeException('Duplicate subscription!')
+                self.logwarn(
+                    'Subscriber %s is subscribing to multiple sources with the same target %s[%s]'
+                    % (wiring.target.node_name,
+                       wiring.target.data_kind,
+                       wiring.target.data_key))
 
         source_map = self.get_data_map(wiring.source.data_kind)
 
         if wiring.source.data_key not in source_map:
-            raise BehaviorTreeException('Source key %s.%s[%s] does not exist!' % (
+            raise KeyError('Source key %s.%s[%s] does not exist!' % (
                 self.name,
                 wiring.source.data_kind,
                 wiring.source.data_key))
@@ -783,15 +784,25 @@ class Node(object):
         Call this on a node to *connect it to NodeData from
         **another** node*!
 
-        :param `ros_bt_py_msgs.msg.NodeDataLocation` source:
-          Indicates the piece of NodeData we want to subscribe to. If
-          we cannot find a node named `source.node_name`, or the
-          location is otherwise invalid, this will raise a KeyError.
+        :param `ros_bt_py_msgs.msg.NodeDataWiring` wiring:
+
+        Indicates both the piece of NodeData we want to subscribe to
+        (`wiring.source`) and the data key inside this node we want to
+        connect it to (`wiring.target`).
+
+        If we cannot find a node named `wiring.source.node_name`, or the location is
+        otherwise invalid, this will raise a KeyError.
 
         :param `ros_bt_py_msgs.msg.NodeDataLocation` target:
            The position *inside this node* we want to wire *to*.
 
-        :raises: KeyError
+        :raises:
+
+        KeyError if either the source or target location is invalid.
+
+        BehaviorTreeException if a subscription with the same source and
+        target exists already, or if the types of source and target data
+        are incompatible.
         """
         if wiring.target.node_name != self.name:
             raise KeyError('%s: Trying to wire to another node (%s)' % (self.name,
@@ -810,7 +821,7 @@ class Node(object):
             raise BehaviorTreeException(str(exception))
 
         if wiring.source.data_key not in source_map:
-            raise BehaviorTreeException('Source key %s.%s[%s] does not exist!' % (
+            raise KeyError('Source key %s.%s[%s] does not exist!' % (
                 source_node.name,
                 wiring.source.data_kind,
                 wiring.source.data_key))
@@ -821,7 +832,7 @@ class Node(object):
             raise BehaviorTreeException(str(exception))
 
         if wiring.target.data_key not in target_map:
-            raise BehaviorTreeException('Target key %s.%s[%s] does not exist!' % (
+            raise KeyError('Target key %s.%s[%s] does not exist!' % (
                 self.name,
                 wiring.target.data_kind,
                 wiring.target.data_key))
@@ -829,21 +840,6 @@ class Node(object):
         source_node._subscribe(wiring,
                                target_map.get_callback(wiring.target.data_key),
                                target_map.get_type(wiring.target.data_key))
-
-        if not issubclass(source_map.get_type(wiring.source.data_key),
-                          target_map.get_type(wiring.target.data_key)):
-            raise BehaviorTreeException((
-                'Type of %s.%s[%s] (%s) is not compatible with '
-                'Type of %s.%s[%s] (%s)!' % (
-                    source_node.name,
-                    wiring.source.data_kind,
-                    wiring.source.data_key,
-                    source_map.get_type(wiring.source.data_key).__name__,
-                    self.name,
-                    wiring.target.data_kind,
-                    wiring.target.data_key,
-                    target_map.get_type(wiring.target.data_key).__name__)))
-
 
         self.subscriptions.append(wiring)
 
