@@ -50,10 +50,20 @@ class TestTreeManager(unittest.TestCase):
         self.assertIn('Test Node', self.manager.nodes)
 
     def testWireData(self):
+        root = self.manager.instantiate_node_from_msg(
+            NodeMsg(
+                is_subtree=False,
+                module='ros_bt_py.nodes.sequence',
+                node_class='Sequence',
+                name='root'),
+            allow_rename=False)
+
         self.node_msg.name = 'source_node'
-        self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
+        source = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
+        root.add_child(source)
         self.node_msg.name = 'target_node'
-        self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
+        target = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
+        root.add_child(target)
 
         self.assertIn('source_node', self.manager.nodes)
         self.assertIn('target_node', self.manager.nodes)
@@ -68,7 +78,7 @@ class TestTreeManager(unittest.TestCase):
                                     data_kind=NodeDataLocation.INPUT_DATA)))
 
         response = self.manager.wire_data(valid_request)
-        self.assertTrue(response.success)
+        self.assertTrue(response.success, response.error_message)
         self.assertEqual(len(self.manager.nodes['source_node'].outputs.callbacks), 1)
         self.assertEqual(len(self.manager.tree_msg.data_wirings), 1)
 
@@ -154,6 +164,14 @@ class TestTreeManager(unittest.TestCase):
         self.assertEqual(len(self.manager.nodes['source_node'].outputs.callbacks), 0)
 
     def testUnwire(self):
+        root = self.manager.instantiate_node_from_msg(
+            NodeMsg(
+                is_subtree=False,
+                module='ros_bt_py.nodes.sequence',
+                node_class='Sequence',
+                name='root'),
+            allow_rename=False)
+
         wire_request = WireNodeDataRequest(tree_name='')
         wire_request.wirings.append(NodeDataWiring(
             # Wrong node name for source node
@@ -169,15 +187,17 @@ class TestTreeManager(unittest.TestCase):
         self.assertFalse(response.success)
 
         self.node_msg.name = 'source_node'
-        self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
+        source = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
+        root.add_child(source)
         self.node_msg.name = 'target_node'
-        self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
+        target = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
+        root.add_child(target)
 
         response = self.manager.unwire_data(wire_request)
         # The nodes and keys exist. There aren't any callbacks to remove, but
         # the unwire operation still succeeds (after running it, the two data
         # values are unconnected).
-        self.assertTrue(response.success)
+        self.assertTrue(response.success, response.error_message + "\n" + str(self.manager.nodes))
 
         response = self.manager.wire_data(wire_request)
         self.assertTrue(response.success)

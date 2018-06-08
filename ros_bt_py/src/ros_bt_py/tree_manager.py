@@ -130,11 +130,11 @@ class TreeManager(object):
         :raises: `TreeTopologyError` if either no root or multiple roots are found
         """
         # Find root node
-        possible_roots = [node for node in self.nodes.itervalues() if node.parent_name == '']
+        possible_roots = [node for node in self.nodes.itervalues() if not node.parent]
 
         if len(possible_roots) > 1:
             raise TreeTopologyError('Tree "%s" has multiple nodes without parents. '
-                                    'Cannot tick!' % self.tree_msg.name)
+                                    % self.tree_msg.name)
         if not possible_roots:
             raise TreeTopologyError('All nodes in tree "%s" have parents. You have '
                                     'made a cycle, which makes the tree impossible to run!' %
@@ -155,9 +155,9 @@ class TreeManager(object):
             self._once = once
 
         # First check for nodes with missing parents
-        orphans = ['"%s"(parent: "%s")' % (node.name, node.parent_name)
+        orphans = ['"%s"(parent: "%s")' % (node.name, node.parent.name if node.parent else '')
                    for node in self.nodes.itervalues()
-                   if node.parent_name and node.parent_name not in self.nodes]
+                   if node.parent and node.parent.name not in self.nodes]
         if orphans:
             raise MissingParentError('The following nodes\' parents are missing: %s'
                                      % ', '.join(orphans))
@@ -199,18 +199,18 @@ class TreeManager(object):
         for starting_name in self.nodes:
             cycle_candidates = [starting_name]
             current_node = self.nodes[starting_name]
-            while current_node.parent_name != '':
-                current_node = self.nodes[current_node.parent_name]
+            while current_node.parent:
+                current_node = self.nodes[current_node.parent.name]
                 cycle_candidates.append(current_node.name)
-                if current_node.parent_name == starting_name:
+                if current_node.name == starting_name:
                     nodes_in_cycles.extend(cycle_candidates)
                     break
-                if current_node.parent_name in safe_node_names:
+                if current_node.name in safe_node_names:
                     # We've already checked for cycles from the parent node, no
                     # need to do that again.
                     safe_node_names.extend(cycle_candidates)
                     break
-            if current_node.parent_name == '':
+            if not current_node.parent:
                 safe_node_names.extend(cycle_candidates)
 
         return nodes_in_cycles
@@ -633,16 +633,17 @@ class TreeManager(object):
                     add_children_of.extend([child.name for child
                                             in self.nodes[name].children])
         else:
-            # If we're not removing the children, at least delete their parent_name
+            # If we're not removing the children, at least set their parent to None
             for child in self.nodes[request.node_name].children:
-                child.parent_name = ''
                 child.parent = None
         for name in names_to_remove:
             # Check if node is already in shutdown state. If not, call
             # shutdown, but warn, because the parent node should have
             # done that!
             if self.nodes[name].state != NodeMsg.SHUTDOWN:
-                parent_name = self.nodes[name].parent_name
+                # It's reasonable to expect parent to not be None here, since
+                # the node is one of a list of children
+                parent_name = self.nodes[name].parent.name
                 rospy.logwarn('Node %s was not shut down. Check parent node %s (%s) '
                               'for proper implementation of _do_shutdown()',
                               name,
@@ -651,8 +652,8 @@ class TreeManager(object):
                 self.nodes[name].shutdown()
 
             # If we have a parent, remove the node from that parent
-            if self.nodes[name].parent_name and self.nodes[name].parent_name in self.nodes:
-                self.nodes[self.nodes[name].parent_name].remove_child(name)
+            if self.nodes[name].parent and self.nodes[name].parent.name in self.nodes:
+                self.nodes[self.nodes[name].parent.name].remove_child(name)
             del self.nodes[name]
 
         # Unwire wirings that have removed nodes as source or target
@@ -768,17 +769,48 @@ class TreeManager(object):
         response = WireNodeDataResponse(success=True)
         # TODO(nberg): Check request.tree_name to see if the request concerns
         # this tree or a subtree.
+
         try:
-            subscription_data = self._extract_subscription_data(request)
-        except BehaviorTreeException as exc:
+            root = self.find_root()
+        except TreeTopologyError, e:
             response.success = False
-            response.error_message = str(exc)
+            response.error_message = 'Unable to find root node: %s' % str(e)
+            return response
+
+        successful_wirings = []
+        for wiring in request.wirings:
+            target_node = root.find_node(wiring.target.node_name)
+            if not target_node:
+                response.success = False
+                response.error_message = 'Target node %s does not exist' % wiring.target.node_name
+                break
+            try:
+                target_node.wire_data(wiring)
+                successful_wirings.append(wiring)
+            except (KeyError, BehaviorTreeException), e:
+                response.success = False
+                response.error_message = 'Failed to execute wiring "%s": %s' % (wiring, str(e))
+                break
+
+        if not response.success:
+            # Undo the successful wirings
+            for wiring in successful_wirings:
+                target_node = root.find_node(wiring.target.node_name)
+                try:
+                    target_node.unwire_data(wiring)
+                except (KeyError, BehaviorTreeException), e:
+                    response.success = False
+                    response.error_message = \
+                      'Failed to undo wiring "%s": %s\nPrevious error: %s' % \
+                        (wiring, str(e), response.error_message)
+                    rospy.logerr('Failed to undo successful wiring after error. '
+                                 'Tree is in undefined state!')
+                    with self._state_lock:
+                        self.tree_msg.state = Tree.ERROR
+                    break
 
         # only actually wire any data if there were no errors
         if response.success:
-            for source_map, key, callback, name in subscription_data:
-                source_map.subscribe(key, callback, name)
-
             # We made it here, so all the Wirings should be valid. Time to save
             # them.
             self.tree_msg.data_wirings.extend(request.wirings)
@@ -800,17 +832,48 @@ class TreeManager(object):
         response = WireNodeDataResponse(success=True)
         # TODO(nberg): Check request.tree_name to see if the request concerns
         # this tree or a subtree.
+
         try:
-            subscription_data = self._extract_subscription_data(request)
-        except BehaviorTreeException as exc:
+            root = self.find_root()
+        except TreeTopologyError, e:
             response.success = False
-            response.error_message = str(exc)
+            response.error_message = 'Unable to find root node: %s' % str(e)
+            return response
 
-        # only actually unsubscribe any callbacks if there were no errors
+        successful_unwirings = []
+        for wiring in request.wirings:
+            target_node = root.find_node(wiring.target.node_name)
+            if not target_node:
+                response.success = False
+                response.error_message = 'Target node %s does not exist' % wiring.target.node_name
+                break
+            try:
+                target_node.unwire_data(wiring)
+                successful_unwirings.append(wiring)
+            except (KeyError, BehaviorTreeException), e:
+                response.success = False
+                response.error_message = 'Failed to remove wiring "%s": %s' % (wiring, str(e))
+                break
+
+        if not response.success:
+            # Re-Wire the successful unwirings
+            for wiring in successful_unwirings:
+                target_node = root.find_node(wiring.target.node_name)
+                try:
+                    target_node.wire_data(wiring)
+                except (KeyError, BehaviorTreeException), e:
+                    response.success = False
+                    response.error_message = \
+                      'Failed to redo wiring "%s": %s\nPrevious error: %s' % \
+                        (wiring, str(e), response.error_message)
+                    rospy.logerr('Failed to rewire successful unwiring after error. '
+                                 'Tree is in undefined state!')
+                    with self._state_lock:
+                        self.tree_msg.state = Tree.ERROR
+                    break
+
+        # only actually wire any data if there were no errors
         if response.success:
-            for source_map, key, callback, _ in subscription_data:
-                source_map.unsubscribe(key, callback)
-
             # We've removed these NodeDataWirings, so remove them from tree_msg as
             # well.
             for wiring in request.wirings:

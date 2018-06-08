@@ -104,7 +104,6 @@ class Node(object):
             self.name = type(self).__name__
         # Only used to make finding the root of the tree easier
         self.parent = None
-        self.parent_name = ''
         self.state = NodeMsg.UNINITIALIZED
         self.children = []
 
@@ -431,7 +430,6 @@ class Node(object):
         # Use array slicing to efficiently insert child at the correct position
         # (the value we assign needs to be a list for this to work)
         self.children[at_index:at_index] = [child]
-        child.parent_name = self.name
         child.parent = self
 
         # return self to allow chaining of addChild calls
@@ -511,10 +509,11 @@ class Node(object):
                 target_map.add(key, NodeData(data_type=data_type))
 
     def __repr__(self):
-        return '%s(options=%r), parent_name:%r, state:%r, inputs:%r, outputs:%r, children:%r' % (
+        return '%s(options=%r, name=%r), parent_name:%r, state:%r, inputs:%r, outputs:%r, children:%r' % (
             type(self).__name__,
             {key: self.options[key] for key in self.options},
-            self.parent_name,
+            self.name,
+            self.parent.name if self.parent else '',
             self.state,
             self.inputs,
             self.outputs,
@@ -522,7 +521,7 @@ class Node(object):
 
     def __eq__(self, other):
         return (self.name == other.name and
-                self.parent_name == other.parent_name and
+                self.parent == other.parent and
                 self.state == other.state and
                 type(self).__module__ == type(other).__module__ and
                 type(self).__name__ == type(other).__name__ and
@@ -698,6 +697,9 @@ class Node(object):
             root = root.parent
 
         for node in root.get_children_recursive():
+            self.loginfo('Looking at child %s of root %s' % (
+                node.name,
+                node.name))
             if node.name == other_name:
                 return node
 
@@ -805,8 +807,8 @@ class Node(object):
         are incompatible.
         """
         if wiring.target.node_name != self.name:
-            raise KeyError('%s: Trying to wire to another node (%s)' % (self.name,
-                                                                        target.node_name))
+            raise KeyError('Target of wiring (%s) is not this node (%s)' % (target.node_name,
+                                                                            self.name))
 
         for sub in self.subscriptions:
             if sub.target == wiring.target:
@@ -815,6 +817,11 @@ class Node(object):
                 self.logwarn('Subscribing to two different sources for key %s[%s]'
                              % (wiring.target.data_kind, wiring.target.data_key))
         source_node = self.find_node(wiring.source.node_name)
+        if not source_node:
+            raise BehaviorTreeException(
+                'Source node %s does not exist or is not connected to target node %s' % (
+                    wiring.source.node_name,
+                    self.name))
         try:
             source_map = self.get_data_map(wiring.source.data_kind)
         except KeyError as exception:
@@ -842,6 +849,49 @@ class Node(object):
                                target_map.get_type(wiring.target.data_key))
 
         self.subscriptions.append(wiring)
+
+    def _unsubscribe(self, wiring):
+        """Unsubscribe from a piece of NodeData this node has.
+
+        Call this to undo a call to `Node._subscribe()'
+
+        :raises:
+
+        KeyError if the requested data location is not in this node, or
+        the requested key does not exist in this node.
+
+        """
+        if wiring.source.node_name != self.name:
+            raise KeyError('%s: Trying to subscribe to another node (%s)' %
+                           (self.name, source.node_name))
+        source_map = self.get_data_map(wiring.source.data_kind)
+
+        if wiring.source.data_key not in source_map:
+            raise KeyError('Source key %s.%s[%s] does not exist!' % (
+                self.name,
+                wiring.source.data_kind,
+                wiring.source.data_key))
+
+        for target, cb, _ in self.subscribers:
+            if wiring.target == target:
+                source_map.unsubscribe(wiring.source.data_key, cb)
+
+    def unwire_data(self, wiring):
+        if wiring.target.node_name != self.name:
+            raise KeyError('Target of wiring (%s) is not this node (%s)' % (target.node_name,
+                                                                            self.name))
+        source_node = self.find_node(wiring.source.node_name)
+        if not source_node:
+            raise BehaviorTreeException(
+                'Source node %s does not exist or is not connected to target node %s' % (
+                    wiring.source.node_name,
+                    self.name))
+
+        if wiring not in self.subscriptions:
+            # Nothing to do
+            return
+        source_node._unsubscribe(wiring)
+        self.subscriptions.remove(wiring)
 
     def to_msg(self):
 
