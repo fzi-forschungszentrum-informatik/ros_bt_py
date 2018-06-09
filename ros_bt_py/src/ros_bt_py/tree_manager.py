@@ -800,9 +800,8 @@ class TreeManager(object):
                     target_node.unwire_data(wiring)
                 except (KeyError, BehaviorTreeException), e:
                     response.success = False
-                    response.error_message = \
-                      'Failed to undo wiring "%s": %s\nPrevious error: %s' % \
-                        (wiring, str(e), response.error_message)
+                    response.error_message = 'Failed to undo wiring "%s": %s\nPrevious error: %s' % \
+                      (wiring, str(e), response.error_message)
                     rospy.logerr('Failed to undo successful wiring after error. '
                                  'Tree is in undefined state!')
                     with self._state_lock:
@@ -863,9 +862,8 @@ class TreeManager(object):
                     target_node.wire_data(wiring)
                 except (KeyError, BehaviorTreeException), e:
                     response.success = False
-                    response.error_message = \
-                      'Failed to redo wiring "%s": %s\nPrevious error: %s' % \
-                        (wiring, str(e), response.error_message)
+                    response.error_message = 'Failed to redo wiring "%s": %s\nPrevious error: %s' % \
+                      (wiring, str(e), response.error_message)
                     rospy.logerr('Failed to rewire successful unwiring after error. '
                                  'Tree is in undefined state!')
                     with self._state_lock:
@@ -930,59 +928,6 @@ class TreeManager(object):
     #########################
     # Service Handlers Done #
     #########################
-
-    def _extract_subscription_data(self, request):
-        """Extract the data necessary to act on a `WireNodeDataRequest`
-
-        :returns: A list of tuples of the form
-            `(source_map, source_data_key, callback, callback_name)`
-        """
-        subscription_data = []
-        for wiring in request.wirings:
-            if wiring.source.node_name not in self.nodes:
-                raise BehaviorTreeException('Unable to find node %s in tree %s' % (
-                    wiring.source.node_name, request.tree_name))
-            if wiring.target.node_name not in self.nodes:
-                raise BehaviorTreeException('Unable to find node %s in tree %s' % (
-                    wiring.target.node_name, request.tree_name))
-            source_node = self.nodes[wiring.source.node_name]
-            target_node = self.nodes[wiring.target.node_name]
-            try:
-                source_map = source_node.get_data_map(wiring.source.data_kind)
-                target_map = target_node.get_data_map(wiring.target.data_kind)
-            except KeyError as exception:
-                raise BehaviorTreeException(str(exception))
-            if wiring.source.data_key not in source_map:
-                raise BehaviorTreeException('Source key %s.%s[%s] does not exist!' % (
-                    source_node.name,
-                    wiring.source.data_kind,
-                    wiring.source.data_key))
-            if wiring.target.data_key not in target_map:
-                raise BehaviorTreeException('Target key %s.%s[%s] does not exist!' % (
-                    target_node.name,
-                    wiring.target.data_kind,
-                    wiring.target.data_key))
-            if not issubclass(source_map.get_type(wiring.source.data_key),
-                              target_map.get_type(wiring.target.data_key)):
-                raise BehaviorTreeException((
-                    'Type of %s.%s[%s] (%s) is not compatible with '
-                    'Type of %s.%s[%s] (%s)!' % (
-                        source_node.name,
-                        wiring.source.data_kind,
-                        wiring.source.data_key,
-                        source_map.get_type(wiring.source.data_key).__name__,
-                        target_node.name,
-                        wiring.target.data_kind,
-                        wiring.target.data_key,
-                        target_map.get_type(wiring.target.data_key).__name__)))
-            subscription_data.append((source_map,
-                                      wiring.source.data_key,
-                                      target_map.get_callback(wiring.target.data_key),
-                                      '%s.%s[%s]' % (target_node.name,
-                                                     wiring.target.data_kind,
-                                                     wiring.target.data_key)))
-
-        return subscription_data
 
     def instantiate_node_from_msg(self, node_msg, allow_rename):
         # TODO(nberg): Subtree handling
