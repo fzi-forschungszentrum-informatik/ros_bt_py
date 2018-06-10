@@ -89,7 +89,8 @@ class TestTreeTraversal(unittest.TestCase):
         self.assertEqual(len(self.inner_leaf_1.subscriptions), 0)
         self.assertEqual(len(self.inner_leaf_1.subscribers), 1)
 
-        ## Test some combinations that should raise errors
+        # Test some combinations that should raise errors
+
         # wire_data(wiring) must be called on the *target* of the wiring
         self.assertRaises(KeyError, self.inner_leaf_1.wire_data, wiring)
         # wiring the same connection twice is an error

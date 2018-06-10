@@ -876,7 +876,7 @@ class Node(object):
                 source_map.unsubscribe(wiring.source.data_key, cb)
         # remove subscriber data from list
         self.subscribers = [sub for sub in self.subscribers
-                                if sub[0] != wiring.target]
+                            if sub[0] != wiring.target]
 
     def unwire_data(self, wiring):
         if wiring.target.node_name != self.name:
