@@ -800,8 +800,9 @@ class TreeManager(object):
                     target_node.unwire_data(wiring)
                 except (KeyError, BehaviorTreeException), e:
                     response.success = False
-                    response.error_message = 'Failed to undo wiring "%s": %s\nPrevious error: %s' % \
-                      (wiring, str(e), response.error_message)
+                    response.error_message = (
+                        'Failed to undo wiring "%s": %s\nPrevious error: %s'
+                        % (wiring, str(e), response.error_message))
                     rospy.logerr('Failed to undo successful wiring after error. '
                                  'Tree is in undefined state!')
                     with self._state_lock:
@@ -862,8 +863,9 @@ class TreeManager(object):
                     target_node.wire_data(wiring)
                 except (KeyError, BehaviorTreeException), e:
                     response.success = False
-                    response.error_message = 'Failed to redo wiring "%s": %s\nPrevious error: %s' % \
-                      (wiring, str(e), response.error_message)
+                    response.error_message = (
+                        'Failed to redo wiring "%s": %s\nPrevious error: %s'
+                        % (wiring, str(e), response.error_message))
                     rospy.logerr('Failed to rewire successful unwiring after error. '
                                  'Tree is in undefined state!')
                     with self._state_lock:

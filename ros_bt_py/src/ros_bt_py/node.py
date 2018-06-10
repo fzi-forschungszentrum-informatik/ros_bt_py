@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from copy import deepcopy
 
 import importlib
 import jsonpickle
@@ -697,9 +698,6 @@ class Node(object):
             root = root.parent
 
         for node in root.get_children_recursive():
-            self.loginfo('Looking at child %s of root %s' % (
-                node.name,
-                node.name))
             if node.name == other_name:
                 return node
 
@@ -778,7 +776,7 @@ class Node(object):
                              (wiring.target.node_name,
                               wiring.target.data_kind,
                               wiring.target.data_key))
-        self.subscribers.append((wiring.target, cb, expected_type))
+        self.subscribers.append((deepcopy(wiring.target), cb, expected_type))
 
     def wire_data(self, wiring):
         """Wire a piece of Nodedata from another node to this node.
@@ -807,8 +805,9 @@ class Node(object):
         are incompatible.
         """
         if wiring.target.node_name != self.name:
-            raise KeyError('Target of wiring (%s) is not this node (%s)' % (target.node_name,
-                                                                            self.name))
+            raise KeyError('Target of wiring (%s) is not this node (%s)' % (
+                wiring.target.node_name,
+                self.name))
 
         for sub in self.subscriptions:
             if sub.target == wiring.target:
@@ -848,7 +847,7 @@ class Node(object):
                                target_map.get_callback(wiring.target.data_key),
                                target_map.get_type(wiring.target.data_key))
 
-        self.subscriptions.append(wiring)
+        self.subscriptions.append(deepcopy(wiring))
 
     def _unsubscribe(self, wiring):
         """Unsubscribe from a piece of NodeData this node has.
@@ -862,7 +861,7 @@ class Node(object):
 
         """
         if wiring.source.node_name != self.name:
-            raise KeyError('%s: Trying to subscribe to another node (%s)' %
+            raise KeyError('%s: Trying to unsubscribe from another node (%s)' %
                            (self.name, source.node_name))
         source_map = self.get_data_map(wiring.source.data_kind)
 
@@ -875,11 +874,15 @@ class Node(object):
         for target, cb, _ in self.subscribers:
             if wiring.target == target:
                 source_map.unsubscribe(wiring.source.data_key, cb)
+        # remove subscriber data from list
+        self.subscribers = [sub for sub in self.subscribers
+                                if sub[0] != wiring.target]
 
     def unwire_data(self, wiring):
         if wiring.target.node_name != self.name:
-            raise KeyError('Target of wiring (%s) is not this node (%s)' % (target.node_name,
-                                                                            self.name))
+            raise KeyError('Target of wiring (%s) is not this node (%s)' % (
+                wiring.target.node_name,
+                self.name))
         source_node = self.find_node(wiring.source.node_name)
         if not source_node:
             raise BehaviorTreeException(
