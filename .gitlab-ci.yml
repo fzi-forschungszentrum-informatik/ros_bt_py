@@ -17,11 +17,11 @@ sr-build-tools-build:
     - export docker_image_name="shadowrobot/build-tools:trusty-indigo"
     - export remote_shell_script="https://raw.githubusercontent.com/T045T/sr-build-tools/$toolset_branch/bin/sr-run-ci-build.sh"
     - curl -s "$( echo "$remote_shell_script" | sed 's/#/%23/g' )" | bash /dev/stdin "$toolset_branch" $server_type $used_modules $relative_job_path
-    - xmllint --xpath //coverage/@line-rate code_coverage/ros_bt_py/coverage.python.xml | perl -ne 'printf("Python Coverage: %.2f\n", $&*100.0) if /\d+\.\d+/'
+    - echo "`xmllint --xpath //coverage/@line-rate code_coverage/ros_bt_py/coverage.python.xml`"
   artifacts:
     paths:
       - unit_tests/
       - code_coverage/
       - lint_results/
       - debs/
-  coverage: '/Python Coverage: (\d+\.\d+%)/'
+  coverage: '/line-rate="([0-9.]+)"/'
