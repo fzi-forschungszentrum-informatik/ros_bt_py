@@ -64,28 +64,6 @@ class TestTreeTraversal(unittest.TestCase):
                          self.inner_leaf_1,
                          msg='Failed to find inner_leaf_1 from outer_leaf_2')
 
-    def testSubtree(self):
-        subtree, external_connections = self.root.find_node('inner_seq').get_subtree_msg()
-        self.assertEqual(len(subtree.nodes), 4)
-        self.assertEqual(len(external_connections), 0)
-
-    def testSubtreeWiring(self):
-        wiring = NodeDataWiring()
-        wiring.source.node_name = 'outer_leaf_1'
-        wiring.source.data_kind = NodeDataLocation.OUTPUT_DATA
-        wiring.source.data_key = 'out'
-
-        wiring.target.node_name = 'passthrough'
-        wiring.target.data_kind = NodeDataLocation.INPUT_DATA
-        wiring.target.data_key = 'in'
-
-        self.passthrough.wire_data(wiring)
-
-        subtree, external_connections = self.root.find_node('inner_seq').get_subtree_msg()
-        self.assertEqual(len(subtree.nodes), 4)
-        self.assertEqual(len(subtree.public_node_data), 1)
-        self.assertEqual(len(external_connections), 1)
-
     def testNodeToNodeSub(self):
         wiring = NodeDataWiring()
         wiring.source.node_name = 'inner_leaf_1'
@@ -159,7 +137,3 @@ class TestTreeTraversal(unittest.TestCase):
 
         wiring.target.node_name = 'foobar'
         self.assertRaises(KeyError, self.passthrough.unwire_data, wiring)
-
-    def TestGetSubtree(self):
-        print(str(self.root.get_subtree_msg()))
-#        raise Exception('aa')

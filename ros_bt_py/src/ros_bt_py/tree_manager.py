@@ -129,6 +129,8 @@ class TreeManager(object):
 
         :raises: `TreeTopologyError` if either no root or multiple roots are found
         """
+        if not self.nodes:
+            return None
         # Find root node
         possible_roots = [node for node in self.nodes.itervalues() if not node.parent]
 
@@ -162,6 +164,9 @@ class TreeManager(object):
             raise MissingParentError('The following nodes\' parents are missing: %s'
                                      % ', '.join(orphans))
         root = self.find_root()
+        if not root:
+            rospy.loginfo('No nodes in tree, tick will not do anything')
+            return
         with self._state_lock:
             self.tree_msg.root_name = root.name
         if root.state == NodeMsg.UNINITIALIZED or root.state == NodeMsg.SHUTDOWN:
@@ -218,6 +223,22 @@ class TreeManager(object):
     ####################
     # Service Handlers #
     ####################
+
+    @is_edit_service
+    def clear(self, _):
+        root = self.find_root()
+        if not root:
+            # No root, no problems
+            return
+        if not (root.state == NodeMsg.UNINITIALIZED or root.state == NodeMsg.SHUTDOWN):
+            rospy.logerr('Please shut down the tree before clearing it')
+            return
+
+        self.nodes = {}
+        with self._state_lock:
+            self.tree_msg = Tree(name='',
+                                 state=Tree.EDITABLE)
+        self.publish_info()
 
     @is_edit_service
     def load_tree(self, request):
@@ -284,6 +305,8 @@ class TreeManager(object):
 
         # we should have a tree message with all the info we need now
 
+        # Clear existing tree, then replace it with the message's contents
+        self.clear(None)
         # add nodes whose children exist already, until all nodes are there
         while len(self.nodes) != len(tree.nodes):
             added = 0
@@ -309,15 +332,15 @@ class TreeManager(object):
         # All nodes are added, now do the wiring
         wire_response = self.wire_data(WireNodeDataRequest(tree_name=tree.name,
                                                            wirings=tree.data_wirings))
-        if not wire_response.success:
+        if not _get_success(wire_response):
             response.success = False
-            response.error_message = wire_response.error_message
+            response.error_message = _get_error_message(wire_response)
             return response
 
         self.tree_msg = tree
-        # Ensure Tree is idle after loading
+        # Ensure Tree is editable after loading
         with self._state_lock:
-            self.tree_msg.state = Tree.IDLE
+            self.tree_msg.state = Tree.EDITABLE
 
         response.success = True
         return response
@@ -419,7 +442,10 @@ class TreeManager(object):
             if request.command == ControlTreeExecutionRequest.SHUTDOWN:
                 try:
                     root = self.find_root()
-                    root.shutdown()
+                    if root:
+                        root.shutdown()
+                    else:
+                        rospy.loginfo('Shutting down a tree with no nodes.')
                 except TreeTopologyError, e:
                     response.success = False
                     response.error_message = str(e)
@@ -505,7 +531,10 @@ class TreeManager(object):
             else:
                 try:
                     root = self.find_root()
-                    root.reset()
+                    if root:
+                        root.reset()
+                    else:
+                        rospy.loginfo('Resetting a tree with no root.')
                     with self._state_lock:
                         self.tree_msg.state = Tree.IDLE
                     response.success = True
@@ -772,6 +801,8 @@ class TreeManager(object):
 
         try:
             root = self.find_root()
+            if not root:
+                raise TreeTopologyError('No nodes in tree')
         except TreeTopologyError, e:
             response.success = False
             response.error_message = 'Unable to find root node: %s' % str(e)
@@ -835,6 +866,8 @@ class TreeManager(object):
 
         try:
             root = self.find_root()
+            if not root:
+                raise TreeTopologyError('No nodes in tree')
         except TreeTopologyError, e:
             response.success = False
             response.error_message = 'Unable to find root node: %s' % str(e)
@@ -959,3 +992,16 @@ class TreeManager(object):
     def to_msg(self):
         self.tree_msg.nodes = [node.to_msg() for node in self.nodes.itervalues()]
         return self.tree_msg
+
+def _get_success(response):
+    if isinstance(response, dict):
+        return response['success']
+
+    return response.success
+
+
+def _get_error_message(response):
+    if isinstance(response, dict):
+        return response['error_message']
+
+    return response.error_message
