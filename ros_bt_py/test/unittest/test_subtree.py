@@ -58,4 +58,3 @@ class TestSubtree(unittest.TestCase):
         self.assertEqual(len(subtree.nodes), 4)
         self.assertEqual(len(subtree.public_node_data), 1)
         self.assertEqual(len(external_connections), 1)
-
