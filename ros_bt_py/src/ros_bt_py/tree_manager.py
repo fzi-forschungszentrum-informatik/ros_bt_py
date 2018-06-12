@@ -993,6 +993,7 @@ class TreeManager(object):
         self.tree_msg.nodes = [node.to_msg() for node in self.nodes.itervalues()]
         return self.tree_msg
 
+
 def _get_success(response):
     if isinstance(response, dict):
         return response['success']
