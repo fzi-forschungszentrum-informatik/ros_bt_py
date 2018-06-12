@@ -9,7 +9,7 @@ import rospy
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import NodeData as NodeDataMsg
-from ros_bt_py_msgs.msg import NodeDataLocation
+from ros_bt_py_msgs.msg import NodeDataLocation, NodeDataWiring
 from ros_bt_py_msgs.msg import Tree
 
 from ros_bt_py.exceptions import BehaviorTreeException, NodeStateError, NodeConfigError
@@ -676,14 +676,59 @@ class Node(object):
 
         The subtree message will have public node data for every piece
         of node data that is wired to a node outside the subtree.
+
+        :returns:
+
+        A tuple consisting of a `ros_bt_py_msgs.msg.Tree` message and a
+        list of `ros_bt_py_msgs.msg.NodeDataWiring` messages
+        (external_connections). The latter can be used to determine what
+        parameters need to be forwarded to / from the remote executor if
+        the subtree is to be executed remotely.
+
+        Crucially, the resulting subtree will not be tick-able until all
+        the incoming wirings from external_connections have been
+        connected.
         """
-        subtree = Tree(name=("%s_subtree" % self.name),
+        subtree_name = "%s_subtree" % self.name
+        subtree = Tree(name=subtree_name,
                        root_name=self.name,
+                       nodes=[node.to_msg() for node in self.get_children_recursive()],
                        state=Tree.IDLE)
 
-        subtree.nodes = [node.to_msg() for node in self.get_children_recursive()]
+        node_map = {node.name: node for node in subtree.nodes}
+        external_connections = []
+        for node in self.get_children_recursive():
+            for sub in node.subscriptions:
+                source_node = node_map.get(sub.source.node_name)
+                target_node = node_map.get(sub.target.node_name)
 
-        return subtree
+                # For subscriptions where source and target are in the subtree,
+                # add a wiring.
+                if source_node and target_node:
+                    subtree.data_wirings.append(NodeDataWiring(
+                        source=sub.source,
+                        target=sub.target))
+                # In the other cases, add that datum to public_node_data
+                elif source_node:
+                    subtree.public_node_data.append(sub.source)
+                    external_connections.append(sub)
+                elif target_node:
+                    subtree.public_node_data.append(sub.target)
+                    external_connections.append(sub)
+                else:
+                    raise BehaviorTreeException(
+                        "Subscription in subtree has source *AND* target "
+                        "outside of subtree!")
+
+            for wiring, _, _ in node.subscribers:
+                if wiring.target.node_name not in node_map:
+                    subtree.public_node_data.append(wiring.source)
+                    external_connections.append(wiring)
+
+        # TODO(berg): Maybe also make the currently unconnected inputs of all
+        # nodes publicly available by default?
+
+        return subtree, external_connections
 
     def find_node(self, other_name):
         """Try to find the node with the given name in the tree
@@ -776,7 +821,7 @@ class Node(object):
                              (wiring.target.node_name,
                               wiring.target.data_kind,
                               wiring.target.data_key))
-        self.subscribers.append((deepcopy(wiring.target), cb, expected_type))
+        self.subscribers.append((deepcopy(wiring), cb, expected_type))
 
     def wire_data(self, wiring):
         """Wire a piece of Nodedata from another node to this node.
@@ -871,12 +916,12 @@ class Node(object):
                 wiring.source.data_kind,
                 wiring.source.data_key))
 
-        for target, cb, _ in self.subscribers:
-            if wiring.target == target:
+        for sub_wiring, cb, _ in self.subscribers:
+            if wiring.target == sub_wiring.target:
                 source_map.unsubscribe(wiring.source.data_key, cb)
         # remove subscriber data from list
         self.subscribers = [sub for sub in self.subscribers
-                            if sub[0] != wiring.target]
+                            if sub[0].target != wiring.target]
 
     def unwire_data(self, wiring):
         if wiring.target.node_name != self.name:
@@ -917,15 +962,21 @@ class Node(object):
                        child_names=[child.name for child in self.children],
                        options=[NodeDataMsg(key=key,
                                             serialized_value=jsonpickle.encode(
-                                                self.options[key]))
+                                                self.options[key]),
+                                            serialized_type=jsonpickle.encode(
+                                                self.options.get_type(key)))
                                 for key in self.options],
                        inputs=[NodeDataMsg(key=key,
                                            serialized_value=jsonpickle.encode(
-                                               self.inputs[key]))
+                                               self.inputs[key]),
+                                            serialized_type=jsonpickle.encode(
+                                                self.inputs.get_type(key)))
                                for key in self.inputs],
                        outputs=[NodeDataMsg(key=key,
                                             serialized_value=jsonpickle.encode(
-                                                self.outputs[key]))
+                                                self.outputs[key]),
+                                            serialized_type=jsonpickle.encode(
+                                                self.outputs.get_type(key)))
                                 for key in self.outputs],
                        state=self.state)
 

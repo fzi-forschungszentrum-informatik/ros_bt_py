@@ -244,7 +244,8 @@ class TestPassthroughNode(unittest.TestCase):
             module="ros_bt_py.nodes.passthrough_node",
             node_class="PassthroughNode",
             options=[NodeData(key='passthrough_type',
-                              serialized_value=jsonpickle.encode(int))])
+                              serialized_value=jsonpickle.encode(int),
+                              serialized_type=jsonpickle.encode(type))])
         instance = Node.from_msg(msg)
         self.assertEqual(instance.state, NodeMsg.UNINITIALIZED)
 
