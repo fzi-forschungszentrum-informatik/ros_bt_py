@@ -969,8 +969,8 @@ class Node(object):
                        inputs=[NodeDataMsg(key=key,
                                            serialized_value=jsonpickle.encode(
                                                self.inputs[key]),
-                                            serialized_type=jsonpickle.encode(
-                                                self.inputs.get_type(key)))
+                                           serialized_type=jsonpickle.encode(
+                                               self.inputs.get_type(key)))
                                for key in self.inputs],
                        outputs=[NodeDataMsg(key=key,
                                             serialized_value=jsonpickle.encode(
