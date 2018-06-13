@@ -965,24 +965,20 @@ class TreeManager(object):
     #########################
 
     def instantiate_node_from_msg(self, node_msg, allow_rename):
-        # TODO(nberg): Subtree handling
-        if node_msg.is_subtree:
-            raise NotImplementedError('Subtree nodes are not supported yet!')
-        else:
-            node_instance = Node.from_msg(node_msg)
-            if node_instance.name in self.nodes:
-                if allow_rename:
-                    node_instance.name = self.make_name_unique(node_instance.name)
-                else:
-                    raise BehaviorTreeException('Node with name "%s" exists already'
-                                                % node_instance.name)
+        node_instance = Node.from_msg(node_msg)
+        if node_instance.name in self.nodes:
+            if allow_rename:
+                node_instance.name = self.make_name_unique(node_instance.name)
+            else:
+                raise BehaviorTreeException('Node with name "%s" exists already'
+                                            % node_instance.name)
 
-            # Set DebugManager
-            node_instance.debug_manager = self.debug_manager
+        # Set DebugManager
+        node_instance.debug_manager = self.debug_manager
 
-            self.nodes[node_instance.name] = node_instance
+        self.nodes[node_instance.name] = node_instance
 
-            return node_instance
+        return node_instance
 
     def make_name_unique(self, name):
         while name in self.nodes:

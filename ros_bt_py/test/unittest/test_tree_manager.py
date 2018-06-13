@@ -519,7 +519,7 @@ class TestTreeManager(unittest.TestCase):
         self.assertTrue(get_success(self.manager.control_execution(ControlTreeExecutionRequest(
             command=ControlTreeExecutionRequest.TICK_ONCE))))
 
-    def TestLoadSubtree(self):
+    def testLoadSubtree(self):
         load_request = LoadTreeRequest(tree=Tree(name='from_file',
                                                  path='package://ros_bt_py/etc/trees/test.yaml'))
         response = self.manager.load_tree(load_request)
@@ -535,6 +535,92 @@ class TestTreeManager(unittest.TestCase):
         load_request = LoadTreeRequest(tree=subtree)
         response = self.manager.load_tree(load_request)
         self.assertTrue(get_success(response), get_error_message(response))
+
+
+class TestWiringServices(unittest.TestCase):
+    def setUp(self):
+        self.tree_msg = None
+        self.debug_info_msg = None
+
+        def set_tree_msg(msg):
+            self.tree_msg = msg
+
+        def set_debug_info_msg(msg):
+            self.debug_info_msg = msg
+
+        self.manager = TreeManager(publish_tree_callback=set_tree_msg,
+                                   publish_debug_info_callback=set_debug_info_msg)
+        node_msg = NodeMsg(
+            is_subtree=False,
+            module='ros_bt_py.nodes.passthrough_node',
+            node_class='PassthroughNode',
+            inputs=[NodeData(key='in',
+                             serialized_value=jsonpickle.encode(42))],
+            options=[NodeData(key='passthrough_type',
+                              serialized_value=jsonpickle.encode(int))])
+        self.sequence_msg = NodeMsg(
+            is_subtree=False,
+            module='ros_bt_py.nodes.sequence',
+            node_class='Sequence')
+        response = self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.sequence_msg))
+        # Add three passthrough nodes that we can wire between
+        self.node_1_name = 'passthrough_1'
+        node_msg.name = self.node_1_name
+        self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           parent_name=response.actual_node_name,
+                           node=node_msg))
+        self.node_2_name = 'passthrough_2'
+        node_msg.name = self.node_2_name
+        self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           parent_name=response.actual_node_name,
+                           node=node_msg))
+        self.node_3_name = 'passthrough_3'
+        node_msg.name = self.node_3_name
+        self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           parent_name=response.actual_node_name,
+                           node=node_msg))
+
+    def wiring(self, from_name, to_name):
+        return NodeDataWiring(
+            source=NodeDataLocation(node_name=from_name,
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA),
+            target=NodeDataLocation(node_name=to_name,
+                                    data_key='in',
+                                    data_kind=NodeDataLocation.INPUT_DATA))
+    def testWireMultiple(self):
+        wire_request = WireNodeDataRequest(tree_name='')
+        wire_request.wirings.append(self.wiring(self.node_1_name, self.node_2_name))
+        wire_request.wirings.append(self.wiring(self.node_2_name, self.node_3_name))
+
+        response = self.manager.wire_data(wire_request)
+        self.assertTrue(response.success, response.error_message)
+        self.assertEqual(len(self.manager.tree_msg.data_wirings), 2)
+
+        response = self.manager.unwire_data(wire_request)
+        self.assertTrue(response.success, response.error_message)
+        self.assertEqual(len(self.manager.tree_msg.data_wirings), 0)
+
+    def testUndoWiringOnError(self):
+        wire_request = WireNodeDataRequest(tree_name='')
+        wire_request.wirings.append(self.wiring(self.node_1_name, self.node_2_name))
+        wire_request.wirings.append(
+            NodeDataWiring(
+                source=NodeDataLocation(node_name=self.node_2_name,
+                                        data_key='fake',
+                                        data_kind=NodeDataLocation.OUTPUT_DATA),
+                target=NodeDataLocation(node_name=self.node_3_name,
+                                        data_key='invalid',
+                                        data_kind=NodeDataLocation.INPUT_DATA)))
+
+        response = self.manager.wire_data(wire_request)
+        self.assertFalse(response.success)
+        self.assertEqual(len(self.manager.tree_msg.data_wirings), 0)
 
 
 def get_success(response):
