@@ -593,6 +593,7 @@ class TestWiringServices(unittest.TestCase):
             target=NodeDataLocation(node_name=to_name,
                                     data_key='in',
                                     data_kind=NodeDataLocation.INPUT_DATA))
+
     def testWireMultiple(self):
         wire_request = WireNodeDataRequest(tree_name='')
         wire_request.wirings.append(self.wiring(self.node_1_name, self.node_2_name))
