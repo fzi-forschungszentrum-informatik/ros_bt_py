@@ -608,7 +608,12 @@ class TreeManager(object):
                                        request.node.name,
                                        response.actual_node_name,
                                        str(nodes_in_cycles)))
-            # Remove node from tree
+            # First, remove all of the node's children to avoid infinite
+            # recursion in remove_node()
+            for child_name in [c.name for c in instance.children]:
+                instance.remove_child(child_name)
+
+            # Then remove the node from the tree
             self.remove_node(RemoveNodeRequest(node_name=instance.name,
                                                remove_children=False))
             return response

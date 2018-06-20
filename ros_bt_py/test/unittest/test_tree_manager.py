@@ -78,7 +78,7 @@ class TestTreeManager(unittest.TestCase):
                                     data_kind=NodeDataLocation.INPUT_DATA)))
 
         response = self.manager.wire_data(valid_request)
-        self.assertTrue(response.success, response.error_message)
+        self.assertTrue(get_success(response), get_error_message(response))
         self.assertEqual(len(self.manager.nodes['source_node'].outputs.callbacks), 1)
         self.assertEqual(len(self.manager.tree_msg.data_wirings), 1)
 
@@ -102,7 +102,7 @@ class TestTreeManager(unittest.TestCase):
                                     data_kind=NodeDataLocation.INPUT_DATA)))
 
         response = self.manager.wire_data(invalid_key_request)
-        self.assertFalse(response.success)
+        self.assertFalse(get_success(response))
 
     def testWireWithInvalidNodeName(self):
         self.node_msg.name = 'source_node'
@@ -124,7 +124,7 @@ class TestTreeManager(unittest.TestCase):
                                     data_kind=NodeDataLocation.INPUT_DATA)))
 
         response = self.manager.wire_data(invalid_node_request)
-        self.assertFalse(response.success)
+        self.assertFalse(get_success(response))
 
     def testMultiWireWithOneInvalid(self):
         """WireNodeData supports wiring multiple pairs of NodeData at once.
@@ -158,7 +158,7 @@ class TestTreeManager(unittest.TestCase):
                                     data_kind=NodeDataLocation.INPUT_DATA)))
 
         response = self.manager.wire_data(invalid_multi_request)
-        self.assertFalse(response.success)
+        self.assertFalse(get_success(response))
         # The first half should not have been applied -> no callbacks for
         # source_node
         self.assertEqual(len(self.manager.nodes['source_node'].outputs.callbacks), 0)
@@ -184,7 +184,7 @@ class TestTreeManager(unittest.TestCase):
 
         response = self.manager.unwire_data(wire_request)
         # Our manager has no nodes at all, so unwiring anything won't work
-        self.assertFalse(response.success)
+        self.assertFalse(get_success(response))
 
         self.node_msg.name = 'source_node'
         source = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
@@ -197,14 +197,14 @@ class TestTreeManager(unittest.TestCase):
         # The nodes and keys exist. There aren't any callbacks to remove, but
         # the unwire operation still succeeds (after running it, the two data
         # values are unconnected).
-        self.assertTrue(response.success, response.error_message + "\n" + str(self.manager.nodes))
+        self.assertTrue(get_success(response), get_error_message(response) + "\n" + str(self.manager.nodes))
 
         response = self.manager.wire_data(wire_request)
-        self.assertTrue(response.success)
+        self.assertTrue(get_success(response))
         self.assertEqual(len(self.manager.tree_msg.data_wirings), 1)
 
         response = self.manager.unwire_data(wire_request)
-        self.assertTrue(response.success)
+        self.assertTrue(get_success(response))
         self.assertEqual(len(self.manager.tree_msg.data_wirings), 0)
 
     def testAddNode(self):
@@ -214,14 +214,14 @@ class TestTreeManager(unittest.TestCase):
         response = self.manager.add_node(add_request)
 
         self.assertEqual(len(self.manager.nodes), 1)
-        self.assertTrue(response.success)
+        self.assertTrue(get_success(response))
 
         broken_add = AddNodeRequest(tree_name='',
                                     node=NodeMsg(module='asdf',
                                                  node_class='foo'))
 
         response = self.manager.add_node(broken_add)
-        self.assertFalse(response.success)
+        self.assertFalse(get_success(response))
 
     def testAddWithMissingParent(self):
         self.assertFalse(self.manager.add_node(AddNodeRequest(tree_name='',
@@ -234,14 +234,14 @@ class TestTreeManager(unittest.TestCase):
         response = self.manager.add_node(add_request)
 
         self.assertEqual(len(self.manager.nodes), 1)
-        self.assertTrue(response.success)
+        self.assertTrue(get_success(response))
 
         add_request = AddNodeRequest(tree_name='',
                                      node=self.node_msg,
                                      parent_name=response.actual_node_name)
         response = self.manager.add_node(add_request)
         self.assertEqual(len(self.manager.nodes), 2)
-        self.assertTrue(response.success)
+        self.assertTrue(get_success(response))
 
     def testAddRenaming(self):
         add_request = AddNodeRequest(tree_name='',
@@ -249,28 +249,78 @@ class TestTreeManager(unittest.TestCase):
         response = self.manager.add_node(add_request)
 
         self.assertEqual(len(self.manager.nodes), 1)
-        self.assertTrue(response.success)
+        self.assertTrue(get_success(response))
 
         # Add the same node again - since allow_rename should default
         # to false, this will fail.
         response = self.manager.add_node(add_request)
 
         self.assertEqual(len(self.manager.nodes), 1)
-        self.assertFalse(response.success)
+        self.assertFalse(get_success(response))
 
         # Same with allow_rename set to False explicitly
         add_request.allow_rename = False
         response = self.manager.add_node(add_request)
 
         self.assertEqual(len(self.manager.nodes), 1)
-        self.assertFalse(response.success)
+        self.assertFalse(get_success(response))
 
         # But it should work if we set allow_rename to True
         add_request.allow_rename = True
         response = self.manager.add_node(add_request)
 
         self.assertEqual(len(self.manager.nodes), 2)
-        self.assertTrue(response.success)
+        self.assertTrue(get_success(response))
+
+    def testAddWithChild(self):
+        add_request = AddNodeRequest(tree_name='',
+                                     node=self.sequence_msg)
+        response = self.manager.add_node(add_request)
+
+        self.assertTrue(get_success(response))
+        self.assertEqual(len(self.manager.nodes), 1)
+        self.sequence_msg.child_names.append(response.actual_node_name)
+
+        add_request = AddNodeRequest(tree_name='',
+                                     node=self.sequence_msg,
+                                     allow_rename=True)
+        response = self.manager.add_node(add_request)
+
+        self.assertTrue(get_success(response))
+        self.assertEqual(len(self.manager.nodes), 2)
+        root = self.manager.find_root()
+        # The newly inserted second node should be the root of the tree, since
+        # the other one is its child
+        self.assertEqual(response.actual_node_name, root.name)
+        self.assertEqual(len(root.children), 1)
+
+    def testAddWithMissingChild(self):
+        self.sequence_msg.child_names.append('imaginary_node')
+        add_request = AddNodeRequest(tree_name='',
+                                     node=self.sequence_msg)
+        response = self.manager.add_node(add_request)
+
+        # Don't add nodes with missing children to the tree
+        self.assertFalse(get_success(response))
+        self.assertEqual(len(self.manager.nodes), 0)
+
+    def testBuildCycle(self):
+        add_request = AddNodeRequest(tree_name='',
+                                     node=self.sequence_msg)
+        response = self.manager.add_node(add_request)
+
+        self.assertTrue(get_success(response))
+        self.assertEqual(len(self.manager.nodes), 1)
+        self.sequence_msg.child_names.append(response.actual_node_name)
+
+        add_request = AddNodeRequest(tree_name='',
+                                     parent_name=response.actual_node_name,
+                                     node=self.sequence_msg,
+                                     allow_rename=True)
+        response = self.manager.add_node(add_request)
+
+        self.assertFalse(get_success(response))
+        self.assertEqual(len(self.manager.nodes), 1)
 
     def testRemoveNode(self):
         instance = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
@@ -278,11 +328,11 @@ class TestTreeManager(unittest.TestCase):
         remove_request = RemoveNodeRequest(node_name=instance.name)
 
         response = self.manager.remove_node(remove_request)
-        self.assertTrue(response.success)
+        self.assertTrue(get_success(response))
 
         # Second remove will fail, there's nothing left to remove.
         response = self.manager.remove_node(remove_request)
-        self.assertFalse(response.success)
+        self.assertFalse(get_success(response))
 
     def testRemoveParent(self):
         add_response = self.manager.add_node(
@@ -300,7 +350,7 @@ class TestTreeManager(unittest.TestCase):
             RemoveNodeRequest(node_name=add_response.actual_node_name,
                               remove_children=False))
 
-        self.assertTrue(remove_response.success)
+        self.assertTrue(get_success(remove_response))
         self.assertEqual(len(self.manager.nodes), 1)
 
         self.manager.tick(once=True)
@@ -324,7 +374,7 @@ class TestTreeManager(unittest.TestCase):
             RemoveNodeRequest(node_name=add_response.actual_node_name,
                               remove_children=True))
 
-        self.assertTrue(remove_response.success, remove_response.error_message)
+        self.assertTrue(get_success(remove_response), get_error_message(remove_response))
         self.assertEqual(len(self.manager.nodes), 0)
 
     def testTick(self):
@@ -334,7 +384,7 @@ class TestTreeManager(unittest.TestCase):
                                                 serialized_value=jsonpickle.encode(42)))
 
         response = self.manager.add_node(add_request)
-        self.assertTrue(response.success)
+        self.assertTrue(get_success(response))
 
         self.manager.tick(once=True)
         self.assertEqual(self.manager.nodes[response.actual_node_name].outputs['out'], 42)
@@ -365,7 +415,7 @@ class TestTreeManager(unittest.TestCase):
             command=ControlTreeExecutionRequest.TICK_ONCE)
 
         response = self.manager.control_execution(execution_request)
-        self.assertTrue(response.success)
+        self.assertTrue(get_success(response))
         self.assertEqual(response.tree_state, Tree.IDLE)
 
         self.assertEqual(self.manager.nodes['passthrough'].outputs['out'], 42)
@@ -374,7 +424,7 @@ class TestTreeManager(unittest.TestCase):
         execution_request.command = ControlTreeExecutionRequest.TICK_PERIODICALLY
         execution_request.tick_frequency_hz = 2
         response = self.manager.control_execution(execution_request)
-        self.assertTrue(response.success)
+        self.assertTrue(get_success(response))
         self.assertEqual(response.tree_state, Tree.TICKING)
 
         # Trying to start ticking while the tree already is ticking should fail
@@ -383,7 +433,7 @@ class TestTreeManager(unittest.TestCase):
         # Stopping should put the tree back in the IDLE state
         execution_request.command = ControlTreeExecutionRequest.STOP
         response = self.manager.control_execution(execution_request)
-        self.assertTrue(response.success)
+        self.assertTrue(get_success(response))
         self.assertEqual(response.tree_state, Tree.IDLE)
 
         # stopping a stopped tree is fine
@@ -512,7 +562,7 @@ class TestTreeManager(unittest.TestCase):
                                                  path='package://ros_bt_py/etc/trees/test.yaml'))
         response = self.manager.load_tree(load_request)
 
-        self.assertTrue(get_success(response), response.error_message)
+        self.assertTrue(get_success(response), get_error_message(response))
         # test.yaml contains a sequence, two succeeders, a fallback and a failer
         self.assertEqual(len(self.manager.nodes), 5)
 
@@ -600,11 +650,11 @@ class TestWiringServices(unittest.TestCase):
         wire_request.wirings.append(self.wiring(self.node_2_name, self.node_3_name))
 
         response = self.manager.wire_data(wire_request)
-        self.assertTrue(response.success, response.error_message)
+        self.assertTrue(get_success(response), get_error_message(response))
         self.assertEqual(len(self.manager.tree_msg.data_wirings), 2)
 
         response = self.manager.unwire_data(wire_request)
-        self.assertTrue(response.success, response.error_message)
+        self.assertTrue(get_success(response), get_error_message(response))
         self.assertEqual(len(self.manager.tree_msg.data_wirings), 0)
 
     def testUndoWiringOnError(self):
@@ -620,7 +670,7 @@ class TestWiringServices(unittest.TestCase):
                                         data_kind=NodeDataLocation.INPUT_DATA)))
 
         response = self.manager.wire_data(wire_request)
-        self.assertFalse(response.success)
+        self.assertFalse(get_success(response))
         self.assertEqual(len(self.manager.tree_msg.data_wirings), 0)
 
 
