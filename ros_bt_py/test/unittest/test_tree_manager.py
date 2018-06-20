@@ -547,7 +547,7 @@ class TestTreeManager(unittest.TestCase):
             RemoveNodeRequest(node_name='first',
                               remove_children=False))))
 
-    def testLoadFromFile(self):
+    def testLoadFromInvalidFiles(self):
         load_request = LoadTreeRequest(tree=Tree(
             name='from_file',
             path='/notareal.file'))
@@ -558,6 +558,17 @@ class TestTreeManager(unittest.TestCase):
             path='package://ros_bt_py/etc/trees/notareal.file'))
         self.assertFalse(get_success(self.manager.load_tree(load_request)))
 
+        load_request = LoadTreeRequest(tree=Tree(
+            name='from_file',
+            path='package://ros_bt_py/etc/trees/two_trees.yaml'))
+        self.assertFalse(get_success(self.manager.load_tree(load_request)))
+
+        load_request = LoadTreeRequest(tree=Tree(
+            name='from_file',
+            path='package://ros_bt_py/etc/trees/empty.yaml'))
+        self.assertFalse(get_success(self.manager.load_tree(load_request)))
+
+    def testLoadFromValidFile(self):
         load_request = LoadTreeRequest(tree=Tree(name='from_file',
                                                  path='package://ros_bt_py/etc/trees/test.yaml'))
         response = self.manager.load_tree(load_request)
@@ -568,6 +579,13 @@ class TestTreeManager(unittest.TestCase):
 
         self.assertTrue(get_success(self.manager.control_execution(ControlTreeExecutionRequest(
             command=ControlTreeExecutionRequest.TICK_ONCE))))
+
+    def testLoadFromFileWithIndirection(self):
+        request = self.manager.load_tree(
+            LoadTreeRequest(tree=Tree(name='from_file',
+                                      path='package://ros_bt_py/etc/trees/indirection.yaml')))
+        # Indirection should work as well (this yaml file refers to test.yaml)
+        self.assertTrue(get_success(request), get_error_message(request))
 
     def testLoadSubtree(self):
         load_request = LoadTreeRequest(tree=Tree(name='from_file',
@@ -671,7 +689,51 @@ class TestWiringServices(unittest.TestCase):
 
         response = self.manager.wire_data(wire_request)
         self.assertFalse(get_success(response))
+        # Even though the first wiring was valid, it should be undone if
+        # another in the same request is invalid
         self.assertEqual(len(self.manager.tree_msg.data_wirings), 0)
+
+    def testRewireAfterUnwire(self):
+        wire_request = WireNodeDataRequest(tree_name='')
+        wire_request.wirings.append(self.wiring(self.node_1_name, self.node_2_name))
+
+        response = self.manager.wire_data(wire_request)
+        self.assertTrue(get_success(response), get_error_message(response))
+        self.assertEqual(len(self.manager.tree_msg.data_wirings), 1)
+
+        response = self.manager.unwire_data(wire_request)
+        self.assertTrue(get_success(response), get_error_message(response))
+        self.assertEqual(len(self.manager.tree_msg.data_wirings), 0)
+
+        response = self.manager.wire_data(wire_request)
+        self.assertTrue(get_success(response), get_error_message(response))
+        self.assertEqual(len(self.manager.tree_msg.data_wirings), 1)
+
+
+    def testRedoWiringOnError(self):
+        wire_request = WireNodeDataRequest(tree_name='')
+        wire_request.wirings.append(self.wiring(self.node_1_name, self.node_2_name))
+        wire_request.wirings.append(self.wiring(self.node_2_name, self.node_3_name))
+
+        unwire_request = WireNodeDataRequest(tree_name='')
+        unwire_request.wirings.append(self.wiring(self.node_1_name, self.node_2_name))
+        unwire_request.wirings.append(
+            NodeDataWiring(
+                source=NodeDataLocation(node_name=self.node_2_name,
+                                        data_key='fake',
+                                        data_kind=NodeDataLocation.OUTPUT_DATA),
+                target=NodeDataLocation(node_name=self.node_3_name,
+                                        data_key='invalid',
+                                        data_kind=NodeDataLocation.INPUT_DATA)))
+
+        wire_response = self.manager.wire_data(wire_request)
+        self.assertTrue(get_success(wire_response), get_error_message(wire_response))
+        self.assertEqual(len(self.manager.tree_msg.data_wirings), 2)
+
+        # Number of wirings should stay the same, since the unwire operation failed
+        unwire_response = self.manager.wire_data(unwire_request)
+        self.assertFalse(get_success(unwire_response))
+        self.assertEqual(len(self.manager.tree_msg.data_wirings), 2)
 
 
 def get_success(response):

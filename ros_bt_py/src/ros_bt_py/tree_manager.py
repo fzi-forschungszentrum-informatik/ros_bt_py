@@ -303,6 +303,8 @@ class TreeManager(object):
                     response.success = False
                     response.error_message = ('No data in YAML file %s!' % file_path)
 
+                    return response
+
         # we should have a tree message with all the info we need now
 
         # Clear existing tree, then replace it with the message's contents
