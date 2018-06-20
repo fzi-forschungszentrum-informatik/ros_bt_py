@@ -30,7 +30,7 @@ class TestSubtree(unittest.TestCase):
         self.inner_passthrough = PassthroughNode(name='inner_passthrough',
                                                  options={'passthrough_type': int})
         self.outer_passthrough = PassthroughNode(name='outer_passthrough',
-                                           options={'passthrough_type': int})
+                                                 options={'passthrough_type': int})
 
         self.root.add_child(self.outer_leaf_1)\
                  .add_child(Sequence(name='inner_seq')
