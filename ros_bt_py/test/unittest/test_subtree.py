@@ -27,15 +27,18 @@ class TestSubtree(unittest.TestCase):
         self.inner_leaf_2 = MockLeaf(name='inner_leaf_2',
                                      options=mock_options)
 
-        self.passthrough = PassthroughNode(name='passthrough',
+        self.inner_passthrough = PassthroughNode(name='inner_passthrough',
+                                                 options={'passthrough_type': int})
+        self.outer_passthrough = PassthroughNode(name='outer_passthrough',
                                            options={'passthrough_type': int})
 
         self.root.add_child(self.outer_leaf_1)\
                  .add_child(Sequence(name='inner_seq')
                             .add_child(self.inner_leaf_1)
                             .add_child(self.inner_leaf_2)
-                            .add_child(self.passthrough))\
-                 .add_child(self.outer_leaf_2)
+                            .add_child(self.inner_passthrough))\
+                 .add_child(self.outer_leaf_2)\
+                 .add_child(self.outer_passthrough)
 
     def testSubtree(self):
         subtree, external_connections = self.root.find_node('inner_seq').get_subtree_msg()
@@ -43,18 +46,50 @@ class TestSubtree(unittest.TestCase):
         self.assertEqual(len(external_connections), 0)
 
     def testSubtreeWiring(self):
-        wiring = NodeDataWiring()
-        wiring.source.node_name = 'outer_leaf_1'
-        wiring.source.data_kind = NodeDataLocation.OUTPUT_DATA
-        wiring.source.data_key = 'out'
+        # This wiring is between two nodes in the subtree, so it shouldn't be
+        # exposed externally
+        internal_wiring = NodeDataWiring()
+        internal_wiring.source.node_name = 'inner_leaf_1'
+        internal_wiring.source.data_kind = NodeDataLocation.OUTPUT_DATA
+        internal_wiring.source.data_key = 'out'
 
-        wiring.target.node_name = 'passthrough'
-        wiring.target.data_kind = NodeDataLocation.INPUT_DATA
-        wiring.target.data_key = 'in'
+        internal_wiring.target.node_name = 'inner_passthrough'
+        internal_wiring.target.data_kind = NodeDataLocation.INPUT_DATA
+        internal_wiring.target.data_key = 'in'
 
-        self.passthrough.wire_data(wiring)
+        self.inner_passthrough.wire_data(internal_wiring)
+
+        # This wiring goes from outside the subtree to inside, so it must
+        # appear in external_collections / public_node_data
+        incoming_wiring = NodeDataWiring()
+        incoming_wiring.source.node_name = 'outer_leaf_1'
+        incoming_wiring.source.data_kind = NodeDataLocation.OUTPUT_DATA
+        incoming_wiring.source.data_key = 'out'
+
+        incoming_wiring.target.node_name = 'inner_passthrough'
+        incoming_wiring.target.data_kind = NodeDataLocation.INPUT_DATA
+        incoming_wiring.target.data_key = 'in'
+
+        self.inner_passthrough.wire_data(incoming_wiring)
+
+        # This wiring goes from inside the subtree to outside, so it must
+        # appear in external_collections / public_node_data
+        outgoing_wiring = NodeDataWiring()
+        outgoing_wiring.source.node_name = 'inner_leaf_1'
+        outgoing_wiring.source.data_kind = NodeDataLocation.OUTPUT_DATA
+        outgoing_wiring.source.data_key = 'out'
+
+        outgoing_wiring.target.node_name = 'outer_passthrough'
+        outgoing_wiring.target.data_kind = NodeDataLocation.INPUT_DATA
+        outgoing_wiring.target.data_key = 'in'
+
+        self.outer_passthrough.wire_data(outgoing_wiring)
 
         subtree, external_connections = self.root.find_node('inner_seq').get_subtree_msg()
         self.assertEqual(len(subtree.nodes), 4)
-        self.assertEqual(len(subtree.public_node_data), 1)
-        self.assertEqual(len(external_connections), 1)
+        self.assertEqual(len(subtree.public_node_data), 2)
+        self.assertEqual(len([d for d in subtree.public_node_data
+                              if d.data_kind == NodeDataLocation.INPUT_DATA]), 1)
+        self.assertEqual(len([d for d in subtree.public_node_data
+                              if d.data_kind == NodeDataLocation.OUTPUT_DATA]), 1)
+        self.assertEqual(len(external_connections), 2)
