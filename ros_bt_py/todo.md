@@ -56,7 +56,9 @@ Two options:
    like that)
 
 ## Subtree Node
-Needs to wrap Action Interface
+* Needs to wrap Action Interface
+* **THE ONLY** Node that should need a custom constructor (because its
+  I/O keys depend on the subtree's `public_node_data`)
 
 ## Local / Remote execution
 Implemented via decorator.
@@ -72,3 +74,23 @@ Caveats:
 * Decorator cannot switch server while subtree is running
 * Add subtree groups that cannot be executed on different robots?
   (e.g. "walk to target" & "pick up target")
+* What if we lose connection to the remote robot?
+  * What if we reconnect after starting our own attempt at the shoved
+    task?
+
+# Utility Gathering
+
+* Remote Decorator should calculate utility values for all available
+  robots
+  * List of Available Robots supplied by the magical robot finder,
+    don't worry
+* Nodes need another function for "calculate utility bounds" -
+  Sequence / Fallback / Parallel etc need to process child values,
+  other nodes need to make an estimate:
+  * Action/Service/Topic nodes w/o the needed ROS resources: 0
+  * Maybe add Capability node that uses two action servers:
+    * Capability action
+    * Cost calculation action
+  * Special nodes that don't do anything, but turn the system state
+    (CPU/RAM/network usage, battery level, ???) into a Utility value?
+* Is utility a cost (0 is best) or actual utility (0 is useless)?
