@@ -25,6 +25,7 @@ add_service_files(
   AddNode.srv
   Continue.srv
   ControlTreeExecution.srv
+  EvaluateUtility.srv
   GetAvailableNodes.srv
   GetAvailableSubtrees.srv
   InsertNode.srv

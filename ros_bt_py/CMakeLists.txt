@@ -206,4 +206,7 @@ if (CATKIN_ENABLE_TESTING)
   # nosetest automatically collects test methods, no need for main
   # methods in your test files!
   catkin_add_nosetests(test/unittest)
+
+  find_package(rostest)
+  add_rostest(test/rostest/async_service.test)
 endif()
