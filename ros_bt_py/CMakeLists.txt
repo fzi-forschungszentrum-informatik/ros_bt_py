@@ -207,6 +207,7 @@ if (CATKIN_ENABLE_TESTING)
   # methods in your test files!
   catkin_add_nosetests(test/unittest)
 
-  find_package(rostest)
+  find_package(rostest REQUIRED)
   add_rostest(test/rostest/async_service.test)
+  add_rostest(test/rostest/ros_leaves.test)
 endif()

@@ -1,4 +1,5 @@
 #!/usr/bin/env python2.7
+from threading import Lock
 import unittest
 
 import rospy
@@ -6,7 +7,7 @@ import rospy
 from std_srvs.srv import SetBool, SetBoolRequest, SetBoolResponse
 from ros_bt_py_msgs.msg import Node as NodeMsg
 
-from ros_bt_py.node_config import NodeConfig, OptionRef
+from ros_bt_py.node_config import NodeConfig
 from ros_bt_py.nodes.service import Service
 
 PKG = 'ros_bt_py'
@@ -106,8 +107,7 @@ class TestServiceLeaf(unittest.TestCase):
         self.assertEqual(self.delay_service_leaf.state, NodeMsg.FAILED)
 
 
-
 if __name__ == '__main__':
-    rospy.init_node('test_ros_leaves')
+    rospy.init_node('test_service_leaf')
     import rostest
     rostest.rosrun(PKG, 'test_service_leaf', TestServiceLeaf)

@@ -13,7 +13,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
     inputs={},
     outputs={'message': OptionRef('topic_type')},
     max_children=0))
-class Topic(Leaf):
+class TopicSubscriber(Leaf):
     def _do_setup(self):
         self._lock = Lock()
         self._msg = None
@@ -40,6 +40,44 @@ class Topic(Leaf):
     def _do_reset(self):
         # discard the last received message, nothing else to reset
         self._msg = None
+        return NodeMsg.IDLE
+
+    def _do_untick(self):
+        return NodeMsg.IDLE
+
+
+@define_bt_node(NodeConfig(
+    options={'topic_type': type,
+             'topic_name': str},
+    inputs={'message': OptionRef('topic_type')},
+    outputs={},
+    max_children=0))
+class TopicPublisher(Leaf):
+    def _do_setup(self):
+        self._publisher = rospy.Publisher(self.options['topic_name'],
+                                          self.options['topic_type'],
+                                          latch=True,
+                                          queue_size=1)
+        return NodeMsg.IDLE
+
+    def _do_tick(self):
+        if self.inputs['message'] is None:
+            self.logwarn('Trying to publish to topic %s with no message set' %
+                         self.options['topic_name'])
+            return NodeMsg.FAILED
+
+        # Only publish a new message if our input data has been updated - the
+        # old one is latched anyway.
+        if self.inputs.is_updated('message'):
+            self._publisher.publish(self.inputs['message'])
+        return NodeMsg.SUCCEEDED
+
+    def _do_shutdown(self):
+        # Unregister the publisher
+        self._publisher.unregister()
+        self._publisher = None
+
+    def _do_reset(self):
         return NodeMsg.IDLE
 
     def _do_untick(self):
