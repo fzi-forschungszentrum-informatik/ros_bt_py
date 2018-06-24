@@ -17,11 +17,17 @@ class AsyncServiceProxy(object):
         self._service_proxy = rospy.ServiceProxy(service_name, service_type)
 
         self._manager = Manager()
+        # TODO(nberg): Check if this is really safe to access without a Lock
         self._data = self._manager.dict()
         self._data['state'] = self.IDLE
         self._data['req'] = None
         self._data['res'] = None
         self._data['proxy'] = self._service_proxy
+
+    def shutdown(self):
+        self.stop_call()
+        self._data['proxy'].shutdown()
+        self._data['proxy'] = None
 
     def stop_call(self):
         if self._process is not None and self._data['state'] == self.RUNNING:
