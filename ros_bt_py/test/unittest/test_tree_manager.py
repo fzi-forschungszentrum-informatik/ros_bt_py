@@ -709,7 +709,6 @@ class TestWiringServices(unittest.TestCase):
         self.assertTrue(get_success(response), get_error_message(response))
         self.assertEqual(len(self.manager.tree_msg.data_wirings), 1)
 
-
     def testRedoWiringOnError(self):
         wire_request = WireNodeDataRequest(tree_name='')
         wire_request.wirings.append(self.wiring(self.node_1_name, self.node_2_name))

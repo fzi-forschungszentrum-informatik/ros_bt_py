@@ -2,10 +2,12 @@
 import rospy
 from std_srvs.srv import SetBool, SetBoolResponse
 
+
 def delay_if_true(req):
     if req.data:
         rospy.sleep(1.0)
     return SetBoolResponse(True, '')
+
 
 def crash(req):
     # Raises an exception for the caller

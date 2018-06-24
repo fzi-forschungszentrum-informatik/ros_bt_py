@@ -2,6 +2,7 @@ from multiprocessing import Process, Manager
 
 import rospy
 
+
 class AsyncServiceProxy(object):
     # define call states
     IDLE = 0
@@ -31,7 +32,6 @@ class AsyncServiceProxy(object):
             self._process = None
             self._data['state'] = AsyncServiceProxy.ABORTED
 
-
     def call_service(self, req):
         if self._data['state'] == self.RUNNING:
             rospy.logwarn('Aborting previous call to %s', self._service_name)
@@ -55,6 +55,7 @@ class AsyncServiceProxy(object):
 
     def get_state(self):
         return self._data['state']
+
 
 def _call_service_impl(data):
     try:

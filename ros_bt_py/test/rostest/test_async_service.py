@@ -1,12 +1,13 @@
 #!/usr/bin/env python2.7
-PKG = 'ros_bt_py'
-
 import unittest
 
 import rospy
 from std_srvs.srv import SetBool, SetBoolRequest, SetBoolResponse
 
 from ros_bt_py.ros_helpers import AsyncServiceProxy
+
+PKG = 'ros_bt_py'
+
 
 class TestAsyncService(unittest.TestCase):
     def setUp(self):
