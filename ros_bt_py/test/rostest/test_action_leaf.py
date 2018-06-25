@@ -82,4 +82,6 @@ class TestActionLeaf(unittest.TestCase):
 if __name__ == '__main__':
     rospy.init_node('test_action_leaf')
     import rostest
-    rostest.rosrun(PKG, 'test_action_leaf', TestActionLeaf)
+    import sys
+    rostest.rosrun(PKG, 'test_action_leaf', TestActionLeaf,
+                   sysargs=sys.argv + ['--cov'])

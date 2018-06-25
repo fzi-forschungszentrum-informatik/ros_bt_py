@@ -110,4 +110,6 @@ class TestServiceLeaf(unittest.TestCase):
 if __name__ == '__main__':
     rospy.init_node('test_service_leaf')
     import rostest
-    rostest.rosrun(PKG, 'test_service_leaf', TestServiceLeaf)
+    import sys
+    rostest.rosrun(PKG, 'test_service_leaf', TestServiceLeaf,
+                   sysargs=sys.argv + ['--cov'])

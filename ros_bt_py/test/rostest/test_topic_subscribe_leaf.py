@@ -49,4 +49,6 @@ class TestTopicSubscriberLeaf(unittest.TestCase):
 if __name__ == '__main__':
     rospy.init_node('test_topic_subscribe_leaf')
     import rostest
-    rostest.rosrun(PKG, 'test_topic_subscribe_leaf', TestTopicSubscriberLeaf)
+    import sys
+    rostest.rosrun(PKG, 'test_topic_subscribe_leaf', TestTopicSubscriberLeaf,
+                   sysargs=sys.argv + ['--cov'])

@@ -90,4 +90,6 @@ class TestAsyncService(unittest.TestCase):
 if __name__ == '__main__':
     rospy.init_node('test_async_service')
     import rostest
-    rostest.rosrun(PKG, 'test_async_service', TestAsyncService)
+    import sys
+    rostest.rosrun(PKG, 'test_async_service', TestAsyncService,
+                   sysargs=sys.argv + ['--cov'])
