@@ -7,6 +7,7 @@ from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 from ros_bt_py.ros_helpers import AsyncServiceProxy
 
+
 @define_bt_node(NodeConfig(
     options={'service_type': type,
              'request_type': type,
@@ -70,7 +71,7 @@ class Service(Leaf):
             # If the call takes longer than the specified timeout, abort the
             # call and return FAILED
             seconds_since_call = (rospy.Time.now() - self._last_service_call_time).to_sec()
-            if  seconds_since_call > self.options['wait_for_response_seconds']:
+            if seconds_since_call > self.options['wait_for_response_seconds']:
                 self.logerr('Service call to %s with request %s timed out' % (
                     self.options['service_name'], self._last_request))
                 self._service_proxy.stop_call()

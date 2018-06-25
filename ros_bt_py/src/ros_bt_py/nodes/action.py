@@ -47,7 +47,7 @@ class Action(Leaf):
             self.options['wait_for_action_server_seconds']))
         self._last_goal_time = None
         self.outputs['feedback'] = None
-        self.outputs['goal_status'] = GoalStatus.LOST # the default for no active goals
+        self.outputs['goal_status'] = GoalStatus.LOST  # the default for no active goals
         self.outputs['result'] = None
 
         return NodeMsg.IDLE
@@ -124,7 +124,7 @@ class Action(Leaf):
         self._do_untick()
         # but also clear the outputs
         self.outputs['feedback'] = None
-        self.outputs['goal_status'] = GoalStatus.LOST # the default for no active goals
+        self.outputs['goal_status'] = GoalStatus.LOST  # the default for no active goals
         self.outputs['result'] = None
         return NodeMsg.IDLE
 

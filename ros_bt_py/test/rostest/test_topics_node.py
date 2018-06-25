@@ -2,6 +2,7 @@
 import rospy
 from std_msgs.msg import Int32
 
+
 class TopicMirror(object):
     def __init__(self):
         self.publisher = rospy.Publisher('numbers_out', Int32, latch=False, queue_size=1)
