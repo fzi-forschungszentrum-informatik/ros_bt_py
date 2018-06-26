@@ -103,12 +103,11 @@ class RunTreeActionServer(object):
 
         sleep_rate = rospy.Rate(goal.tick_frequency_hz)
 
-
         while True:
             if self._as.is_preempt_requested():
                 self._tree_manager.control_execution(
-                ControlTreeExecutionRequest(
-                    command=ControlTreeExecutionRequest.SHUTDOWN))
+                    ControlTreeExecutionRequest(
+                        command=ControlTreeExecutionRequest.SHUTDOWN))
 
                 self._as.set_preempted()
                 break

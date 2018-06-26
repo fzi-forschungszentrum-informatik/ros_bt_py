@@ -18,9 +18,9 @@ from ros_bt_py.ros_helpers import AsyncServiceProxy
         'remote_tick_frequency_hz': float,
         'wait_for_service_seconds': float,
         'action_timeout_seconds': float},
-        inputs={},
-        outputs={'running_remotely': bool},
-        max_children=1))
+    inputs={},
+    outputs={'running_remotely': bool},
+    max_children=1))
 class Shovable(Decorator):
     # States to structure the do_tick() method
     IDLE = 0
@@ -88,7 +88,7 @@ class Shovable(Decorator):
                         self._remote_namespace = eval_response.best_executor_namespace
 
                         self.logdebug('Building ActionClient for action %s'
-                                     % self._remote_namespace + '/run_tree')
+                                      % self._remote_namespace + '/run_tree')
                         self._subtree_action_client = SimpleActionClient(
                             self._remote_namespace + '/run_tree', RunTreeAction)
 
@@ -115,7 +115,7 @@ class Shovable(Decorator):
 
         if self._state == Shovable.START_REMOTE_EXEC_ACTION:
             self.logdebug('Sending goal to action server at %s'
-                         % self._remote_namespace + '/run_tree')
+                          % self._remote_namespace + '/run_tree')
             self._subtree_action_start_time = rospy.Time.now()
             self._subtree_action_client.send_goal(
                 RunTreeGoal(tree=self._subtree_msg,

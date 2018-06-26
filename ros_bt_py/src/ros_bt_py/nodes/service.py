@@ -59,16 +59,15 @@ class Service(Leaf):
     def _do_tick(self):
         # If theres' no service call in-flight, and we have already reported
         # the result (see below), start a new call and save the request
-        proxy_state = self._service_proxy.get_state()
         if self._reported_result or \
-          proxy_state == AsyncServiceProxy.IDLE or \
-          proxy_state == AsyncServiceProxy.ABORTED:
+          self._service_proxy.get_state() == AsyncServiceProxy.IDLE or \
+          self._service_proxy.get_state() == AsyncServiceProxy.ABORTED:
             self._last_service_call_time = rospy.Time.now()
             self._last_request = self.inputs['request']
             self._reported_result = False
             self._service_proxy.call_service(self._last_request)
 
-        if proxy_state == AsyncServiceProxy.RUNNING:
+        if self._service_proxy.get_state() == AsyncServiceProxy.RUNNING:
             # If the call takes longer than the specified timeout, abort the
             # call and return FAILED
             seconds_since_call = (rospy.Time.now() - self._last_service_call_time).to_sec()
@@ -81,9 +80,9 @@ class Service(Leaf):
             return NodeMsg.RUNNING
         else:
             new_state = NodeMsg.SUCCEEDED
-            if proxy_state == AsyncServiceProxy.RESPONSE_READY:
+            if self._service_proxy.get_state() == AsyncServiceProxy.RESPONSE_READY:
                 self.outputs['response'] = self._service_proxy.get_response()
-            if proxy_state == AsyncServiceProxy.ERROR:
+            if self._service_proxy.get_state() == AsyncServiceProxy.ERROR:
                 # TODO(nberg): Leave old response or set to None?
                 new_state = NodeMsg.FAILED
 

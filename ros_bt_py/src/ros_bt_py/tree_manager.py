@@ -512,8 +512,8 @@ class TreeManager(object):
                     response.error_message = str(e)
                     response.tree_state = self.tree_msg.state
 
-        elif request.command == ControlTreeExecutionRequest.TICK_PERIODICALLY \
-          or request.command == ControlTreeExecutionRequest.TICK_UNTIL_RESULT:
+        elif (request.command == ControlTreeExecutionRequest.TICK_PERIODICALLY
+                  or request.command == ControlTreeExecutionRequest.TICK_UNTIL_RESULT):
             if self._tick_thread.is_alive() or self.tree_msg.state == Tree.TICKING:
                 response.success = False
                 response.error_message = ('Tried to start periodic ticking when tree is '
@@ -526,7 +526,8 @@ class TreeManager(object):
                     with self._state_lock:
                         self.tree_msg.state = Tree.TICKING
                     self._once = False
-                    self._stop_after_result = True
+                    if request.command == ControlTreeExecutionRequest.TICK_UNTIL_RESULT:
+                        self._stop_after_result = True
                     # Use provided tick frequency, if any
                     if request.tick_frequency_hz != 0:
                         self.tree_msg.tick_frequency_hz = request.tick_frequency_hz

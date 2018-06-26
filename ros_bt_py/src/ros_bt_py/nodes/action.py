@@ -77,9 +77,8 @@ class Action(Leaf):
             if seconds_since_goal_start > self.options['timeout_seconds']:
                 self.logwarn('Stopping timed-out goal after %f seconds!' %
                              self.options['timeout_seconds'])
-                self._ac.cancel_all_goals()
                 self.outputs['goal_status'] = GoalStatus.LOST
-                self._ac.cancel_all_goals()
+                self._ac.cancel_goal()
                 self._ac.stop_tracking_goal()
                 self._last_goal_time = None
                 self._has_active_goal = False
@@ -98,7 +97,7 @@ class Action(Leaf):
             self.outputs['result'] = self._ac.get_result()
             # cancel goal to be sure, then stop tracking it so get_state()
             # returns LOST again
-            self._ac.cancel_all_goals()
+            self._ac.cancel_goal()
             self._ac.stop_tracking_goal()
             self._has_active_goal = False
 
@@ -111,9 +110,8 @@ class Action(Leaf):
         return NodeMsg.RUNNING
 
     def _do_untick(self):
-        # stop the current goal (well, "all goals" to be sure, but there
-        # *should* only be the one) but keep outputs
-        self._ac.cancel_all_goals()
+        # stop the current goal but keep outputs
+        self._ac.cancel_goal()
         self._last_goal_time = None
         self._has_active_goal = False
         self._feedback = None

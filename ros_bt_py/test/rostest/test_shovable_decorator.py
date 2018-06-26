@@ -19,6 +19,7 @@ def make_shovable(service_name):
         'wait_for_service_seconds': 1.0,
         'action_timeout_seconds': 1.0})
 
+
 class TestShovable(unittest.TestCase):
     def setUp(self):
         self.immediate_success = MockLeaf(options={
@@ -49,7 +50,6 @@ class TestShovable(unittest.TestCase):
         self.assertEqual(shovable.tick(), NodeMsg.SUCCEEDED)
 
         self.assertFalse(shovable.outputs['running_remotely'])
-
 
     def testRemoteExecution(self):
         shovable = make_shovable('evaluate_utility_remote')
@@ -94,4 +94,4 @@ if __name__ == '__main__':
     import rostest
     import sys
     rostest.rosrun(PKG, 'test_shovable_decorator', TestShovable,
-                   sysargs=sys.argv)# + ['--cov'])
+                   sysargs=sys.argv + ['--cov'])
