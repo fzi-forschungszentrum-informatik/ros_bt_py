@@ -1,0 +1,5 @@
+<launch>
+  <test test-name="test_shovable" pkg="ros_bt_py" type="test_shovable_decorator.py" />
+
+  <node name="remote_tree" pkg="ros_bt_py" type="dummy_remote_tree.py" />
+</launch>

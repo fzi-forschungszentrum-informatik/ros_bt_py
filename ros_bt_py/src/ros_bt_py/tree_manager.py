@@ -87,7 +87,12 @@ class TreeManager(object):
 
         self._state_lock = Lock()
         self._edit_lock = RLock()
+
+        # Stop the tick thread after a single tick
         self._once = False
+        # Stop the tick thread after the tree returns something other than
+        # RUNNING for the first time
+        self._stop_after_result = False
 
         self.tree_msg = Tree()
         self.tree_msg.name = name if name else ''
@@ -180,9 +185,15 @@ class TreeManager(object):
                     break
             root.tick()
             self.publish_info(self.debug_manager.get_debug_info_msg())
+
+            if self._stop_after_result:
+                if root.state != NodeMsg.RUNNING:
+                    break
+
             if self._once:
                 self._once = False
                 break
+
             tick_duration = time.time() - start_time
             if tick_duration <= 0:
                 rospy.logwarn('Tick took longer than set period, cannot tick at %.2f Hz',
@@ -468,6 +479,7 @@ class TreeManager(object):
                 try:
                     self.find_root()
                     self._once = True
+                    self._stop_after_result = False
                     with self._state_lock:
                         self.tree_msg.state = Tree.TICKING
                     self._tick_thread.start()
@@ -500,7 +512,8 @@ class TreeManager(object):
                     response.error_message = str(e)
                     response.tree_state = self.tree_msg.state
 
-        elif request.command == ControlTreeExecutionRequest.TICK_PERIODICALLY:
+        elif request.command == ControlTreeExecutionRequest.TICK_PERIODICALLY \
+          or request.command == ControlTreeExecutionRequest.TICK_UNTIL_RESULT:
             if self._tick_thread.is_alive() or self.tree_msg.state == Tree.TICKING:
                 response.success = False
                 response.error_message = ('Tried to start periodic ticking when tree is '
@@ -513,9 +526,13 @@ class TreeManager(object):
                     with self._state_lock:
                         self.tree_msg.state = Tree.TICKING
                     self._once = False
+                    self._stop_after_result = True
                     # Use provided tick frequency, if any
                     if request.tick_frequency_hz != 0:
                         self.tree_msg.tick_frequency_hz = request.tick_frequency_hz
+                    if self.tree_msg.tick_frequency_hz == 0.0:
+                        rospy.logwarn('Loaded tree had frequency 0Hz. Defaulting to 20Hz')
+                        self.tree_msg.tick_frequency_hz = 20.0
                     self._tick_thread.start()
                     response.success = True
                     response.tree_state = Tree.TICKING

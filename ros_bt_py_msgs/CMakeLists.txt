@@ -16,6 +16,7 @@ add_message_files(
      NodeDataWiring.msg
      TickTime.msg
      Tree.msg
+     TreeDataUpdate.msg
      TreeLocation.msg
      )
 
