@@ -52,7 +52,7 @@ class TestActionLeaf(unittest.TestCase):
         self.action_leaf.tick()
         self.assertEqual(self.action_leaf.state, NodeMsg.RUNNING)
 
-        rospy.sleep(0.1)
+        rospy.sleep(0.2)
         self.action_leaf.tick()
         self.assertEqual(self.action_leaf.state, NodeMsg.RUNNING)
         self.assertEqual(self.action_leaf.outputs['goal_status'], GoalStatus.ACTIVE)
