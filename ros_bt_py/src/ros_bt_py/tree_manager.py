@@ -124,6 +124,13 @@ class TreeManager(object):
         pass
 
     def publish_info(self, debug_info_msg=None):
+        """Publish the current tree state using the callback supplied to the constructor
+
+        In most cases, you'll want that callback to publish to a ROS
+        topic.
+
+        If debugging is enabled, also publish debug info.
+        """
         if self.publish_tree:
             self.publish_tree(self.to_msg())
         if debug_info_msg and self.publish_debug_info:
@@ -132,7 +139,8 @@ class TreeManager(object):
     def find_root(self):
         """Find the root node of the tree
 
-        :raises: `TreeTopologyError` if either no root or multiple roots are found
+        :raises: `TreeTopologyError` if nodes exist, but either no root or multiple
+        roots are found.
         """
         if not self.nodes:
             return None
@@ -733,6 +741,11 @@ class TreeManager(object):
 
     @is_edit_service
     def set_options(self, request):
+        """Set the option values of a given node.
+
+        This is an "edit service", i.e. it can only be used when the
+        tree has not yet been initialized or has been shut down.
+        """
         if request.node_name not in self.nodes:
             return SetOptionsResponse(
                 success=False,
