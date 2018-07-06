@@ -18,6 +18,7 @@ add_message_files(
      Tree.msg
      TreeDataUpdate.msg
      TreeLocation.msg
+     UtilityBounds.msg
      )
 
 ## Generate services in the 'srv' folder

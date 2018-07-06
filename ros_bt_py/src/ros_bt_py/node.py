@@ -11,6 +11,7 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import NodeData as NodeDataMsg
 from ros_bt_py_msgs.msg import NodeDataLocation, NodeDataWiring
 from ros_bt_py_msgs.msg import Tree
+from ros_bt_py_msgs.msg import UtilityBounds
 
 from ros_bt_py.exceptions import BehaviorTreeException, NodeStateError, NodeConfigError
 from ros_bt_py.node_data import NodeData, NodeDataMap
@@ -390,6 +391,26 @@ class Node(object):
                % self.__class__.__name__)
         self.logerr(msg)
         raise NotImplementedError(msg)
+
+    def calculate_utlity(self):
+        """Calculate the utility bounds for this node.
+
+        Unlike the other node functions, there is a default
+        implementation for the corresponding method,
+        :meth:`Node._do_calculate_utility()`.
+
+        However, in order to get meaningful results, one should take
+        care to use as many nodes as possible that provide their own
+        implementation, since the default only reports that there are no
+        bounds.
+        """
+        return self._do_calculate_utility()
+
+    def _do_calculate_utility(self):
+        return UtilityBounds(has_lower_bound_success=False,
+                             has_upper_bound_success=False,
+                             has_lower_bound_failure=False,
+                             has_upper_bound_failure=False)
 
     def validate(self):
         """You must also override this.
@@ -924,6 +945,17 @@ class Node(object):
                             if sub[0].target != wiring.target]
 
     def unwire_data(self, wiring):
+        """Unwire the given wiring.
+
+        This entails finding the source of the wiring, calling its
+        :meth:`Node._unsubscribe` method and removing the wiring from
+        this node's list of subscriptions.
+
+        :raises: BehaviorTreeException
+
+        If the given wiring's source node cannot be found from this
+        node.
+        """
         if wiring.target.node_name != self.name:
             raise KeyError('Target of wiring (%s) is not this node (%s)' % (
                 wiring.target.node_name,
@@ -942,7 +974,6 @@ class Node(object):
         self.subscriptions.remove(wiring)
 
     def to_msg(self):
-
         """Populate a ROS message with the information from this Node
 
         Round-tripping the result through :meth:`Node.from_msg` should
@@ -1048,7 +1079,17 @@ class Decorator(Node):
     output. Subclasses can add inputs, outputs and options, but never
     change `max_children`.
     """
-    pass
+    def _do_calculate_utility(self):
+        """
+        Pass on the utility value of the (only allowed) child.
+        """
+        if self.children:
+            return self.children[0].calculate_utlity()
+        else:
+            return UtilityBounds(has_lower_bound_success=False,
+                                 has_upper_bound_success=False,
+                                 has_lower_bound_failure=False,
+                                 has_upper_bound_failure=False)
 
 
 @define_bt_node(NodeConfig(
