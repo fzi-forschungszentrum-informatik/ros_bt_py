@@ -531,7 +531,7 @@ function stop_tick() {
     serviceType: 'ros_bt_py_msgs/ControlTreeExecution'
   }).callService(
     new ROSLIB.ServiceRequest({
-      command: 3 // STOP
+      command: 4 // STOP
     }),
     function(response) {
       if (response.success) {
@@ -550,7 +550,7 @@ function shutdown() {
     serviceType: 'ros_bt_py_msgs/ControlTreeExecution'
   }).callService(
     new ROSLIB.ServiceRequest({
-      command: 5 // SHUTDOWN
+      command: 6 // SHUTDOWN
     }),
     function(response) {
       if (response.success) {
@@ -569,7 +569,7 @@ function reset() {
     serviceType: 'ros_bt_py_msgs/ControlTreeExecution'
   }).callService(
     new ROSLIB.ServiceRequest({
-      command: 4 // RESET
+      command: 5 // RESET
     }),
     function(response) {
       if (response.success) {
