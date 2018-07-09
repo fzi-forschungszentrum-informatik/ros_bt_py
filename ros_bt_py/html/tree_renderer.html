@@ -4,11 +4,12 @@
   <meta charset="utf-8">
   <link rel="stylesheet" href="tree_renderer.css" />
   <script src="https://d3js.org/d3.v4.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-flextree@2.0.0/build/d3-flextree.js"></script>
   <script src="https://static.robotwebtools.org/roslibjs/current/roslib.js"></script>
   <script src="render_tree.js"></script>
 </head>
 <body onload="init()">
-  <svg width="800" height="600"></svg>
+  <svg id="editor_viewport" width="800" height="600"><g id="container"/></svg>
   <div id="controls" class="box">
     <h4>Controls</h4>
     <div>

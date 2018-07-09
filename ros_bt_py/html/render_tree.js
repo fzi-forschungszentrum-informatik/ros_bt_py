@@ -1,3 +1,5 @@
+//const flextree = require('d3-flextree').flextree;
+
 function render() {
   var tree_msg = {
     "nodes": [
@@ -221,15 +223,24 @@ function onTreeUpdate(tree_msg) {
     );
   });
 
-  var svg = d3.select("svg"),
-      width = +svg.attr("width"),
-      height = +svg.attr("height");
+
+  var svg = d3.select("svg")
+      .call(d3.zoom().scaleExtent([0.3, 1.0]).on("zoom", function () {
+        svg.attr("transform", d3.event.transform)
+      })).select("#container");
+
+
+  var container = d3.select("#editor_viewport");
+  var width = container.attr("width"),
+      height = container.attr("height");
+
+
   var g_edge = svg.selectAll("g.edges").data([null]);
   g_edge = g_edge
     .enter()
     .append("g")
     .attr("class", "edges")
-    .attr("transform", "translate(0,40)")
+    //.attr("transform", "translate(0,40)")
     .merge(g_edge);
 
   var g_vertex = svg.selectAll("g.vertices").data([null]);
@@ -237,7 +248,7 @@ function onTreeUpdate(tree_msg) {
     .enter()
     .append("g")
     .attr("class", "vertices")
-    .attr("transform", "translate(0,40)")
+    //.attr("transform", "translate(0,40)")
     .merge(g_vertex);
 
   var node = g_vertex
@@ -261,11 +272,19 @@ function onTreeUpdate(tree_msg) {
 
   updateNodes(node);
 
+  // k is the zoom level - we need to apply this to the values we get
+  // from getBoundingClientRect, or we get fun scaling effects.
+  var zoom = d3.zoomTransform(d3.select("#editor_viewport").node()).k;
+  console.log("Current zoom level is: " + zoom);
   // Find the maximum size of all the nodes, for layout purposes
   var max_size = [0,0];
   g_vertex.selectAll('.btnode').data(root.descendants(), d => d.id)
     .each(function(d, index){
       var rect = this.getBoundingClientRect();
+      rect.x /= zoom;
+      rect.y /= zoom;
+      rect.width /= zoom;
+      rect.height /= zoom;
       d._size = rect;
       max_size[0] = Math.max(max_size[0], rect.width);
       max_size[1] = Math.max(max_size[1], rect.height);
@@ -277,9 +296,10 @@ function onTreeUpdate(tree_msg) {
 
   var tree_size = [width - max_size[0], height - (40 + max_size[1])];
 
-  var tree = d3.tree()
-      .size(tree_size)
-  //.nodeSize(max_size)
+  var tree = d3.flextree()//d3.tree()
+      .nodeSize(node => [node._size.width + 10, node._size.height + 25])
+      //.size(tree_size)
+      //.nodeSize(max_size)
   (root);
 
   // Move new nodes to their starting positions
@@ -599,6 +619,14 @@ function change_debug_mode(enable) {
 }
 
 function init() {
+  var viewport = d3.select("#editor_viewport");
+  var width = viewport.attr("width");
+  var tmpzoom = d3.zoom();
+  d3.select("#editor_viewport")
+    .call(tmpzoom)
+    .call(tmpzoom.translateTo, width * 0.5, 10.0);
+  d3.select("#container")
+    .attr("transform","translate("+ width*0.5 + ",10)");
   window.ros = new ROSLIB.Ros({
     url : 'ws://10.211.55.3:9090'
   });
