@@ -225,9 +225,7 @@ function onTreeUpdate(tree_msg) {
 
 
   var svg = d3.select("svg")
-      .call(d3.zoom().scaleExtent([0.3, 1.0]).on("zoom", function () {
-        svg.attr("transform", d3.event.transform)
-      })).select("#container");
+      .select("#container");
 
 
   var container = d3.select("#editor_viewport");
@@ -240,7 +238,6 @@ function onTreeUpdate(tree_msg) {
     .enter()
     .append("g")
     .attr("class", "edges")
-    //.attr("transform", "translate(0,40)")
     .merge(g_edge);
 
   var g_vertex = svg.selectAll("g.vertices").data([null]);
@@ -248,7 +245,6 @@ function onTreeUpdate(tree_msg) {
     .enter()
     .append("g")
     .attr("class", "vertices")
-    //.attr("transform", "translate(0,40)")
     .merge(g_vertex);
 
   var node = g_vertex
@@ -286,20 +282,14 @@ function onTreeUpdate(tree_msg) {
       rect.width /= zoom;
       rect.height /= zoom;
       d._size = rect;
-      max_size[0] = Math.max(max_size[0], rect.width);
-      max_size[1] = Math.max(max_size[1], rect.height);
       this.parentElement.setAttribute('width', rect.width);
       this.parentElement.setAttribute('height', rect.height);
     });
-  //max_size = [max_size[0] + 30, max_size[1] + 30];
-  // Calculate node positions
 
   var tree_size = [width - max_size[0], height - (40 + max_size[1])];
 
-  var tree = d3.flextree()//d3.tree()
+  var tree = d3.flextree()
       .nodeSize(node => [node._size.width + 10, node._size.height + 25])
-      //.size(tree_size)
-      //.nodeSize(max_size)
   (root);
 
   // Move new nodes to their starting positions
@@ -622,11 +612,13 @@ function init() {
   var viewport = d3.select("#editor_viewport");
   var width = viewport.attr("width");
   var tmpzoom = d3.zoom();
+  var container = d3.select("#container");
+
   d3.select("#editor_viewport")
-    .call(tmpzoom)
-    .call(tmpzoom.translateTo, width * 0.5, 10.0);
-  d3.select("#container")
-    .attr("transform","translate("+ width*0.5 + ",10)");
+      .call(tmpzoom.scaleExtent([0.3, 1.0]).on("zoom", function () {
+        container.attr("transform", d3.event.transform)
+      }))
+    .call(tmpzoom.translateBy, width * 0.5, 10.0);
   window.ros = new ROSLIB.Ros({
     url : 'ws://10.211.55.3:9090'
   });
