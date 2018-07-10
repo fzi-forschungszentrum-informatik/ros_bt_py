@@ -422,7 +422,7 @@ var updateNodes = function(selection) {
       inputs: d.data.inputs || [],
       outputs: d.data.outputs || [],
       options: d.data.options || []
-    });
+    }).filter(x => x.value.length > 0);
   }, d => d.key);
   tables = tables.enter().append("table").attr("class", d => [d.key]).merge(tables);
 
