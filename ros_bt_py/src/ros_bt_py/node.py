@@ -18,6 +18,11 @@ from ros_bt_py.node_data import NodeData, NodeDataMap
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
+def _required(meth):
+    meth._required = True
+    return meth
+
+
 def define_bt_node(node_config):
     """Provide information about this Node's interface
 
@@ -35,6 +40,23 @@ def define_bt_node(node_config):
             if hasattr(base, 'node_config') and base.node_config:
                 node_config.extend(base.node_config)
         node_class.node_config = node_config
+
+        required = set()
+        for member in dir(Node):
+            if hasattr(getattr(Node, member), '_required'):
+                required.add(member)
+
+        for method_name in required:
+            base_method = getattr(Node, method_name)
+            subclass_method = getattr(node_class, method_name)
+            if subclass_method.__code__ == base_method.__code__:
+                # Don't register the class if it doesn't implement all required
+                # methods
+                rospy.logdebug('Assigned NodeData to class %s, but did not register '
+                               'the class because it does not implement all required methods',
+                               node_class.__name__)
+                return node_class
+
         if node_class.__module__ not in Node.node_classes:
             Node.node_classes[node_class.__module__] = {
                 node_class.__name__: node_class
@@ -166,6 +188,7 @@ class Node(object):
         self.state = self._do_setup()
         self._setup_called = True
 
+    @_required
     def _do_setup(self):
         """Use this to do custom node setup.
 
@@ -269,6 +292,7 @@ class Node(object):
                                      action_name,
                                      str(allowed_states)))
 
+    @_required
     def _do_tick(self):
         """
         Every Node class must override this.
@@ -306,6 +330,7 @@ class Node(object):
 
         self.outputs.reset_updated()
 
+    @_required
     def _do_untick(self):
         """This is called by :meth:`untick` - override it!
 
@@ -336,6 +361,7 @@ class Node(object):
         self.raise_if_in_invalid_state(allowed_states=[NodeMsg.IDLE],
                                        action_name='reset()')
 
+    @_required
     def _do_reset(self):
         """
         This is called to reset the node to its initial state.
@@ -381,6 +407,7 @@ class Node(object):
                          'List of not-shutdown children and states:\n' +
                          '\n'.join(unshutdown_children))
 
+    @_required
     def _do_shutdown(self):
         """This is called before destroying the node.
 
