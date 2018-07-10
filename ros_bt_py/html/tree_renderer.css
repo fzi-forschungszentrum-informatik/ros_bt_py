@@ -33,6 +33,16 @@
   color: #eff0f4;
 }
 
+.node_list{
+  font-family: sans-serif;
+  display: inline-block;
+  background: #2a2d36;
+  border: solid;
+  border-width: 6px;
+  border-color: #4E5666;
+  color: #eff0f4;
+}
+
 tbody {
   color: #CECFD2;
 }

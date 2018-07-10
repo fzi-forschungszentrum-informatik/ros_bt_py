@@ -13,7 +13,7 @@
   <div id="controls" class="box">
     <h4>Controls</h4>
     <div>
-      <input type="checkbox" id="debugging" onchange="change_debug_mode(this.checked);">
+      <input type="checkbox" id="debugging" onchange="change_debug_mode(this.checked);" />
       <label for="debugging">Debug</label>
     </div>
     <button onclick="step()">Step</button>
@@ -40,10 +40,19 @@
     <select id="node_delete_selector" name="node_delete_selector">
     </select>
     <div>
-      <input type="checkbox" id="node_delete_children">
+      <input type="checkbox" id="node_delete_children" />
       <label for="node_delete_children">Delete Children</label>
     </div>
     <button id="delete_node_btn" onclick="delete_node()">Delete Node</button>
+  </div>
+  <div class="box">
+    <h4>Available Nodes</h4>
+    <button id="refresh" onclick="get_nodes();">Refresh</button>
+    <div>
+      <input type="text" id="package_name" value="ros_bt_py.nodes.sequence" />
+      <button id="load_package" onclick="get_nodes_for_package();">Load package</button>
+    </div>
+    <div id="node_list" />
   </div>
 </body>
 </html>

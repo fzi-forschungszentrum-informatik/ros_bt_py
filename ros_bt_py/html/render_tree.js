@@ -608,6 +608,48 @@ function change_debug_mode(enable) {
     });
 }
 
+function get_nodes_for_package()
+{
+  var package_name = d3.select('#package_name').node().value;
+  get_nodes(package_name);
+}
+
+function get_nodes(package_name='')
+{
+  new ROSLIB.Service({
+    ros: ros,
+    name: '/tree_node/get_available_nodes',
+    serviceType: 'ros_bt_py_msgs/GetAvailableNodes'
+  }).callService(
+    new ROSLIB.ServiceRequest({
+      node_modules: [package_name]
+    }),
+    function(response) {
+      if (response.success) {
+        // display nodes
+        var selection = d3.select('#node_list')
+          .selectAll('table')
+          .data(response.available_nodes, x => x.module+x.node_class);
+        selection.exit().remove();
+
+        selection = selection.enter().append('table').attr('class', 'box').merge(selection);
+        var rows = selection.selectAll('tr').data(d => d3.entries(d)
+                                                  .filter(
+                                                    x => x.value.toString().length > 0));
+        rows = rows.enter().append('tr').merge(rows);
+        var keys = rows.selectAll('td').data(d => [d.key]);
+        keys = keys.enter().append('td').merge(keys);
+        keys.text(d => d);
+        var values = rows.selectAll('pre').data(d => [JSON.stringify(d.value, null, 2)]);
+        values = values.enter().append('td').append('pre').merge(values);
+        values.text(d => d);
+      }
+      else {
+        console.log('Failed to get list of nodes: ' + response.error_message);
+      }
+    });
+}
+
 function init() {
   var viewport = d3.select("#editor_viewport");
   var width = viewport.attr("width");
@@ -631,6 +673,8 @@ function init() {
     // Then we add a callback to be called every time a message is published on this topic.
     listener.subscribe(onTreeUpdate);
     console.log('Connected & subscribed');
+    // fill list of available nodes
+    get_nodes();
   });
 }
 
