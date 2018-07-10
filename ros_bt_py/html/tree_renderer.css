@@ -64,7 +64,9 @@ tbody tr:hover {
 }
 
 td {
-  //border: solid;
+/*
+  border: solid;
+*/
   vertical-align: top;
 }
 
