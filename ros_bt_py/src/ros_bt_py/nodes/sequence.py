@@ -87,11 +87,11 @@ class Sequence(FlowControl):
                                                   for child in self.children)):
                 # We can only provide an estimate if all children have an estimate
                 # TODO(nberg): Maybe relax this?
-                have_bounds = (have_bounds
-                               and child_bounds.has_lower_bound_success
-                               and child_bounds.has_upper_bound_success
-                               and child_bounds.has_lower_bound_failure
-                               and child_bounds.has_upper_bound_failure)
+                have_bounds = (have_bounds and
+                               child_bounds.has_lower_bound_success and
+                               child_bounds.has_upper_bound_success and
+                               child_bounds.has_lower_bound_failure and
+                               child_bounds.has_upper_bound_failure)
                 if index == 0:
                     bounds.has_lower_bound_success = child_bounds.has_lower_bound_success
                     bounds.lower_bound_success = child_bounds.lower_bound_success

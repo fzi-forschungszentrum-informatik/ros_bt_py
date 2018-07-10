@@ -520,8 +520,8 @@ class TreeManager(object):
                     response.error_message = str(e)
                     response.tree_state = self.tree_msg.state
 
-        elif (request.command == ControlTreeExecutionRequest.TICK_PERIODICALLY
-              or request.command == ControlTreeExecutionRequest.TICK_UNTIL_RESULT):
+        elif (request.command == ControlTreeExecutionRequest.TICK_PERIODICALLY or
+              request.command == ControlTreeExecutionRequest.TICK_UNTIL_RESULT):
             if self._tick_thread.is_alive() or self.tree_msg.state == Tree.TICKING:
                 response.success = False
                 response.error_message = ('Tried to start periodic ticking when tree is '
