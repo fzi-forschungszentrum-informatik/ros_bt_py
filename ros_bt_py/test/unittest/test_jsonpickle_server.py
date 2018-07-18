@@ -29,4 +29,3 @@ class TestJsonpickleServer(unittest.TestCase):
 
         self.assertTrue(res.success)
         self.assertEqual(jsonpickle.decode(res.serialized_instance), Node)
-

@@ -18,8 +18,8 @@ def get_jsonpickle_instance(request):
         instance = requested_type()
     except AttributeError as e:
         res.success = False
-        res.error_message = 'Unable to construct instance from given type: {}' \
-          .format(str(e))
+        res.error_message = ('Unable to construct instance from given type: ' +
+                             str(e))
         return res
 
     res.serialized_instance = jsonpickle.encode(instance)
