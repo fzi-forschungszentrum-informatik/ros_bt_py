@@ -1,0 +1,5 @@
+string serialized_type
+---
+bool success
+string error_message
+string serialized_instance

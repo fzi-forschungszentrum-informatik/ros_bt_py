@@ -30,6 +30,7 @@ add_service_files(
   EvaluateUtility.srv
   GetAvailableNodes.srv
   GetAvailableSubtrees.srv
+  GetJsonpickleInstance.srv
   InsertNode.srv
   LoadTree.srv
   ModifyBreakpoints.srv
