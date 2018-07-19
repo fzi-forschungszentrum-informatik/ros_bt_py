@@ -42,26 +42,32 @@ def define_bt_node(node_config):
     class. You should not need to register anything manually!
     """
     def inner_dec(node_class):
+        if not issubclass(node_class, Node):
+            rospy.logerr(
+                'Class %s is not a subclass of Node, cannot apply define_bt_node decorator!',
+                node_class.__name__)
+            raise TypeError()
+
+        # Merge supplied node config with those of base classes
         for base in node_class.__bases__:
             if hasattr(base, 'node_config') and base.node_config:
                 node_config.extend(base.node_config)
         node_class.node_config = node_config
 
-        required = set()
-        for member in dir(Node):
-            if hasattr(getattr(Node, member), '_required'):
-                required.add(member)
+        # Find unimplemented required methods
+        missing_methods = set()
+        for member in dir(node_class):
+            if getattr(getattr(node_class, member, None), '_required', False):
+                missing_methods.add(member)
 
-        for method_name in required:
-            base_method = getattr(Node, method_name)
-            subclass_method = getattr(node_class, method_name)
-            if subclass_method.__code__ == base_method.__code__:
-                # Don't register the class if it doesn't implement all required
-                # methods
-                rospy.logdebug('Assigned NodeData to class %s, but did not register '
-                               'the class because it does not implement all required methods',
-                               node_class.__name__)
-                return node_class
+        if missing_methods:
+            # Don't register the class if it doesn't implement all required
+            # methods
+            rospy.logdebug('Assigned NodeData to class %s, but did not register '
+                           'the class because it does not implement all required methods. '
+                           'Missing methods: %s',
+                           node_class.__name__, str(missing_methods))
+            return node_class
 
         if node_class.__module__ not in Node.node_classes:
             Node.node_classes[node_class.__module__] = {
