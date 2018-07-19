@@ -1,3 +1,6 @@
+import importlib
+import pkgutil
+
 import unittest
 
 
@@ -11,10 +14,12 @@ class TestNodeImport(unittest.TestCase):
     """
 
     def testNodeImport(self):
-        from ros_bt_py.nodes.getters import GetListItem
-        from ros_bt_py.nodes.action import Action
-        from ros_bt_py.nodes.fallback import Fallback
-        from ros_bt_py.nodes.mock_nodes import MockLeaf
-        from ros_bt_py.nodes.passthrough_node import PassthroughNode
-        from ros_bt_py.nodes.sequence import Sequence
-        from ros_bt_py.nodes.topic import TopicSubscriber, TopicPublisher
+        """Find and import all submodules of ros_bt_py.nodes
+
+        This doesn't check much, just that we made no egregious errors
+        using define_bt_node.
+        """
+        import ros_bt_py.nodes
+        for _, name, _ in pkgutil.walk_packages(
+                ros_bt_py.nodes.__path__):
+            importlib.import_module(ros_bt_py.nodes.__name__ + '.' + name)
