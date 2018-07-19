@@ -19,6 +19,12 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
 def _required(meth):
+    """Mark a method as required.
+
+    Not using :module:`abc` here because a subclass with missing
+    methods could still be instantiated and used, just not as part of
+    a BT.
+    """
     meth._required = True
     return meth
 
@@ -727,8 +733,8 @@ class Node(object):
 
         :returns:
 
-        A tuple consisting of a `ros_bt_py_msgs.msg.Tree` message and a
-        list of `ros_bt_py_msgs.msg.NodeDataWiring` messages
+        A tuple consisting of a :class:`ros_bt_py_msgs.msg.Tree` message and a
+        list of :class:`ros_bt_py_msgs.msg.NodeDataWiring` messages
         (external_connections). The latter can be used to determine what
         parameters need to be forwarded to / from the remote executor if
         the subtree is to be executed remotely.

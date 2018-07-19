@@ -111,18 +111,6 @@ class TreeManager(object):
 
         self.publish_info()
 
-    def load_tree_from_string(self, tree_string):
-        # fill initial list of nodes with all the nodes that have no parent
-
-        # for each node in list
-
-        # add its children to list
-
-        # reverse list
-
-        # create nodes, adding children as needed
-        pass
-
     def publish_info(self, debug_info_msg=None):
         """Publish the current tree state using the callback supplied to the constructor
 
@@ -157,15 +145,30 @@ class TreeManager(object):
         return possible_roots[0]
 
     def tick_report_exceptions(self):
+        """Wrap :meth:`TreeManager.tick()` and catch *all* errors"""
         try:
             self.tick()
         except Exception, e:
+            # TODO(nberg): don't catch the ROSException that is raised on shutdown
             rospy.logerr('Encountered error while ticking tree: %s', e)
             with self._state_lock:
                 self._last_error = e
                 self.tree_msg.state = Tree.ERROR
 
     def tick(self, once=None):
+        """Execute a tick, starting from the tree's root.
+
+        This behaves differently based on the current configuration of
+        the `TreeManager` - it can tick once, continuously, until the
+        tree reports a result (either SUCCEEDED or FAILED).
+
+        Each of those can be done in debug mode (i.e. requiring a call
+        of :meth:`TreeManager.debug_step()` after each node's tick)
+        too.
+
+        This method should *NOT* be called directly, but rather
+        triggered via :meth:`TreeManager.control_execution()`!
+        """
         if once is not None:
             self._once = once
 
@@ -370,7 +373,6 @@ class TreeManager(object):
         """Set the parameters of our :class:`DebugManager`
 
         :param request ros_bt_msgs.srv.SetExecutionModeRequest:
-
         """
         self.debug_manager.set_execution_mode(
             request.single_step,
@@ -402,8 +404,10 @@ class TreeManager(object):
 
         :param ros_bt_py_msgs.srv.ControlTreeExecutionRequest request:
 
-        Can request a tick, periodic ticking, or to stop or reset the
-        entire tree.
+        Can request a tick, periodic ticking, periodic ticking until
+        the root node reports a result (SUCCEEDED or FAILED), or to
+        stop or reset the entire tree.
+
         """
         response = ControlTreeExecutionResponse(success=False)
         if self._tick_thread is not None:
