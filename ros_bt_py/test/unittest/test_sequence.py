@@ -133,16 +133,16 @@ class TestSequence(unittest.TestCase):
         cheap_success_bounds = self.cheap_success.calculate_utility()
         cheap_fail_bounds = self.cheap_fail.calculate_utility()
         expected_bounds.lower_bound_success = (
-            cheap_success_bounds.lower_bound_success +
-            cheap_fail_bounds.lower_bound_success )
+            cheap_success_bounds.lower_bound_success +  # 1.0
+            cheap_fail_bounds.lower_bound_success)      # 5.0
         expected_bounds.upper_bound_success = (
-            cheap_success_bounds.upper_bound_success +
-            cheap_fail_bounds.upper_bound_success )
+            cheap_success_bounds.upper_bound_success +  # 2.0
+            cheap_fail_bounds.upper_bound_success)      # 10.0
         expected_bounds.lower_bound_failure = (
             cheap_success_bounds.lower_bound_success +  # 1.0
-            cheap_fail_bounds.lower_bound_failure )     # 1.0
+            cheap_fail_bounds.lower_bound_failure)      # 1.0
         expected_bounds.upper_bound_failure = (
-            cheap_success_bounds.upper_bound_failure )  # 10.0
+            cheap_success_bounds.upper_bound_failure)   # 10.0
 
         self.assertEqual(self.sequence.calculate_utility(),
                          expected_bounds)
