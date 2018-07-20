@@ -1,4 +1,5 @@
 from ros_bt_py_msgs.msg import Node as NodeMsg
+from ros_bt_py_msgs.msg import UtilityBounds
 
 from ros_bt_py.exceptions import NodeConfigError
 from ros_bt_py.node import Leaf, define_bt_node
@@ -58,3 +59,29 @@ class MockLeaf(Leaf):
 
     def _do_shutdown(self):
         self.outputs['current_index'] = 0
+
+
+@define_bt_node(NodeConfig(
+    options={'utility_lower_bound_success' : float,
+             'utility_upper_bound_success' : float,
+             'utility_lower_bound_failure' : float,
+             'utility_upper_bound_failure' : float},
+    inputs={},
+    outputs={'calculate_utility_count': int},
+    max_children=0))
+class MockUtilityLeaf(Leaf):
+    def _do_calculate_utility(self):
+        if self.outputs['calculate_utility_count']:
+            self.outputs['calculate_utility_count'] += 1
+        else:
+            self.outputs['calculate_utility_count'] = 1
+        return UtilityBounds(
+            has_lower_bound_success=True,
+            lower_bound_success=self.options['utility_lower_bound_success'],
+            has_upper_bound_success=True,
+            upper_bound_success=self.options['utility_upper_bound_success'],
+            has_lower_bound_failure=True,
+            lower_bound_failure=self.options['utility_lower_bound_failure'],
+            has_upper_bound_failure=True,
+            upper_bound_failure=self.options['utility_upper_bound_failure'])
+

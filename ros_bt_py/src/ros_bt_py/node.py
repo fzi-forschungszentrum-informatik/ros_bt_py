@@ -431,7 +431,7 @@ class Node(object):
         self.logerr(msg)
         raise NotImplementedError(msg)
 
-    def calculate_utlity(self):
+    def calculate_utility(self):
         """Calculate the utility bounds for this node.
 
         Unlike the other node functions, there is a default

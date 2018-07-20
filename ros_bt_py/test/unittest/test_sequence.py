@@ -1,8 +1,9 @@
+from copy import deepcopy
 import unittest
 
-from ros_bt_py_msgs.msg import Node
+from ros_bt_py_msgs.msg import Node, UtilityBounds
 
-from ros_bt_py.nodes.mock_nodes import MockLeaf
+from ros_bt_py.nodes.mock_nodes import MockLeaf, MockUtilityLeaf
 from ros_bt_py.nodes.sequence import Sequence
 
 
@@ -20,6 +21,22 @@ class TestSequence(unittest.TestCase):
                                options={'output_type': int,
                                         'state_values': [Node.RUNNING],
                                         'output_values': [1]})
+
+        self.cheap_fail = MockUtilityLeaf(
+            name='cheap_fail',
+            options={
+                'utility_lower_bound_success': 5.0,
+                'utility_upper_bound_success': 10.0,
+                'utility_lower_bound_failure': 1.0,
+                'utility_upper_bound_failure': 2.0})
+        self.cheap_success = MockUtilityLeaf(
+            name='cheap_success',
+            options={
+                'utility_lower_bound_success': 1.0,
+                'utility_upper_bound_success': 2.0,
+                'utility_lower_bound_failure': 5.0,
+                'utility_upper_bound_failure': 10.0})
+
         self.sequence = Sequence()
 
     def testEmptyTickFails(self):
@@ -70,3 +87,62 @@ class TestSequence(unittest.TestCase):
         self.assertEqual(self.succeeder.state, Node.SUCCEEDED)
         self.assertEqual(inner_sequence.state, Node.SUCCEEDED)
         self.assertEqual(self.sequence.state, Node.SUCCEEDED)
+
+    def testCalculateUtility(self):
+        self.sequence.add_child(self.cheap_fail)
+
+        self.assertEqual(self.sequence.calculate_utility(),
+                         self.cheap_fail.calculate_utility())
+
+        cheap_fail_2 = deepcopy(self.cheap_fail)
+        cheap_fail_2.name = 'cheap_fail_2'
+        self.sequence.add_child(cheap_fail_2)
+        cheap_fail_bounds = self.cheap_fail.calculate_utility()
+        expected_bounds = UtilityBounds(has_lower_bound_success=True,
+                                        has_upper_bound_success=True,
+                                        has_lower_bound_failure=True,
+                                        has_upper_bound_failure=True)
+
+        # Upper and lower bounds for success should be the sum of the
+        # children's bounds
+        expected_bounds.lower_bound_success = cheap_fail_bounds.lower_bound_success * 2.0
+        expected_bounds.upper_bound_success = cheap_fail_bounds.upper_bound_success * 2.0
+        # Lower bound for failure is the same as for a single node
+        # (i.e. first child fails as cheaply as possible)
+        expected_bounds.lower_bound_failure = cheap_fail_bounds.lower_bound_failure
+        # Upper bound for failure is sum of upper *success* bounds for
+        # all children but the last, plus upper *failure* bound for
+        # the last child. In our case, that's one failing and one
+        # succeeding child.
+        expected_bounds.upper_bound_failure = (
+            cheap_fail_bounds.upper_bound_success +
+            cheap_fail_bounds.upper_bound_failure)
+
+        self.assertEqual(self.sequence.calculate_utility(),
+                         expected_bounds)
+
+    def testUtilityWithDifferentChildren(self):
+        self.sequence.add_child(self.cheap_success)
+        self.sequence.add_child(self.cheap_fail)
+
+        expected_bounds = UtilityBounds(has_lower_bound_success=True,
+                                        has_upper_bound_success=True,
+                                        has_lower_bound_failure=True,
+                                        has_upper_bound_failure=True)
+
+        cheap_success_bounds = self.cheap_success.calculate_utility()
+        cheap_fail_bounds = self.cheap_fail.calculate_utility()
+        expected_bounds.lower_bound_success = (
+            cheap_success_bounds.lower_bound_success +
+            cheap_fail_bounds.lower_bound_success )
+        expected_bounds.upper_bound_success = (
+            cheap_success_bounds.upper_bound_success +
+            cheap_fail_bounds.upper_bound_success )
+        expected_bounds.lower_bound_failure = (
+            cheap_success_bounds.lower_bound_success +  # 1.0
+            cheap_fail_bounds.lower_bound_failure )     # 1.0
+        expected_bounds.upper_bound_failure = (
+            cheap_success_bounds.upper_bound_failure )  # 10.0
+
+        self.assertEqual(self.sequence.calculate_utility(),
+                         expected_bounds)

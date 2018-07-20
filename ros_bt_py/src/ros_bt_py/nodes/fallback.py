@@ -72,8 +72,10 @@ class Fallback(FlowControl):
     def _do_calculate_utility(self):
         bounds = UtilityBounds(has_lower_bound_success=False,
                                has_upper_bound_success=False,
-                               has_lower_bound_failure=False,
-                               has_upper_bound_failure=False)
+                               has_lower_bound_failure=True,
+                               lower_bound_failure=0.0,
+                               has_upper_bound_failure=True,
+                               upper_bound_failure=0.0)
         if self.children:
             # To figure out the best and worst case cost for success and
             # failure, respectively, we need to figure out the cheapest and
@@ -98,7 +100,7 @@ class Fallback(FlowControl):
                                             lower_bound_success=0,
                                             has_upper_bound_success=False,
                                             upper_bound_success=0)
-                              for _ in range(len(self.children))]
+                              for _ in self.children]
             for index, child_bounds in enumerate((child.calculate_utility()
                                                   for child in self.children)):
                 # We can only provide an estimate if all children have an estimate
@@ -108,11 +110,11 @@ class Fallback(FlowControl):
                                child_bounds.has_upper_bound_success and
                                child_bounds.has_lower_bound_failure and
                                child_bounds.has_upper_bound_failure)
-                if index == 0:
-                    bounds.has_lower_bound_failure = child_bounds.has_lower_bound_failure
-                    bounds.lower_bound_failure = child_bounds.lower_bound_failure
-                    bounds.has_upper_bound_failure = child_bounds.has_upper_bound_failure
-                    bounds.upper_bound_failure = child_bounds.upper_bound_failure
+
+                bounds.has_lower_bound_failure &= child_bounds.has_lower_bound_failure
+                bounds.lower_bound_failure += child_bounds.lower_bound_failure
+                bounds.has_upper_bound_failure &= child_bounds.has_upper_bound_failure
+                bounds.upper_bound_failure += child_bounds.upper_bound_failure
 
                 success_bounds[index].lower_bound_success += child_bounds.lower_bound_success
                 success_bounds[index].upper_bound_success += child_bounds.upper_bound_success
@@ -124,7 +126,7 @@ class Fallback(FlowControl):
 
             # Select the minimum and maximum values to get the final bounds
             bounds.lower_bound_success = min((x.lower_bound_success for x in success_bounds))
-            bounds.upper_bound_success = min((x.upper_bound_success for x in success_bounds))
+            bounds.upper_bound_success = max((x.upper_bound_success for x in success_bounds))
 
             # Check if we actually have bounds
             bounds.has_lower_bound_success = have_bounds
