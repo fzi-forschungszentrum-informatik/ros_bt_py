@@ -158,17 +158,28 @@ class TestFallback(unittest.TestCase):
 
         cheap_fail_bounds = self.cheap_fail.calculate_utility()
         cheap_success_bounds = self.cheap_success.calculate_utility()
-        expected_bounds.lower_bound_success = (
-            cheap_fail_bounds.lower_bound_failure +    # 1.0
-            cheap_success_bounds.lower_bound_success)  # 1.0
-        expected_bounds.upper_bound_success = (
-            cheap_fail_bounds.upper_bound_success)     # 10.0
+        # Possible Outcomes:
+        # | Child 1 | Child 2 | Fallback | Utility 1 | Utility 2 | Utility |
+        # |---------+---------+----------+-----------+-----------+---------|
+        # | SUCCESS | -       | SUCCESS  | 5 / 10    | - / -     | 5 / 10  |
+        # | FAILURE | SUCCESS | SUCCESS  | 1 / 2     | 1 / 2     | 2 / 4   |
+        # | FAILURE | FAILURE | FAILURE  | 1 / 2     | 5 / 10    | 6 / 12  |
+        #
+        # There's only one way to fail, so those bounds are easy:
         expected_bounds.lower_bound_failure = (
             cheap_fail_bounds.lower_bound_failure +    # 1.0
             cheap_success_bounds.lower_bound_failure)  # 5.0
         expected_bounds.upper_bound_failure = (
             cheap_fail_bounds.upper_bound_failure +    # 1.0
-            cheap_success_bounds.upper_bound_failure)  # 5.0
+            cheap_success_bounds.upper_bound_failure)  # 10.0
+        # Counterintuitively, the "cheapest" way to success is to
+        # execute both children:
+        expected_bounds.lower_bound_success = (
+            cheap_fail_bounds.lower_bound_failure +    # 1.0
+            cheap_success_bounds.lower_bound_success)  # 1.0
+        # And the most "expensive" one is having the first child fail.
+        expected_bounds.upper_bound_success = (
+            cheap_fail_bounds.upper_bound_success)     # 10.0
 
         self.assertEqual(self.fallback.calculate_utility(),
                          expected_bounds)
