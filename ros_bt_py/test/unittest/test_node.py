@@ -1,3 +1,4 @@
+from copy import deepcopy
 import jsonpickle
 import random
 import unittest
@@ -48,6 +49,47 @@ class TestNode(unittest.TestCase):
 
     def testMissingOption(self):
         self.assertRaises(ValueError, PassthroughNode)
+
+
+class TestNodeConfig(unittest.TestCase):
+    def setUp(self):
+        self.conf = NodeConfig(
+            options={'float_option': float},
+            inputs={'int_input': int},
+            outputs={'str_output': str},
+            max_children=42)
+
+    def testDetectDuplicates(self):
+        duplicate_option = NodeConfig(options=deepcopy(self.conf.options),
+                                      inputs={},
+                                      outputs={},
+                                      max_children=42)
+        duplicate_input = NodeConfig(options={},
+                                     inputs=deepcopy(self.conf.inputs),
+                                     outputs={},
+                                     max_children=42)
+        duplicate_output = NodeConfig(options={},
+                                      inputs={},
+                                      outputs=deepcopy(self.conf.outputs),
+                                      max_children=42)
+
+        wrong_num_children = NodeConfig(options={'new_option': int},
+                                        inputs={},
+                                        outputs={},
+                                        max_children=23)
+
+        conf_original = deepcopy(self.conf)
+        self.assertRaises(KeyError, self.conf.extend, duplicate_option)
+        self.assertEqual(self.conf, conf_original)
+
+        self.assertRaises(KeyError, self.conf.extend, duplicate_input)
+        self.assertEqual(self.conf, conf_original)
+
+        self.assertRaises(KeyError, self.conf.extend, duplicate_output)
+        self.assertEqual(self.conf, conf_original)
+
+        self.assertRaises(ValueError, self.conf.extend, wrong_num_children)
+        self.assertEqual(self.conf, conf_original)
 
 
 class TestPassthroughNode(unittest.TestCase):
