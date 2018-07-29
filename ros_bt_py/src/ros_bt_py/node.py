@@ -467,6 +467,23 @@ class Node(object):
         """
         pass
 
+    def get_child_index(self, child_name):
+        """Get the index in the `children` array of the child with the given
+        name.
+
+        This is useful if you want to replace a child with another node.
+
+        :returns:
+
+        An integer index if a child with the given name exists, `None`
+        if there's no such child
+
+        """
+        try:
+            return [child.name for child in self.children].index(child_name)
+        except ValueError:
+            return None
+
     def add_child(self, child, at_index=None):
         """Add a child to this node at the given index
 
@@ -497,12 +514,17 @@ class Node(object):
         return self
 
     def move_child(self, child_name, new_index):
-        """
-        Move the child with the name `child_name` to `new_index`
+        """Move the child with the name `child_name` to `new_index`
 
-        :raises: IndexError if `new_index` is invalid
+        :raises:
+
+        IndexError if `new_index` is invalid, KeyError if no child
+        with the name `child_name` exists
+
         """
-        old_index = (child.name for child in self.children).index(child_name)
+        old_index = self.get_child_index(child_name)
+        if old_index is None:
+            raise KeyError('Node %s has no child named "%s"' % (self.name, child_name))
         self.children[old_index], self.children[new_index] = \
             self.children[new_index], self.children[old_index]
 
@@ -515,10 +537,11 @@ class Node(object):
         :returns: The child that was just removed
         :raises: KeyError if no child with that name exists
         """
-        try:
-            child_index = [child.name for child in self.children].index(child_name)
-        except ValueError:
+
+        child_index = self.get_child_index(child_name)
+        if child_index is None:
             raise KeyError('Node %s has no child named "%s"' % (self.name, child_name))
+
         tmp = self.children[child_index]
         del self.children[child_index]
         tmp.parent = None
@@ -872,7 +895,7 @@ class Node(object):
                     wiring.source.data_kind,
                     wiring.source.data_key,
                     source_map.get_type(wiring.source.data_key).__name__,
-                    wiring.target.node_.name,
+                    wiring.target.node_name,
                     wiring.target.data_kind,
                     wiring.target.data_key,
                     expected_type)))

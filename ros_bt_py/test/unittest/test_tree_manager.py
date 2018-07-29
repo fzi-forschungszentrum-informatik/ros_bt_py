@@ -513,6 +513,59 @@ class TestTreeManager(unittest.TestCase):
         node = self.tree_msg.nodes[0]
         self.assertEqual(node.options[0].serialized_value, jsonpickle.encode(str))
 
+    def testSetOptionsWithWirings(self):
+        # Add a Sequence with two children
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.sequence_msg))))
+        self.node_msg.name = 'child1'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           parent_name='Sequence',
+                           node=self.node_msg))))
+        self.node_msg.name = 'child2'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           parent_name='Sequence',
+                           node=self.node_msg))))
+        wire_request = WireNodeDataRequest(tree_name='')
+        wire_request.wirings.append(NodeDataWiring(
+            source=NodeDataLocation(
+                node_name='child1',
+                data_kind=NodeDataLocation.OUTPUT_DATA,
+                data_key='out'),
+            target=NodeDataLocation(
+                node_name='child2',
+                data_kind=NodeDataLocation.INPUT_DATA,
+                data_key='in')))
+
+        self.assertTrue(get_success(self.manager.wire_data(wire_request)))
+
+        # Should work - the new value is the same as the old one, so
+        # it definitely works
+        self.assertTrue(get_success(self.manager.set_options(SetOptionsRequest(
+            tree_name='',
+            node_name='child1',
+            options=[NodeData(key='passthrough_type',
+                              serialized_value=jsonpickle.encode(int))]))))
+
+        # Should fail because the wiring cannot be re-established
+        # (child1.out is now a str, but child2.in still expects an
+        # int)
+        self.assertFalse(get_success(self.manager.set_options(SetOptionsRequest(
+            tree_name='',
+            node_name='child1',
+            options=[NodeData(key='passthrough_type',
+                              serialized_value=jsonpickle.encode(str))]))))
+
+        # The failed attempt should reset everything to the way it was
+        # before, so this must still work
+        self.assertTrue(get_success(self.manager.set_options(SetOptionsRequest(
+            tree_name='',
+            node_name='child1',
+            options=[NodeData(key='passthrough_type',
+                              serialized_value=jsonpickle.encode(int))]))))
+
     def testEnforceEditable(self):
         add_request = AddNodeRequest(tree_name='',
                                      node=self.node_msg)

@@ -764,8 +764,9 @@ class TreeManager(object):
             deserialized_options = dict((option.key, jsonpickle.decode(option.serialized_value))
                                         for option in request.options)
         except ValueError, e:
-            return SetOptionsResponse(success=False,
-                                      error_message='Failed to deserialize option value: %s' % str(e))
+            return SetOptionsResponse(
+                success=False,
+                error_message='Failed to deserialize option value: %s' % str(e))
         # Find any options values that
         # a) the node does not expect
         # b) have the wrong type
@@ -792,9 +793,108 @@ class TreeManager(object):
                 success=False,
                 error_message='\n'.join(error_strings))
 
-        for key, value in deserialized_options.iteritems():
-            node.options[key] = value
+        # Because options are used at construction time, we need to
+        # construct a new node with the new options.
 
+        # First, we need to add the option values that didn't change
+        # to our dict:
+        for key in node.options:
+            if key not in deserialized_options:
+                deserialized_options[key] = node.options[key]
+        # Now we can construct the new node - no need to call setup,
+        # since we're guaranteed to be in the edit state
+        # (i.e. `root.setup()` will be called before anything that
+        # needs the node to be set up)
+        new_node = node.__class__(options=deserialized_options,
+                                  name=node.name,
+                                  debug_manager=node.debug_manager)
+
+        # Use this request to unwire any data connections the existing
+        # node has - if we didn't do this, the node wouldn't ever be
+        # garbage collected, among other problems.
+        #
+        # We'll use the same request to re-wire the connections to the
+        # new node (or the old one, if anything goes wrong).
+        wire_request = WireNodeDataRequest(
+            tree_name=self.tree_msg.name,
+            wirings=[wiring for wiring in self.tree_msg.data_wirings
+                     if (wiring.source.node_name == node.name or
+                         wiring.target.node_name == node.name)])
+
+        unwire_resp = self.unwire_data(wire_request)
+        if not unwire_resp.success:
+            return SetOptionsResponse(
+                success=False,
+                error_message='Failed to unwire data for node %s' % node.name)
+
+        parent = None
+        if node.parent:
+            parent = node.parent
+            # Remember the old index so we can insert the new instance at
+            # the same position
+            old_child_index = parent.get_child_index(node.name)
+
+            if old_child_index is None:
+                return SetOptionsResponse(
+                    success=False,
+                    error_message=('Parent of node %s claims to have no child with that name?!' %
+                                   node.name))
+
+            try:
+                parent.remove_child(node.name)
+            except KeyError as e:
+                error_message = ('Failed to remove old instance of node %s: %s' %
+                                 (node.name, str(e)))
+                rewire_resp = self.wire_data(wire_request)
+                if not rewire_resp.success:
+                    error_message += '\nAlso failed to restore data wirings!'
+
+                return SetOptionsResponse(
+                    success=False,
+                    error_message=error_message)
+
+            try:
+                parent.add_child(new_node, at_index=old_child_index)
+            except (KeyError, BehaviorTreeException) as e:
+                error_message = ('Failed to add new instance of node %s: %s' %
+                                 (node.name, str(e)))
+
+                try:
+                    parent.add_child(node, at_index=old_child_index)
+                    rewire_resp = self.wire_data(wire_request)
+                    if not rewire_resp.success:
+                        error_message += '\nAlso failed to restore data wirings!'
+                except (KeyError, BehaviorTreeException) as e:
+                    error_message += '\n Also failed to restore old node.'
+
+                return SetOptionsResponse(
+                    success=False,
+                    error_message=error_message)
+
+        # Add the new node to self.nodes
+        self.nodes[node.name] = new_node
+
+        # Re-wire all the data, just as it was before
+        rewire_resp = self.wire_data(wire_request)
+        if not rewire_resp.success:
+            error_message = 'Failed to re-wire data to new node %s' % new_node.name
+            # Try to undo everything
+            self.nodes[node.name] = node
+            if parent is not None:
+                try:
+                    parent.remove_child(new_node.name)
+                    parent.add_child(node)
+                except (KeyError, BehaviorTreeException) as e:
+                    error_message += '\nError restoring old node: %s' % str(e)
+            recovery_wire_response = self.wire_data(wire_request)
+            if not rewire_resp.success:
+                error_message += 'Failed to re-wire data to restored node %s' % new_node.name
+
+            return SetOptionsResponse(
+                success=False,
+                error_message=error_message)
+
+        # We made it!
         self.publish_info()
         return SetOptionsResponse(success=True)
 
