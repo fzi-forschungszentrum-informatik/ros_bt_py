@@ -50,9 +50,9 @@ def define_bt_node(node_config):
 
         # Merge supplied node config with those of base classes
         for base in node_class.__bases__:
-            if hasattr(base, 'node_config') and base.node_config:
-                node_config.extend(base.node_config)
-        node_class.node_config = node_config
+            if hasattr(base, '_node_config') and base._node_config:
+                node_config.extend(base._node_config)
+        node_class._node_config = node_config
 
         # Find unimplemented required methods
         missing_methods = set()
@@ -108,7 +108,7 @@ class Node(object):
         yield
 
     node_classes = {}
-    node_config = None
+    _node_config = None
 
     def __init__(self, options=None, debug_manager=None, name=None):
         """Prepare class members
@@ -148,8 +148,12 @@ class Node(object):
 
         self.debug_manager = debug_manager
 
-        if not self.node_config:
+        if not self._node_config:
             raise NodeConfigError('Missing node_config, cannot initialize!')
+
+        # Copy the class NodeConfig so we can mess with it (but we
+        # only should in very rare cases!)
+        self.node_config = deepcopy(self._node_config)
 
         self.options = NodeDataMap(name='options')
         self._register_node_data(source_map=self.node_config.options,

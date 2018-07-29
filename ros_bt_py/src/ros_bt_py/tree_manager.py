@@ -66,6 +66,13 @@ class TreeManager(object):
                  tick_frequency_hz=20.0,
                  publish_tree_callback=None,
                  publish_debug_info_callback=None):
+        self.publish_tree = publish_tree_callback
+        if self.publish_tree is None:
+            rospy.loginfo('No callback for publishing tree data provided.')
+        self.publish_debug_info = publish_debug_info_callback
+        if self.publish_debug_info is None:
+            rospy.loginfo('No callback for publishing debug data provided.')
+
         self.debug_manager = debug_manager
         if not self.debug_manager:
             rospy.loginfo('Tree manager instantiated without explicit debug manager '
@@ -75,13 +82,6 @@ class TreeManager(object):
         self.debug_manager.set_tree_name(name)
         self.debug_manager.set_tick_frequency(tick_frequency_hz)
         self.debug_manager.publish_debug_info = self.publish_info
-
-        self.publish_tree = publish_tree_callback
-        if self.publish_tree is None:
-            rospy.loginfo('No callback for publishing tree data provided.')
-        self.publish_debug_info = publish_debug_info_callback
-        if self.publish_debug_info is None:
-            rospy.loginfo('No callback for publishing debug data provided.')
 
         self.nodes = {}
 
@@ -1087,16 +1087,16 @@ class TreeManager(object):
 
         for (module, nodes) in Node.node_classes.iteritems():
             for (class_name, node_class) in nodes.iteritems():
-                max_children = node_class.node_config.max_children
+                max_children = node_class._node_config.max_children
                 max_children = -1 if max_children is None else max_children
                 response.available_nodes.append(NodeMsg(
                     module=module,
                     node_class=class_name,
                     max_children=max_children,
                     name=class_name,
-                    options=to_node_data(node_class.node_config.options),
-                    inputs=to_node_data(node_class.node_config.inputs),
-                    outputs=to_node_data(node_class.node_config.outputs)
+                    options=to_node_data(node_class._node_config.options),
+                    inputs=to_node_data(node_class._node_config.inputs),
+                    outputs=to_node_data(node_class._node_config.outputs)
                     ))
 
         response.success = True

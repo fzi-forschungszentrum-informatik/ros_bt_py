@@ -42,7 +42,7 @@ class TestIncrementName(unittest.TestCase):
 
 class TestNode(unittest.TestCase):
     def testNodeHasNoConfig(self):
-        self.assertEqual(Node.node_config, None)
+        self.assertEqual(Node._node_config, None)
 
     def testNodeInitFails(self):
         self.assertRaises(NodeConfigError, Node)
@@ -100,7 +100,7 @@ class TestPassthroughNode(unittest.TestCase):
                          Node.node_classes[PassthroughNode.__module__][PassthroughNode.__name__])
 
     def testPassthroughNodeConfig(self):
-        self.assertEqual(PassthroughNode.node_config,
+        self.assertEqual(PassthroughNode._node_config,
                          NodeConfig(
                              options={'passthrough_type': type},
                              inputs={'in': OptionRef('passthrough_type')},
