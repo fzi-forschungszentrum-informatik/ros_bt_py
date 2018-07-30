@@ -91,5 +91,7 @@ if __name__ == '__main__':
     rospy.init_node('test_async_service')
     import rostest
     import sys
+    import os
+    os.environ['COVERAGE_FILE'] = '%s.%s.coverage' % (PKG, 'test_async_service')
     rostest.rosrun(PKG, 'test_async_service', TestAsyncService,
                    sysargs=sys.argv + ['--cov'])

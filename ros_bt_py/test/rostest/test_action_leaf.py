@@ -83,5 +83,7 @@ if __name__ == '__main__':
     rospy.init_node('test_action_leaf')
     import rostest
     import sys
+    import os
+    os.environ['COVERAGE_FILE'] = '%s.%s.coverage' % (PKG, 'test_action_leaf')
     rostest.rosrun(PKG, 'test_action_leaf', TestActionLeaf,
                    sysargs=sys.argv + ['--cov'])

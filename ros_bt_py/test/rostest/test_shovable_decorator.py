@@ -93,5 +93,7 @@ if __name__ == '__main__':
     rospy.init_node('test_shovable_decorator')
     import rostest
     import sys
+    import os
+    os.environ['COVERAGE_FILE'] = '%s.%s.coverage' % (PKG, 'test_shovable_decorator')
     rostest.rosrun(PKG, 'test_shovable_decorator', TestShovable,
                    sysargs=sys.argv + ['--cov'])
