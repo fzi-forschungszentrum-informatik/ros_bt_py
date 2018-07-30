@@ -416,7 +416,7 @@ class TestTreeManager(unittest.TestCase):
 
         response = self.manager.control_execution(execution_request)
         self.assertTrue(get_success(response))
-        self.assertEqual(response.tree_state, Tree.IDLE)
+        self.assertEqual(response.tree_state, Tree.WAITING_FOR_TICK)
 
         self.assertEqual(self.manager.nodes['passthrough'].outputs['out'], 42)
 

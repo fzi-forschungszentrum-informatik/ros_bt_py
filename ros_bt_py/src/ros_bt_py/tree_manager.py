@@ -202,8 +202,11 @@ class TreeManager(object):
                     break
 
             if self._once:
+                # Return immediately, not unticking anything
                 self._once = False
-                break
+                with self._state_lock:
+                    self.tree_msg.state = Tree.WAITING_FOR_TICK
+                return
 
             tick_duration = time.time() - start_time
             if tick_duration <= 0:
@@ -427,8 +430,8 @@ class TreeManager(object):
         if (request.command == ControlTreeExecutionRequest.STOP or
                 request.command == ControlTreeExecutionRequest.SHUTDOWN):
             with self._state_lock:
-                is_ticking = self.tree_msg.state == Tree.TICKING
-            if is_ticking:
+                tree_state = self.tree_msg.state
+            if tree_state == Tree.TICKING:
                 with self._state_lock:
                     self.tree_msg.state = Tree.STOP_REQUESTED
                 # Four times the allowed period should be plenty of time to
@@ -458,6 +461,31 @@ class TreeManager(object):
                                               '%s, not IDLE' % self.tree_msg.state)
                     response.success = False
                     rospy.logerr(response.error_message)
+            elif tree_state == Tree.WAITING_FOR_TICK:
+                try:
+                    root = self.find_root()
+                    if root:
+                        root.untick()
+                        state = root.state
+                        if state == NodeMsg.IDLE:
+                            response.tree_state = Tree.IDLE
+                            response.success = True
+                        else:
+                            response.tree_state = Tree.ERROR
+                            response.success = False
+                            rospy.logerr('Root node (%s) state after unticking is not IDLE, but %s',
+                                         str(root),
+                                         state)
+                            response.error_message = 'Failed to untick root node.'
+                    else:
+                        rospy.loginfo('Unticking a tree with no nodes.')
+                        response.tree_state = Tree.IDLE
+                        response.success = True
+                except TreeTopologyError as e:
+                    response.success = False
+                    response.error_message = str(e)
+
+                self.publish_info()
             else:
                 rospy.loginfo('Received stop command, but tree was not running')
                 response.success = True
@@ -508,6 +536,9 @@ class TreeManager(object):
                                                     'stop, but failed!')
                     if self.tree_msg.state == Tree.IDLE:
                         response.tree_state = Tree.IDLE
+                        response.success = True
+                    if self.tree_msg.state == Tree.WAITING_FOR_TICK:
+                        response.tree_state = Tree.WAITING_FOR_TICK
                         response.success = True
                     elif self.tree_msg.state == Tree.ERROR:
                         response.error_message = ('Error during single tick: %s'
