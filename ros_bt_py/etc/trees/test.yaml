@@ -1,6 +1,6 @@
 name: ''
 path: ''
-root_name: ''
+root_name: 'sequence'
 nodes: 
   - 
     is_subtree: False
@@ -128,4 +128,8 @@ nodes:
 data_wirings: []
 tick_frequency_hz: 20.0
 state: "EDITABLE"
-public_node_data: []
+public_node_data:
+  -
+    node_name: "succeeder"
+    data_kind: "outputs"
+    data_key: "out"

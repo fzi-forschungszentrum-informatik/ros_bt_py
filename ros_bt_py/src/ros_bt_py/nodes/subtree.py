@@ -39,6 +39,14 @@ class Subtree(Leaf):
         response = self.manager.load_tree(LoadTreeRequest(tree=Tree(
             path=self.options['subtree_path'])))
 
+        # TODO(nberg):
+        #
+        # Check self.options for keys that aren't in the original
+        # NodeConfig. Those option keys must be public options of the
+        # subtree.
+        #
+        # Then tell the TreeManager to set those options.
+
         if not _get_success(response):
             self.outputs['load_success'] = False
             self.outputs['load_error_msg'] = _get_error_message(response)
@@ -48,19 +56,39 @@ class Subtree(Leaf):
 
         # If we loaded the tree successfully, change node_config to
         # include the public inputs and outputs
-        new_node_config = NodeConfig()
+        subtree_options = {}
+        subtree_inputs = {}
+        subtree_outputs = {}
         for node_data in self.manager.to_msg().public_node_data:
             if node_data.data_kind == NodeDataLocation.INPUT_DATA:
-                new_node_config.inputs['%s.%s' % (node_data.node_name, node_data.data_key)] = \
+                subtree_inputs['%s.%s' % (node_data.node_name, node_data.data_key)] = \
                     self.manager.nodes[node_data.node_name].inputs.get_type(node_data.data_key)
             elif node_data.data_kind == NodeDataLocation.OUTPUT_DATA:
-                new_node_config.outputs['%s.%s' % (node_data.node_name, node_data.data_key)] = \
+                subtree_outputs['%s.%s' % (node_data.node_name, node_data.data_key)] = \
                     self.manager.nodes[node_data.node_name].outputs.get_type(node_data.data_key)
             elif node_data.data_kind == NodeDataLocation.OPTION_DATA:
-                new_node_config.options['%s.%s' % (node_data.node_name, node_data.data_key)] = \
+                subtree_options['%s.%s' % (node_data.node_name, node_data.data_key)] = \
                     self.manager.nodes[node_data.node_name].options.get_type(node_data.data_key)
 
-        self.node_config.extend(new_node_config)
+        # merge subtree input and option dicts, so we can receive
+        # option updates between ticks
+        subtree_inputs.update(subtree_options)
+        self.node_config.extend(NodeConfig(
+            options={},
+            inputs=subtree_inputs,
+            outputs=subtree_outputs,
+            max_children=0))
+
+        # Register the input, output and option values from the subtree
+        self._subtree_option_keys = subtree_options.keys()
+        # Remember we merged inputs and options, so this registers the
+        # subtree options as inputs as well!
+        self._register_node_data(source_map=subtree_inputs,
+                                 target_map=self.inputs,
+                                 allow_ref=True)
+        self._register_node_data(source_map=subtree_outputs,
+                                 target_map=self.outputs,
+                                 allow_ref=True)
 
     def _update_tree_msg(self, new_msg):
         with self.tree_msg_lock:
@@ -71,7 +99,17 @@ class Subtree(Leaf):
         pass
 
     def _do_tick(self):
-        return self._send_command(ControlTreeExecutionRequest.TICK_ONCE)
+        # TODO(nberg): Forward inputs, outputs and options
+        new_state = self._send_command(ControlTreeExecutionRequest.TICK_ONCE)
+
+        # Forward public subtree node data
+        with self.tree_msg_lock:
+            for data in self.tree_msg.public_node_data:
+                if data.data_kind == NodeDataLocation.OUTPUT_DATA:
+                    self.outputs['%s.%s' % (data.node_name, data.data_key)] = \
+                        self.manager.nodes[data.node_name].outputs[data.data_key]
+
+        return new_state
 
     def _do_untick(self):
         return self._send_command(ControlTreeExecutionRequest.STOP)
