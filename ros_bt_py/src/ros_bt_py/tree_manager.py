@@ -761,14 +761,12 @@ class TreeManager(object):
                          wiring.target.node_name in names_to_remove)]))
 
         # Keep tree_msg up-to-date
-        self.tree_msg.nodes = [node for node in self.tree_msg.nodes
-                               if node.name in names_to_remove]
         self.tree_msg.data_wirings = [
             wiring for wiring in self.tree_msg.data_wirings
-            if (wiring.source.node_name in names_to_remove or
-                wiring.target.node_name in names_to_remove)]
+            if (wiring.source.node_name not in names_to_remove and
+                wiring.target.node_name not in names_to_remove)]
         self.tree_msg.public_node_data = [data for data in self.tree_msg.public_node_data
-                                          if data.node_name in names_to_remove]
+                                          if data.node_name not in names_to_remove]
 
         response.success = True
         self.publish_info()
