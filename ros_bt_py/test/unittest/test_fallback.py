@@ -38,6 +38,9 @@ class TestFallback(unittest.TestCase):
 
         self.fallback = Fallback()
 
+    def tearDown(self):
+        self.fallback.shutdown()
+
     def testEmptyTickFails(self):
         self.fallback.setup()
         self.fallback.tick()

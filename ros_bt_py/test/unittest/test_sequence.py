@@ -39,6 +39,9 @@ class TestSequence(unittest.TestCase):
 
         self.sequence = Sequence()
 
+    def tearDown(self):
+        self.sequence.shutdown()
+
     def testEmptyTickFails(self):
         self.sequence.setup()
         self.sequence.tick()

@@ -84,3 +84,6 @@ class MockUtilityLeaf(Leaf):
             lower_bound_failure=self.options['utility_lower_bound_failure'],
             has_upper_bound_failure=True,
             upper_bound_failure=self.options['utility_upper_bound_failure'])
+
+    def _do_shutdown(self):
+        pass
