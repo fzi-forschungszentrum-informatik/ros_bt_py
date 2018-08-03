@@ -22,6 +22,11 @@ class Subtree(Leaf):
     This is the only node that modifies its `node_config` member - it
     will populate its inputs and outputs when its constructor is
     called, based on the public inputs and outputs of the subtree.
+
+    Please note that it is **NOT** possible to have public *option*
+    values. Since they can affect the types of inputs/outputs, they
+    could only feasibly be set in the Subtree node's own options, but
+    at that point we don't know their names or types yet.
     """
     def __init__(self, options=None, debug_manager=None, name=None):
         """Create the tree manager, load the subtree and call `super.__init__()`"""
