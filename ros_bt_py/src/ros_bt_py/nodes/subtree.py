@@ -77,13 +77,28 @@ class Subtree(Leaf):
             outputs=subtree_outputs,
             max_children=0))
 
-        # Register the input and output values from the subtree
+        # Register the input and output values from the subtree - they
+        # don't contain any OptionRefs, so don't allow references,
+        # just to be sure
         self._register_node_data(source_map=subtree_inputs,
                                  target_map=self.inputs,
-                                 allow_ref=True)
+                                 allow_ref=False)
         self._register_node_data(source_map=subtree_outputs,
                                  target_map=self.outputs,
-                                 allow_ref=True)
+                                 allow_ref=False)
+
+        # Handle forwarding inputs and outputs using the subscribe mechanics:
+        for node_data in self.manager.to_msg().public_node_data:
+            if node_data.data_kind == NodeDataLocation.INPUT_DATA:
+                self.inputs.subscribe(
+                    key='%s.%s' % (node_data.node_name, node_data.data_key),
+                    callback=self.manager.nodes[node_data.node_name].inputs.get_callback(
+                        node_data.data_key))
+            elif node_data.data_kind == NodeDataLocation.OUTPUT_DATA:
+                self.manager.nodes[node_data.node_name].outputs.subscribe(
+                    key=node_data.data_key,
+                    callback=self.outputs.get_callback(
+                        '%s.%s' % (node_data.node_name, node_data.data_key)))
 
     def _update_tree_msg(self, new_msg):
         with self.tree_msg_lock:
@@ -94,21 +109,7 @@ class Subtree(Leaf):
         pass
 
     def _do_tick(self):
-        # Forward inputs
-        with self.tree_msg_lock:
-            for node_data in self.tree_msg.public_node_data:
-                if node_data.data_kind == NodeDataLocation.INPUT_DATA:
-                    self.manager.nodes[node_data.node_name].inputs[node_data.data_key] = \
-                        self.inputs['%s.%s' % (node_data.node_name, node_data.data_key)]
-
         new_state = self._send_command(ControlTreeExecutionRequest.TICK_ONCE)
-
-        # Forward outputs
-        with self.tree_msg_lock:
-            for data in self.tree_msg.public_node_data:
-                if data.data_kind == NodeDataLocation.OUTPUT_DATA:
-                    self.outputs['%s.%s' % (data.node_name, data.data_key)] = \
-                        self.manager.nodes[data.node_name].outputs[data.data_key]
 
         return new_state
 
