@@ -370,6 +370,7 @@ class TreeManager(object):
             self.tree_msg.state = Tree.EDITABLE
 
         response.success = True
+        self.publish_info()
         return response
 
     def set_execution_mode(self, request):
@@ -830,6 +831,7 @@ class TreeManager(object):
         for key in node.options:
             if key not in deserialized_options:
                 deserialized_options[key] = node.options[key]
+
         # Now we can construct the new node - no need to call setup,
         # since we're guaranteed to be in the edit state
         # (i.e. `root.setup()` will be called before anything that
