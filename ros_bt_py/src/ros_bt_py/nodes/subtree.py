@@ -1,8 +1,9 @@
+import jsonpickle
 from threading import Lock
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
-from ros_bt_py_msgs.msg import UtilityBounds, Tree, NodeDataLocation
-from ros_bt_py_msgs.srv import LoadTreeRequest, ControlTreeExecutionRequest
+from ros_bt_py_msgs.msg import UtilityBounds, Tree, NodeData, NodeDataLocation
+from ros_bt_py_msgs.srv import LoadTreeRequest, ControlTreeExecutionRequest, SetOptionsRequest
 
 from ros_bt_py.tree_manager import TreeManager, _get_success, _get_error_message
 from ros_bt_py.node import Leaf, define_bt_node
@@ -99,7 +100,39 @@ class Subtree(Leaf):
         pass
 
     def _do_tick(self):
-        # TODO(nberg): Forward inputs, outputs and options
+        # Forward inputs and options
+
+        # Update Options first, since they might change the type of inputs!
+        with self.tree_msg_lock:
+            # Bundle SetOptions requests per node to avoid unnecessary overhead
+            set_options_requests = dict()
+            for node_data in self.tree_msg.public_node_data:
+                if node_data.data_kind == NodeDataLocation.OPTION_DATA:
+                    if node_data.node_name not in set_options_requests:
+                        set_options_requests[node_data.node_name] = SetOptionsRequest(
+                            tree_name=self.tree_msg.name,
+                            node_name=node_data.node_name)
+
+                    set_options_requests[node_data.node_name].options.append(
+                        NodeData(
+                            key=node_data.data_key,
+                            serialized_value=jsonpickle.encode(
+                                self.inputs['%s.%s' %
+                                            (node_data.node_name, node_data.data_key)])))
+
+        for request in set_options_requests.values():
+            res = self.manager.set_options(request)
+            if not _get_success(res):
+                self.logerr('Error setting options for subtree node %s: %s' %
+                            (request.node_name, _get_error_message(res)))
+                return NodeMsg.FAILED
+
+        with self.tree_msg_lock:
+            for node_data in self.tree_msg.public_node_data:
+                if node_data.data_kind == NodeDataLocation.INPUT_DATA:
+                    self.manager.nodes[node_data.node_name].inputs[node_data.data_key] = \
+                        self.inputs['%s.%s' % (node_data.node_name, node_data.data_key)]
+
         new_state = self._send_command(ControlTreeExecutionRequest.TICK_ONCE)
 
         # Forward public subtree node data
