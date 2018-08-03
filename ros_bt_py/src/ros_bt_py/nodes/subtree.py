@@ -57,7 +57,6 @@ class Subtree(Leaf):
 
         # If we loaded the tree successfully, change node_config to
         # include the public inputs and outputs
-        subtree_options = {}
         subtree_inputs = {}
         subtree_outputs = {}
         for node_data in self.manager.to_msg().public_node_data:
@@ -68,22 +67,17 @@ class Subtree(Leaf):
                 subtree_outputs['%s.%s' % (node_data.node_name, node_data.data_key)] = \
                     self.manager.nodes[node_data.node_name].outputs.get_type(node_data.data_key)
             elif node_data.data_kind == NodeDataLocation.OPTION_DATA:
-                subtree_options['%s.%s' % (node_data.node_name, node_data.data_key)] = \
-                    self.manager.nodes[node_data.node_name].options.get_type(node_data.data_key)
+                raise BehaviorTreeException('Option values cannot be public!')
 
         # merge subtree input and option dicts, so we can receive
         # option updates between ticks
-        subtree_inputs.update(subtree_options)
         self.node_config.extend(NodeConfig(
             options={},
             inputs=subtree_inputs,
             outputs=subtree_outputs,
             max_children=0))
 
-        # Register the input, output and option values from the subtree
-        self._subtree_option_keys = subtree_options.keys()
-        # Remember we merged inputs and options, so this registers the
-        # subtree options as inputs as well!
+        # Register the input and output values from the subtree
         self._register_node_data(source_map=subtree_inputs,
                                  target_map=self.inputs,
                                  allow_ref=True)
@@ -100,33 +94,7 @@ class Subtree(Leaf):
         pass
 
     def _do_tick(self):
-        # Forward inputs and options
-
-        # Update Options first, since they might change the type of inputs!
-        with self.tree_msg_lock:
-            # Bundle SetOptions requests per node to avoid unnecessary overhead
-            set_options_requests = dict()
-            for node_data in self.tree_msg.public_node_data:
-                if node_data.data_kind == NodeDataLocation.OPTION_DATA:
-                    if node_data.node_name not in set_options_requests:
-                        set_options_requests[node_data.node_name] = SetOptionsRequest(
-                            tree_name=self.tree_msg.name,
-                            node_name=node_data.node_name)
-
-                    set_options_requests[node_data.node_name].options.append(
-                        NodeData(
-                            key=node_data.data_key,
-                            serialized_value=jsonpickle.encode(
-                                self.inputs['%s.%s' %
-                                            (node_data.node_name, node_data.data_key)])))
-
-        for request in set_options_requests.values():
-            res = self.manager.set_options(request)
-            if not _get_success(res):
-                self.logerr('Error setting options for subtree node %s: %s' %
-                            (request.node_name, _get_error_message(res)))
-                return NodeMsg.FAILED
-
+        # Forward inputs
         with self.tree_msg_lock:
             for node_data in self.tree_msg.public_node_data:
                 if node_data.data_kind == NodeDataLocation.INPUT_DATA:
@@ -135,7 +103,7 @@ class Subtree(Leaf):
 
         new_state = self._send_command(ControlTreeExecutionRequest.TICK_ONCE)
 
-        # Forward public subtree node data
+        # Forward outputs
         with self.tree_msg_lock:
             for data in self.tree_msg.public_node_data:
                 if data.data_kind == NodeDataLocation.OUTPUT_DATA:

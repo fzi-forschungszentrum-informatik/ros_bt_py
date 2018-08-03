@@ -1,0 +1,37 @@
+name: 'io_test'
+path: ''
+root_name: 'passthrough'
+nodes: 
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.passthrough_node"
+    node_class: "PassthroughNode"
+    max_children: 0
+    name: "passthrough"
+    child_names: []
+    options: 
+      - 
+        key: "passthrough_type"
+        serialized_value: "{\"py/type\": \"__builtin__.str\"}"
+    inputs:
+      - 
+        key: "in"
+        serialized_value: "null"
+    outputs: 
+      - 
+        key: "out"
+        serialized_value: "null"
+    state: "UNINITIALIZED"
+data_wirings: []
+tick_frequency_hz: 20.0
+state: "EDITABLE"
+public_node_data:
+  -
+    node_name: "passthrough"
+    data_kind: "inputs"
+    data_key: "in"
+  -
+    node_name: "passthrough"
+    data_kind: "outputs"
+    data_key: "out"
