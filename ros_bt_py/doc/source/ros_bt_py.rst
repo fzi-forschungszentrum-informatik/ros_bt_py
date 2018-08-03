@@ -27,6 +27,14 @@ ros_bt_py.exceptions module
     :undoc-members:
     :show-inheritance:
 
+ros_bt_py.jsonpickle_server module
+----------------------------------
+
+.. automodule:: ros_bt_py.jsonpickle_server
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 ros_bt_py.node module
 ---------------------
 
@@ -47,6 +55,14 @@ ros_bt_py.node_data module
 --------------------------
 
 .. automodule:: ros_bt_py.node_data
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+ros_bt_py.ros_helpers module
+----------------------------
+
+.. automodule:: ros_bt_py.ros_helpers
     :members:
     :undoc-members:
     :show-inheritance:
