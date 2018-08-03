@@ -79,6 +79,53 @@ def define_bt_node(node_config):
     return inner_dec
 
 
+class NodeMeta(type):
+    """Override the __doc__ property to add a list of BT params
+
+    (inputs, outputs and options) to every node class.
+    """
+    def __new__(cls, name, bases, attrs):
+        attrs['_doc'] = attrs.get('__doc__', '')
+        return super(NodeMeta, cls).__new__(cls, name, bases, attrs)
+
+    @property
+    def __doc__(self):
+        if hasattr(self, '_node_config') and self._node_config is not None and \
+           (self._node_config.inputs or self._node_config.outputs or self._node_config.options):
+            # Build table of inputs, outputs and options
+            # Start with two newlines to separate from the original docstring
+            param_table = ['\n\n'
+                           '**Behavior Tree I/O keys**\n\n']
+            if self._node_config.inputs:
+                param_table.append('*Inputs*\n\n')
+                for input_key in self._node_config.inputs:
+                    param_table.append(
+                        '* %s: :class:`%s`\n' %
+                        (input_key,
+                         self._node_config.inputs[input_key].__name__))
+                param_table.append('\n')
+            if self._node_config.outputs:
+                param_table.append('*Outputs*\n\n')
+                for output_key in self._node_config.outputs:
+                    param_table.append(
+                        '* %s: :class:`%s`\n' %
+                        (output_key,
+                         self._node_config.outputs[output_key].__name__))
+                param_table.append('\n')
+            if self._node_config.options:
+                param_table.append('*Options*\n\n')
+                for option_key in self._node_config.options:
+                    param_table.append(
+                        '* %s: :class:`%s`\n' %
+                        (option_key,
+                         self._node_config.options[option_key].__name__))
+                param_table.append('\n')
+
+            return self._doc + ''.join(param_table)
+        else:
+            return self._doc
+
+
 class Node(object):
     """Base class for Behavior Tree nodes
 
@@ -102,6 +149,8 @@ class Node(object):
       single child and work with that child's result - for instance, a *Decorator*
       could invert `FAILED` into `SUCCEEDED`.
     """
+    __metaclass__ = NodeMeta
+
     @contextmanager
     def _dummy_report_tick(self):
         self.loginfo('Ticking without debug manager')
