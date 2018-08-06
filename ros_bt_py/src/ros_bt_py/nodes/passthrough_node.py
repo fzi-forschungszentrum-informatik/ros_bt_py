@@ -1,6 +1,6 @@
 from ros_bt_py_msgs.msg import Node as NodeMsg
 
-from ros_bt_py.node import Node, define_bt_node
+from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
@@ -9,7 +9,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
     inputs={'in': OptionRef('passthrough_type')},
     outputs={'out': OptionRef('passthrough_type')},
     max_children=0))
-class PassthroughNode(Node):
+class PassthroughNode(Leaf):
     """Pass through a piece of data
 
     Only really useful for testing

@@ -127,8 +127,10 @@ class TreeManager(object):
     def find_root(self):
         """Find the root node of the tree
 
-        :raises: `TreeTopologyError` if nodes exist, but either no root or multiple
-        roots are found.
+        :raises: `TreeTopologyError`
+
+        if nodes exist, but either no root or multiple roots are
+        found.
         """
         if not self.nodes:
             return None

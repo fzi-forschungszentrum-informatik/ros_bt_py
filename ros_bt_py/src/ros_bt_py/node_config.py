@@ -8,7 +8,7 @@ class OptionRef(object):
         self.option_key = option_key
 
     def __repr__(self):
-        return 'OptionRef(option_key=%r' % self.option_key
+        return 'OptionRef(option_key=%r)' % self.option_key
 
     def __eq__(self, other):
         return self.option_key == other.option_key

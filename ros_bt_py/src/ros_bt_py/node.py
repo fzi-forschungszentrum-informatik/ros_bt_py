@@ -96,22 +96,6 @@ class NodeMeta(type):
             # Start with two newlines to separate from the original docstring
             param_table = ['\n\n'
                            '**Behavior Tree I/O keys**\n\n']
-            if self._node_config.inputs:
-                param_table.append('*Inputs*\n\n')
-                for input_key in self._node_config.inputs:
-                    param_table.append(
-                        '* %s: :class:`%s`\n' %
-                        (input_key,
-                         self._node_config.inputs[input_key].__name__))
-                param_table.append('\n')
-            if self._node_config.outputs:
-                param_table.append('*Outputs*\n\n')
-                for output_key in self._node_config.outputs:
-                    param_table.append(
-                        '* %s: :class:`%s`\n' %
-                        (output_key,
-                         self._node_config.outputs[output_key].__name__))
-                param_table.append('\n')
             if self._node_config.options:
                 param_table.append('*Options*\n\n')
                 for option_key in self._node_config.options:
@@ -119,6 +103,34 @@ class NodeMeta(type):
                         '* %s: :class:`%s`\n' %
                         (option_key,
                          self._node_config.options[option_key].__name__))
+                param_table.append('\n')
+            if self._node_config.inputs:
+                param_table.append('*Inputs*\n\n')
+                for input_key in self._node_config.inputs:
+                    if isinstance(self._node_config.inputs[input_key], OptionRef):
+                        param_table.append(
+                            '* %s: ``%s``\n' %
+                            (input_key,
+                             str(self._node_config.inputs[input_key])))
+                    else:
+                        param_table.append(
+                            '* %s: :class:`%s`\n' %
+                            (input_key,
+                             self._node_config.inputs[input_key].__name__))
+                param_table.append('\n')
+            if self._node_config.outputs:
+                param_table.append('*Outputs*\n\n')
+                for output_key in self._node_config.outputs:
+                    if isinstance(self._node_config.outputs[output_key], OptionRef):
+                        param_table.append(
+                            '* %s: ``%s``\n' %
+                            (output_key,
+                             str(self._node_config.outputs[output_key])))
+                    else:
+                        param_table.append(
+                            '* %s: :class:`%s`\n' %
+                            (output_key,
+                             self._node_config.outputs[output_key].__name__))
                 param_table.append('\n')
 
             return self._doc + ''.join(param_table)

@@ -22,6 +22,21 @@ from ros_bt_py.ros_helpers import AsyncServiceProxy
     outputs={'running_remotely': bool},
     max_children=1))
 class Shovable(Decorator):
+    """Marks the subtree below this decorator as remote-executable.
+
+    It will first send the subtree to `utility_evaluator_service' (a
+    :class:`ros_bt_py_msgs.srv.EvaluateUtility` server) to see who is
+    best suited to execute it.
+
+    Depending on the answer, it will either tick the subtree itself of
+    use the action server from the service response to execute it
+    remotely.
+
+    The negotiation induces some delay, so expect a few ticks' wait
+    before the subtree is actually executed. Consequently, make sure
+    that the subtree takes long enough to arrive at a final state
+    (`SUCCEEDED` or `FAILED`) that this overhead is justified.
+    """
     # States to structure the do_tick() method
     IDLE = 0
     WAIT_FOR_UTILITY_RESPONSE = 1
