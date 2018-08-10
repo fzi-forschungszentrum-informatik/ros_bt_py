@@ -13,7 +13,7 @@ def get_jsonpickle_instance(request):
     res.success = True
 
     try:
-        requested_type = jsonpickle.decode(requrest.serialized_type)
+        requested_type = jsonpickle.decode(request.serialized_type)
     except ValueError as e:
         res.success = False
         res.error_message = str(e)
