@@ -30,6 +30,9 @@ function render() {
   onTreeUpdate(tree_msg);
 }
 
+var horizontal_spacing = 10;
+var vertical_spacing = 25;
+
 function delete_node() {
   var node_name = document.getElementById("node_delete_selector").value;
   new ROSLIB.Service({
@@ -247,6 +250,14 @@ function onTreeUpdate(tree_msg) {
     .attr("class", "vertices")
     .merge(g_vertex);
 
+
+  var g_droptargets = svg.selectAll("g.drop_targets").data([null]);
+  g_droptargets = g_droptargets
+    .enter()
+    .append("g")
+    .attr("class", "drop_targets")
+    .merge(g_droptargets);
+  
   var node = g_vertex
       .selectAll(".node")
       .data(root.descendants(), function(node) {
@@ -289,7 +300,8 @@ function onTreeUpdate(tree_msg) {
   var tree_size = [width - max_size[0], height - (40 + max_size[1])];
 
   var tree = d3.flextree()
-      .nodeSize(node => [node._size.width + 10, node._size.height + 25])
+      .nodeSize(node => [node._size.width + horizontal_spacing,
+                         node._size.height + vertical_spacing])
   (root);
 
   // Move new nodes to their starting positions
@@ -649,6 +661,77 @@ function get_nodes(package_name='')
       }
     });
 }
+
+function initiateDrag(datum, domNode) {
+  var svg = d3.select("svg")
+      .select("#container");
+  var g_droptargets = svg.select("g.drop_targets");
+  var g_vertex = svg.select("g.vertices");
+  var node = g_vertex
+      .selectAll(".node")
+      .each(function(d) {
+        // No drop options at the root of the tree!
+        // And don't create drop targets for the dragged node
+        if (!d.parent || this == domNode ) {
+          return;
+        }
+        var my_index = d.parent.children.findIndex(x => x.data.name == d.data.name);
+        g_droptargets
+          .append("rect")
+          .attr("class", "drop_target")
+          .attr("transform",
+                "translate(" + (d.x - horizontal_spacing - (d._size.width * 0.5)) + ","
+                + d.y + ")")
+          .attr("width", horizontal_spacing)
+          .attr("height", d._size.height)
+          .datum({
+            "position": my_index,  // insert before this node
+            "replace": false,
+            "data": d
+          });
+
+        g_droptargets
+          .append("rect")
+          .attr("class", "drop_target")
+          .attr("transform",
+                "translate(" + (d.x + (d._size.width * 0.5)) + ","
+                + d.y + ")")
+          .attr("width", horizontal_spacing)
+          .attr("height", d._size.height)
+          .datum({
+            "position": my_index + 1,  // insert after this node
+            "replace": false,
+            "data": d
+          });
+
+        g_droptargets
+          .append("rect")
+          .attr("class", "drop_target")
+          .attr("transform",
+                "translate(" + (d.x - (d._size.width * 0.5)) + ","
+                + d.y + ")")
+          .attr("width", d._size.width)
+          .attr("height", d._size.height)
+          .datum({
+            "position": -1,
+            "replace": true,  // replace this node
+            "data": d
+          });
+      });
+  g_droptargets
+    .selectAll(".drop_target")
+    .attr("opacity", 0.2)
+    .on("mouseover", function(d) {
+      droptarget = d;
+      d3.select(this).attr("opacity", 0.8);
+    })
+    .on("mouseout", function() {
+      droptarget = undefined;
+      d3.select(this).attr("opacity", 0.2);
+    })
+}
+
+var droptarget = undefined;
 
 function init() {
   var viewport = d3.select("#editor_viewport");
