@@ -571,6 +571,9 @@ class Node(object):
             raise KeyError('Already have a child with name "%s"' % child.name)
         if at_index is None:
             at_index = len(self.children)
+
+        if at_index < 0:
+            at_index += len(self.children) + 1
         # Use array slicing to efficiently insert child at the correct position
         # (the value we assign needs to be a list for this to work)
         self.children[at_index:at_index] = [child]

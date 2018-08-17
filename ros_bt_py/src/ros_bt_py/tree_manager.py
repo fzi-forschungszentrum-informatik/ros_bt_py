@@ -8,7 +8,8 @@ import rospy
 import rospkg
 
 from ros_bt_py_msgs.srv import LoadTreeResponse
-from ros_bt_py_msgs.srv import RemoveNodeRequest, WireNodeDataRequest
+from ros_bt_py_msgs.srv import MoveNodeRequest, RemoveNodeRequest, ReplaceNodeRequest, WireNodeDataRequest
+from ros_bt_py_msgs.srv import MoveNodeResponse, ReplaceNodeResponse
 from ros_bt_py_msgs.srv import WireNodeDataResponse, AddNodeResponse, RemoveNodeResponse
 from ros_bt_py_msgs.srv import ContinueResponse
 from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, ControlTreeExecutionResponse
@@ -625,7 +626,6 @@ class TreeManager(object):
         :param ros_bt_py_msgs.srv.AddNodeRequest request:
           A request describing the node to add.
         """
-        # TODO(nberg): handle subtrees
         response = AddNodeResponse()
 
         try:
@@ -943,21 +943,130 @@ class TreeManager(object):
         pass
 
     @is_edit_service
-    def move_node(self, node_name, new_parent_name, child_index=None):
+    def move_node(self, request):
         """Move the named node to a different parent and insert it at the given index.
 
         """
-        pass
+        if request.node_name not in self.nodes:
+            return MoveNodeResponse(
+                success=False,
+                error_message="Node to be moved (\"%s\") is not in tree." % request.node_name)
+
+        # Empty parent name -> just remove node from parent
+        if request.new_parent_name == '':
+            node = self.nodes[request.node_name]
+            if node.parent is not None:
+                node.parent.remove_child(node.name)
+            self.publish_info()
+            return MoveNodeResponse(success=True)
+
+        if request.new_parent_name not in self.nodes:
+            return MoveNodeResponse(
+                success=False,
+                error_message="New parent (\"%s\") is not in tree." % request.new_parent_name)
+
+        new_parent_max_children = self.nodes[request.new_parent_name].node_config.max_children
+        if (new_parent_max_children is not None and
+              len(self.nodes[request.new_parent_name].children) == new_parent_max_children):
+            return MoveNodeResponse(
+                success=False,
+                error_message="Cannot move node %s to new parent node %s. Parent node already has the maximum number of children (%d)." % (
+                    request.node_name,
+                    request.new_parent_name,
+                    new_parent_max_children))
+
+        # Remove node from old parent, if any
+        old_parent = self.nodes[request.node_name].parent
+        if old_parent is not None:
+            old_parent.remove_child(request.node_name)
+
+        # Add node to new parent
+        self.nodes[request.new_parent_name].add_child(
+            child=self.nodes[request.node_name],
+            at_index=request.new_child_index)
+
+        self.publish_info()
+        return MoveNodeResponse(success=True)
+
 
     @is_edit_service
-    def replace_node(self, old_node_name, new_node):
+    def replace_node(self, request):
         """Replace the named node with `new_node`.
 
         Will also move all children of the old node to the new one, but
         only if `new_node` supports that number of children. Otherwise,
-        this will return an error.
+        this will return an error and leave the tree unchanged.
         """
-        pass
+        if request.old_node_name not in self.nodes:
+            return ReplaceNodeResponse(
+                success=False,
+                error_message="Node to be replaced (\"%s\") is not in tree." % request.old_node_name)
+        if request.new_node_name not in self.nodes:
+            return ReplaceNodeResponse(
+                success=False,
+                error_message="Replacement node (\"%s\") is not in tree." % request.new_node_name)
+
+        old_node = self.nodes[request.old_node_name]
+
+        new_node_max_children = self.nodes[request.new_node_name].node_config.max_children
+        if (new_node_max_children is not None and
+              len(old_node.children) >  new_node_max_children):
+            return ReplaceNodeResponse(
+                success=False,
+                error_message="Replacement node (\"%s\") does not support the number of \
+                               children required (%s has %d children, %s supports %d." % (
+                    request.new_node_name,
+                    request.old_node_name,
+                    len(old_node.children),
+                    request.new_node_name,
+                    new_node_max_children))
+
+        # TODO(nberg): Actually implement this
+
+        # If the new node has inputs/outputs with the same name and
+        # type as the old one,wire them the same way the old node was
+        # wired
+
+        # Note the old node's position in its parent's children array
+        old_node_parent = old_node.parent
+        # Initialize to 0 just to be sure. We *should* be guaranteed
+        # to find the old node in its parent's children array, but
+        # better safe than sorry.
+        old_node_child_index = 0
+        if old_node_parent is not None:
+            for index, child in enumerate(old_node_parent.children):
+                if child.name == request.old_node_name:
+                    old_node_child_index = index
+                    break
+
+        # Move the children from old to new
+        new_node = self.nodes[request.new_node_name]
+        for child_name in [child.name for child in old_node.children]:
+            new_node.add_child(old_node.remove_child(child_name))
+        # Remove the old node (we just moved the children, so we can
+        # set remove_children to True)
+        res = self.remove_node(RemoveNodeRequest(
+            node_name=request.old_node_name,
+            remove_children=True))
+
+        if not res.success:
+            with self._state_lock:
+                self.tree_msg.state = Tree.ERROR
+            self.publish_info()
+            return ReplaceNodeResponse(
+                success=False,
+                error_message="Could not remove old node: \"%s\"" % res.error_message)
+
+        # Move the new node to the old node's parent (if it had one)
+        if old_node_parent is not None:
+            self.move_node(MoveNodeRequest(
+                node_name=request.new_node_name,
+                new_parent_name=old_node_parent.name,
+                new_child_index=old_node_child_index))
+
+        self.publish_info()
+        return ReplaceNodeResponse(
+            success=True)
 
     @is_edit_service
     def wire_data(self, request):

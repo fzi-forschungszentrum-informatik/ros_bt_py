@@ -6,7 +6,7 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import NodeData, NodeDataWiring, NodeDataLocation, Tree
 from ros_bt_py_msgs.srv import WireNodeDataRequest, AddNodeRequest, RemoveNodeRequest, \
      ControlTreeExecutionRequest, GetAvailableNodesRequest, SetExecutionModeRequest, \
-     SetOptionsRequest, ContinueRequest, LoadTreeRequest
+     SetOptionsRequest, ContinueRequest, LoadTreeRequest, MoveNodeRequest, ReplaceNodeRequest
 
 from ros_bt_py.node import Node
 from ros_bt_py.nodes.sequence import Sequence
@@ -38,6 +38,17 @@ class TestTreeManager(unittest.TestCase):
             is_subtree=False,
             module='ros_bt_py.nodes.sequence',
             node_class='Sequence')
+
+        self.succeeder_msg = NodeMsg(
+            is_subtree=False,
+            module='ros_bt_py.nodes.mock_nodes',
+            node_class='MockLeaf',
+            options=[NodeData(key='output_type',
+                              serialized_value=jsonpickle.encode(str)),
+                     NodeData(key='state_values',
+                              serialized_value=jsonpickle.encode([NodeMsg.SUCCEEDED])),
+                     NodeData(key='output_values',
+                              serialized_value=jsonpickle.encode(['Yay!']))])
 
     def testLoadNode(self):
         _ = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
@@ -376,6 +387,142 @@ class TestTreeManager(unittest.TestCase):
 
         self.assertTrue(get_success(remove_response), get_error_message(remove_response))
         self.assertEqual(len(self.manager.nodes), 0)
+
+    def testMoveNode(self):
+        self.sequence_msg.name = 'outer_seq'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.sequence_msg))))
+
+        self.sequence_msg.name = "inner_seq"
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.sequence_msg,
+                           parent_name='outer_seq'))))
+
+        self.succeeder_msg.name = 'A'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.succeeder_msg,
+                           parent_name='outer_seq'))))
+
+        self.succeeder_msg.name = 'B'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.succeeder_msg,
+                           parent_name='inner_seq'))))
+
+        self.assertEqual(len(self.manager.nodes), 4)
+
+        # Should fail, since "A" is a MockLeaf, which can't have children
+        self.assertFalse(get_success(self.manager.move_node(
+            MoveNodeRequest(
+                node_name='B',
+                new_parent_name='A',
+                new_child_index=0))))
+
+        # Should succeed and put "A" after "B" (-1 means
+        # "first from the back")
+        self.assertTrue(get_success(self.manager.move_node(
+            MoveNodeRequest(
+                node_name='A',
+                new_parent_name='inner_seq',
+                new_child_index=-1))))
+
+        #print(self.tree_msg)
+        self.assertIn('inner_seq', [node.name for node in self.tree_msg.nodes])
+        for node in self.tree_msg.nodes:
+            if node.name == 'outer_seq':
+                # After moving A into inner_seq, outer_seq has only
+                # one child
+                self.assertEqual(len(node.child_names), 1)
+            if node.name == 'inner_seq':
+                A_index = None
+                B_index = None
+                for index, name in enumerate(node.child_names):
+                    if name == "A":
+                        A_index = index
+                    if name == "B":
+                        B_index = index
+                self.assertIsNotNone(A_index, 'Node A is not a child of inner_seq!')
+                self.assertIsNotNone(B_index, 'Node B is not a child of inner_seq!')
+                # As mentioned above, A should appear *after* B in the
+                # list of inner_seq's children!
+                self.assertGreater(A_index, B_index)
+
+    def testMoveToNoParent(self):
+        self.sequence_msg.name = 'seq'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.sequence_msg))))
+
+        self.succeeder_msg.name = 'A'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.succeeder_msg,
+                           parent_name='seq'))))
+        self.assertEqual(len(self.tree_msg.nodes), 2)
+
+        self.assertTrue(get_success(self.manager.move_node(
+            MoveNodeRequest(
+                node_name='A',
+                new_parent_name=''))))
+
+        # With A removed from seq's children, no node should have any
+        # children!
+        self.assertTrue(all([not node.child_names for node in self.tree_msg.nodes]))
+
+
+    def testReplaceNode(self):
+        self.sequence_msg.name = 'seq'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.sequence_msg))))
+
+        self.succeeder_msg.name = 'A'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.succeeder_msg,
+                           parent_name='seq'))))
+
+        self.succeeder_msg.name = 'B'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.succeeder_msg,
+                           parent_name='seq'))))
+
+        self.assertEqual(len(self.tree_msg.nodes), 3)
+
+        self.assertTrue(get_success(self.manager.replace_node(
+            ReplaceNodeRequest(
+                old_node_name="B",
+                new_node_name="A"))))
+
+        self.assertEqual(len(self.tree_msg.nodes), 2)
+        # B was overwritten by A
+        self.assertNotIn("B", [node.name for node in self.tree_msg.nodes])
+
+        self.sequence_msg.name = 'new_seq'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.sequence_msg))))
+
+        self.assertEqual(len(self.tree_msg.nodes), 3)
+
+        self.assertTrue(get_success(self.manager.replace_node(
+            ReplaceNodeRequest(
+                old_node_name="seq",
+                new_node_name="new_seq"))))
+
+        self.assertEqual(len(self.tree_msg.nodes), 2)
+        # seq should be overwritten by new_seq
+        self.assertNotIn("seq", [node.name for node in self.tree_msg.nodes])
+        self.assertIn("new_seq", [node.name for node in self.tree_msg.nodes])
+
+        for node in self.tree_msg.nodes:
+            if node.name == 'new_seq':
+                self.assertIn("A", node.child_names)
+
 
     def testTick(self):
         add_request = AddNodeRequest(tree_name='',
