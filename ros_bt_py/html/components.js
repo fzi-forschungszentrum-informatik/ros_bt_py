@@ -352,7 +352,7 @@ class D3BehaviorTreeEditor extends Component
 
     this.tree_topic = new ROSLIB.Topic({
       ros : props.ros,
-      name : '/tree',
+      name : props.bt_namespace + 'tree',
       messageType : 'ros_bt_py_msgs/Tree'
     });
 
