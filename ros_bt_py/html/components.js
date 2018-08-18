@@ -193,9 +193,13 @@ function ExecutionBar(props)
   return (
     <header id="header" className="d-flex flex-column flex-md-row placeholder">
       <DebugControls
-        ros={props.ros} onError={props.onError}/>
+        ros={props.ros}
+        bt_namespace={props.bt_namespace}
+        onError={props.onError}/>
       <TickControls
-        ros={props.ros} onError={props.onError}/>
+        ros={props.ros}
+        bt_namespace={props.bt_namespace}
+        onError={props.onError}/>
     </header>
   );
 }
@@ -279,12 +283,6 @@ class DebugControls extends Component
       serviceType: 'ros_bt_py_msgs/Continue'
     });
 
-    this.tick_service = new ROSLIB.Service({
-      ros: props.ros,
-      name: props.bt_namespace + 'control_tree_execution',
-      serviceType: 'ros_bt_py_msgs/ControlTreeExecution'
-    });
-
     this.onNewDebugSettings = this.onNewDebugSettings.bind(this);
     this.onClickStep = this.onClickStep.bind(this);
     this.handleChange = this.handleChange.bind(this);
@@ -321,6 +319,20 @@ class DebugControls extends Component
 
   handleChange(event)
   {
+    var enable = event.target.checked;
+      this.set_execution_mode_service.callService(
+    new ROSLIB.ServiceRequest({
+      single_step: enable,
+      collect_performance_data: true
+    }),
+    function(response) {
+      if (enable) {
+        console.log('enabled stepping');
+      }
+      else {
+        console.log('disabled stepping');
+      }
+    });
     this.setState({value: event.target.value});
   }
 
@@ -331,7 +343,7 @@ class DebugControls extends Component
         <div>
           <input type="checkbox"
                  id="debugging"
-                 value={this.state.value}
+                 checked={this.state.value}
                  onChange={this.handleChange} />
           <label htmlFor="debugging">Debug</label>
         </div>
