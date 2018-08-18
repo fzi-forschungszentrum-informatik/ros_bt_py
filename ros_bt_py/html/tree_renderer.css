@@ -91,7 +91,7 @@
 }
 
 .row-height {
-    height: 100vh;
+    height: 94vh;
 }
 
 .reactive-svg {
@@ -105,4 +105,14 @@
 
 .edit_canvas {
     height: 30em;
+}
+
+.top-bar {
+    height: 6vh;
+    width: 100%;
+    background: #fedede;
+}
+
+.placeholder {
+    background: #4e4e4e;
 }

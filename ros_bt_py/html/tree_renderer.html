@@ -8,15 +8,22 @@
     <script src="https://cdn.jsdelivr.net/npm/d3-flextree@2.0.0/build/d3-flextree.js"></script>
     <script src="https://static.robotwebtools.org/roslibjs/current/roslib.js"></script>
     <!-- React includes -->
-    <script src="https://unpkg.com/react@16/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/preact/8.3.1/preact.dev.js"></script>
+    <!-- <script src="https://unpkg.com/react@16/umd/react.development.js"></script> -->
+    <!-- <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script> -->
     <!-- Don't use this in production: -->
     <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
 
     <script type="text/babel" src="components.js"></script>
     <script type="text/babel" src="render_tree.js"></script>
   </head>
-  <body onload="init()">
+  <body id="body" onload="init()">
+    <header id="header" class="d-flex flex-column flex-md-row">
+      <div class="top-bar p-2">Ohai</div>
+      <div class="top-bar p-2">Ohai</div>
+      <div class="top-bar p-2">Ohai</div>
+      <div class="top-bar p-2">Ohai</div>
+    </header>
     <div class="container-fluid">
       <div class="row row-height">
 

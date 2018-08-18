@@ -1,6 +1,9 @@
+/** @jsx h */
+
+import { render } from 'preact';
 //const flextree = require('d3-flextree').flextree;
 
-function render() {
+function render_() {
   var tree_msg = {
     "nodes": [
       {
@@ -638,7 +641,7 @@ function get_nodes(package_name='')
     }),
     function(response) {
       if (response.success) {
-        ReactDOM.render(
+        render(
             <NodeList available_nodes={response.available_nodes} />,
           document.getElementById("react_container")
         );
@@ -754,7 +757,7 @@ function init() {
   ros.on('connection', function() {
     var listener = new ROSLIB.Topic({
       ros : ros,
-      name : '/tree',
+      name : '/tree_node/tree',
       messageType : 'ros_bt_py_msgs/Tree'
     });
     // Then we add a callback to be called every time a message is published on this topic.
