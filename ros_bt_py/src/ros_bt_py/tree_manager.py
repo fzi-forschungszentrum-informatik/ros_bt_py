@@ -66,12 +66,18 @@ class TreeManager(object):
                  debug_manager=None,
                  tick_frequency_hz=20.0,
                  publish_tree_callback=None,
-                 publish_debug_info_callback=None):
+                 publish_debug_info_callback=None,
+                 publish_debug_settings_callback=None):
         self.publish_tree = publish_tree_callback
         if self.publish_tree is None:
             rospy.loginfo('No callback for publishing tree data provided.')
+
         self.publish_debug_info = publish_debug_info_callback
         if self.publish_debug_info is None:
+            rospy.loginfo('No callback for publishing debug data provided.')
+
+        self.publish_debug_settings = publish_debug_settings_callback
+        if self.publish_debug_settings is None:
             rospy.loginfo('No callback for publishing debug data provided.')
 
         self.debug_manager = debug_manager
@@ -83,6 +89,7 @@ class TreeManager(object):
         self.debug_manager.set_tree_name(name)
         self.debug_manager.set_tick_frequency(tick_frequency_hz)
         self.debug_manager.publish_debug_info = self.publish_info
+        self.debug_manager.publish_debug_settings = self.publish_debug_settings
 
         self.nodes = {}
 
@@ -110,7 +117,7 @@ class TreeManager(object):
             for module_name in module_list:
                 load_node_module(module_name)
 
-        self.publish_info()
+        self.publish_info(self.debug_manager.get_debug_info_msg())
 
     def publish_info(self, debug_info_msg=None):
         """Publish the current tree state using the callback supplied to the constructor
@@ -266,7 +273,7 @@ class TreeManager(object):
         with self._state_lock:
             self.tree_msg = Tree(name='',
                                  state=Tree.EDITABLE)
-        self.publish_info()
+        self.publish_info(self.debug_manager.get_debug_info_msg())
 
     @is_edit_service
     def load_tree(self, request):
@@ -373,7 +380,7 @@ class TreeManager(object):
             self.tree_msg.state = Tree.EDITABLE
 
         response.success = True
-        self.publish_info()
+        self.publish_info(self.debug_manager.get_debug_info_msg())
         return response
 
     def set_execution_mode(self, request):
@@ -489,7 +496,7 @@ class TreeManager(object):
                     response.success = False
                     response.error_message = str(e)
 
-                self.publish_info()
+                self.publish_info(self.debug_manager.get_debug_info_msg())
             else:
                 rospy.loginfo('Received stop command, but tree was not running')
                 response.success = True
@@ -512,7 +519,7 @@ class TreeManager(object):
                 with self._state_lock:
                     self.tree_msg.state = Tree.EDITABLE
 
-            self.publish_info()
+            self.publish_info(self.debug_manager.get_debug_info_msg())
 
         elif request.command == ControlTreeExecutionRequest.TICK_ONCE:
             if self._tick_thread.is_alive() or self.tree_msg.state == Tree.TICKING:
@@ -611,7 +618,7 @@ class TreeManager(object):
                     response.error_message = str(e)
                     response.tree_state = self.tree_msg.state
 
-            self.publish_info()
+            self.publish_info(self.debug_manager.get_debug_info_msg())
         else:
             response.error_message = 'Received unknown command %d' % request.command
             rospy.logerr(response.error_message)
@@ -683,7 +690,7 @@ class TreeManager(object):
             self.remove_node(RemoveNodeRequest(node_name=instance.name,
                                                remove_children=False))
             return response
-        self.publish_info()
+        self.publish_info(self.debug_manager.get_debug_info_msg())
         return response
 
     @is_edit_service
@@ -772,7 +779,7 @@ class TreeManager(object):
                                           if data.node_name not in names_to_remove]
 
         response.success = True
-        self.publish_info()
+        self.publish_info(self.debug_manager.get_debug_info_msg())
         return response
 
     @is_edit_service
@@ -928,7 +935,7 @@ class TreeManager(object):
                 error_message=error_message)
 
         # We made it!
-        self.publish_info()
+        self.publish_info(self.debug_manager.get_debug_info_msg())
         return SetOptionsResponse(success=True)
 
     @is_edit_service
@@ -957,7 +964,7 @@ class TreeManager(object):
             node = self.nodes[request.node_name]
             if node.parent is not None:
                 node.parent.remove_child(node.name)
-            self.publish_info()
+            self.publish_info(self.debug_manager.get_debug_info_msg())
             return MoveNodeResponse(success=True)
 
         if request.new_parent_name not in self.nodes:
@@ -985,7 +992,7 @@ class TreeManager(object):
             child=self.nodes[request.node_name],
             at_index=request.new_child_index)
 
-        self.publish_info()
+        self.publish_info(self.debug_manager.get_debug_info_msg())
         return MoveNodeResponse(success=True)
 
 
@@ -1052,7 +1059,7 @@ class TreeManager(object):
         if not res.success:
             with self._state_lock:
                 self.tree_msg.state = Tree.ERROR
-            self.publish_info()
+            self.publish_info(self.debug_manager.get_debug_info_msg())
             return ReplaceNodeResponse(
                 success=False,
                 error_message="Could not remove old node: \"%s\"" % res.error_message)
@@ -1064,7 +1071,7 @@ class TreeManager(object):
                 new_parent_name=old_node_parent.name,
                 new_child_index=old_node_child_index))
 
-        self.publish_info()
+        self.publish_info(self.debug_manager.get_debug_info_msg())
         return ReplaceNodeResponse(
             success=True)
 
@@ -1130,7 +1137,7 @@ class TreeManager(object):
             # them.
             self.tree_msg.data_wirings.extend(request.wirings)
 
-            self.publish_info()
+            self.publish_info(self.debug_manager.get_debug_info_msg())
         return response
 
     @is_edit_service
@@ -1197,7 +1204,7 @@ class TreeManager(object):
                 if wiring in self.tree_msg.data_wirings:
                     self.tree_msg.data_wirings.remove(wiring)
 
-            self.publish_info()
+            self.publish_info(self.debug_manager.get_debug_info_msg())
         return response
 
     def get_available_nodes(self, request):

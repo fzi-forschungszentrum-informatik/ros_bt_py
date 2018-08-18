@@ -2,7 +2,7 @@
 
 import rospy
 
-from ros_bt_py_msgs.msg import Tree, DebugInfo
+from ros_bt_py_msgs.msg import Tree, DebugInfo, DebugSettings
 from ros_bt_py_msgs.srv import AddNode, ControlTreeExecution, ModifyBreakpoints, RemoveNode, \
      WireNodeData, GetAvailableNodes, SetExecutionMode, SetOptions, Continue, LoadTree
 from ros_bt_py.tree_manager import TreeManager
@@ -23,15 +23,22 @@ class TreeNode(object):
             raise TypeError('node_modules must be a list, but is a %s' %
                             type(node_module_names.__name__))
 
-        self.tree_pub = rospy.Publisher('tree', Tree, latch=True, queue_size=1)
-        self.debug_info_pub = rospy.Publisher('debug_info', DebugInfo, latch=True, queue_size=1)
+        self.tree_pub = rospy.Publisher('~tree', Tree, latch=True, queue_size=1)
+        self.debug_info_pub = rospy.Publisher('~debug/debug_info', DebugInfo, latch=True, queue_size=1)
+        self.debug_settings_pub = rospy.Publisher(
+            'debug/debug_settings',
+            DebugSettings,
+            latch=True,
+            queue_size=1)
 
         self.debug_manager = DebugManager(
             target_tick_frequency_hz=rospy.get_param('~target_tick_frequency_hz'))
-        self.tree_manager = TreeManager(module_list=node_module_names,
-                                        debug_manager=self.debug_manager,
-                                        publish_tree_callback=self.tree_pub.publish,
-                                        publish_debug_info_callback=self.debug_info_pub.publish)
+        self.tree_manager = TreeManager(
+            module_list=node_module_names,
+            debug_manager=self.debug_manager,
+            publish_tree_callback=self.tree_pub.publish,
+            publish_debug_info_callback=self.debug_info_pub.publish,
+            publish_debug_settings_callback=self.debug_settings_pub.publish)
 
         self.add_node_service = rospy.Service('~add_node',
                                               AddNode,

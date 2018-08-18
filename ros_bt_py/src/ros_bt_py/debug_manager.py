@@ -16,7 +16,8 @@ class DebugManager(object):
                  target_tick_frequency_hz=20.0,
                  window_size=None,
                  tree_name=None,
-                 debug_info_publish_callback=None):
+                 debug_info_publish_callback=None,
+                 debug_settings_publish_callback=None):
         # TODO(nberg): Ensure this is set at least once on shutdown
         self.continue_event = Event()
         self._lock = Lock()
@@ -27,6 +28,8 @@ class DebugManager(object):
             window_size = int(math.ceil(target_tick_frequency_hz))
 
         self.publish_debug_info = debug_info_publish_callback
+        self.publish_debug_settings = debug_settings_publish_callback
+
         # TODO(nberg): Check performance, maybe hold dict of TickTime objects
         # instead of just using the list in DebugInfo to reduce time spent
         # searching.
@@ -62,6 +65,8 @@ class DebugManager(object):
         with self._lock:
             self._debug_settings_msg.single_step = single_step
             self._debug_settings_msg.collect_performance_data = collect_performance_data
+        if self.publish_debug_settings:
+            self.publish_debug_settings(self._debug_settings_msg)
 
     def modify_breakpoints(self, add=None, remove=None, remove_all=False):
         with self._lock:
@@ -75,6 +80,8 @@ class DebugManager(object):
                 for bp in add:
                     if bp not in self._debug_settings_msg.breakpoint_names:
                         self._debug_settings_msg.breakpoint_names.append(bp)
+            if self.publish_debug_settings:
+                self.publish_debug_settings(self._debug_settings_msg)
             return self._debug_settings_msg.breakpoint_names
 
     def continue_debug(self):
@@ -167,6 +174,8 @@ class DebugManager(object):
             # TODO(nberg): Really autoremove all breakpoints?
             if node_instance.name in self._debug_settings_msg.breakpoint_names:
                 self._debug_settings_msg.breakpoint_names.remove(node_instance.name)
+            if self.publish_debug_settings:
+                self.publish_debug_settings(self._debug_settings_msg)
 
     def wait_for_continue(self):
         # If we have a publish callback, publish debug info
