@@ -1,58 +1,90 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8">
-  <link rel="stylesheet" href="tree_renderer.css" />
-  <script src="https://d3js.org/d3.v4.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/d3-flextree@2.0.0/build/d3-flextree.js"></script>
-  <script src="https://static.robotwebtools.org/roslibjs/current/roslib.js"></script>
-  <script src="render_tree.js"></script>
-</head>
-<body onload="init()">
-  <svg id="editor_viewport" width="800" height="600"><g id="container"/></svg>
-  <div id="controls" class="box">
-    <h4>Controls</h4>
-    <div>
-      <input type="checkbox" id="debugging" onchange="change_debug_mode(this.checked);" />
-      <label for="debugging">Debug</label>
-    </div>
-    <button onclick="step()">Step</button>
-    <button onclick="tick()">Tick</button>
-    <button onclick="tick_periodically()">Tick Periodically</button>
-    <button onclick="stop_tick()">Stop Ticking</button>
-    <button onclick="reset()">Reset tree</button>
-    <button onclick="shutdown()">Shut Down Tree (needed to add new nodes)</button>
-  </div>
-  <div id="add_node" class="box">
-    <h4>Add Node</h4>
-    <select id="new_node_parents" name="new_node_parents">
-    </select>
-    <select id="node_type" name="node_type">
-      <option value="sequence">Sequence</option>
-      <option value="fallback">Fallback</option>
-      <option value="succeeder">Succeeder</option>
-      <option value="failer">Failer</option>
-    </select>
-    <button id="add_node_btn" onclick="add_node();">Add</button>
-  </div>
-  <div id="remove_node" class="box">
-    <h4>Remove Node</h4>
-    <select id="node_delete_selector" name="node_delete_selector">
-    </select>
-    <div>
-      <input type="checkbox" id="node_delete_children" />
-      <label for="node_delete_children">Delete Children</label>
-    </div>
-    <button id="delete_node_btn" onclick="delete_node()">Delete Node</button>
-  </div>
-  <div class="box">
-    <h4>Available Nodes</h4>
-    <button id="refresh" onclick="get_nodes();">Refresh</button>
-    <div>
-      <input type="text" id="package_name" value="ros_bt_py.nodes.sequence" />
-      <button id="load_package" onclick="get_nodes_for_package();">Load package</button>
-    </div>
-    <div id="node_list" />
-  </div>
-</body>
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <link rel="stylesheet" href="tree_renderer.css" />
+    <script src="https://d3js.org/d3.v4.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-flextree@2.0.0/build/d3-flextree.js"></script>
+    <script src="https://static.robotwebtools.org/roslibjs/current/roslib.js"></script>
+    <!-- React includes -->
+    <script src="https://unpkg.com/react@16/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+    <!-- Don't use this in production: -->
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+
+    <script type="text/babel" src="components.js"></script>
+    <script type="text/babel" src="render_tree.js"></script>
+  </head>
+  <body onload="init()">
+    <div class="container-fluid">
+      <div class="row row-height">
+
+        <div class="col scroll-col" id="react_container"></div>
+
+        <div class="col-9 scroll-col">
+          <div class="container-fluid">
+            <div class="row edit_canvas">
+              <div class="col">
+              <svg id="editor_viewport"
+                   class="reactive-svg">
+                <g id="container"/></svg>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col">
+                <div id="controls" class="box">
+                  <h4>Controls</h4>
+                  <div>
+                    <input type="checkbox" id="debugging" onchange="change_debug_mode(this.checked);" />
+                    <label for="debugging">Debug</label>
+                  </div>
+                  <button onclick="step()">Step</button>
+                  <button onclick="tick()">Tick</button>
+                  <button onclick="tick_periodically()">Tick Periodically</button>
+                  <button onclick="stop_tick()">Stop Ticking</button>
+                  <button onclick="reset()">Reset tree</button>
+                  <button onclick="shutdown()">Shut Down Tree (needed to add new nodes)</button>
+                </div>
+                <div id="add_node" class="box">
+                  <h4>Add Node</h4>
+                  <select id="new_node_parents" name="new_node_parents">
+                  </select>
+                  <select id="node_type" name="node_type">
+                    <option value="sequence">Sequence</option>
+                    <option value="fallback">Fallback</option>
+                    <option value="succeeder">Succeeder</option>
+                    <option value="failer">Failer</option>
+                  </select>
+                  <button id="add_node_btn" onclick="add_node();">Add</button>
+                </div>
+                <div id="remove_node" class="box">
+                  <h4>Remove Node</h4>
+                  <select id="node_delete_selector" name="node_delete_selector">
+                  </select>
+                  <div>
+                    <input type="checkbox" id="node_delete_children" />
+                    <label for="node_delete_children">Delete Children</label>
+                  </div>
+                  <button id="delete_node_btn" onclick="delete_node()">Delete Node</button>
+                </div>
+                <div class="box">
+                  <h4>Available Nodes</h4>
+                  <button id="refresh" onclick="get_nodes();">Refresh</button>
+                  <div>
+                    <input type="text" id="package_name" value="ros_bt_py.nodes.sequence" />
+                    <button id="load_package" onclick="get_nodes_for_package();">Load package</button>
+                  </div>
+                  <div id="node_list"></div>
+                </div><!-- edit_buttons -->
+              </div> <!-- edit buttons col -->
+            </div> <!-- edit buttons row -->
+          </div> <!-- container-fluid -->
+
+        </div> <!-- col-9 -->
+
+      </div> <!-- row -->
+    </div> <!-- container -->
+  </body>
 </html>

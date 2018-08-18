@@ -43,7 +43,7 @@
   color: #eff0f4;
 }
 
-tbody {
+.btnode tbody {
   color: #CECFD2;
 }
 
@@ -51,36 +51,58 @@ tbody {
   margin: 4px;
 }
 
-tbody tr {
+.btnode tbody tr {
   background: #313740;
 }
 
-td.key {
+.btnode td.key {
   font-weight: bold;
 }
 
-tbody tr:hover {
-  background: #3A414C;
+.btnode tbody tr:hover {
+   background: #3A414C;
 }
 
-td {
+.btnode td {
 /*
   border: solid;
 */
   vertical-align: top;
 }
 
-th {
+.btnode th {
   text-align: left;
 }
 
 .json {
   white-space: pre;
 }
-td pre {
+.btnode td pre {
   margin: 0;
 }
 
-table {
+.btnode table {
   margin: 4px;
+}
+
+.scroll-col {
+    height: 100%;
+    overflow-y: scroll;
+}
+
+.row-height {
+    height: 100vh;
+}
+
+.reactive-svg {
+  display: block;
+  position: relative;
+  top: 0;
+  left: 0;
+  width: 100%; /* only required for <img /> */
+  height: 100%;
+}
+
+.edit_canvas {
+    height: 30em;
 }

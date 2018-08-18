@@ -638,23 +638,27 @@ function get_nodes(package_name='')
     }),
     function(response) {
       if (response.success) {
+        ReactDOM.render(
+            <NodeList available_nodes={response.available_nodes} />,
+          document.getElementById("react_container")
+        );
         // display nodes
-        var selection = d3.select('#node_list')
-          .selectAll('table')
-          .data(response.available_nodes, x => x.module+x.node_class);
-        selection.exit().remove();
+        // var selection = d3.select('#node_list')
+        //   .selectAll('table')
+        //   .data(response.available_nodes, x => x.module+x.node_class);
+        // selection.exit().remove();
 
-        selection = selection.enter().append('table').attr('class', 'box').merge(selection);
-        var rows = selection.selectAll('tr').data(d => d3.entries(d)
-                                                  .filter(
-                                                    x => x.value.toString().length > 0));
-        rows = rows.enter().append('tr').merge(rows);
-        var keys = rows.selectAll('td').data(d => [d.key]);
-        keys = keys.enter().append('td').merge(keys);
-        keys.text(d => d);
-        var values = rows.selectAll('pre').data(d => [JSON.stringify(d.value, null, 2)]);
-        values = values.enter().append('td').append('pre').merge(values);
-        values.text(d => d);
+        // selection = selection.enter().append('div').attr('class', 'box').merge(selection);
+        // var rows = selection.selectAll('tr').data(d => d3.entries(d)
+        //                                           .filter(
+        //                                             x => x.value.toString().length > 0));
+        // rows = rows.enter().append('tr').merge(rows);
+        // var keys = rows.selectAll('td').data(d => [d.key]);
+        // keys = keys.enter().append('td').merge(keys);
+        // keys.text(d => d);
+        // var values = rows.selectAll('pre').data(d => [JSON.stringify(d.value, null, 2)]);
+        // values = values.enter().append('td').append('pre').merge(values);
+        // values.text(d => d);
       }
       else {
         console.log('Failed to get list of nodes: ' + response.error_message);
@@ -768,3 +772,4 @@ function findExistingParent(d) {
   return d;
 }
 
+init();
