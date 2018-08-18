@@ -26,7 +26,7 @@ class TreeNode(object):
         self.tree_pub = rospy.Publisher('~tree', Tree, latch=True, queue_size=1)
         self.debug_info_pub = rospy.Publisher('~debug/debug_info', DebugInfo, latch=True, queue_size=1)
         self.debug_settings_pub = rospy.Publisher(
-            'debug/debug_settings',
+            '~debug/debug_settings',
             DebugSettings,
             latch=True,
             queue_size=1)
