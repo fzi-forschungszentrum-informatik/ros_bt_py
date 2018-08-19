@@ -26,6 +26,70 @@ function prettyprint_type(jsonpickled_type) {
   return 'Unknown type object: ' + jsonpickled_type;
 }
 
+function getDefaultValue(typeName, options)
+{
+  if (typeName === 'type')
+  {
+    return {type: 'type',
+            value: 'int'};
+  }
+  else if (typeName === 'int' || typeName === 'long')
+  {
+    return {type: 'int',
+            value: 0};
+  }
+  else if (typeName === 'str' || typeName === 'basestring' || typeName === 'unicode')
+  {
+    return {type: 'string',
+            value: 'foo'};
+  }
+  else if (typeName === 'float')
+  {
+    return {type: 'float',
+            value: 1.2};
+  }
+  else if (typeName === 'bool')
+  {
+    return {type: 'boolean',
+            value: true};
+  }
+  else if (typeName === 'list')
+  {
+    return {type: 'list',
+            value: []};
+  }
+  else if (typeName === 'dict')
+  {
+    return {type: 'dict',
+            value: {}};
+  }
+  else if (typeName.startsWith('OptionRef('))
+  {
+    var optionType = options.find(x => {
+      return x === typeName.substring(
+        'OptionRef('.length, typeName.length - 1);
+    });
+    if (optionType)
+    {
+      return getDefaultValue(
+        prettyprint_type(optionType.serialized_value));
+    }
+    else
+    {
+      return {
+        type: 'unset_optionref',
+        value: 'None'
+      };
+    }
+  }
+  else
+  {
+    return {type: 'unknown',
+            value: ''};
+  }
+}
+
+
 class NodeListItem extends Component {
   renderIOTable(nodedata_list, title) {
     // If there are no items in the list, don't generate any DOM
@@ -216,7 +280,9 @@ class App extends Component
 
                 <div className="row">
                   <div className="col">
-                    <SelectedNode selected={this.state.selected_node} />
+                    <SelectedNode
+                      key={this.state.selected_node ? (this.state.selected_node.module + this.state.selected_node.class_name) : ''}
+                      node={this.state.selected_node} />
                   </div>
                   <div className="col">
                     <AddNode ros={this.ros}
@@ -807,13 +873,310 @@ function RemoveNode(props)
     </div>
   );
 }
-function SelectedNode(props)
+class SelectedNode extends Component
 {
-  return (
-    <div className="p-2 placeholder">
-      Selected node: {props.selected === null ? '' : props.selected.name}
-    </div>
-  );
+  constructor(props)
+  {
+    super(props);
+
+    console.log(props);
+    if (props.node) {
+      this.state = {
+        name: props.node.name,
+        options: this.getDefaultValues(props.node.options),
+        inputs: this.getDefaultValues(props.node.inputs,
+                                      props.node.options),
+        outputs: this.getDefaultValues(props.node.outputs,
+                                       props.node.outputs)
+      };
+    }
+    else
+    {
+      this.state = {
+        name: '',
+        options: [],
+        inputs: [],
+        outputs: []
+      };
+    }
+
+    this.add_node_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.bt_namespace + 'add_node',
+      serviceType: 'ros_bt_py_msgs/AddNode'
+    });
+  }
+
+  render()
+  {
+    if (this.props.node === null)
+    {
+      return (
+        <div className="p-2 d-flex flex-column">
+          No Node Selected
+        </div>
+      );
+    }
+
+    return(
+      <div className="p-2 d-flex flex-column">
+        <h4>{this.props.node.name}</h4>
+        {this.renderParamInputs(this.state.options, 'options')}
+        {this.renderParamInputs(this.state.inputs, 'inputs')}
+        {this.renderParamInputs(this.state.outputs, 'outputs')}
+      </div>
+    );
+  }
+
+  updateValue(paramType, key, new_value)
+  {
+    var map_fun = function(x)
+    {
+      if (x.key === key) {
+        return {
+          key: key,
+          value: {
+            type: x.value.type,
+            value: new_value
+          }
+        };
+      }
+      else
+      {
+        return x;
+      }
+    };
+
+    if (paramType.toLowerCase() == 'options')
+    {
+      this.setState(
+        (prevState, props) =>
+          {
+            return {options: prevState.options.map(map_fun)};
+          });
+    }
+    else if (paramType.toLowerCase() == 'inputs')
+    {
+      this.setState(
+        (prevState, props) =>
+          {
+            return {inputs: prevState.inputs.map(map_fun)};
+          });
+    }
+    else if (paramType.toLowerCase() == 'outputs')
+    {
+      this.setState(
+        (prevState, props) =>
+          {
+            return {outputs: prevState.outputs.map(map_fun)};
+          });
+    }
+  }
+
+  inputForValue(paramItem, onNewValue)
+  {
+    var valueType = paramItem.value.type;
+    var changeHandler = (event) => {};
+
+    if (valueType === 'int')
+    {
+      // Number input with integer increments
+      changeHandler = (event) =>
+          {
+            var newValue = Math.round(event.target.value);
+            if (isNaN(newValue))
+            {
+              newValue = 0;
+            }
+            onNewValue(newValue);
+          };
+
+      return (
+        <div className="form-group">
+          <label>{paramItem.key}
+            <input type="number" name="integer"
+                   className="form-control"
+                   onChange={changeHandler}
+                   placeholder="integer"
+                   step="1.0"
+                   value={paramItem.value.value}>
+            </input>
+          </label>
+        </div>
+      );
+    }
+    if (valueType === 'float')
+    {
+      // Number input with free increments
+      changeHandler = (event) =>
+          {
+            var newValue = event.target.value;
+            if (isNaN(newValue))
+            {
+              newValue = 0;
+            }
+            onNewValue(newValue);
+          };
+
+      return (
+        <div className="form-group">
+          <label>{paramItem.key}
+            <input type="number" name="integer"
+                   className="form-control"
+                   onChange={changeHandler}
+                   placeholder="float"
+                   value={paramItem.value.value}>
+            </input>
+          </label>
+        </div>
+      );
+    }
+    else if (valueType === 'string')
+    {
+      // Regular input
+      changeHandler = (event) =>
+        {
+          onNewValue(event.target.value || '');
+        };
+
+      return (
+        <div className="form-group">
+          <label>{paramItem.key}
+            <input type="text"
+                   className="form-control mt-2"
+                   value={paramItem.value.value}
+                   onChange={changeHandler}/>
+          </label>
+        </div>
+      );
+    }
+    else if (valueType === 'type')
+    {
+      // Regular input
+      changeHandler = (event) =>
+        {
+          var newTypeName = event.target.value || '';
+          if (python_builtin_types.indexOf(newTypeName) >= 0)
+          {
+            onNewValue('__builtin__.' + newTypeName);
+          }
+          else
+          {
+            onNewValue(newTypeName);
+          }
+
+        };
+
+      return (
+        <div className="form-group">
+          <label>{paramItem.key}
+            <input type="text"
+                   className="form-control mt-2"
+                   value={paramItem.value.value}
+                   onChange={changeHandler}/>
+          </label>
+        </div>
+      );
+    }
+    else if (valueType === 'boolean')
+    {
+      // Checkbox
+      changeHandler = (event) =>
+        {
+          onNewValue(event.target.checked || false);
+        };
+
+      return (
+        <div className="form-check m-1">
+          <label className="form-check-label">{paramItem.key}
+            <input type="checkbox"
+                   className="form-check-input"
+                   checked={this.state.value}
+                   onChange={this.handleChange} />
+          </label>
+        </div>
+      );
+    }
+    else if (valueType === 'unset_optionref')
+    {
+      return (
+        <div className="form-group m-1">
+          <label>{paramItem.key}
+            <input type="text"
+                   className="form-control mt-2"
+                   disabled="true"
+                   checked={this.state.value}/>
+          </label>
+        </div>
+      );
+    }
+    // TODO(nberg): implement these two
+
+    // else if (valueType === 'list')
+    // {
+
+    // }
+    // else if (valueType === 'dict')
+    // {
+
+    // }
+    else  // if (valueType === 'object')
+    {
+      // textarea with JSON.stringify(value), parse back when changed
+      changeHandler = (event) =>
+        {
+          onNewValue(JSON.parse(event.target.value) || {});
+        };
+
+      return (
+        <div className="form-group">
+          <label>{paramItem.key}
+            <input type="textarea"
+                   className="form-control mt-2"
+                   value={JSON.stringify(paramItem.value.value)}
+                   onChange={changeHandler}/>
+          </label>
+        </div>
+      );
+    }
+  }
+
+  renderParamInputs(params, name)
+  {
+    var param_rows = params.map(x => {
+      return (
+        <tr key={name + x.key}>
+          <td>
+            {this.inputForValue(x, this.updateValue.bind(this, name, x.key))}
+          </td>
+        </tr>
+      );
+    });
+
+    return (
+      <div>
+        <h5>{name}</h5>
+        <table>
+          <tbody>
+            {param_rows}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  getDefaultValues(paramList, options)
+  {
+    options = options || [];
+
+    return paramList.map(x => {
+      return {
+        key: x.key,
+        value: getDefaultValue(
+          prettyprint_type(x.serialized_value), options),
+      };
+    });
+  }
 }
 
 render(<App />, document.body);
