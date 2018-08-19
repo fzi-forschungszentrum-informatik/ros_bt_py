@@ -45,21 +45,32 @@ class NodeListItem extends Component {
     });
 
     return (
-      <div className="io_values">
+      <div className="io_values list-group-item">
         <h5>{title}</h5>
-        <table><tbody>{rows}</tbody></table>
+        <table><tbody>
+            {rows}
+        </tbody></table>
       </div>
     );
   };
 
+  onClick(e, node) {
+    this.props.onSelectionChange(this.props.node);
+  }
+
   render() {
     return (
-      <div className="box">
+      <div className="border rounded p-2 mb-2"
+           onClick={this.onClick.bind(this)}>
         <h4 className="node_class">{this.props.node.node_class}</h4>
         <h5 className="node_module">{this.props.node.module}</h5>
-        { this.renderIOTable(this.props.node.options, 'Options') }
-        { this.renderIOTable(this.props.node.inputs, 'Inputs') }
-        { this.renderIOTable(this.props.node.outputs, 'Outputs') }
+        <div>{
+          'max_children: ' + (this.props.node.max_children >= 0 ? this.props.node.max_children : '∞')}</div>
+        <div className="list-group">
+          { this.renderIOTable(this.props.node.options, 'Options') }
+          { this.renderIOTable(this.props.node.inputs, 'Inputs') }
+          { this.renderIOTable(this.props.node.outputs, 'Outputs') }
+        </div>
       </div>
     );
   };
@@ -71,7 +82,10 @@ class NodeList extends Component
   {
     super(props);
 
-    this.state = {available_nodes: []};
+    this.state = {
+      available_nodes: [],
+      package_name: 'ros_bt_py.nodes.sequence'
+    };
 
     this.onError = props.onError;
     this.get_nodes_service = new ROSLIB.Service({
@@ -79,13 +93,21 @@ class NodeList extends Component
       name: props.bt_namespace + 'get_available_nodes',
       serviceType: 'ros_bt_py_msgs/GetAvailableNodes'
     });
+
+    this.getNodes = this.getNodes.bind(this);
+    this.handleChange = this.handleChange.bind(this);
   }
 
   componentDidMount()
   {
+    this.getNodes('');
+  }
+
+  getNodes(package_name)
+  {
     this.get_nodes_service.callService(
       new ROSLIB.ServiceRequest({
-        node_modules: ['']
+        node_modules: [package_name]
       }),
       function(response) {
         if (response.success) {
@@ -97,15 +119,41 @@ class NodeList extends Component
       }.bind(this));
   }
 
+  handleChange(e)
+  {
+    this.setState({package_name: e.target.value});
+  }
+
   render()
   {
     var items = this.state.available_nodes.map( (node) => {
-      return (<NodeListItem node={node} key={node.module + node.node_class} />);
+      return (<NodeListItem node={node}
+              key={node.module + node.node_class}
+              onSelectionChange={this.props.onSelectionChange}/>);
     });
     return(
-      <div className="box vertical_list">
-        {items}
-      </div>);
+      <div className="available-nodes m-1">
+        <div className="form-group">
+          <button id="refresh"
+                  className="btn btn-block btn-primary mt-2"
+                  onClick={this.getNodes.bind(this, '')}>
+            Refresh
+          </button>
+          <input type="text" id="package_name"
+                 className="form-control mt-2"
+                 value={this.state.package_name}
+                 onChange={this.handleChange}/>
+          <button id="load_package"
+                  className="btn btn-block btn-primary mt-2"
+                  onClick={this.getNodes.bind(this, this.state.package_name)}>
+            Load package
+          </button>
+        </div>
+        <div className="vertical_list">
+          {items}
+        </div>
+      </div>
+    );
   }
 }
 
@@ -191,7 +239,7 @@ class App extends Component
 function ExecutionBar(props)
 {
   return (
-    <header id="header" className="d-flex flex-column flex-md-row placeholder">
+    <header id="header" className="d-flex flex-column flex-md-row align-items-center placeholder">
       <DebugControls
         ros={props.ros}
         bt_namespace={props.bt_namespace}
@@ -244,13 +292,28 @@ class TickControls extends Component
   render()
   {
     return (
-      <header id="header" className="d-flex flex-column flex-md-row">
-        <button onClick={this.controlExec.bind(this, 1)}>Tick Once</button>
-        <button onClick={this.controlExec.bind(this, 2)}>Tick Periodically</button>
-        <button onClick={this.controlExec.bind(this, 4)}>Stop</button>
-        <button onClick={this.controlExec.bind(this, 5)}>Reset</button>
-        <button onClick={this.controlExec.bind(this, 6)}>Shutdown</button>
-      </header>
+      <Fragment>
+        <button onClick={this.controlExec.bind(this, 1)}
+                className="btn btn-primary m-1">
+          Tick Once
+        </button>
+        <button onClick={this.controlExec.bind(this, 2)}
+                className="btn btn-primary m-1">
+          Tick Periodically
+        </button>
+        <button onClick={this.controlExec.bind(this, 4)}
+                className="btn btn-primary m-1">
+          Stop
+        </button>
+        <button onClick={this.controlExec.bind(this, 5)}
+                className="btn btn-primary m-1">
+          Reset
+        </button>
+        <button onClick={this.controlExec.bind(this, 6)}
+                className="btn btn-primary m-1">
+          Shutdown
+        </button>
+      </Fragment>
     );
   }
 }
@@ -339,16 +402,21 @@ class DebugControls extends Component
   render()
   {
     return (
-      <div>
-        <div>
+      <Fragment>
+        <div className="form-check m-1">
           <input type="checkbox"
                  id="debugging"
+                 className="form-check-input"
                  checked={this.state.value}
                  onChange={this.handleChange} />
-          <label htmlFor="debugging">Debug</label>
+          <label className="form-check-label"
+                 htmlFor="debugging">Debug</label>
         </div>
-        <button onClick={this.onClickStep}>Step</button>
-      </div>
+        <button onClick={this.onClickStep}
+                className="btn btn-primary m-1">
+          Step
+        </button>
+      </Fragment>
     );
   }
 }
@@ -743,7 +811,7 @@ function SelectedNode(props)
 {
   return (
     <div className="p-2 placeholder">
-      Selected Node, eventually.
+      Selected node: {props.selected === null ? '' : props.selected.name}
     </div>
   );
 }
