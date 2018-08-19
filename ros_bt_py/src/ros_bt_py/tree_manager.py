@@ -478,13 +478,15 @@ class TreeManager(object):
                     if root:
                         root.untick()
                         state = root.state
-                        if state == NodeMsg.IDLE:
+                        if state == NodeMsg.IDLE or state == NodeMsg.PAUSED:
                             response.tree_state = Tree.IDLE
                             response.success = True
                         else:
                             response.tree_state = Tree.ERROR
                             response.success = False
-                            rospy.logerr('Root node (%s) state after unticking is not IDLE, but %s',
+                            rospy.logerr(
+                                ('Root node (%s) state after unticking is neither '
+                                 'IDLE nor PAUSED, but %s'),
                                          str(root),
                                          state)
                             response.error_message = 'Failed to untick root node.'
