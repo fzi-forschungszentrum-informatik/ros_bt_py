@@ -7,6 +7,20 @@ var render = ReactDOM.render;
 var createRef = React.createRef;
 var Fragment = React.Fragment; //'x-fragment';
 
+var python_builtin_types = [
+  'int',
+  'float',
+  'long',
+  'str',
+  'basestring',
+  'unicode',
+  'bool',
+  'list',
+  'dict',
+  'set',
+  'type'
+];
+
 function prettyprint_type(jsonpickled_type) {
   var json_type = JSON.parse(jsonpickled_type);
   if (json_type['py/type'] !== undefined)
@@ -84,7 +98,7 @@ function getDefaultValue(typeName, options)
   }
   else
   {
-    return {type: 'unknown',
+    return {type: '__' + typeName,
             value: ''};
   }
 }
@@ -281,6 +295,8 @@ class App extends Component
                 <div className="row">
                   <div className="col">
                     <SelectedNode
+                      ros={this.ros}
+                      bt_namespace={this.state.bt_namespace}
                       key={this.state.selected_node ? (this.state.selected_node.module + this.state.selected_node.class_name) : ''}
                       node={this.state.selected_node} />
                   </div>
@@ -905,6 +921,9 @@ class SelectedNode extends Component
       name: props.bt_namespace + 'add_node',
       serviceType: 'ros_bt_py_msgs/AddNode'
     });
+
+    this.nameChangeHandler = this.nameChangeHandler.bind(this);
+    this.onClickAdd = this.onClickAdd.bind(this);
   }
 
   render()
@@ -920,12 +939,82 @@ class SelectedNode extends Component
 
     return(
       <div className="p-2 d-flex flex-column">
-        <h4>{this.props.node.name}</h4>
+        <button className="btn btn-block btn-primary"
+                onClick={this.onClickAdd}>Add to Tree</button>
+        <input className="d-block"
+               type="text"
+               value={this.state.name}
+               onChange={this.nameChangeHandler}/>
+        <h4>{this.state.name}</h4>
         {this.renderParamInputs(this.state.options, 'options')}
-        {this.renderParamInputs(this.state.inputs, 'inputs')}
-        {this.renderParamInputs(this.state.outputs, 'outputs')}
+        {/* {this.renderParamInputs(this.state.inputs, 'inputs')} */}
+        {/* {this.renderParamInputs(this.state.outputs, 'outputs')} */}
       </div>
     );
+  }
+
+  onClickAdd()
+  {
+    var msg = this.buildNodeMessage();
+    console.log('trying to add node to tree:');
+    console.log(msg);
+    this.add_node_service.callService(
+      new ROSLIB.ServiceRequest({
+        tree_name: '',
+        parent_name: '',
+        node: msg,
+        allow_rename: true
+      }),
+      function(response) {
+        if (response.success) {
+          console.log('Added node to tree as ' + response.actual_node_name);
+        }
+        else {
+          console.log('Failed to add node ' + this.state.name + ': '
+                      + response.error_message);
+        }
+      }.bind(this));
+  }
+
+  buildNodeMessage()
+  {
+    return {
+      is_subtree: false,
+      module: this.props.node.module,
+      node_class: this.props.node.node_class,
+      name: this.state.name,
+      options: this.state.options.map(x => {
+        var option = {
+          key: x.key,
+          serialized_value: ''
+        };
+        if (x.value.type === 'type') {
+          if (python_builtin_types.indexOf(x.value.value) >= 0)
+          {
+            x.value.value = '__builtin__.' + x.value.value;
+          }
+          option.serialized_value = JSON.stringify({
+            "py/type": x.value.value
+          });
+        }
+        else if (x.value.type.startsWith('__'))
+        {
+          x.value.value["py/object"] = x.value.substring('__'.length);
+          option.serialized_value = JSON.stringify(x.value.value);
+        }
+        else
+        {
+          option.serialized_value = JSON.stringify(x.value.value);
+        }
+        return option;
+      }),
+      child_names: []
+    };
+  }
+
+  nameChangeHandler(event)
+  {
+    this.setState({name: event.target.value});
   }
 
   updateValue(paramType, key, new_value)
@@ -1123,18 +1212,11 @@ class SelectedNode extends Component
     else  // if (valueType === 'object')
     {
       // textarea with JSON.stringify(value), parse back when changed
-      changeHandler = (event) =>
-        {
-          onNewValue(JSON.parse(event.target.value) || {});
-        };
-
       return (
         <div className="form-group">
           <label>{paramItem.key}
-            <input type="textarea"
-                   className="form-control mt-2"
-                   value={JSON.stringify(paramItem.value.value)}
-                   onChange={changeHandler}/>
+            <JSONInput initialValue={JSON.stringify(paramItem.value.value)}
+                       onNewValue={onNewValue}/>
           </label>
         </div>
       );
@@ -1176,6 +1258,66 @@ class SelectedNode extends Component
           prettyprint_type(x.serialized_value), options),
       };
     });
+  }
+}
+
+class JSONInput extends Component
+{
+  constructor(props)
+  {
+    super(props);
+
+    var is_valid = false;
+
+    try {
+      JSON.parse(props.initialValue);
+      is_valid = true;
+    }
+    catch (e)
+    {
+      is_valid = false;
+    }
+
+    this.state = {
+      value: props.initialValue,
+      is_valid: is_valid
+    };
+
+    this.changeHandler = this.changeHandler.bind(this);
+  }
+
+  changeHandler(event)
+  {
+    var is_valid = false;
+    try
+    {
+      console.log('parsed:');
+      console.log(JSON.parse(event.target.value));
+    }
+    catch (e)
+    {
+    }
+    this.setState({value: event.target.value});
+    try
+    {
+      this.props.onNewValue(JSON.parse(event.target.value));
+      this.setState({is_valid: true});
+    }
+    catch(e)
+    {
+      // Do nothing
+      this.setState({is_valid: false});
+    }
+  }
+
+  render()
+  {
+    return (
+      <input type="textarea"
+             className={'form-control mt-2 ' + (this.state.is_valid ? '' : 'is-invalid')}
+             value={this.state.value}
+             onChange={this.changeHandler}/>
+    );
   }
 }
 
