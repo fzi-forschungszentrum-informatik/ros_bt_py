@@ -103,6 +103,17 @@ function getDefaultValue(typeName, options)
   }
 }
 
+function selectIOGripper(vertex_selection, data)
+{
+  return vertex_selection
+    .selectAll(".io_group")
+    .filter(d => d.name === data.node_name)
+    .selectAll("." +
+               data.data_kind.substring(0, data.data_kind.length - 1) +
+               "_gripper_group")
+    .filter(d => d.key === data.data_key);
+}
+
 
 class NodeListItem extends Component {
   renderIOTable(nodedata_list, title) {
@@ -974,25 +985,86 @@ class D3BehaviorTreeEditor extends Component
       .attr("class", "data_edges")
       .merge(edges);
 
-    this.drawDataEdges(edges, wirings.map(function(wiring) {
-      return [
-        this.getIOCoords(data,
-                         wiring.source.node_name,
-                         wiring.source.data_kind,
-                         wiring.source.data_key),
-        this.getIOCoords(data,
-                         wiring.target.node_name,
-                         wiring.target.data_kind,
-                         wiring.target.data_key)
-      ];
-    }.bind(this)));
+    this.drawDataEdges(
+      edges,
+      wirings.map(function(wiring) {
+        var start = this.getIOCoords(data,
+                                     wiring.source.node_name,
+                                     wiring.source.data_kind,
+                                     wiring.source.data_key,
+                                     /*centered=*/true);
+
+        var two = {
+          x : start.x ,
+          y : start.y - 2
+        };
+
+        if (wiring.source.data_kind === "inputs")
+        {
+          two.x = two.x - 10;
+        }
+        else if (wiring.source.data_kind === "outputs")
+        {
+          two.x = two.x + 10;
+        }
+        else
+        {
+          // two.y = two.y - 10;
+        }
+
+        var target = this.getIOCoords(data,
+                                      wiring.target.node_name,
+                                      wiring.target.data_kind,
+                                      wiring.target.data_key,
+                                      /*centered=*/true);
+
+        var three = {
+          x : target.x ,
+          y : target.y - 2
+        };
+
+        if (wiring.target.data_kind === "inputs")
+        {
+          three.x = three.x - 10;
+        }
+        else if (wiring.target.data_kind === "outputs")
+        {
+          three.x = three.x + 10;
+        }
+        else
+        {
+          // three.y = three.y - 10;
+        }
+
+        return {
+          source: {
+            node_name: wiring.source.node_name,
+            data_kind: wiring.source.data_kind,
+            data_key: wiring.source.data_key
+          },
+          target: {
+            node_name: wiring.target.node_name,
+            data_kind: wiring.target.data_kind,
+            data_key: wiring.target.data_key
+          },
+          points: [
+            start,
+            two,
+            three,
+            target
+          ]};
+      }.bind(this)),
+      vertices);
   }
 
   getIOCoords(node_data,
               node_name,
               data_kind,
-              data_key)
+              data_key,
+              centered)
   {
+    centered = centered || false;
+
     var node = node_data.find(d => d.data.name === node_name);
     if (!node)
     {
@@ -1003,48 +1075,48 @@ class D3BehaviorTreeEditor extends Component
     var coords = null;
     var inputs = node.inputs || [];
     var outputs = node.outputs || [];
+
+    var gripperSize = this.getGripperSize(node._size.height,
+                                           inputs.length,
+                                           outputs.length);
     if (data_kind === 'inputs')
     {
       coords = this.getGripperCoords(
         node.data.inputs.findIndex(x => x.key === data_key) || 0,
         /*right=*/false,
-        this.getGripperSize(node._size.height,
-                            inputs.length,
-                            outputs.length),
+        gripperSize,
         node._size.width);
-
-      return {
-        x: node.x + coords.x,
-        y: node.y + coords.y
-      };
     }
     else if (data_kind === 'outputs')
     {
       coords = this.getGripperCoords(
         node.data.outputs.findIndex(x => x.key === data_key) || 0,
         /*right=*/true,
-        this.getGripperSize(node._size.height,
-                            inputs.length,
-                            outputs.length),
+        gripperSize,
         node._size.width);
-
-      return {
-        x: node.x + coords.x,
-        y: node.y + coords.y
-      };
     }
     else
     {
       // For things that are neither inputs nor outputs, just draw a
       // line to the center of the node
-      return {
-        x: node.x + 0.5 * node._size.width,
-        y: node.y + 0.5 * node._size.height
+      coords = {
+        x: 0.5 * node._size.width,
+        y: 0.5 * node._size.height
       };
     }
+
+    if (centered)
+    {
+      coords.x += gripperSize * 0.5;
+      coords.y += gripperSize * 0.5;
+    }
+    return {
+      x: node.x + coords.x,
+      y: node.y + coords.y
+    };
   }
 
-  drawDataEdges(edge_selection, edge_data)
+  drawDataEdges(edge_selection, edge_data, vertex_selection)
   {
     var link = edge_selection.selectAll(".data-link").data(edge_data);
     link.exit().remove();
@@ -1053,9 +1125,48 @@ class D3BehaviorTreeEditor extends Component
       .enter()
       .append("path")
       .attr("class", "data-link")
-      .attr("d", d3.line()
+      .attr("d", function(d) {
+        var lineGen = d3.line()
             .x(d => d.x)
-            .y(d => d.y))
+            .y(d => d.y)
+            .curve(d3.curveCatmullRom.alpha(0.9));
+        return lineGen(d.points);
+      })
+      .on("mouseover", function(d) {
+        console.log("link over");
+        var my_data = d3.select(this).datum();
+        d3.select(this).classed("data-hover", true);
+
+        // select source gripper
+        selectIOGripper(vertex_selection, my_data.source)
+          .each(function(d) {
+            this.dispatchEvent(new CustomEvent("mouseover"));
+          });
+
+        // select target gripper
+        selectIOGripper(vertex_selection, my_data.target)
+          .each(function(d) {
+            this.dispatchEvent(new CustomEvent("mouseover"));
+          });
+      })
+      .on("mouseout", function(d) {
+        console.log("link out");
+        var my_data = d3.select(this).datum();
+
+        d3.select(this).classed("data-hover", false);
+
+        // select source gripper
+        selectIOGripper(vertex_selection, my_data.source)
+          .each(function(d) {
+            this.dispatchEvent(new CustomEvent("mouseout"));
+          });
+
+        // select target gripper
+        selectIOGripper(vertex_selection, my_data.target)
+          .each(function(d) {
+            this.dispatchEvent(new CustomEvent("mouseout"));
+          });
+      })
       .merge(link);
   }
 
@@ -1097,7 +1208,7 @@ class D3BehaviorTreeEditor extends Component
         return "translate(" + Math.round(d.x) + ", " + Math.round(d.y) + ")";
       });
 
-    var inputs = io_groups.selectAll(".input_grabber").data(
+    var inputs = io_groups.selectAll(".input_gripper_group").data(
       function(d) {
         console.log(d);
         return d.inputs.map(function(el, index) {
@@ -1110,10 +1221,13 @@ class D3BehaviorTreeEditor extends Component
       }.bind(this),
       d => d.key);
     inputs.exit().remove();
+
     inputs = inputs
       .enter()
       .append("g")
       .attr("class", "input_gripper_group")
+      .on("mouseover", function(d) { d3.select(this).classed("data-hover", true); })
+      .on("mouseout", function(d) { d3.select(this).classed("data-hover", false); })
       .merge(inputs);
     inputs
       .attr("transform", function(d) {
@@ -1146,7 +1260,7 @@ class D3BehaviorTreeEditor extends Component
 
     // Same thing for the outputs, except they're at the right end of the node
 
-    var outputs = io_groups.selectAll(".output_grabber").data(
+    var outputs = io_groups.selectAll(".output_gripper_group").data(
       function(d) {
         return d.outputs.map(function(el, index) {
           var coords = this.getGripperCoords(index, /*right=*/true, d.gripper_size, d.width);
@@ -1162,6 +1276,8 @@ class D3BehaviorTreeEditor extends Component
       .enter()
       .append("g")
       .attr("class", "output_gripper_group")
+      .on("mouseover", function(d) { d3.select(this).classed("data-hover", true); })
+      .on("mouseout", function(d) { d3.select(this).classed("data-hover", false); })
       .merge(outputs);
     outputs
       .attr("transform", function(d) {

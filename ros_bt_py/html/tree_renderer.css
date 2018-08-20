@@ -120,5 +120,16 @@
 .data-link {
     fill: none;
     stroke: #444;
-    stroke-width: 1.5px;
+    stroke-width: 3.5px;
+}
+
+.data-hover {
+    stroke: #148050;
+    background: #148050;
+}
+
+.data-hover rect {
+    stroke: #148050;
+    background: #148050;
+    fill: #148050;
 }
