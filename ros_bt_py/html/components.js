@@ -522,7 +522,7 @@ class D3BehaviorTreeEditor extends Component
     super(props);
 
     this.state = {
-      tree_msg: null
+      editable: true
     };
 
     this.horizontal_spacing = 40;
@@ -579,13 +579,12 @@ class D3BehaviorTreeEditor extends Component
     );
   }
 
-  onTreeUpdate(tree_msg)
+  componentDidUpdate()
   {
-    this.drawEverything(tree_msg);
 
     // Disable all interaction (except for zooming and panning) when
     // the tree isn't editable
-    if (tree_msg.state !== "EDITABLE")
+    if (this.state.editable)
     {
 
     }
@@ -593,12 +592,20 @@ class D3BehaviorTreeEditor extends Component
     // Hide or show data graph
     if (this.props.showDataGraph)
     {
-      d3.select(this.svg_ref).attr("visibility", "hidden");
+      d3.select(this.svg_ref.current).select(".data_graph").attr("visibility", "hidden");
     }
     else
     {
-      d3.select(this.svg_ref).attr("visibility", "visible");
+      d3.select(this.svg_ref.current).select(".data_graph").attr("visibility", "visible");
     }
+
+  }
+
+  onTreeUpdate(tree_msg)
+  {
+    this.drawEverything(tree_msg);
+
+    this.setState({editable: tree_msg.state === "EDITABLE"});
   }
 
   drawEverything(tree_msg)
@@ -732,8 +739,6 @@ class D3BehaviorTreeEditor extends Component
         rect.width /= zoom;
         rect.height /= zoom;
         d._size = rect;
-        console.log('#####');
-        console.log(this);
         this.parentElement.setAttribute('width', rect.width);
         this.parentElement.setAttribute('height', rect.height);
       });
