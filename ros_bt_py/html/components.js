@@ -555,6 +555,8 @@ class D3BehaviorTreeEditor extends Component
     this.onError = props.onError;
 
     this.onTreeUpdate = this.onTreeUpdate.bind(this);
+    this.getIOCoords = this.getIOCoords.bind(this);
+    this.getIOCoordsFromNode = this.getIOCoordsFromNode.bind(this);
   }
 
   componentDidMount()
@@ -622,8 +624,11 @@ class D3BehaviorTreeEditor extends Component
   drawEverything(tree_msg)
   {
     var forest_root = {
-      "name": "__forest_root",
-      "child_names": []
+      name: "__forest_root",
+      child_names: [],
+      inputs: [],
+      outputs: [],
+      options: []
     };
 
     tree_msg.nodes.push(forest_root);
@@ -976,7 +981,41 @@ class D3BehaviorTreeEditor extends Component
       .attr("class", "data_vertices")
       .merge(vertices);
 
-    this.drawDataVerts(vertices, data);
+    var input_vertex_data = [];
+    var output_vertex_data = [];
+    data.forEach(function(x) {
+      Array.prototype.push.apply(
+        input_vertex_data,
+        x.data.inputs.map(
+          function(input) {
+            var datum = this.getIOCoordsFromNode(
+              x,
+              input.key,
+              "inputs",
+              /*centered=*/false);
+            datum.nodeName = x.data.name;
+            datum.key = input.key;
+            datum.type = input.serialized_type;
+            return datum;
+          }.bind(this)));
+
+      Array.prototype.push.apply(
+        output_vertex_data,
+        x.data.outputs.map(
+          function(output) {
+            var datum = this.getIOCoordsFromNode(
+              x,
+              output.key,
+              "outputs",
+              /*centered=*/false);
+            datum.nodeName = x.data.name;
+            datum.key = output.key;
+            datum.type = output.serialized_type;
+            return datum;
+          }.bind(this)));
+    }.bind(this));
+
+    this.drawDataVerts(vertices, input_vertex_data, output_vertex_data);
 
     var edges = g_data.selectAll("g.data_edges").data([null]);
     edges = edges
@@ -1036,6 +1075,8 @@ class D3BehaviorTreeEditor extends Component
           // three.y = three.y - 10;
         }
 
+        console.log("wiring from", wiring.source, "to", wiring.target, start, two, three, target);
+        console.log(data);
         return {
           source: {
             node_name: wiring.source.node_name,
@@ -1063,13 +1104,22 @@ class D3BehaviorTreeEditor extends Component
               data_key,
               centered)
   {
+    var node = node_data.find(d => d.data.name === node_name);
+    return this.getIOCoordsFromNode(node, data_key, data_kind, centered);
+  }
+
+  getIOCoordsFromNode(
+    node,
+    data_key,
+    data_kind,
+    centered)
+  {
     centered = centered || false;
 
-    var node = node_data.find(d => d.data.name === node_name);
     if (!node)
     {
       // Shouldn't really happen...
-      return {x: 0, y: 0};
+      return {x: 0, y: 0, gripperSize: 0};
     }
 
     var coords = null;
@@ -1077,8 +1127,8 @@ class D3BehaviorTreeEditor extends Component
     var outputs = node.outputs || [];
 
     var gripperSize = this.getGripperSize(node._size.height,
-                                           inputs.length,
-                                           outputs.length);
+                                          inputs.length,
+                                          outputs.length);
     if (data_kind === 'inputs')
     {
       coords = this.getGripperCoords(
@@ -1112,7 +1162,8 @@ class D3BehaviorTreeEditor extends Component
     }
     return {
       x: node.x + coords.x,
-      y: node.y + coords.y
+      y: node.y + coords.y,
+      gripperSize: gripperSize
     };
   }
 
@@ -1170,55 +1221,10 @@ class D3BehaviorTreeEditor extends Component
       .merge(link);
   }
 
-  drawDataVerts(vertex_selection, vertex_data)
+  drawDataVerts(vertex_selection, input_vertex_data, output_vertex_data)
   {
-    var max_io_gripper_size = this.max_io_gripper_size;
-    var io_gripper_spacing = this.io_gripper_spacing;
-    var io_groups = vertex_selection
-        .selectAll('.io_group').data(
-          vertex_data.map(
-            d => {
-              var inputs = d.data.inputs || [];
-              var outputs = d.data.outputs || [];
-
-              return {
-                name: d.data.name,
-                x: d.x,
-                y: d.y,
-                width: d._size.width,
-                height: d._size.height,
-                gripper_size: this.getGripperSize(
-                  d._size.height,
-                  inputs.length,
-                  outputs.length),
-                inputs: inputs,
-                outputs: outputs,
-              };
-            }),
-          d => d.name);
-    io_groups.exit().remove();
-    io_groups = io_groups
-      .enter()
-      .append("g")
-      .attr("class", "io_group")
-      .merge(io_groups);
-
-    io_groups
-      .attr("transform", function(d) {
-        return "translate(" + Math.round(d.x) + ", " + Math.round(d.y) + ")";
-      });
-
-    var inputs = io_groups.selectAll(".input_gripper_group").data(
-      function(d) {
-        console.log(d);
-        return d.inputs.map(function(el, index) {
-          var coords = this.getGripperCoords(index, false, d.gripper_size, d.width);
-          el.rel_x = coords.x;
-          el.rel_y = coords.y;
-          el.gripper_size = d.gripper_size;
-          return el;
-        }.bind(this));
-      }.bind(this),
+    var inputs = vertex_selection.selectAll(".input_gripper_group").data(
+      input_vertex_data,
       d => d.key);
     inputs.exit().remove();
 
@@ -1231,7 +1237,7 @@ class D3BehaviorTreeEditor extends Component
       .merge(inputs);
     inputs
       .attr("transform", function(d) {
-        return "translate(" + Math.round(d.rel_x) + ", " + Math.round(d.rel_y) + ")";
+        return "translate(" + Math.round(d.x) + ", " + Math.round(d.y) + ")";
       });
 
     var input_grippers = inputs.selectAll(".gripper").data(d=> [d]);
@@ -1240,8 +1246,8 @@ class D3BehaviorTreeEditor extends Component
       .enter()
       .append("rect")
       .attr("class", "gripper input-gripper")
-      .attr("width", d => d.gripper_size)
-      .attr("height", d => d.gripper_size)
+      .attr("width", d => d.gripperSize)
+      .attr("height", d => d.gripperSize)
       .merge(input_grippers);
 
     var input_labels = inputs.selectAll(".label").data(d=> [d]);
@@ -1253,25 +1259,18 @@ class D3BehaviorTreeEditor extends Component
       .attr("text-anchor", "end")
       .attr("dominant-baseline", "middle")
       .attr("dx", d => Math.round(-5))
-      .attr("dy", d => Math.round(0.5 * d.gripper_size))
+      .attr("dy", d => Math.round(0.5 * d.gripperSize))
       .merge(input_labels);
     input_labels.text(d => d.key);
 
 
     // Same thing for the outputs, except they're at the right end of the node
 
-    var outputs = io_groups.selectAll(".output_gripper_group").data(
-      function(d) {
-        return d.outputs.map(function(el, index) {
-          var coords = this.getGripperCoords(index, /*right=*/true, d.gripper_size, d.width);
-          el.rel_x = coords.x;
-          el.rel_y = coords.y;
-          el.gripper_size = d.gripper_size;
-          return el;
-        }.bind(this));
-      }.bind(this),
+    var outputs = vertex_selection.selectAll(".output_gripper_group").data(
+      output_vertex_data,
       d => d.key);
     outputs.exit().remove();
+
     outputs = outputs
       .enter()
       .append("g")
@@ -1281,7 +1280,7 @@ class D3BehaviorTreeEditor extends Component
       .merge(outputs);
     outputs
       .attr("transform", function(d) {
-        return "translate(" + Math.round(d.rel_x) + ", " + Math.round(d.rel_y) + ")";
+        return "translate(" + Math.round(d.x) + ", " + Math.round(d.y) + ")";
       });
 
     var output_grippers = outputs.selectAll(".gripper").data(d=> [d]);
@@ -1290,8 +1289,21 @@ class D3BehaviorTreeEditor extends Component
       .enter()
       .append("rect")
       .attr("class", "gripper output-gripper")
-      .attr("width", d => d.gripper_size)
-      .attr("height", d => d.gripper_size)
+      .attr("width", d => d.gripperSize)
+      .attr("height", d => d.gripperSize)
+      .on("mousedown", function(d) {
+        // disable event handlers on all grippers
+
+        // give input-grippers a new move handler that sets the wiring
+        // source
+
+        // bonus points: don't set handler if types don't match (and color appropriately?)
+
+        // Register move and up listeners on canvas
+        d3.select(this.viewport_ref.current)
+          .on("mousemove.io_drag", this.canvasIOMoveHandler)
+          .on("mouseup.io_drag", this.canvasIOMouseupHandler);
+      }.bind(this))
       .merge(output_grippers);
 
     var output_labels = outputs.selectAll(".label").data(d=> [d]);
@@ -1302,10 +1314,15 @@ class D3BehaviorTreeEditor extends Component
       .attr("class", "label")
       .attr("text-anchor", "start")
       .attr("dominant-baseline", "middle")
-      .attr("dx", d => Math.round(d.gripper_size + 5))
-      .attr("dy", d => Math.round(0.5 * d.gripper_size))
+      .attr("dx", d => Math.round(d.gripperSize + 5))
+      .attr("dy", d => Math.round(0.5 * d.gripperSize))
       .merge(output_labels);
     output_labels.text(d => d.key);
+  }
+
+  canvasIOMoveHandler(event)
+  {
+    
   }
 }
 
