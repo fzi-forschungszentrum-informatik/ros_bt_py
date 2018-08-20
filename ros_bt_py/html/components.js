@@ -244,7 +244,8 @@ class App extends Component
     this.state = {
       bt_namespace: '/tree_node/',
       ros_uri: 'ws://10.211.55.3:9090',
-      selected_node: null
+      selected_node: null,
+      showDataGraph: true
     };
     this.ros = new ROSLIB.Ros({
       url : this.state.ros_uri
@@ -288,10 +289,21 @@ class App extends Component
                     <D3BehaviorTreeEditor ros={this.ros}
                                           bt_namespace={this.state.bt_namespace}
                                           onSelectionChange={this.onSelectionChange}
+                                          showDataGraph={this.state.showDataGraph}
                                           onError={this.onError}/>
                   </div>
                 </div>
-
+                <div className="row">
+                  <button className="btn btn-primary btn-block"
+                          onClick={function() {
+                            this.setState(
+                              (prevstate, props) => ({showDataGraph: !prevstate.showDataGraph})
+                            );
+                          }.bind(this)
+                    }>
+                    Toggle Data Graph
+                  </button>
+                </div>
                 <div className="row">
                   <div className="col">
                     <SelectedNode
@@ -509,8 +521,15 @@ class D3BehaviorTreeEditor extends Component
   {
     super(props);
 
-    this.horizontal_spacing = 10;
+    this.state = {
+      tree_msg: null
+    };
+
+    this.horizontal_spacing = 40;
     this.vertical_spacing = 25;
+
+    this.io_gripper_spacing = 10;
+    this.max_io_gripper_size = 15;
 
     this.tree_topic = new ROSLIB.Topic({
       ros : props.ros,
@@ -561,6 +580,28 @@ class D3BehaviorTreeEditor extends Component
   }
 
   onTreeUpdate(tree_msg)
+  {
+    this.drawEverything(tree_msg);
+
+    // Disable all interaction (except for zooming and panning) when
+    // the tree isn't editable
+    if (tree_msg.state !== "EDITABLE")
+    {
+
+    }
+
+    // Hide or show data graph
+    if (this.props.showDataGraph)
+    {
+      d3.select(this.svg_ref).attr("visibility", "hidden");
+    }
+    else
+    {
+      d3.select(this.svg_ref).attr("visibility", "visible");
+    }
+  }
+
+  drawEverything(tree_msg)
   {
     var forest_root = {
       "name": "__forest_root",
@@ -642,6 +683,12 @@ class D3BehaviorTreeEditor extends Component
       .attr("class", "vertices")
       .merge(g_vertex);
 
+    var g_data = svg.selectAll("g.data_graph").data([null]);
+    g_data = g_data
+      .enter()
+      .append("g")
+      .attr("class", "data_graph")
+      .merge(g_data);
 
     var g_droptargets = svg.selectAll("g.drop_targets").data([null]);
     g_droptargets = g_droptargets
@@ -674,7 +721,7 @@ class D3BehaviorTreeEditor extends Component
     // k is the zoom level - we need to apply this to the values we get
     // from getBoundingClientRect, or we get fun scaling effects.
     var zoom = d3.zoomTransform(d3.select(this.viewport_ref.current).node()).k;
-    console.log("Current zoom level is: " + zoom);
+
     // Find the maximum size of all the nodes, for layout purposes
     var max_size = [0,0];
     g_vertex.selectAll('.btnode').data(root.descendants(), d => d.id)
@@ -685,6 +732,8 @@ class D3BehaviorTreeEditor extends Component
         rect.width /= zoom;
         rect.height /= zoom;
         d._size = rect;
+        console.log('#####');
+        console.log(this);
         this.parentElement.setAttribute('width', rect.width);
         this.parentElement.setAttribute('height', rect.height);
       });
@@ -753,6 +802,8 @@ class D3BehaviorTreeEditor extends Component
         return "translate(" + Math.round(d.x - d._size.width / 2.0) + "," + Math.round(d.y) + ") scale(1.0)";
       });
 
+    this.drawDataGraph(g_data, node.data());
+
     node
       .selectAll(".btnode")
       .transition(t)
@@ -786,7 +837,7 @@ class D3BehaviorTreeEditor extends Component
         }
         };
       });
-    console.log(root);
+    // console.log(root);
   }
 
   drawNodes(selection) {
@@ -803,7 +854,7 @@ class D3BehaviorTreeEditor extends Component
         });
 
     var div = fo
-        .append("xhtml:div")
+        .append("xhtml:body")
         .attr("class", "btnode");
   }
 
@@ -871,6 +922,142 @@ class D3BehaviorTreeEditor extends Component
     }
     return d;
   }
+
+  drawDataGraph(g_data, data)
+  {
+    var max_io_gripper_size = this.max_io_gripper_size;
+    var io_gripper_spacing = this.io_gripper_spacing;
+    var io_groups = g_data
+        .selectAll('.io_group').data(
+          data.map(
+            d => {
+              var inputs = d.data.inputs || [];
+              var outputs = d.data.outputs || [];
+              var i = inputs.length;
+              var o = outputs.length;
+              var gripper_size = Math.min(
+                max_io_gripper_size,
+                // +1 to ensure nice padding on the bottom
+                (d._size.height - ((o + 1) * io_gripper_spacing)) / o,
+                (d._size.height - ((i + 1) * io_gripper_spacing)) / i);
+              return {
+                name: d.data.name,
+                x: d.x,
+                y: d.y,
+                width: d._size.width,
+                height: d._size.height,
+                gripper_size: gripper_size,
+                inputs: inputs,
+                outputs: outputs,
+              };
+            }),
+          d => d.name);
+    io_groups.exit().remove();
+    io_groups = io_groups
+      .enter()
+      .append("g")
+      .attr("class", "io_group")
+      .merge(io_groups);
+
+    io_groups
+      .attr("transform", function(d) {
+        return "translate(" + Math.round(d.x) + ", " + Math.round(d.y) + ")";
+      });
+
+      // .attr("dx", d => d.x)
+      // .attr("dy", d => d.y);
+
+    var inputs = io_groups.selectAll(".input_grabber").data(
+      function(d) {
+        return d.inputs.map(function(el, index) {
+          el.rel_x = -1.0 * (d.gripper_size + 0.5 * d.width);
+          el.rel_y = io_gripper_spacing + (index * (io_gripper_spacing + d.gripper_size));
+          el.gripper_size = d.gripper_size;
+          return el;
+        });
+      },
+      d => d.key);
+    inputs.exit().remove();
+    inputs = inputs
+      .enter()
+      .append("g")
+      .attr("class", "input_gripper_group")
+      .merge(inputs);
+    inputs
+      .attr("transform", function(d) {
+        return "translate(" + Math.round(d.rel_x) + ", " + Math.round(d.rel_y) + ")";
+      });
+
+    var input_grippers = inputs.selectAll(".gripper").data(d=> [d]);
+    input_grippers.exit().remove();
+    input_grippers = input_grippers
+      .enter()
+      .append("rect")
+      .attr("class", "gripper input-gripper")
+      .attr("width", d => d.gripper_size)
+      .attr("height", d => d.gripper_size)
+      .merge(input_grippers);
+
+    var input_labels = inputs.selectAll(".label").data(d=> [d]);
+    input_labels.exit().remove();
+    input_labels = input_labels
+      .enter()
+      .append("text")
+      .attr("class", "label")
+      .attr("text-anchor", "end")
+      .attr("dominant-baseline", "middle")
+      .attr("dx", d => Math.round(-5))
+      .attr("dy", d => Math.round(0.5 * d.gripper_size))
+      .merge(input_labels);
+    input_labels.text(d => d.key);
+
+
+    // Same thing for the outputs, except they're at the right end of the node
+
+    var outputs = io_groups.selectAll(".output_grabber").data(
+      function(d) {
+        return d.outputs.map(function(el, index) {
+          el.rel_x = 0.5 * d.width;
+          el.rel_y = io_gripper_spacing + (index * (io_gripper_spacing + d.gripper_size));
+          el.gripper_size = d.gripper_size;
+          return el;
+        });
+      },
+      d => d.key);
+    outputs.exit().remove();
+    outputs = outputs
+      .enter()
+      .append("g")
+      .attr("class", "output_gripper_group")
+      .merge(outputs);
+    outputs
+      .attr("transform", function(d) {
+        return "translate(" + Math.round(d.rel_x) + ", " + Math.round(d.rel_y) + ")";
+      });
+
+    var output_grippers = outputs.selectAll(".gripper").data(d=> [d]);
+    output_grippers.exit().remove();
+    output_grippers = output_grippers
+      .enter()
+      .append("rect")
+      .attr("class", "gripper output-gripper")
+      .attr("width", d => d.gripper_size)
+      .attr("height", d => d.gripper_size)
+      .merge(output_grippers);
+
+    var output_labels = outputs.selectAll(".label").data(d=> [d]);
+    output_labels.exit().remove();
+    output_labels = output_labels
+      .enter()
+      .append("text")
+      .attr("class", "label")
+      .attr("text-anchor", "start")
+      .attr("dominant-baseline", "middle")
+      .attr("dx", d => Math.round(d.gripper_size + 5))
+      .attr("dy", d => Math.round(0.5 * d.gripper_size))
+      .merge(output_labels);
+    output_labels.text(d => d.key);
+  }
 }
 
 function AddNode(props)
@@ -895,7 +1082,6 @@ class SelectedNode extends Component
   {
     super(props);
 
-    console.log(props);
     if (props.node) {
       this.state = {
         name: props.node.name,
