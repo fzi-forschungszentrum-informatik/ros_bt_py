@@ -662,8 +662,8 @@ class D3BehaviorTreeEditor extends Component
       }
       var child_list = a.parent.data.child_names;
       return (
-        child_list.findIndex(x => x == a.data.name) -
-          child_list.findIndex(x => x == b.data.name)
+        child_list.findIndex(x => x === a.data.name) -
+          child_list.findIndex(x => x === b.data.name)
       );
     });
 
@@ -807,7 +807,7 @@ class D3BehaviorTreeEditor extends Component
         return "translate(" + Math.round(d.x - d._size.width / 2.0) + "," + Math.round(d.y) + ") scale(1.0)";
       });
 
-    this.drawDataGraph(g_data, node.data());
+    this.drawDataGraph(g_data, node.data(), tree_msg.data_wirings);
 
     node
       .selectAll(".btnode")
@@ -845,7 +845,8 @@ class D3BehaviorTreeEditor extends Component
     // console.log(root);
   }
 
-  drawNodes(selection) {
+  drawNodes(selection)
+  {
     selection.each(function(d) {
       d._entering = true;
       d._show = true;
@@ -863,7 +864,8 @@ class D3BehaviorTreeEditor extends Component
         .attr("class", "btnode");
   }
 
-  updateNodes(selection) {
+  updateNodes(selection)
+  {
     // Update name
     var title = selection.selectAll(".node_name").data(function(d) {
       return [d];
@@ -900,7 +902,8 @@ class D3BehaviorTreeEditor extends Component
     this.fillTables(tables.select("tbody"));
   }
 
-  fillTables (tbody) {
+  fillTables (tbody)
+  {
     var rows = tbody.selectAll(".node_data")
         .data(function(d) {
           return d.value;
@@ -921,37 +924,162 @@ class D3BehaviorTreeEditor extends Component
     values.text(d => d);
   }
 
-  findExistingParent(d) {
+  findExistingParent(d)
+  {
     while (d._entering && d.parent) {
       d = d.parent;
     }
     return d;
   }
 
-  drawDataGraph(g_data, data)
+  // DATA GRAPH HELPERS
+  getGripperSize(height, inputs, outputs)
+  {
+    return Math.min(
+      this.max_io_gripper_size,
+      // +1 to ensure nice padding on the bottom
+      outputs != 0 ?
+        ((height - ((outputs + 1) * this.io_gripper_spacing)) / outputs)
+        :
+        this.max_io_gripper_size,
+      inputs != 0 ?
+        ((height - ((inputs + 1) * this.io_gripper_spacing)) / inputs)
+        :
+        this.max_io_gripper_size);
+  }
+
+  getGripperCoords(index, right, gripper_size, node_width)
+  {
+    return {
+      x: 0.5 * node_width - (right ? 0.0 : gripper_size + node_width),
+      y: this.io_gripper_spacing + (index * (this.io_gripper_spacing + gripper_size))
+    };
+  }
+
+  drawDataGraph(g_data, data, wirings)
+  {
+    var vertices = g_data.selectAll("g.data_vertices").data([null]);
+    vertices = vertices
+      .enter()
+      .append("g")
+      .attr("class", "data_vertices")
+      .merge(vertices);
+
+    this.drawDataVerts(vertices, data);
+
+    var edges = g_data.selectAll("g.data_edges").data([null]);
+    edges = edges
+      .enter()
+      .append("g")
+      .attr("class", "data_edges")
+      .merge(edges);
+
+    this.drawDataEdges(edges, wirings.map(function(wiring) {
+      return [
+        this.getIOCoords(data,
+                         wiring.source.node_name,
+                         wiring.source.data_kind,
+                         wiring.source.data_key),
+        this.getIOCoords(data,
+                         wiring.target.node_name,
+                         wiring.target.data_kind,
+                         wiring.target.data_key)
+      ];
+    }.bind(this)));
+  }
+
+  getIOCoords(node_data,
+              node_name,
+              data_kind,
+              data_key)
+  {
+    var node = node_data.find(d => d.data.name === node_name);
+    if (!node)
+    {
+      // Shouldn't really happen...
+      return {x: 0, y: 0};
+    }
+
+    var coords = null;
+    var inputs = node.inputs || [];
+    var outputs = node.outputs || [];
+    if (data_kind === 'inputs')
+    {
+      coords = this.getGripperCoords(
+        node.data.inputs.findIndex(x => x.key === data_key) || 0,
+        /*right=*/false,
+        this.getGripperSize(node._size.height,
+                            inputs.length,
+                            outputs.length),
+        node._size.width);
+
+      return {
+        x: node.x + coords.x,
+        y: node.y + coords.y
+      };
+    }
+    else if (data_kind === 'outputs')
+    {
+      coords = this.getGripperCoords(
+        node.data.outputs.findIndex(x => x.key === data_key) || 0,
+        /*right=*/true,
+        this.getGripperSize(node._size.height,
+                            inputs.length,
+                            outputs.length),
+        node._size.width);
+
+      return {
+        x: node.x + coords.x,
+        y: node.y + coords.y
+      };
+    }
+    else
+    {
+      // For things that are neither inputs nor outputs, just draw a
+      // line to the center of the node
+      return {
+        x: node.x + 0.5 * node._size.width,
+        y: node.y + 0.5 * node._size.height
+      };
+    }
+  }
+
+  drawDataEdges(edge_selection, edge_data)
+  {
+    var link = edge_selection.selectAll(".data-link").data(edge_data);
+    link.exit().remove();
+
+    link = link
+      .enter()
+      .append("path")
+      .attr("class", "data-link")
+      .attr("d", d3.line()
+            .x(d => d.x)
+            .y(d => d.y))
+      .merge(link);
+  }
+
+  drawDataVerts(vertex_selection, vertex_data)
   {
     var max_io_gripper_size = this.max_io_gripper_size;
     var io_gripper_spacing = this.io_gripper_spacing;
-    var io_groups = g_data
+    var io_groups = vertex_selection
         .selectAll('.io_group').data(
-          data.map(
+          vertex_data.map(
             d => {
               var inputs = d.data.inputs || [];
               var outputs = d.data.outputs || [];
-              var i = inputs.length;
-              var o = outputs.length;
-              var gripper_size = Math.min(
-                max_io_gripper_size,
-                // +1 to ensure nice padding on the bottom
-                (d._size.height - ((o + 1) * io_gripper_spacing)) / o,
-                (d._size.height - ((i + 1) * io_gripper_spacing)) / i);
+
               return {
                 name: d.data.name,
                 x: d.x,
                 y: d.y,
                 width: d._size.width,
                 height: d._size.height,
-                gripper_size: gripper_size,
+                gripper_size: this.getGripperSize(
+                  d._size.height,
+                  inputs.length,
+                  outputs.length),
                 inputs: inputs,
                 outputs: outputs,
               };
@@ -969,18 +1097,17 @@ class D3BehaviorTreeEditor extends Component
         return "translate(" + Math.round(d.x) + ", " + Math.round(d.y) + ")";
       });
 
-      // .attr("dx", d => d.x)
-      // .attr("dy", d => d.y);
-
     var inputs = io_groups.selectAll(".input_grabber").data(
       function(d) {
+        console.log(d);
         return d.inputs.map(function(el, index) {
-          el.rel_x = -1.0 * (d.gripper_size + 0.5 * d.width);
-          el.rel_y = io_gripper_spacing + (index * (io_gripper_spacing + d.gripper_size));
+          var coords = this.getGripperCoords(index, false, d.gripper_size, d.width);
+          el.rel_x = coords.x;
+          el.rel_y = coords.y;
           el.gripper_size = d.gripper_size;
           return el;
-        });
-      },
+        }.bind(this));
+      }.bind(this),
       d => d.key);
     inputs.exit().remove();
     inputs = inputs
@@ -1022,12 +1149,13 @@ class D3BehaviorTreeEditor extends Component
     var outputs = io_groups.selectAll(".output_grabber").data(
       function(d) {
         return d.outputs.map(function(el, index) {
-          el.rel_x = 0.5 * d.width;
-          el.rel_y = io_gripper_spacing + (index * (io_gripper_spacing + d.gripper_size));
+          var coords = this.getGripperCoords(index, /*right=*/true, d.gripper_size, d.width);
+          el.rel_x = coords.x;
+          el.rel_y = coords.y;
           el.gripper_size = d.gripper_size;
           return el;
-        });
-      },
+        }.bind(this));
+      }.bind(this),
       d => d.key);
     outputs.exit().remove();
     outputs = outputs
