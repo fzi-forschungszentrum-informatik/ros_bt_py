@@ -106,11 +106,10 @@ function getDefaultValue(typeName, options)
 function selectIOGripper(vertex_selection, data)
 {
   return vertex_selection
-    .selectAll(".io_group")
-    .filter(d => d.name === data.node_name)
     .selectAll("." +
                data.data_kind.substring(0, data.data_kind.length - 1) +
-               "_gripper_group")
+               "-gripper-group")
+    .filter(d => d.nodeName === data.node_name)
     .filter(d => d.key === data.data_key);
 }
 
@@ -995,6 +994,7 @@ class D3BehaviorTreeEditor extends Component
               /*centered=*/false);
             datum.nodeName = x.data.name;
             datum.key = input.key;
+            datum.kind = "input";
             datum.type = input.serialized_type;
             return datum;
           }.bind(this)));
@@ -1010,6 +1010,7 @@ class D3BehaviorTreeEditor extends Component
               /*centered=*/false);
             datum.nodeName = x.data.name;
             datum.key = output.key;
+            datum.kind = "output";
             datum.type = output.serialized_type;
             return datum;
           }.bind(this)));
@@ -1075,8 +1076,6 @@ class D3BehaviorTreeEditor extends Component
           // three.y = three.y - 10;
         }
 
-        console.log("wiring from", wiring.source, "to", wiring.target, start, two, three, target);
-        console.log(data);
         return {
           source: {
             node_name: wiring.source.node_name,
@@ -1184,7 +1183,6 @@ class D3BehaviorTreeEditor extends Component
         return lineGen(d.points);
       })
       .on("mouseover", function(d) {
-        console.log("link over");
         var my_data = d3.select(this).datum();
         d3.select(this).classed("data-hover", true);
 
@@ -1201,7 +1199,6 @@ class D3BehaviorTreeEditor extends Component
           });
       })
       .on("mouseout", function(d) {
-        console.log("link out");
         var my_data = d3.select(this).datum();
 
         d3.select(this).classed("data-hover", false);
@@ -1223,101 +1220,62 @@ class D3BehaviorTreeEditor extends Component
 
   drawDataVerts(vertex_selection, input_vertex_data, output_vertex_data)
   {
-    var inputs = vertex_selection.selectAll(".input_gripper_group").data(
-      input_vertex_data,
-      d => d.key);
-    inputs.exit().remove();
+    var groups = vertex_selection.selectAll(".gripper-group").data(
+      input_vertex_data.concat(output_vertex_data),
+      d => d.nodeName + d.kind + d.key);
+    groups.exit().remove();
 
-    inputs = inputs
+    groups = groups
       .enter()
       .append("g")
-      .attr("class", "input_gripper_group")
-      .on("mouseover", function(d) { d3.select(this).classed("data-hover", true); })
-      .on("mouseout", function(d) { d3.select(this).classed("data-hover", false); })
-      .merge(inputs);
-    inputs
+      .attr("class", d => "gripper-group " + d.kind + "-gripper-group")
+      .on("mouseover", function(d) {
+        d3.select(this).classed("data-hover", true)
+          .selectAll(".label")
+          .attr("visibility", "visible");
+      })
+      .on("mouseout", function(d) { d3.select(this).classed("data-hover", false)
+          .selectAll(".label")
+          .attr("visibility", "hidden"); })
+      .merge(groups);
+    groups
       .attr("transform", function(d) {
         return "translate(" + Math.round(d.x) + ", " + Math.round(d.y) + ")";
       });
 
-    var input_grippers = inputs.selectAll(".gripper").data(d=> [d]);
-    input_grippers.exit().remove();
-    input_grippers = input_grippers
+    var grippers = groups.selectAll(".gripper").data(d=> [d]);
+    grippers.exit().remove();
+
+    grippers = grippers
       .enter()
       .append("rect")
-      .attr("class", "gripper input-gripper")
+      .attr("class", d => "gripper " + d.kind + "-gripper")
       .attr("width", d => d.gripperSize)
       .attr("height", d => d.gripperSize)
-      .merge(input_grippers);
+      .merge(grippers);
 
-    var input_labels = inputs.selectAll(".label").data(d=> [d]);
-    input_labels.exit().remove();
-    input_labels = input_labels
+    var labels = groups.selectAll(".label").data(d=> [d]);
+    labels.exit().remove();
+
+    labels = labels
       .enter()
       .append("text")
       .attr("class", "label")
-      .attr("text-anchor", "end")
+      .attr("text-anchor", d => d.kind === "input" ? "end" : "start")
       .attr("dominant-baseline", "middle")
-      .attr("dx", d => Math.round(-5))
+      .attr("visibility", "hidden")
+      .attr("dx", d => {
+        if (d.kind === "input") {
+          return Math.round(-5);
+        }
+        else if (d.kind === "output") {
+          return Math.round(d.gripperSize + 5);
+        }
+        return 0;
+      })
       .attr("dy", d => Math.round(0.5 * d.gripperSize))
-      .merge(input_labels);
-    input_labels.text(d => d.key);
-
-
-    // Same thing for the outputs, except they're at the right end of the node
-
-    var outputs = vertex_selection.selectAll(".output_gripper_group").data(
-      output_vertex_data,
-      d => d.key);
-    outputs.exit().remove();
-
-    outputs = outputs
-      .enter()
-      .append("g")
-      .attr("class", "output_gripper_group")
-      .on("mouseover", function(d) { d3.select(this).classed("data-hover", true); })
-      .on("mouseout", function(d) { d3.select(this).classed("data-hover", false); })
-      .merge(outputs);
-    outputs
-      .attr("transform", function(d) {
-        return "translate(" + Math.round(d.x) + ", " + Math.round(d.y) + ")";
-      });
-
-    var output_grippers = outputs.selectAll(".gripper").data(d=> [d]);
-    output_grippers.exit().remove();
-    output_grippers = output_grippers
-      .enter()
-      .append("rect")
-      .attr("class", "gripper output-gripper")
-      .attr("width", d => d.gripperSize)
-      .attr("height", d => d.gripperSize)
-      .on("mousedown", function(d) {
-        // disable event handlers on all grippers
-
-        // give input-grippers a new move handler that sets the wiring
-        // source
-
-        // bonus points: don't set handler if types don't match (and color appropriately?)
-
-        // Register move and up listeners on canvas
-        d3.select(this.viewport_ref.current)
-          .on("mousemove.io_drag", this.canvasIOMoveHandler)
-          .on("mouseup.io_drag", this.canvasIOMouseupHandler);
-      }.bind(this))
-      .merge(output_grippers);
-
-    var output_labels = outputs.selectAll(".label").data(d=> [d]);
-    output_labels.exit().remove();
-    output_labels = output_labels
-      .enter()
-      .append("text")
-      .attr("class", "label")
-      .attr("text-anchor", "start")
-      .attr("dominant-baseline", "middle")
-      .attr("dx", d => Math.round(d.gripperSize + 5))
-      .attr("dy", d => Math.round(0.5 * d.gripperSize))
-      .merge(output_labels);
-    output_labels.text(d => d.key);
+      .merge(labels);
+    labels.text(d => d.key);
   }
 
   canvasIOMoveHandler(event)
