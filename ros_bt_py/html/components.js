@@ -1722,6 +1722,20 @@ class D3BehaviorTreeEditor extends Component
       {
         console.log("Moving node to new target:", this.draggedNode, this.nodeDropTarget);
 
+        // Calculate the final index to move the dropped node to.
+        //
+        // If the target is in the same parent node, and after the
+        // current index of the dropped node, subtract one from the
+        // target index to make the behavior more intuitive
+
+        if (this.nodeDropTarget.position > 0
+            && this.nodeDropTarget.data.name && this.draggedNode.data.parent.data.name
+            && this.draggedNode.data.parent.data.child_names.indexOf(
+              this.draggedNode.data.data.name) < this.nodeDropTarget.position)
+        {
+          this.nodeDropTarget.position -= 1;
+        }
+
         // Three possible cases:
 
         // 1. Valid position, replace == false
@@ -1800,7 +1814,7 @@ class D3BehaviorTreeEditor extends Component
         {
           this.replace_service.callService(
             new ROSLIB.ServiceRequest({
-              old_node_name: this.nodeDropTaret.data.name,
+              old_node_name: this.nodeDropTarget.data.name,
               new_node_name: this.draggedNode.data.data.name
             }),
             function(response)
