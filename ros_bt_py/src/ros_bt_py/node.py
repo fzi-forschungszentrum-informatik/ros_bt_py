@@ -1140,6 +1140,9 @@ class Node(object):
                                             serialized_type=jsonpickle.encode(
                                                 self.outputs.get_type(key)))
                                 for key in self.outputs],
+                       max_children=(self.node_config.max_children
+                                     if self.node_config.max_children is not None
+                                     else -1),
                        state=self.state)
 
 
