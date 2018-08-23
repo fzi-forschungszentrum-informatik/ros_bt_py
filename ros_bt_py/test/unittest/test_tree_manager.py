@@ -429,7 +429,6 @@ class TestTreeManager(unittest.TestCase):
                 new_parent_name='inner_seq',
                 new_child_index=-1))))
 
-        #print(self.tree_msg)
         self.assertIn('inner_seq', [node.name for node in self.tree_msg.nodes])
         for node in self.tree_msg.nodes:
             if node.name == 'outer_seq':
@@ -471,7 +470,6 @@ class TestTreeManager(unittest.TestCase):
         # With A removed from seq's children, no node should have any
         # children!
         self.assertTrue(all([not node.child_names for node in self.tree_msg.nodes]))
-
 
     def testReplaceNode(self):
         self.sequence_msg.name = 'seq'
@@ -522,7 +520,6 @@ class TestTreeManager(unittest.TestCase):
         for node in self.tree_msg.nodes:
             if node.name == 'new_seq':
                 self.assertIn("A", node.child_names)
-
 
     def testTick(self):
         add_request = AddNodeRequest(tree_name='',

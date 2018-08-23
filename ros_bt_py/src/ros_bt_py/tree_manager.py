@@ -487,8 +487,8 @@ class TreeManager(object):
                             rospy.logerr(
                                 ('Root node (%s) state after unticking is neither '
                                  'IDLE nor PAUSED, but %s'),
-                                         str(root),
-                                         state)
+                                str(root),
+                                state)
                             response.error_message = 'Failed to untick root node.'
                     else:
                         rospy.loginfo('Unticking a tree with no nodes.')
@@ -976,13 +976,15 @@ class TreeManager(object):
 
         new_parent_max_children = self.nodes[request.new_parent_name].node_config.max_children
         if (new_parent_max_children is not None and
-              len(self.nodes[request.new_parent_name].children) == new_parent_max_children):
+            len(self.nodes[request.new_parent_name].children) == new_parent_max_children):
             return MoveNodeResponse(
                 success=False,
-                error_message="Cannot move node %s to new parent node %s. Parent node already has the maximum number of children (%d)." % (
-                    request.node_name,
-                    request.new_parent_name,
-                    new_parent_max_children))
+                error_message=("Cannot move node %s to new parent node %s. "
+                               "Parent node already has the maximum number "
+                               "of children (%d).") % (
+                                   request.node_name,
+                                   request.new_parent_name,
+                                   new_parent_max_children))
 
         # Remove node from old parent, if any
         old_parent = self.nodes[request.node_name].parent
@@ -996,7 +998,6 @@ class TreeManager(object):
 
         self.publish_info(self.debug_manager.get_debug_info_msg())
         return MoveNodeResponse(success=True)
-
 
     @is_edit_service
     def replace_node(self, request):
@@ -1022,7 +1023,7 @@ class TreeManager(object):
         # be an issue if there were too many children before. Which
         # shouldn't happen. But you know, better safe than sorry!
         if (new_node_max_children is not None and
-              len(old_node.children) > new_node_max_children):
+            len(old_node.children) > new_node_max_children):
             return ReplaceNodeResponse(
                 success=False,
                 error_message="Replacement node (\"%s\") does not support the number of \
