@@ -632,7 +632,24 @@ class D3BehaviorTreeEditor extends Component
       <svg id="editor_viewport"
            ref={this.viewport_ref}
            className="reactive-svg">
-        <g id="container" ref={this.svg_ref}/></svg>
+        <g id="container" ref={this.svg_ref}>
+          // order is important here - SVG draws things in the order
+          // they appear in the markup!
+          <g className="edges"/>
+          <g className="vertices"/>
+          // Data Graph should be above the node graph
+          // (since it can be toggled on and off)
+          <g className="data_graph">
+            // We want the edges below the vertices here because that looks nicer
+            <g className="data_edges" />
+            <g className="data_vertices" />
+          </g>
+          // This is for the targets that appear when the user is dragging
+          // a node to reposition it.
+          // Obviously, these should be above anything else!
+          <g className="drop_targets" />
+        </g>
+      </svg>
     );
   }
 
@@ -736,33 +753,10 @@ class D3BehaviorTreeEditor extends Component
         height = container.attr("height");
 
 
-    var g_edge = svg.selectAll("g.edges").data([null]);
-    g_edge = g_edge
-      .enter()
-      .append("g")
-      .attr("class", "edges")
-      .merge(g_edge);
-
-    var g_vertex = svg.selectAll("g.vertices").data([null]);
-    g_vertex = g_vertex
-      .enter()
-      .append("g")
-      .attr("class", "vertices")
-      .merge(g_vertex);
-
-    var g_data = svg.selectAll("g.data_graph").data([null]);
-    g_data = g_data
-      .enter()
-      .append("g")
-      .attr("class", "data_graph")
-      .merge(g_data);
-
-    var g_droptargets = svg.selectAll("g.drop_targets").data([null]);
-    g_droptargets = g_droptargets
-      .enter()
-      .append("g")
-      .attr("class", "drop_targets")
-      .merge(g_droptargets);
+    var g_edge = svg.select("g.edges");
+    var g_vertex = svg.selectAll("g.vertices");
+    var g_data = svg.selectAll("g.data_graph");
+    var g_droptargets = svg.selectAll("g.drop_targets");
 
     var node = g_vertex
         .selectAll(".node")
@@ -917,7 +911,9 @@ class D3BehaviorTreeEditor extends Component
     var fo = selection.append('foreignObject')
         .attr("class", function(d) {
           return "node" + (d.children ? " node--internal" : " node--leaf");
-        });
+        })
+        .on("click", this.nodeClickHandler.bind(this))
+        .on("mousedown", this.nodeMousedownHandler.bind(this));
 
     var div = fo
         .append("xhtml:body")
@@ -1020,19 +1016,8 @@ class D3BehaviorTreeEditor extends Component
   {
     // Add the edge container first so the vertices draw over the
     // edges, which looks nicer
-    var edges = g_data.selectAll("g.data_edges").data([null]);
-    edges = edges
-      .enter()
-      .append("g")
-      .attr("class", "data_edges")
-      .merge(edges);
-
-    var vertices = g_data.selectAll("g.data_vertices").data([null]);
-    vertices = vertices
-      .enter()
-      .append("g")
-      .attr("class", "data_vertices")
-      .merge(vertices);
+    var edges = g_data.selectAll("g.data_edges");
+    var vertices = g_data.selectAll("g.data_vertices");
 
     var input_vertex_data = [];
     var output_vertex_data = [];
@@ -1397,7 +1382,10 @@ class D3BehaviorTreeEditor extends Component
 
     // Give compatible IOs a new listener and highlight them
     io_grippers
-      .filter(d => d.nodeName !== datum.nodeName && d.kind !== datum.kind && d.serialized_type === datum.serialized_type)
+      .filter(d =>
+              d.nodeName !== datum.nodeName &&
+              d.kind !== datum.kind &&
+              d.serialized_type === datum.serialized_type)
       .classed("compatible", true)
       .on("mouseover",
           this.IOGroupDraggingMouseoverHandler.bind(this))
@@ -1505,6 +1493,23 @@ class D3BehaviorTreeEditor extends Component
     // Finally, remove these:
     this.nextWiringSource = null;
     this.nextWiringTarget = null;
+  }
+
+  nodeClickHandler(d, index, group)
+  {
+    console.log("Henlo");
+  }
+
+  nodeMousedownHandler(d, index, group)
+  {
+    console.log("Ohai");
+
+    if (d3.event.button != 1)
+    {
+      return;
+    }
+
+    this.draggedNode = d;
   }
 }
 
