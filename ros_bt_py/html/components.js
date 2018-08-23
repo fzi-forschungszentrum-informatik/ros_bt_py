@@ -255,15 +255,49 @@ class App extends Component
       bt_namespace: '/tree_node/',
       ros_uri: 'ws://10.211.55.3:9090',
       selected_node: null,
-      showDataGraph: true
+      showDataGraph: true,
+      last_tree_msg: null
     };
     this.ros = new ROSLIB.Ros({
       url : this.state.ros_uri
     });
 
+    this.tree_topic = new ROSLIB.Topic({
+      ros : this.ros,
+      name : this.state.bt_namespace + 'tree',
+      messageType : 'ros_bt_py_msgs/Tree'
+    });
+
     // Bind these here so this works as expected in callbacks
     this.onError = this.onError.bind(this);
     this.onSelectionChange = this.onSelectionChange.bind(this);
+    this.onTreeUpdate = this.onTreeUpdate.bind(this);
+    this.findPossibleParents = this.findPossibleParents.bind(this);
+  }
+
+  onTreeUpdate(msg)
+  {
+    this.setState({last_tree_msg: msg});
+  }
+
+  findPossibleParents()
+  {
+    if (this.state.last_tree_msg)
+    {
+      return this.state.last_tree_msg.nodes
+        .filter(node => (node.max_children < 0 || node.child_names.length < node.max_children));
+    }
+    return [];
+  }
+
+  componentDidMount()
+  {
+    this.tree_topic.subscribe(this.onTreeUpdate);
+  }
+
+  componentWillUnmount()
+  {
+    this.tree_topic.unsubscribe(this.onTreeUpdate);
   }
 
   onError(error_message)
@@ -304,7 +338,7 @@ class App extends Component
                   </div>
                 </div>
                 <div className="row">
-                  <button className="btn btn-primary btn-block"
+                  <button className="btn btn-primary btn-block mb-2"
                           onClick={function() {
                             this.setState(
                               (prevstate, props) => ({showDataGraph: !prevstate.showDataGraph})
@@ -320,12 +354,11 @@ class App extends Component
                       ros={this.ros}
                       bt_namespace={this.state.bt_namespace}
                       key={this.state.selected_node ? (this.state.selected_node.module + this.state.selected_node.class_name) : ''}
-                      node={this.state.selected_node} />
+                      node={this.state.selected_node}
+                      parents={this.findPossibleParents()}
+                      />
                   </div>
                   <div className="col">
-                    <AddNode ros={this.ros}
-                             bt_namespace={this.state.bt_namespace}
-                             onError={this.onError}/>
                     <RemoveNode ros={this.ros}
                                 bt_namespace={this.state.bt_namespace}
                                 onError={this.onError}/>
@@ -343,7 +376,7 @@ class App extends Component
 function ExecutionBar(props)
 {
   return (
-    <header id="header" className="d-flex flex-column flex-md-row align-items-center placeholder">
+    <header id="header" className="d-flex flex-column flex-md-row align-items-center control-bar">
       <DebugControls
         ros={props.ros}
         bt_namespace={props.bt_namespace}
@@ -535,7 +568,7 @@ class D3BehaviorTreeEditor extends Component
       editable: true
     };
 
-    this.horizontal_spacing = 40;
+    this.horizontal_spacing = 80;
     this.vertical_spacing = 25;
 
     this.io_gripper_spacing = 10;
@@ -985,6 +1018,15 @@ class D3BehaviorTreeEditor extends Component
 
   drawDataGraph(g_data, data, wirings)
   {
+    // Add the edge container first so the vertices draw over the
+    // edges, which looks nicer
+    var edges = g_data.selectAll("g.data_edges").data([null]);
+    edges = edges
+      .enter()
+      .append("g")
+      .attr("class", "data_edges")
+      .merge(edges);
+
     var vertices = g_data.selectAll("g.data_vertices").data([null]);
     vertices = vertices
       .enter()
@@ -1029,13 +1071,6 @@ class D3BehaviorTreeEditor extends Component
     }.bind(this));
 
     this.drawDataVerts(vertices, input_vertex_data, output_vertex_data);
-
-    var edges = g_data.selectAll("g.data_edges").data([null]);
-    edges = edges
-      .enter()
-      .append("g")
-      .attr("class", "data_edges")
-      .merge(edges);
 
     this.drawDataEdges(
       edges,
@@ -1469,14 +1504,6 @@ class D3BehaviorTreeEditor extends Component
   }
 }
 
-function AddNode(props)
-{
-  return (
-    <div className="p-2 placeholder">
-      Add Node button, eventually.
-    </div>
-  );
-}
 function RemoveNode(props)
 {
   return (
@@ -1517,6 +1544,8 @@ class SelectedNode extends Component
       serviceType: 'ros_bt_py_msgs/AddNode'
     });
 
+    this.selectRef = React.createRef();
+
     this.nameChangeHandler = this.nameChangeHandler.bind(this);
     this.onClickAdd = this.onClickAdd.bind(this);
   }
@@ -1536,6 +1565,14 @@ class SelectedNode extends Component
       <div className="p-2 d-flex flex-column">
         <button className="btn btn-block btn-primary"
                 onClick={this.onClickAdd}>Add to Tree</button>
+        <label className="pt-2 pb-2">Parent
+          <select className="form-control d-block"
+                  disabled={this.props.parents.length == 0}
+                  ref={this.selectRef}
+                  defaultValue={ (this.props.parents.length > 0) ? this.props.parents[0].name : null }>
+            {this.props.parents.map(x => (<option key={x.name} value={x.name}>{x.name}</option>))}
+          </select>
+        </label>
         <input className="d-block"
                type="text"
                value={this.state.name}
@@ -1556,7 +1593,7 @@ class SelectedNode extends Component
     this.add_node_service.callService(
       new ROSLIB.ServiceRequest({
         tree_name: '',
-        parent_name: '',
+        parent_name: this.selectRef.current.value || '',
         node: msg,
         allow_rename: true
       }),

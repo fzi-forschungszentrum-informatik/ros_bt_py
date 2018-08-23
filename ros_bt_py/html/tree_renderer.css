@@ -117,6 +117,10 @@
     background: #8e0000;
 }
 
+.control-bar {
+    background: #dedede;
+}
+
 .data-link, .drawing-indicator {
     fill: none;
     stroke: #444;
