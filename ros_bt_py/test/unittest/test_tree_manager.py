@@ -520,8 +520,6 @@ class TestTreeManager(unittest.TestCase):
         self.assertIsNotNone(seq_msg, 'Failed to find sequence in tree message')
         self.assertEqual(seq_msg.child_names, ['B', 'A', 'C'])
 
-
-
     def testReplaceNode(self):
         self.sequence_msg.name = 'seq'
         self.assertTrue(get_success(self.manager.add_node(
@@ -571,6 +569,54 @@ class TestTreeManager(unittest.TestCase):
         for node in self.tree_msg.nodes:
             if node.name == 'new_seq':
                 self.assertIn("A", node.child_names)
+
+    def testReplaceOrder(self):
+        self.sequence_msg.name = 'seq'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.sequence_msg))))
+
+        self.succeeder_msg.name = 'A'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.succeeder_msg,
+                           parent_name='seq'))))
+
+        self.succeeder_msg.name = 'B'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.succeeder_msg,
+                           parent_name='seq'))))
+        self.succeeder_msg.name = 'C'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.succeeder_msg,
+                           parent_name='seq'))))
+
+        self.assertEqual(len(self.tree_msg.nodes), 4)
+
+        # Confirm the positions of all three succeeders
+        seq_msg = None
+        for node in self.tree_msg.nodes:
+            if node.name == 'seq':
+                seq_msg = node
+                break
+        self.assertIsNotNone(seq_msg, 'Failed to find sequence in tree message')
+        self.assertEqual(seq_msg.child_names, ['A', 'B', 'C'])
+
+        self.assertTrue(get_success(self.manager.replace_node(
+            ReplaceNodeRequest(
+                new_node_name='A',
+                old_node_name='B'
+            ))))
+
+        seq_msg = None
+        for node in self.tree_msg.nodes:
+            if node.name == 'seq':
+                seq_msg = node
+                break
+        self.assertIsNotNone(seq_msg, 'Failed to find sequence in tree message')
+        self.assertEqual(seq_msg.child_names, ['A', 'C'])
 
     def testTick(self):
         add_request = AddNodeRequest(tree_name='',

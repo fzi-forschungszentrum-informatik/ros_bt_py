@@ -1052,8 +1052,36 @@ class TreeManager(object):
                     old_node_child_index = index
                     break
 
-        # Move the children from old to new
+        # Get the new node
         new_node = self.nodes[request.new_node_name]
+
+        # If it has the same parent as the old node, check its index, too.
+        #
+        # If the new node's index is smaller than the old one's, we
+        # need to subtract one from old_node_child_index. Imagine we
+        # want to replace B with A, and both are children of the same
+        # node:
+        #
+        # parent.children = [A, B, C]
+        #
+        # Then old_node_child_index would be 1. But if we remove B
+        #
+        # parent.children = [A, C]
+        #
+        # And then move A to old_node_child_index, we end up with
+        #
+        # parent.children = [C, A]
+        #
+        # Which is wrong!
+        if (new_node.parent is not None and new_node.parent.name == old_node_parent.name
+            and old_node_child_index > 0):
+            for index, child in enumerate(new_node.parent.children):
+                if child.name == request.new_node_name:
+                    if index < old_node_child_index:
+                        old_node_child_index -= 1
+                    break
+
+        # Move the children from old to new
         for child_name in [child.name for child in old_node.children]:
             new_node.add_child(old_node.remove_child(child_name))
         # Remove the old node (we just moved the children, so we can
