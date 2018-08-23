@@ -1720,8 +1720,6 @@ class D3BehaviorTreeEditor extends Component
     {
       if (this.nodeDropTarget)
       {
-        console.log("Moving node to new target:", this.draggedNode, this.nodeDropTarget);
-
         // Calculate the final index to move the dropped node to.
         //
         // If the target is in the same parent node, and after the
@@ -1729,11 +1727,17 @@ class D3BehaviorTreeEditor extends Component
         // target index to make the behavior more intuitive
 
         if (this.nodeDropTarget.position > 0
-            && this.nodeDropTarget.data.name && this.draggedNode.data.parent.data.name
+            && this.nodeDropTarget.data.name === this.draggedNode.data.parent.data.name
             && this.draggedNode.data.parent.data.child_names.indexOf(
               this.draggedNode.data.data.name) < this.nodeDropTarget.position)
         {
           this.nodeDropTarget.position -= 1;
+        }
+
+        // Also replace __forest_root with the empty string if present
+        if (this.nodeDropTarget.data.name === "__forest_root")
+        {
+          this.nodeDropTarget.data.name = "";
         }
 
         // Three possible cases:
@@ -1763,37 +1767,54 @@ class D3BehaviorTreeEditor extends Component
             }.bind(this));
         }
         // 2. Valid position, replace == true
-        //    First move the node ad that position to be our child,
-        //    then move the dropped node to the indicated position as in 1.
+        //    First, remove the dropped node from its parent to prevent cycles.
+        //    Then, move the node at the selected position to be our child,
+        //    and finally move the dropped node to the indicated position as in 1.
         else if (this.nodeDropTarget.position >= 0
                  && this.nodeDropTarget.replace)
         {
           this.move_service.callService(
             new ROSLIB.ServiceRequest({
-              // nodeDropTarget is the *parent* of the node we want to move!
-              node_name: this.nodeDropTarget.data.child_names[this.nodeDropTarget.position],
-              new_parent_name: this.draggedNode.data.data.name,
-              new_child_index: -1
+              node_name: this.draggedNode.data.data.name,
+              new_parent_name: ''
             }),
             function(response)
             {
               if (response.success)
               {
-                console.log("Successfully moved old node to be a child of dropped node, "
-                            + "now moving dropped node!");
+                console.log("Successfully removed dropped node from its parent!");
                 this.move_service.callService(
                   new ROSLIB.ServiceRequest({
-                    node_name: this.draggedNode.data.data.name,
-                    // Now the parent of the node we moved first will become our parent!
-                    new_parent_name: this.nodeDropTarget.data.name,
-                    new_child_index: this.nodeDropTarget.position
+                    // nodeDropTarget is the *parent* of the node we want to move!
+                    node_name: this.nodeDropTarget.data.child_names[this.nodeDropTarget.position],
+                    new_parent_name: this.draggedNode.data.data.name,
+                    new_child_index: -1
                   }),
                   function(response)
                   {
                     if (response.success)
                     {
-                      console.log("Successfully moved dropped node to the place "
-                                  + "the old node was in!");
+                      console.log("Successfully moved old node to be a child of dropped node, "
+                                  + "now moving dropped node!");
+                      this.move_service.callService(
+                        new ROSLIB.ServiceRequest({
+                          node_name: this.draggedNode.data.data.name,
+                          // Now the parent of the node we moved first will become our parent!
+                          new_parent_name: this.nodeDropTarget.data.name,
+                          new_child_index: this.nodeDropTarget.position
+                        }),
+                        function(response)
+                        {
+                          if (response.success)
+                          {
+                            console.log("Successfully moved dropped node to the place "
+                                        + "the old node was in!");
+                          }
+                          else
+                          {
+                            this.props.onError("Failed to move node: " + response.error_message);
+                          }
+                        }.bind(this));
                     }
                     else
                     {
