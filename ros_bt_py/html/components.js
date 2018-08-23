@@ -1368,6 +1368,10 @@ class D3BehaviorTreeEditor extends Component
 
   IOGripperMousedownHandler(datum, index, group)
   {
+    if (d3.event.button != 1)
+    {
+      return;
+    }
     // Remove mouseover / out listeners from all gripper-groups, then add new ones
     var io_grippers = d3.select(this.svg_ref.current).selectAll(".gripper-group");
 
