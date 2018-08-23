@@ -117,7 +117,7 @@
     background: #8e0000;
 }
 
-.data-link {
+.data-link, .drawing-indicator {
     fill: none;
     stroke: #444;
     stroke-width: 3.5px;
@@ -132,4 +132,12 @@
     stroke: #148050;
     background: #148050;
     fill: #148050;
+}
+
+.compatible rect {
+    stroke: #14d050;
+}
+
+.drawing-indicator {
+    pointer-events: none;
 }

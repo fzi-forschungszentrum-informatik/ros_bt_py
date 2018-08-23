@@ -547,6 +547,18 @@ class D3BehaviorTreeEditor extends Component
       messageType : 'ros_bt_py_msgs/Tree'
     });
 
+    this.wire_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.bt_namespace + 'wire_data',
+      serviceType: 'ros_bt_py_msgs/WireNodeData'
+    });
+
+    this.unwire_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.bt_namespace + 'unwire_data',
+      serviceType: 'ros_bt_py_msgs/UnwireNodeData'
+    });
+
     this.svg_ref = createRef();
     this.viewport_ref = createRef();
 
@@ -1182,39 +1194,8 @@ class D3BehaviorTreeEditor extends Component
             .curve(d3.curveCatmullRom.alpha(0.9));
         return lineGen(d.points);
       })
-      .on("mouseover", function(d) {
-        var my_data = d3.select(this).datum();
-        d3.select(this).classed("data-hover", true);
-
-        // select source gripper
-        selectIOGripper(vertex_selection, my_data.source)
-          .each(function(d) {
-            this.dispatchEvent(new CustomEvent("mouseover"));
-          });
-
-        // select target gripper
-        selectIOGripper(vertex_selection, my_data.target)
-          .each(function(d) {
-            this.dispatchEvent(new CustomEvent("mouseover"));
-          });
-      })
-      .on("mouseout", function(d) {
-        var my_data = d3.select(this).datum();
-
-        d3.select(this).classed("data-hover", false);
-
-        // select source gripper
-        selectIOGripper(vertex_selection, my_data.source)
-          .each(function(d) {
-            this.dispatchEvent(new CustomEvent("mouseout"));
-          });
-
-        // select target gripper
-        selectIOGripper(vertex_selection, my_data.target)
-          .each(function(d) {
-            this.dispatchEvent(new CustomEvent("mouseout"));
-          });
-      })
+      .on("mouseover", this.DataEdgeDefaultMouseoverHandler)
+      .on("mouseout", this.DataEdgeDefaultMouseoutHandler)
       .merge(link);
   }
 
@@ -1229,14 +1210,8 @@ class D3BehaviorTreeEditor extends Component
       .enter()
       .append("g")
       .attr("class", d => "gripper-group " + d.kind + "-gripper-group")
-      .on("mouseover", function(d) {
-        d3.select(this).classed("data-hover", true)
-          .selectAll(".label")
-          .attr("visibility", "visible");
-      })
-      .on("mouseout", function(d) { d3.select(this).classed("data-hover", false)
-          .selectAll(".label")
-          .attr("visibility", "hidden"); })
+      .on("mouseover", this.IOGroupDefaultMouseoverHandler)
+      .on("mouseout", this.IOGroupDefaultMouseoutHandler)
       .merge(groups);
     groups
       .attr("transform", function(d) {
@@ -1252,6 +1227,7 @@ class D3BehaviorTreeEditor extends Component
       .attr("class", d => "gripper " + d.kind + "-gripper")
       .attr("width", d => d.gripperSize)
       .attr("height", d => d.gripperSize)
+      .on("mousedown", this.IOGripperMousedownHandler.bind(this))
       .merge(grippers);
 
     var labels = groups.selectAll(".label").data(d=> [d]);
@@ -1278,9 +1254,218 @@ class D3BehaviorTreeEditor extends Component
     labels.text(d => d.key);
   }
 
-  canvasIOMoveHandler(event)
+  IOGroupDefaultMouseoverHandler(d, index, group)
   {
-    
+    d3.select(this).classed("data-hover", true)
+      .selectAll(".label")
+      .attr("visibility", "visible");
+  }
+
+  IOGroupDefaultMouseoutHandler(d, index, group)
+  {
+    d3.select(this).classed("data-hover", false)
+      .selectAll(".label")
+      .attr("visibility", "hidden");
+  }
+
+  IOGroupDraggingMouseoverHandler(d, index, group)
+  {
+    if (d.kind === "input")
+    {
+      this.nextWiringTarget = d;
+    }
+    else if (d.kind === "output") {
+      this.nextWiringSource = d;
+    }
+  }
+
+  IOGroupDraggingMouseoutHandler(d, index, group)
+  {
+    if (d.kind === "input")
+    {
+      this.nextWiringTarget = null;
+    }
+    else if (d.kind === "output") {
+      this.nextWiringSource = null;
+    }
+  }
+
+  DataEdgeDefaultMouseoverHandler(d, index, group)
+  {
+    var vertex_selection = d3.select(this.parentNode.parentNode)
+        .select("g.data_vertices");
+    var my_data = d3.select(this).datum();
+    d3.select(this).classed("data-hover", true);
+
+    // select source gripper
+    selectIOGripper(vertex_selection, my_data.source)
+      .each(function(d) {
+        this.dispatchEvent(new CustomEvent("mouseover"));
+      });
+
+    // select target gripper
+    selectIOGripper(vertex_selection, my_data.target)
+      .each(function(d) {
+        this.dispatchEvent(new CustomEvent("mouseover"));
+      });
+  }
+
+  DataEdgeDefaultMouseoutHandler(d, index, group)
+  {
+    var vertex_selection = d3.select(this.parentNode.parentNode)
+        .select("g.data_vertices");
+    var my_data = d3.select(this).datum();
+
+    d3.select(this).classed("data-hover", false);
+
+    // select source gripper
+    selectIOGripper(vertex_selection, my_data.source)
+      .each(function(d) {
+        this.dispatchEvent(new CustomEvent("mouseout"));
+      });
+
+    // select target gripper
+    selectIOGripper(vertex_selection, my_data.target)
+      .each(function(d) {
+        this.dispatchEvent(new CustomEvent("mouseout"));
+      });
+  }
+
+  IOGripperMousedownHandler(datum, index, group)
+  {
+    // Remove mouseover / out listeners from all gripper-groups, then add new ones
+    var io_grippers = d3.select(this.svg_ref.current).selectAll(".gripper-group");
+
+    io_grippers
+      .on("mouseover", null)
+      .on("mouseout", null);
+
+    // Hide this gripper's label
+    d3.select(this.svg_ref.current).selectAll(".label").datum(datum).attr("visibility", "hidden");
+
+    // Save the datum to use in the wire request later
+    if (datum.kind === "input")
+    {
+      this.nextWiringTarget = datum;
+    }
+    else if (datum.kind === "output") {
+      this.nextWiringSource = datum;
+    }
+
+    // Also save the current mouse position (relative to the viewport
+    // <g> tag)
+    this.dragStartPos = d3.mouse(this.viewport_ref.current);
+
+    // Give compatible IOs a new listener and highlight them
+    io_grippers
+      .filter(d => d.nodeName !== datum.nodeName && d.kind !== datum.kind && d.serialized_type === datum.serialized_type)
+      .classed("compatible", true)
+      .on("mouseover",
+          this.IOGroupDraggingMouseoverHandler.bind(this))
+      .on("mouseout",
+          this.IOGroupDraggingMouseoutHandler.bind(this))
+      .selectAll(".label")
+      .attr("visibility", "visible");
+
+    // Give the canvas a move and mouseup handler
+    d3.select(this.viewport_ref.current)
+      .on("mousemove.drag_io", this.canvasIOMoveHandler.bind(this))
+      .on("mouseup.drag_io", this.canvasIOUpHandler.bind(this));
+
+    d3.event.preventDefault();
+    d3.event.stopPropagation();
+  }
+
+  canvasIOMoveHandler(d, index, group)
+  {
+    if ((d3.event.buttons & 1) === 0)
+    {
+      this.canvasIOUpHandler(d, index, group);
+      return;
+    }
+
+    var drawingLine = d3.select(this.viewport_ref.current).selectAll(".drawing-indicator").data([
+      {
+        start: this.dragStartPos,
+        end: d3.mouse(this.viewport_ref.current)
+      }],
+                                                                                                /*key=*/d => JSON.stringify(d.start));
+    drawingLine.exit().remove();
+    drawingLine = drawingLine
+      .enter()
+      .append("path")
+      .attr("class", "drawing-indicator")
+      .merge(drawingLine);
+
+    drawingLine
+      .attr("d", data => d3.line()([data.start, data.end]));
+    d3.event.preventDefault();
+  }
+
+  canvasIOUpHandler(d, index, group)
+  {
+    if (this.nextWiringSource && this.nextWiringTarget)
+    {
+      this.wire_service.callService(
+        new ROSLIB.ServiceRequest({
+          wirings: [
+            {
+              source: {
+                node_name: this.nextWiringSource.nodeName,
+                data_kind: this.nextWiringSource.kind + "s", // should be inputs!
+                data_key: this.nextWiringSource.key
+              },
+              target: {
+                node_name: this.nextWiringTarget.nodeName,
+                data_kind: this.nextWiringTarget.kind + "s", // should be outputs!
+                data_key: this.nextWiringTarget.key
+              }
+            }]
+        }),
+        function(response) {
+          if (response.success)
+          {
+            console.log("Successfully wired data!");
+          }
+          else
+          {
+            this.onError("Failed to wire data " + this.nextWiringSource +
+                         "to " + this.nextWiringTarget);
+          }
+        });
+    }
+
+    // Either way, we're done dragging, so restore the old handlers
+
+    // Remove mouseover / out listeners from all gripper-groups, then
+    // add back the default ones
+    var io_grippers = d3.select(this.svg_ref.current).selectAll(".gripper-group");
+    io_grippers
+      .on("mouseover", null)
+      .on("mouseout", null)
+    // Also remove this class again
+      .classed("data-hover", false)
+      .classed("compatible", false);
+
+    io_grippers
+      .on("mouseover", this.IOGroupDefaultMouseoverHandler)
+      .on("mouseout", this.IOGroupDefaultMouseoutHandler)
+    // And hide the labels again
+      .selectAll(".label")
+      .attr("visibility", "hidden");
+
+    // Also remove listeners from the background
+    d3.select(this.viewport_ref.current)
+      .on("mousemove.drag_io", null)
+      .on("mouseup.drag_io", null);
+
+    // Remove the drawing line from the DOM
+    d3.select(this.viewport_ref.current).selectAll(".drawing-indicator").data([])
+      .exit().remove();
+
+    // Finally, remove these:
+    this.nextWiringSource = null;
+    this.nextWiringTarget = null;
   }
 }
 
