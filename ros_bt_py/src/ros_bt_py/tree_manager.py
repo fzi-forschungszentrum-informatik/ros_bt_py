@@ -986,6 +986,21 @@ class TreeManager(object):
                                    request.new_parent_name,
                                    new_parent_max_children))
 
+        # If the new parent is part of the moved node's subtree, we'd
+        # get a cycle, so check for that and fail if true!
+        if request.new_parent_name in [node.name
+                                       for node
+                                       in self.nodes[request.node_name] \
+                                       .get_subtree_msg()[0].nodes]:
+            return MoveNodeResponse(
+                success=False,
+                error_message=("Cannot move node %s to new parent node %s. "
+                               "%s is a child of %s!") % (
+                                   request.node_name,
+                                   request.new_parent_name,
+                                   request.new_parent_name,
+                                   request.node_name))
+
         # Remove node from old parent, if any
         old_parent = self.nodes[request.node_name].parent
         if old_parent is not None:
@@ -1073,7 +1088,9 @@ class TreeManager(object):
         # parent.children = [C, A]
         #
         # Which is wrong!
-        if (new_node.parent is not None and new_node.parent.name == old_node_parent.name
+        if (new_node.parent is not None
+            and old_node_parent is not None
+            and new_node.parent.name == old_node_parent.name
             and old_node_child_index > 0):
             for index, child in enumerate(new_node.parent.children):
                 if child.name == request.new_node_name:
@@ -1083,7 +1100,9 @@ class TreeManager(object):
 
         # Move the children from old to new
         for child_name in [child.name for child in old_node.children]:
-            new_node.add_child(old_node.remove_child(child_name))
+            child = old_node.remove_child(child_name)
+            if child_name != new_node.name:
+                new_node.add_child(child)
         # Remove the old node (we just moved the children, so we can
         # set remove_children to True)
         res = self.remove_node(RemoveNodeRequest(

@@ -421,6 +421,13 @@ class TestTreeManager(unittest.TestCase):
                 new_parent_name='A',
                 new_child_index=0))))
 
+        # Should fail, since "asdf" is not in the tree
+        self.assertFalse(get_success(self.manager.move_node(
+            MoveNodeRequest(
+                node_name='B',
+                new_parent_name='asdf',
+                new_child_index=0))))
+
         # Should succeed and put "A" after "B" (-1 means
         # "first from the back")
         self.assertTrue(get_success(self.manager.move_node(
@@ -520,6 +527,27 @@ class TestTreeManager(unittest.TestCase):
         self.assertIsNotNone(seq_msg, 'Failed to find sequence in tree message')
         self.assertEqual(seq_msg.child_names, ['B', 'A', 'C'])
 
+    def testMoveToOwnChild(self):
+        self.sequence_msg.name = 'seq'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.sequence_msg))))
+
+        self.sequence_msg.name = 'seq_2'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.sequence_msg,
+                           parent_name='seq'))))
+
+        # This should be impossible, since it leads to a
+        # circular graph!
+        self.assertFalse(get_success(self.manager.move_node(
+            MoveNodeRequest(
+                node_name='seq',
+                new_parent_name='seq_2',
+                new_child_index=0
+            ))))
+
     def testReplaceNode(self):
         self.sequence_msg.name = 'seq'
         self.assertTrue(get_success(self.manager.add_node(
@@ -569,6 +597,31 @@ class TestTreeManager(unittest.TestCase):
         for node in self.tree_msg.nodes:
             if node.name == 'new_seq':
                 self.assertIn("A", node.child_names)
+
+    def testReplaceParent(self):
+        self.sequence_msg.name = 'seq'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.sequence_msg))))
+
+        self.sequence_msg.name = 'seq_2'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.sequence_msg,
+                           parent_name='seq'))))
+
+        # This should succeed, but to avoid cycles, seq_2 cannot
+        # inherit all of seq's children (which would include itself)
+        self.assertTrue(get_success(self.manager.replace_node(
+            ReplaceNodeRequest(
+                old_node_name='seq',
+                new_node_name='seq_2'
+            ))))
+
+        self.assertEqual(len(self.tree_msg.nodes), 1)
+        # seq only had seq_2 as its child, so seq_2 should have 0
+        # children now
+        self.assertEqual(len(self.tree_msg.nodes[0].child_names), 0)
 
     def testReplaceOrder(self):
         self.sequence_msg.name = 'seq'
