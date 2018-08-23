@@ -1521,6 +1521,7 @@ class SelectedNode extends Component
     if (props.node) {
       this.state = {
         name: props.node.name,
+        isValid: true,
         options: this.getDefaultValues(props.node.options),
         inputs: this.getDefaultValues(props.node.inputs,
                                       props.node.options),
@@ -1532,6 +1533,7 @@ class SelectedNode extends Component
     {
       this.state = {
         name: '',
+        isValid: false,
         options: [],
         inputs: [],
         outputs: []
@@ -1547,6 +1549,7 @@ class SelectedNode extends Component
     this.selectRef = React.createRef();
 
     this.nameChangeHandler = this.nameChangeHandler.bind(this);
+    this.updateValidity = this.updateValidity.bind(this);
     this.onClickAdd = this.onClickAdd.bind(this);
   }
 
@@ -1564,6 +1567,7 @@ class SelectedNode extends Component
     return(
       <div className="p-2 d-flex flex-column">
         <button className="btn btn-block btn-primary"
+                disabled={!this.state.isValid}
                 onClick={this.onClickAdd}>Add to Tree</button>
         <label className="pt-2 pb-2">Parent
           <select className="form-control d-block"
@@ -1583,6 +1587,11 @@ class SelectedNode extends Component
         {/* {this.renderParamInputs(this.state.outputs, 'outputs')} */}
       </div>
     );
+  }
+
+  updateValidity(newValidity)
+  {
+    this.setState({isValid: newValidity || false});
   }
 
   onClickAdd()
@@ -1694,7 +1703,7 @@ class SelectedNode extends Component
     }
   }
 
-  inputForValue(paramItem, onNewValue)
+  inputForValue(paramItem, onValidityChange, onNewValue)
   {
     var valueType = paramItem.value.type;
     var changeHandler = (event) => {};
@@ -1848,6 +1857,7 @@ class SelectedNode extends Component
         <div className="form-group">
           <label>{paramItem.key}
             <JSONInput initialValue={JSON.stringify(paramItem.value.value)}
+                       onValidityChange={onValidityChange}
                        onNewValue={onNewValue}/>
           </label>
         </div>
@@ -1861,7 +1871,7 @@ class SelectedNode extends Component
       return (
         <tr key={name + x.key}>
           <td>
-            {this.inputForValue(x, this.updateValue.bind(this, name, x.key))}
+            {this.inputForValue(x, this.updateValidity, this.updateValue.bind(this, name, x.key))}
           </td>
         </tr>
       );
@@ -1920,7 +1930,6 @@ class JSONInput extends Component
 
   changeHandler(event)
   {
-    var is_valid = false;
     try
     {
       console.log('parsed:');
@@ -1934,11 +1943,13 @@ class JSONInput extends Component
     {
       this.props.onNewValue(JSON.parse(event.target.value));
       this.setState({is_valid: true});
+      this.props.onValidityChange(true);
     }
     catch(e)
     {
       // Do nothing
       this.setState({is_valid: false});
+      this.props.onValidityChange(false);
     }
   }
 
