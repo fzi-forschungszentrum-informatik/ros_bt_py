@@ -1018,8 +1018,11 @@ class TreeManager(object):
         old_node = self.nodes[request.old_node_name]
 
         new_node_max_children = self.nodes[request.new_node_name].node_config.max_children
+        # We're *replacing* one of the children, so there should only
+        # be an issue if there were too many children before. Which
+        # shouldn't happen. But you know, better safe than sorry!
         if (new_node_max_children is not None and
-              len(old_node.children) >  new_node_max_children):
+              len(old_node.children) > new_node_max_children):
             return ReplaceNodeResponse(
                 success=False,
                 error_message="Replacement node (\"%s\") does not support the number of \
