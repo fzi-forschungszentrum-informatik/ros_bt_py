@@ -103,6 +103,13 @@ function getDefaultValue(typeName, options)
   }
 }
 
+// Get the distance between two sets of coordinates (expected to be
+// arrays with 2 elements each)
+function getDist(a, b)
+{
+  return Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2));
+}
+
 function selectIOGripper(vertex_selection, data)
 {
   return vertex_selection
@@ -175,7 +182,6 @@ class NodeList extends Component
       package_name: 'ros_bt_py.nodes.sequence'
     };
 
-    this.onError = props.onError;
     this.get_nodes_service = new ROSLIB.Service({
       ros: props.ros,
       name: props.bt_namespace + 'get_available_nodes',
@@ -202,7 +208,7 @@ class NodeList extends Component
           this.setState({available_nodes: response.available_nodes});
         }
         else {
-          this.onError('Failed to get list of nodes: ' + response.error_message);
+          this.props.onError('Failed to get list of nodes: ' + response.error_message);
         }
       }.bind(this));
   }
@@ -395,8 +401,6 @@ class TickControls extends Component
   {
     super(props);
 
-    this.onError = props.onError;
-
     this.tick_service = new ROSLIB.Service({
       ros: props.ros,
       name: props.bt_namespace + 'control_tree_execution',
@@ -421,9 +425,9 @@ class TickControls extends Component
           console.log('called ControlTreeExecution service successfully');
         }
         else {
-          this.onError(response.error_message);
+          this.props.onError(response.error_message);
         }
-      });
+      }.bind(this));
   }
 
   render()
@@ -462,8 +466,6 @@ class DebugControls extends Component
     super(props);
 
     this.state = {value: false};
-
-    this.onError = props.onError;
 
     this.debug_settings_sub = new ROSLIB.Topic({
       ros: props.ros,
@@ -512,9 +514,9 @@ class DebugControls extends Component
           console.log('stepped successfully');
         }
         else {
-          this.onError(response.error_message);
+          this.props.onError(response.error_message);
         }
-      });
+      }.bind(this));
   }
 
   handleChange(event)
@@ -532,7 +534,7 @@ class DebugControls extends Component
       else {
         console.log('disabled stepping');
       }
-    });
+    }.bind(this));
     this.setState({value: event.target.value});
   }
 
@@ -569,10 +571,18 @@ class D3BehaviorTreeEditor extends Component
     };
 
     this.horizontal_spacing = 80;
-    this.vertical_spacing = 25;
+    this.vertical_spacing = 40;
+
+    this.min_node_drag_distance=15;
 
     this.io_gripper_spacing = 10;
     this.max_io_gripper_size = 15;
+
+    this.nextWiringSource = null;
+    this.nextWiringTarget = null;
+
+    this.draggedNode = null;
+    this.dragging = false;
 
     this.tree_topic = new ROSLIB.Topic({
       ros : props.ros,
@@ -592,11 +602,22 @@ class D3BehaviorTreeEditor extends Component
       serviceType: 'ros_bt_py_msgs/UnwireNodeData'
     });
 
+    this.move_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.bt_namespace + 'move_node',
+      serviceType: 'ros_bt_py_msgs/MoveNode'
+    });
+
+    this.replace_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.bt_namespace + 'replace_node',
+      serviceType: 'ros_bt_py_msgs/ReplaceNode'
+    });
+
     this.svg_ref = createRef();
     this.viewport_ref = createRef();
 
     this.onSelectionChange = props.onSelectionChange;
-    this.onError = props.onError;
 
     this.onTreeUpdate = this.onTreeUpdate.bind(this);
     this.getIOCoords = this.getIOCoords.bind(this);
@@ -633,21 +654,26 @@ class D3BehaviorTreeEditor extends Component
            ref={this.viewport_ref}
            className="reactive-svg">
         <g id="container" ref={this.svg_ref}>
-          // order is important here - SVG draws things in the order
-          // they appear in the markup!
+          { // order is important here - SVG draws things in the order
+            // they appear in the markup!
+          }
           <g className="edges"/>
           <g className="vertices"/>
-          // Data Graph should be above the node graph
-          // (since it can be toggled on and off)
+          { // Data Graph should be above the node graph
+            // (since it can be toggled on and off)
+          }
           <g className="data_graph">
-            // We want the edges below the vertices here because that looks nicer
+            { // We want the edges below the vertices here because that looks nicer
+            }
             <g className="data_edges" />
             <g className="data_vertices" />
           </g>
-          // This is for the targets that appear when the user is dragging
-          // a node to reposition it.
-          // Obviously, these should be above anything else!
-          <g className="drop_targets" />
+          { // This is for the targets that appear when the user is dragging
+            // a node to reposition it.
+            // Obviously, these should be above anything else!
+          }
+          <g className="drop_targets"
+             visibility="hidden" />
         </g>
       </svg>
     );
@@ -861,6 +887,8 @@ class D3BehaviorTreeEditor extends Component
         return "translate(" + Math.round(d.x - d._size.width / 2.0) + "," + Math.round(d.y) + ") scale(1.0)";
       });
 
+    this.drawDropTargets();
+
     this.drawDataGraph(g_data, node.data(), tree_msg.data_wirings);
 
     node
@@ -908,12 +936,15 @@ class D3BehaviorTreeEditor extends Component
       d.y = 0;
     });
 
+    var that = this;
     var fo = selection.append('foreignObject')
         .attr("class", function(d) {
           return "node" + (d.children ? " node--internal" : " node--leaf");
         })
         .on("click", this.nodeClickHandler.bind(this))
-        .on("mousedown", this.nodeMousedownHandler.bind(this));
+        .on("mousedown", function(d, index, group) {
+          that.nodeMousedownHandler(d, this);
+        });
 
     var div = fo
         .append("xhtml:body")
@@ -1010,6 +1041,141 @@ class D3BehaviorTreeEditor extends Component
       x: 0.5 * node_width - (right ? 0.0 : gripper_size + node_width),
       y: this.io_gripper_spacing + (index * (this.io_gripper_spacing + gripper_size))
     };
+  }
+
+  drawDropTargets()
+  {
+    var g_droptargets = d3.select(this.svg_ref.current).select("g.drop_targets");
+
+    // We can't really assign keys to the targets, so remove them all :/
+    g_droptargets.selectAll(".drop_target").remove();
+
+    // For each node, decide what kinds of drop targets to add.
+    //
+    // Possible drop targets are:
+    //
+    // Neighbors (left/right):
+    // Insert the dropped node into the parent's list of children
+    // before or after this node.
+    // Only available if the parent doesn't have its maximum number of children yet!
+    //
+    // Replace (bounding rect of the node itself):
+    // Replace this node with the dropped node.
+    //
+    // Below:
+    // Add the dropped node as this node's child - only available if there's 0 children!
+    //
+    // Above:
+    // Add the dropped node as this node's parent, taking over its old position.
+    // Note that this is realized by two service calls:
+    // 1. Move this node to be dropped node's child
+    // 2. Move dropped node to this node's position
+    d3.select(this.svg_ref.current).select("g.vertices").selectAll(".node").each(
+      function(d)
+      {
+        // No drop options at the root of the tree (__forest_root)!
+        if (!d.parent ) {
+          return;
+        }
+
+        var my_index = d.parent.children.findIndex(x => x.data.name == d.data.name);
+
+        // Only add the "insert before" target for the first node.
+        // Without this if, we'd get overlapping drop targets for
+        // this.after and next_child.before
+        if (my_index == 0)
+        {
+          g_droptargets
+            .append("rect")
+            .attr("class", "drop_target")
+            .attr("transform",
+                  "translate(" + (d.x - this.horizontal_spacing - (d._size.width * 0.5)) + ","
+                  + d.y + ")")
+            .attr("width", this.horizontal_spacing)
+            .attr("height", d._size.height)
+            .datum({
+              position: my_index,  // insert before this node
+              replace: false,
+              data: d.parent.data
+            });
+        }
+        g_droptargets
+          .append("rect")
+          .attr("class", "drop_target")
+          .attr("transform",
+                "translate(" + (d.x + (d._size.width * 0.5)) + ","
+                + d.y + ")")
+          .attr("width", this.horizontal_spacing)
+          .attr("height", d._size.height)
+          .datum({
+            position: my_index + 1,  // insert after this node
+            replace: false,
+            data: d.parent.data
+          });
+
+        g_droptargets
+          .append("rect")
+          .attr("class", "drop_target")
+          .attr("transform",
+                "translate(" + (d.x - (d._size.width * 0.5)) + ","
+                + d.y + ")")
+          .attr("width", d._size.width)
+          .attr("height", d._size.height)
+          .datum({
+            position: -1,
+            replace: true,  // replace this node
+            data: d.data
+          });
+
+        g_droptargets
+          .append("rect")
+          .attr("class", "drop_target")
+          .attr("transform",
+                "translate(" + (d.x - (d._size.width * 0.5)) + ","
+                + (d.y - (this.vertical_spacing * 0.5)) + ")")
+          .attr("width", d._size.width)
+          .attr("height", this.vertical_spacing * 0.45)
+          .datum({
+            // replace the node at the given index from data, and take
+            // it as our own child
+            position: my_index,
+            replace: true,
+            data: d.parent.data
+          });
+
+        var child_names = d.data.child_names || [];
+        var max_children = d.data.max_children || -1;
+        // If max_children is either -1 or >0, we can add a child
+        if (max_children != 0 && child_names.length == 0)
+        {
+          g_droptargets
+            .append("rect")
+            .attr("class", "drop_target")
+            .attr("transform",
+                  "translate(" + (d.x - (d._size.width * 0.5)) + ","
+                  + (d.y + d._size.height) + ")")
+            .attr("width", d._size.width)
+            .attr("height", this.vertical_spacing * 0.45)
+            .datum({
+              // Add as first child of this node
+              position: 0,
+              replace: false,
+              data: d.data
+            });
+        }
+      }.bind(this));
+
+    var that = this;
+    g_droptargets.selectAll(".drop_target")
+      .attr("opacity", 0.2)
+      .on("mouseover", function(d, index, group)
+          {
+            that.dropTargetDefaultMouseoverHandler(this, d);
+          })
+      .on("mouseout", function(d, index, group)
+          {
+            that.dropTargetDefaultMouseoutHandler(this, d);
+          });
   }
 
   drawDataGraph(g_data, data, wirings)
@@ -1353,7 +1519,7 @@ class D3BehaviorTreeEditor extends Component
 
   IOGripperMousedownHandler(datum, index, group)
   {
-    if (d3.event.button != 1)
+    if ((d3.event.buttons & 1) != 1)
     {
       return;
     }
@@ -1382,10 +1548,10 @@ class D3BehaviorTreeEditor extends Component
 
     // Give compatible IOs a new listener and highlight them
     io_grippers
-      .filter(d =>
-              d.nodeName !== datum.nodeName &&
-              d.kind !== datum.kind &&
-              d.serialized_type === datum.serialized_type)
+      .filter(
+        d => d.nodeName !== datum.nodeName
+          && d.kind !== datum.kind
+          && d.serialized_type === datum.serialized_type)
       .classed("compatible", true)
       .on("mouseover",
           this.IOGroupDraggingMouseoverHandler.bind(this))
@@ -1396,6 +1562,9 @@ class D3BehaviorTreeEditor extends Component
 
     // Give the canvas a move and mouseup handler
     d3.select(this.viewport_ref.current)
+    // Remove any handlers for node dragging
+      .on("mousemove.drag_node", null)
+      .on("mouseout.drag_node", null)
       .on("mousemove.drag_io", this.canvasIOMoveHandler.bind(this))
       .on("mouseup.drag_io", this.canvasIOUpHandler.bind(this));
 
@@ -1456,10 +1625,10 @@ class D3BehaviorTreeEditor extends Component
           }
           else
           {
-            this.onError("Failed to wire data " + this.nextWiringSource +
-                         "to " + this.nextWiringTarget);
+            this.props.onError("Failed to wire data " + this.nextWiringSource +
+                               "to " + this.nextWiringTarget);
           }
-        });
+        }.bind(this));
     }
 
     // Either way, we're done dragging, so restore the old handlers
@@ -1495,21 +1664,232 @@ class D3BehaviorTreeEditor extends Component
     this.nextWiringTarget = null;
   }
 
+  canvasNodeDragMoveHandler()
+  {
+    // If the distance
+    if (this.draggedNode === null)
+    {
+      return;
+    }
+    var newly_dragging = (
+      !this.dragging
+        && getDist(d3.mouse(this.draggedNode.domObject),
+                   this.draggedNode.startCoords) > this.min_node_drag_distance);
+
+    if (newly_dragging)
+    {
+      this.dragging = true;
+      // Hide all drop targets that would lead to appending the dragged
+      // node to its own subtree
+      var d = this.draggedNode.data;
+      var parentName = d.parent ? d.parent.data.name || '' : '';
+      var my_index = d.parent.children.findIndex(x => x.data.name == d.data.name);
+
+      var svg = d3.select(this.svg_ref.current);
+
+      var all_children = d.descendants().map(x => x.data.name);
+
+      var g_droptargets = svg.select("g.drop_targets");
+
+      g_droptargets.attr("visibility", "visible");
+
+      g_droptargets.selectAll(".drop_target")
+      // First ensure all drop targets are visible
+        .attr("visibility", "visible")
+      // Now hide those that belong to descendants of the node we're dragging
+        .filter(
+          x => all_children.indexOf(x.data.name) >= 0
+            || (x.data.name === parentName
+                && (x.position == my_index
+                    || x.position == my_index + 1)))
+        .attr("visibility", "hidden");
+    }
+
+    if ((d3.event.buttons & 1) === 0)
+    {
+      this.canvasNodeDragUpHandler(d, index, group);
+    }
+
+    d3.event.preventDefault();
+    d3.event.stopPropagation();
+  }
+
+  canvasNodeDragUpHandler(d, index, group)
+  {
+    if (this.dragging)
+    {
+      if (this.nodeDropTarget)
+      {
+        console.log("Moving node to new target:", this.draggedNode, this.nodeDropTarget);
+
+        // Three possible cases:
+
+        // 1. Valid position, replace == false
+        //    In this case we just call MoveNode with the given
+        //    parent node and index
+        if (this.nodeDropTarget.position >= 0
+            && !this.nodeDropTarget.replace)
+        {
+          this.move_service.callService(
+            new ROSLIB.ServiceRequest({
+              node_name: this.draggedNode.data.data.name,
+              new_parent_name: this.nodeDropTarget.data.name,
+              new_child_index: this.nodeDropTarget.position
+            }),
+            function(response)
+            {
+              if (response.success)
+              {
+                console.log("Successfully moved node!");
+              }
+              else
+              {
+                this.props.onError("Failed to move node: " + response.error_message);
+              }
+            }.bind(this));
+        }
+        // 2. Valid position, replace == true
+        //    First move the node ad that position to be our child,
+        //    then move the dropped node to the indicated position as in 1.
+        else if (this.nodeDropTarget.position >= 0
+                 && this.nodeDropTarget.replace)
+        {
+          this.move_service.callService(
+            new ROSLIB.ServiceRequest({
+              // nodeDropTarget is the *parent* of the node we want to move!
+              node_name: this.nodeDropTarget.data.child_names[this.nodeDropTarget.position],
+              new_parent_name: this.draggedNode.data.data.name,
+              new_child_index: -1
+            }),
+            function(response)
+            {
+              if (response.success)
+              {
+                console.log("Successfully moved old node to be a child of dropped node, "
+                            + "now moving dropped node!");
+                this.move_service.callService(
+                  new ROSLIB.ServiceRequest({
+                    node_name: this.draggedNode.data.data.name,
+                    // Now the parent of the node we moved first will become our parent!
+                    new_parent_name: this.nodeDropTarget.data.name,
+                    new_child_index: this.nodeDropTarget.position
+                  }),
+                  function(response)
+                  {
+                    if (response.success)
+                    {
+                      console.log("Successfully moved dropped node to the place "
+                                  + "the old node was in!");
+                    }
+                    else
+                    {
+                      this.props.onError("Failed to move node: " + response.error_message);
+                    }
+                  }.bind(this));
+              }
+              else
+              {
+                this.props.onError("Failed to move node: " + response.error_message);
+              }
+            }.bind(this));
+        }
+        // 3. position === -1, replace == true
+        //    Call ReplaceNode with the given node name
+        else if (this.nodeDropTarget.position == -1
+                 && this.nodeDropTarget.replace)
+        {
+          this.replace_service.callService(
+            new ROSLIB.ServiceRequest({
+              old_node_name: this.nodeDropTaret.data.name,
+              new_node_name: this.draggedNode.data.data.name
+            }),
+            function(response)
+            {
+              if (response.success)
+              {
+                console.log("Successfully replaced old node with dropped node!");
+              }
+              else
+              {
+                this.props.onError("Failed to replace node: " + response.error_message);
+              }
+            }.bind(this));
+        }
+        else
+        {
+          this.props.onError("Unexpected data for dropping a node :(");
+        }
+        d3.event.preventDefault();
+        d3.event.stopPropagation();
+      }
+      else
+      {
+        console.log("should trigger the click event, hopefully?");
+      }
+    }
+
+    console.log("hiding drop targets");
+    d3.select(this.svg_ref.current).select("g.drop_targets")
+      .attr("visibility", "hidden")
+      .selectAll(".drop_target")
+      .attr("visibility", "");
+
+    d3.select(this.viewport_ref.current)
+      .on("mousemove.drag_node", null)
+      .on("mouseout.drag_node", null);
+  }
+
   nodeClickHandler(d, index, group)
   {
     console.log("Henlo");
   }
 
-  nodeMousedownHandler(d, index, group)
+  nodeMousedownHandler(d, domObject)
   {
-    console.log("Ohai");
+    console.log("Ohai", d3.event);
 
-    if (d3.event.button != 1)
+    if ((d3.event.buttons & 1) != 1)
     {
       return;
     }
 
-    this.draggedNode = d;
+    // No dragging the fake root!
+    if (d.data.name == "__forest_root")
+    {
+      return;
+    }
+
+    this.draggedNode = {
+      startCoords: d3.mouse(domObject),
+      domObject: domObject,
+      data: d
+    };
+
+    this.dragging = false;
+
+    // Add move and mouseup handlers to viewport, and just to be sure,
+    // remove the drag_io handlers in case they're present
+    d3.select(this.viewport_ref.current)
+      .on("mousemove.drag_io", null)
+      .on("mouseup.drag_io", null)
+      .on("mousemove.drag_node", this.canvasNodeDragMoveHandler.bind(this))
+      .on("mouseup.drag_node", this.canvasNodeDragUpHandler.bind(this));
+
+    d3.event.preventDefault();
+    d3.event.stopPropagation();
+  }
+
+  dropTargetDefaultMouseoverHandler(domElement, datum)
+  {
+    this.nodeDropTarget = datum;
+    d3.select(domElement).attr("opacity", 0.8);
+    console.log(datum);
+  }
+
+  dropTargetDefaultMouseoutHandler(domElement, datum)
+  {
+    this.nodeDropTarget = null;
+    d3.select(domElement).attr("opacity", 0.2);
   }
 }
 
