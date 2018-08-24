@@ -1504,13 +1504,13 @@ class D3BehaviorTreeEditor extends Component
 
     d3.select(this).classed("data-hover", false);
 
-    // select source gripper
+    // deselect source gripper
     selectIOGripper(vertex_selection, my_data.source)
       .each(function(d) {
         this.dispatchEvent(new CustomEvent("mouseout"));
       });
 
-    // select target gripper
+    // deselect target gripper
     selectIOGripper(vertex_selection, my_data.target)
       .each(function(d) {
         this.dispatchEvent(new CustomEvent("mouseout"));
@@ -1564,7 +1564,7 @@ class D3BehaviorTreeEditor extends Component
     d3.select(this.viewport_ref.current)
     // Remove any handlers for node dragging
       .on("mousemove.drag_node", null)
-      .on("mouseout.drag_node", null)
+      .on("mouseup.drag_node", null)
       .on("mousemove.drag_io", this.canvasIOMoveHandler.bind(this))
       .on("mouseup.drag_io", this.canvasIOUpHandler.bind(this));
 
@@ -1871,7 +1871,7 @@ class D3BehaviorTreeEditor extends Component
 
     d3.select(this.viewport_ref.current)
       .on("mousemove.drag_node", null)
-      .on("mouseout.drag_node", null);
+      .on("mouseup.drag_node", null);
   }
 
   nodeClickHandler(d, index, group)
