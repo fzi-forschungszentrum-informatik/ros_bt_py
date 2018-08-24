@@ -711,7 +711,10 @@ class D3BehaviorTreeEditor extends Component
       options: []
     };
 
-    tree_msg.nodes.push(forest_root);
+    if (tree_msg.nodes.findIndex(x => x.name === "__forest_root") < 0)
+    {
+      tree_msg.nodes.push(forest_root);
+    }
     // Update the visual tree
     var parents = {};
     var node_dict = {};
