@@ -1180,10 +1180,8 @@ class D3BehaviorTreeEditor extends Component
 
   drawDataGraph(g_data, data, wirings)
   {
-    // Add the edge container first so the vertices draw over the
-    // edges, which looks nicer
-    var edges = g_data.selectAll("g.data_edges");
-    var vertices = g_data.selectAll("g.data_vertices");
+    var edges = g_data.select("g.data_edges");
+    var vertices = g_data.select("g.data_vertices");
 
     var input_vertex_data = [];
     var output_vertex_data = [];
@@ -1291,8 +1289,7 @@ class D3BehaviorTreeEditor extends Component
             three,
             target
           ]};
-      }.bind(this)),
-      vertices);
+      }.bind(this)));
   }
 
   getIOCoords(node_data,
@@ -1364,25 +1361,30 @@ class D3BehaviorTreeEditor extends Component
     };
   }
 
-  drawDataEdges(edge_selection, edge_data, vertex_selection)
+  drawDataEdges(edge_selection, edge_data)
   {
-    var link = edge_selection.selectAll(".data-link").data(edge_data);
+    var link = edge_selection.selectAll(".data-link").data(
+      edge_data,
+      d => JSON.stringify(d.source) + JSON.stringify(d.target));
     link.exit().remove();
 
     link = link
       .enter()
       .append("path")
       .attr("class", "data-link")
+      .on("mouseover", this.DataEdgeDefaultMouseoverHandler)
+      .on("mouseout", this.DataEdgeDefaultMouseoutHandler)
+      .merge(link);
+
+    link
+      .transition()
       .attr("d", function(d) {
         var lineGen = d3.line()
             .x(d => d.x)
             .y(d => d.y)
             .curve(d3.curveCatmullRom.alpha(0.9));
         return lineGen(d.points);
-      })
-      .on("mouseover", this.DataEdgeDefaultMouseoverHandler)
-      .on("mouseout", this.DataEdgeDefaultMouseoutHandler)
-      .merge(link);
+      });
   }
 
   drawDataVerts(vertex_selection, input_vertex_data, output_vertex_data)
@@ -1399,7 +1401,9 @@ class D3BehaviorTreeEditor extends Component
       .on("mouseover", this.IOGroupDefaultMouseoverHandler)
       .on("mouseout", this.IOGroupDefaultMouseoutHandler)
       .merge(groups);
+
     groups
+      .transition()
       .attr("transform", function(d) {
         return "translate(" + Math.round(d.x) + ", " + Math.round(d.y) + ")";
       });
