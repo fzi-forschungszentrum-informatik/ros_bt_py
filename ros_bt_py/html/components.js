@@ -110,6 +110,11 @@ function getDist(a, b)
   return Math.sqrt(Math.pow(a[0] - b[0], 2) + Math.pow(a[1] - b[1], 2));
 }
 
+function treeIsEditable(tree_msg)
+{
+  return tree_msg.state === "EDITABLE";
+}
+
 function selectIOGripper(vertex_selection, data)
 {
   return vertex_selection
@@ -274,6 +279,9 @@ class App extends Component
       messageType : 'ros_bt_py_msgs/Tree'
     });
 
+    this.topicTimeoutID = null;
+    this.newMsgDelay = 200;  // ms
+
     // Bind these here so this works as expected in callbacks
     this.onError = this.onError.bind(this);
     this.onSelectionChange = this.onSelectionChange.bind(this);
@@ -283,7 +291,15 @@ class App extends Component
 
   onTreeUpdate(msg)
   {
-    this.setState({last_tree_msg: msg});
+    if (this.topicTimeoutID !== null)
+    {
+      window.clearTimeout(this.topicTimeoutID);
+      this.topicTimeoutID = null;
+    }
+    this.topicTimeoutID = window.setTimeout(
+      this.setState.bind(this),
+      this.newMsgDelay,
+      {last_tree_msg: msg});
   }
 
   findPossibleParents()
@@ -338,6 +354,7 @@ class App extends Component
                   <div className="col">
                     <D3BehaviorTreeEditor ros={this.ros}
                                           bt_namespace={this.state.bt_namespace}
+                                          tree_message={this.state.last_tree_msg}
                                           onSelectionChange={this.onSelectionChange}
                                           showDataGraph={this.state.showDataGraph}
                                           onError={this.onError}/>
@@ -566,10 +583,6 @@ class D3BehaviorTreeEditor extends Component
   {
     super(props);
 
-    this.state = {
-      editable: true
-    };
-
     this.horizontal_spacing = 80;
     this.vertical_spacing = 40;
 
@@ -583,12 +596,6 @@ class D3BehaviorTreeEditor extends Component
 
     this.draggedNode = null;
     this.dragging = false;
-
-    this.tree_topic = new ROSLIB.Topic({
-      ros : props.ros,
-      name : props.bt_namespace + 'tree',
-      messageType : 'ros_bt_py_msgs/Tree'
-    });
 
     this.wire_service = new ROSLIB.Service({
       ros: props.ros,
@@ -619,7 +626,6 @@ class D3BehaviorTreeEditor extends Component
 
     this.onSelectionChange = props.onSelectionChange;
 
-    this.onTreeUpdate = this.onTreeUpdate.bind(this);
     this.getIOCoords = this.getIOCoords.bind(this);
     this.getIOCoordsFromNode = this.getIOCoordsFromNode.bind(this);
   }
@@ -638,13 +644,6 @@ class D3BehaviorTreeEditor extends Component
         container.attr("transform", d3.event.transform);
       }))
       .call(tmpzoom.translateBy, width * 0.5, 10.0);
-
-    this.tree_topic.subscribe(this.onTreeUpdate);
-  }
-
-  componentWillUnmount()
-  {
-    this.tree_topic.unsubscribe(this.onTreeUpdate);
   }
 
   render()
@@ -681,10 +680,11 @@ class D3BehaviorTreeEditor extends Component
 
   componentDidUpdate()
   {
+    this.drawEverything(this.props.tree_message);
 
     // Disable all interaction (except for zooming and panning) when
     // the tree isn't editable
-    if (this.state.editable)
+    if (treeIsEditable(this.props.tree_message))
     {
 
     }
@@ -699,13 +699,6 @@ class D3BehaviorTreeEditor extends Component
       d3.select(this.svg_ref.current).select(".data_graph").attr("visibility", "visible");
     }
 
-  }
-
-  onTreeUpdate(tree_msg)
-  {
-    this.drawEverything(tree_msg);
-
-    this.setState({editable: tree_msg.state === "EDITABLE"});
   }
 
   drawEverything(tree_msg)
