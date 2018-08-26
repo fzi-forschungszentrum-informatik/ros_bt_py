@@ -18,17 +18,20 @@ class Fallback(FlowControl):
 
     1. A node returns SUCCEEDED:
 
-       In this case, the sequence also returns SUCCEEDED, and calls
+       In this case, the Fallback also returns SUCCEEDED, and calls
        :meth:`ros_bt_py.node.Node.untick` on all remaining children.
 
     2. A node returns RUNNING:
 
-       Just as with SUCCEEDED, the sequence will also return RUNNING and call
-       :meth:`ros_bt_py.node.Node.untick` on all remaining children.
+       Just as with FAILED, the Fallback will also return RUNNING, but
+       not call :meth:`ros_bt_py.node.Node.untick` on the remaining
+       children until the RUNNING node produces a result. This
+       prevents thrashing when there's multiple nodes that take a tick
+       or two to produce a result.
 
     3. All nodes return FAILED:
 
-       The Sequence will also return FAILED.
+       The Fallback will also return FAILED.
 
     *Special case:*
 
@@ -47,10 +50,11 @@ class Fallback(FlowControl):
         for index, child in enumerate(self.children):
             result = child.tick()
             if result == NodeMsg.SUCCEEDED or result == NodeMsg.RUNNING:
-                # untick all children after the one that triggered this
-                # condition
-                for untick_child in self.children[index + 1:]:
-                    untick_child.untick()
+                if result == NodeMsg.SUCCEEDED:
+                    # untick all children after the one that triggered this
+                    # condition
+                    for untick_child in self.children[index + 1:]:
+                        untick_child.untick()
                 return result
         # If all children failed, we too fail
         return NodeMsg.FAILED

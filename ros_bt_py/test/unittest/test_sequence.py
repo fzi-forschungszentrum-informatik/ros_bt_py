@@ -63,8 +63,8 @@ class TestSequence(unittest.TestCase):
         self.assertEqual(self.runner.outputs['tick_count'], 1)
         self.assertEqual(self.runner.state, Node.RUNNING)
         self.assertEqual(self.succeeder.outputs['tick_count'], 0)
-        self.assertEqual(self.succeeder.outputs['untick_count'], 1)
-        self.assertEqual(self.succeeder.state, Node.PAUSED)
+        self.assertEqual(self.succeeder.outputs['untick_count'], 0)
+        self.assertEqual(self.succeeder.state, Node.IDLE)
         self.assertEqual(self.sequence.state, Node.RUNNING)
 
     def testTickFailing(self):
