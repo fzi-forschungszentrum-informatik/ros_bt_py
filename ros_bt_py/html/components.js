@@ -1876,13 +1876,11 @@ class D3BehaviorTreeEditor extends Component
 
   nodeClickHandler(d, index, group)
   {
-    console.log("Henlo");
+    console.log("Node clicked!");
   }
 
   nodeMousedownHandler(d, domObject)
   {
-    console.log("Ohai", d3.event);
-
     if ((d3.event.buttons & 1) != 1)
     {
       return;
