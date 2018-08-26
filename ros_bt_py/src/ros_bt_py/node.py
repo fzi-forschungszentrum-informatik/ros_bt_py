@@ -253,8 +253,7 @@ class Node(object):
         you can use those values in your implementation of
         :meth:`_do_setup`
 
-        Sets the state of the node to whatever :meth:`_do_setup`
-        returned.
+        Sets the state of the node to IDLE.
 
         :raises: BehaviorTreeException if called when the node is not UNINITIALIZED or SHUTDOWN
         """
@@ -262,7 +261,8 @@ class Node(object):
             raise BehaviorTreeException(
                 'Calling setup() is only allowed in states %s and %s, but node %s is in state %s'
                 % (NodeMsg.UNINITIALIZED, NodeMsg.SHUTDOWN, self.name, self.state))
-        self.state = self._do_setup()
+        self._do_setup()
+        self.state = NodeMsg.IDLE
         self._setup_called = True
 
     @_required
@@ -274,7 +274,8 @@ class Node(object):
 
         :rtype: basestring
         :returns:
-          This method must return one of the constants in :class:`ros_bt_py_msgs.msg.Node`
+          Nothing. If this method doesn't raise an exception, the node state will be
+          IDLE afterwards.
         """
 
         msg = ('Trying to setup a node of type %s without _do_setup function!'
