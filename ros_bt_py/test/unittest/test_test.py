@@ -1,6 +1,7 @@
 import unittest
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
+from ros_bt_py.exceptions import BehaviorTreeException
 from ros_bt_py.nodes.test import Test
 
 
@@ -53,17 +54,16 @@ class TestTest(unittest.TestCase):
         # Resetting the node updates the result value to False
         self.test_node.reset()
         self.assertEqual(self.test_node.state, NodeMsg.IDLE)
-        self.assertTrue(self.test_node.outputs.is_updated('result'))
-        self.assertFalse(self.test_node.outputs['result'])
-
-        # Neither of the inputs have updated, so the result doesn't either
-        self.test_node.tick()
-        self.assertEqual(self.test_node.state, NodeMsg.SUCCEEDED)
         self.assertFalse(self.test_node.outputs.is_updated('result'))
         self.assertFalse(self.test_node.outputs['result'])
 
-        # If we update an input, the result changes to True
+        # Neither of the inputs have updated, so ticking fails
+        with self.assertRaises(ValueError):
+            self.test_node.tick()
+
+        # If we update the inputs, the result changes to True
         self.test_node.inputs['in'] = 42
+        self.test_node.inputs['expected'] = 42
         self.test_node.tick()
         self.assertEqual(self.test_node.state, NodeMsg.SUCCEEDED)
         self.assertTrue(self.test_node.outputs.is_updated('result'))

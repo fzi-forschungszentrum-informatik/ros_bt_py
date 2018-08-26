@@ -30,7 +30,13 @@ class Test(Leaf):
     def _do_reset(self):
         # Reset output to False, so we'll return False until we
         # receive a new input.
+        self.inputs['in'] = None
+        self.inputs['expected'] = None
+        self.inputs.reset_updated()
+
         self.outputs['result'] = False
+        self.outputs.reset_updated()
+
         return NodeMsg.IDLE
 
     def _do_shutdown(self):

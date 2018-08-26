@@ -15,12 +15,10 @@ class PassthroughNode(Leaf):
     Only really useful for testing
     """
     def _do_setup(self):
-        # Connect 'in' to 'out'
-        self.inputs.subscribe('in', self.outputs.get_callback('out'), '.outputs[out]')
         return NodeMsg.IDLE
 
     def _do_tick(self):
-        # Nothing to do here other than succeed
+        self.outputs['out'] = self.inputs['in']
         return NodeMsg.SUCCEEDED
 
     def _do_untick(self):
