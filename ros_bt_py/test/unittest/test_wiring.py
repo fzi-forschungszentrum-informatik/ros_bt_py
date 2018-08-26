@@ -107,3 +107,36 @@ class testWiring(unittest.TestCase):
         self.assertEqual(len(self.first.subscriptions), 0)
         self.assertEqual(len(self.second.subscribers), 0)
         self.assertEqual(len(self.second.subscriptions), 1)
+
+    def testMultipleWirings(self):
+        self.second.inputs['in'] = 'asdf'
+        self.second.wire_data(NodeDataWiring(
+            source=NodeDataLocation(
+                node_name=self.first.name,
+                data_kind=NodeDataLocation.OUTPUT_DATA,
+                data_key='out'
+            ),
+            target=NodeDataLocation(
+                node_name=self.second.name,
+                data_kind=NodeDataLocation.INPUT_DATA,
+                data_key='in'
+            )))
+
+        self.second.wire_data(NodeDataWiring(
+            source=NodeDataLocation(
+                node_name=self.first.name,
+                data_kind=NodeDataLocation.OUTPUT_DATA,
+                data_key='out'
+            ),
+            target=NodeDataLocation(
+                node_name=self.second.name,
+                data_kind=NodeDataLocation.INPUT_DATA,
+                data_key='expected'
+            )))
+
+        self.assertEqual(len(self.first.subscribers), 2)
+        self.assertEqual(len(self.first.subscriptions), 0)
+        self.assertEqual(len(self.second.subscribers), 0)
+        self.assertEqual(len(self.second.subscriptions), 2)
+
+        self.root.tick()

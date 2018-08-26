@@ -901,7 +901,7 @@ class Node(object):
 
         return None
 
-    def _subscribe(self, wiring, cb, expected_type):
+    def _subscribe(self, wiring, new_cb, expected_type):
         """Subscribe to a piece of Nodedata this node has.
 
         Call this on a node to *subscribe to NodeData **from** that
@@ -938,7 +938,7 @@ class Node(object):
             raise KeyError('%s: Trying to subscribe to another node (%s)' %
                            (self.name, source.node_name))
 
-        for sub, cb, cb_type in self.subscribers:
+        for sub, _, _ in self.subscribers:
             if sub.target == wiring.target:
                 if sub.source == wiring.source:
                     raise BehaviorTreeException('Duplicate subscription!')
@@ -970,11 +970,11 @@ class Node(object):
                     wiring.target.data_key,
                     expected_type)))
 
-        source_map.subscribe(wiring.source.data_key, cb, '%s.%s[%s]' %
+        source_map.subscribe(wiring.source.data_key, new_cb, '%s.%s[%s]' %
                              (wiring.target.node_name,
                               wiring.target.data_kind,
                               wiring.target.data_key))
-        self.subscribers.append((deepcopy(wiring), cb, expected_type))
+        self.subscribers.append((deepcopy(wiring), new_cb, expected_type))
 
     def wire_data(self, wiring):
         """Wire a piece of Nodedata from another node to this node.

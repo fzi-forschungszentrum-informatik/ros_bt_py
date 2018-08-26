@@ -114,15 +114,14 @@ class NodeDataMap(object):
 
         :raises KeyError: if `key` is not a valid key
         """
-
         if key not in self._map:
             raise KeyError('%s is not a key of %s'
                            % (key, self.name))
         if key not in self.callbacks:
             self.callbacks[key] = []
-        if any([callback == cb for cb, _ in self.callbacks[key]]):
-            # Do nothing if the callback we got is already registered for the
-            # given key.
+        if any([subscriber_name == name for _, name in self.callbacks[key]]):
+            # Do nothing if we already have a callback with the given
+            # name for this key
             return
         self.callbacks[key].append((callback, subscriber_name))
 
@@ -176,8 +175,8 @@ class NodeDataMap(object):
             if self.is_updated(key):
                 if key in self.callbacks:
                     for callback, subscriber_name in self.callbacks[key]:
-                        rospy.logdebug('Forwarding value %s to subscriber %s',
-                                       key, subscriber_name)
+                        rospy.logdebug('Forwarding value %s of key %s to subscriber %s',
+                                       str(self[key]), key, subscriber_name)
                         callback(self[key])
 
     def add(self, key, value):
