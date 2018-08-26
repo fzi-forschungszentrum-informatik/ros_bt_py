@@ -1003,7 +1003,7 @@ class Node(object):
         are incompatible.
         """
         if wiring.target.node_name != self.name:
-            raise KeyError('Target of wiring (%s) is not this node (%s)' % (
+            raise BehaviorTreeException('Target of wiring (%s) is not this node (%s)' % (
                 wiring.target.node_name,
                 self.name))
 
@@ -1020,7 +1020,7 @@ class Node(object):
                     wiring.source.node_name,
                     self.name))
         try:
-            source_map = self.get_data_map(wiring.source.data_kind)
+            source_map = source_node.get_data_map(wiring.source.data_kind)
         except KeyError as exception:
             raise BehaviorTreeException(str(exception))
 

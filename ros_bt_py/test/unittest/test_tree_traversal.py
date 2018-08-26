@@ -88,7 +88,7 @@ class TestTreeTraversal(unittest.TestCase):
         # Test some combinations that should raise errors
 
         # wire_data(wiring) must be called on the *target* of the wiring
-        self.assertRaises(KeyError, self.inner_leaf_1.wire_data, wiring)
+        self.assertRaises(BehaviorTreeException, self.inner_leaf_1.wire_data, wiring)
         # wiring the same connection twice is an error
         self.assertRaises(BehaviorTreeException, self.passthrough.wire_data, wiring)
         # if either input or output key doesn't exist, wiring should fail
