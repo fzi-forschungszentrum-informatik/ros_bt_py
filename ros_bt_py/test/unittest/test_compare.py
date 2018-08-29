@@ -3,6 +3,7 @@ import unittest
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py.exceptions import BehaviorTreeException
 from ros_bt_py.nodes.compare import Compare, CompareNewOnly, CompareConstant
+from ros_bt_py.nodes.compare import ALessThanB, LessThanConstant
 
 
 class TestCompare(unittest.TestCase):
@@ -123,3 +124,39 @@ class TestCompareConstant(unittest.TestCase):
         self.compare.tick()
         self.assertEqual(self.compare.state, NodeMsg.SUCCEEDED)
 
+
+class TestLessThan(unittest.TestCase):
+    def testALessThanB(self):
+        less_than = ALessThanB()
+        less_than.setup()
+
+        with self.assertRaises(ValueError):
+            less_than.tick()
+
+        less_than.inputs['a'] = 42
+        less_than.inputs['b'] = 42
+
+        self.assertEqual(less_than.tick(), NodeMsg.FAILED)
+
+        less_than.inputs['a'] = 100
+        self.assertEqual(less_than.tick(), NodeMsg.FAILED)
+
+        less_than.inputs['a'] = 1
+        self.assertEqual(less_than.tick(), NodeMsg.SUCCEEDED)
+
+    def testLessThanConstant(self):
+        less_than = LessThanConstant({'target': 42})
+        less_than.setup()
+
+        with self.assertRaises(ValueError):
+            less_than.tick()
+
+        less_than.inputs['a'] = 42
+
+        self.assertEqual(less_than.tick(), NodeMsg.FAILED)
+
+        less_than.inputs['a'] = 100
+        self.assertEqual(less_than.tick(), NodeMsg.FAILED)
+
+        less_than.inputs['a'] = 1
+        self.assertEqual(less_than.tick(), NodeMsg.SUCCEEDED)

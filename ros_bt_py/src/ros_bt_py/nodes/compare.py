@@ -124,3 +124,85 @@ class CompareConstant(Leaf):
     def _do_shutdown(self):
         # Nothing to do
         pass
+
+
+@define_bt_node(NodeConfig(
+    options={},
+    inputs={
+        'a': float,
+        'b': float
+    },
+    outputs={},
+    max_children=0))
+class ALessThanB(Leaf):
+    """Compares `a` and `b`
+
+    Will succeed if `a < b` and fail otherwise
+    """
+    def _do_setup(self):
+        return NodeMsg.IDLE
+
+    def _do_tick(self):
+        # if self.inputs.is_updated('in') or self.inputs.is_updated('expected'):
+        if self.inputs['a'] < self.inputs['b']:
+            return NodeMsg.SUCCEEDED
+        else:
+            return NodeMsg.FAILED
+
+    def _do_untick(self):
+        # Nothing to do
+        return NodeMsg.IDLE
+
+    def _do_reset(self):
+        # Reset output to False, so we'll return False until we
+        # receive a new input.
+        self.inputs['a'] = None
+        self.inputs['b'] = None
+        self.inputs.reset_updated()
+
+        return NodeMsg.IDLE
+
+    def _do_shutdown(self):
+        # Nothing to do
+        pass
+
+
+@define_bt_node(NodeConfig(
+    options={
+        'target': float
+    },
+    inputs={
+        'a': float
+    },
+    outputs={},
+    max_children=0))
+class LessThanConstant(Leaf):
+    """Compares `a` and `b`
+
+    Will succeed if `a < b` and fail otherwise
+    """
+    def _do_setup(self):
+        return NodeMsg.IDLE
+
+    def _do_tick(self):
+        # if self.inputs.is_updated('in') or self.inputs.is_updated('expected'):
+        if self.inputs['a'] < self.options['target']:
+            return NodeMsg.SUCCEEDED
+        else:
+            return NodeMsg.FAILED
+
+    def _do_untick(self):
+        # Nothing to do
+        return NodeMsg.IDLE
+
+    def _do_reset(self):
+        # Reset output to False, so we'll return False until we
+        # receive a new input.
+        self.inputs['a'] = None
+        self.inputs.reset_updated()
+
+        return NodeMsg.IDLE
+
+    def _do_shutdown(self):
+        # Nothing to do
+        pass
