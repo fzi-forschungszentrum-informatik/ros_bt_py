@@ -219,28 +219,22 @@ class Node(object):
         self.options = NodeDataMap(name='options')
         self._register_node_data(source_map=self.node_config.options,
                                  target_map=self.options,
-                                 allow_ref=False)
+                                 values=options)
 
-        # Set options from constructor parameter
-        unset_option_keys = []
-        for key in self.options:
-            if options is None or key not in options:
-                unset_option_keys.append(key)
-            else:
-                self.options[key] = options[key]
+        # Warn about unset options
+        unset_option_keys = [key for key in self.options
+                             if options is None or key not in options]
         if unset_option_keys:
             raise ValueError('Missing options: %s'
                              % str(unset_option_keys))
 
         self.inputs = NodeDataMap(name='inputs')
         self._register_node_data(source_map=self.node_config.inputs,
-                                 target_map=self.inputs,
-                                 allow_ref=True)
+                                 target_map=self.inputs)
 
         self.outputs = NodeDataMap(name='outputs')
         self._register_node_data(source_map=self.node_config.outputs,
-                                 target_map=self.outputs,
-                                 allow_ref=True)
+                                 target_map=self.outputs)
 
         # Don't setup automatically - nodes should be available as pure data
         # containers before the user decides to call setup() themselves!
@@ -617,8 +611,12 @@ class Node(object):
         tmp.parent = None
         return tmp
 
-    def _register_node_data(self, source_map, target_map, allow_ref):
+    def _register_node_data(self, source_map, target_map, values=None):
         """Register a number of typed :class:`NodeData` in the given map
+
+        Note that when using :class:`OptionRef`, the option keys
+        referenced by any :class:`OptionRef` objects must exist and be
+        populated!
 
         :param dict(str, type) source_map: a dictionary mapping from data keys to data types,
         i.e. ``{ 'a_string' : str, 'an_int' : int }``
@@ -626,10 +624,8 @@ class Node(object):
         :param NodeDataMap target_map:
         The :class:`NodeDataMap` to add :class:`NodeData` values to
 
-        :param bool allow_ref:
-        Decides whether :class:`OptionRef` is accepted as a type. If True, the
-        option keys referenced by any :class:`OptionRef` objects must
-        exist and be populated!
+        :param dict(str, value) values:
+        An optional dictionary containing the values for the NodeData
 
         :raises: NodeConfigError in any of the following cases:
           * If any of the keys in `source_map` already exist in `target_map`
@@ -637,30 +633,40 @@ class Node(object):
           * If an OptionRef references an option value that has not been set or
             does not exist
           * If an OptionRef references an option value that does not hold a `type`
-        """
-        for key, data_type in source_map.iteritems():
-            if key in target_map:
-                raise NodeConfigError('Duplicate output name: %s' % key)
 
-            if isinstance(data_type, OptionRef):
-                if not allow_ref:
-                    raise NodeConfigError('OptionRef not allowed while adding to %s' %
-                                          target_map.name)
-                if data_type.option_key not in self.options:
-                    raise NodeConfigError('OptionRef for %s key "%s" references invalid '
-                                          'option key "%s"' %
-                                          (target_map.name, key, data_type.option_key))
-                if not self.options.is_updated(data_type.option_key):
-                    raise NodeConfigError('OptionRef for %s key "%s" references unwritten '
-                                          'option key "%s"' %
-                                          (target_map.name, key, data_type.option_key))
-                if not isinstance(self.options[data_type.option_key], type):
-                    raise NodeConfigError('OptionRef for %s key "%s" references option key '
-                                          '"%s" that does not contain a type!' %
-                                          (target_map.name, key, data_type.option_key))
-                target_map.add(key, NodeData(data_type=self.options[data_type.option_key]))
-            else:
-                target_map.add(key, NodeData(data_type=data_type))
+        """
+        # Find the values that are not OptionRefs first
+        for key, data_type in {k: v for (k, v) in source_map.iteritems()
+                               if not isinstance(v, OptionRef)}.iteritems():
+            if key in target_map:
+                raise NodeConfigError('Duplicate data name: %s' % key)
+            self.loginfo('Adding %s: %s to node data' %( str(key), str(data_type)))
+            target_map.add(key, NodeData(data_type=data_type))
+            if values is not None and key in values:
+                target_map[key]= values[key]
+
+        # Now process OptionRefs
+        for key, data_type in {k: v for (k, v) in source_map.iteritems()
+                               if isinstance(v, OptionRef)}.iteritems():
+            if key in target_map:
+                raise NodeConfigError('Duplicate %s data name: %s' % (target_map.name, key))
+
+            if data_type.option_key not in self.options:
+                raise NodeConfigError('OptionRef for %s key "%s" references invalid '
+                                      'option key "%s"' %
+                                      (target_map.name, key, data_type.option_key))
+            if not self.options.is_updated(data_type.option_key):
+                self.loginfo(str(self.options))
+                raise NodeConfigError('OptionRef for %s key "%s" references unwritten '
+                                      'option key "%s"' %
+                                      (target_map.name, key, data_type.option_key))
+            if not isinstance(self.options[data_type.option_key], type):
+                raise NodeConfigError('OptionRef for %s key "%s" references option key '
+                                      '"%s" that does not contain a type!' %
+                                      (target_map.name, key, data_type.option_key))
+            target_map.add(key, NodeData(data_type=self.options[data_type.option_key]))
+            if values is not None and key in values:
+                target_map[key]= values[key]
 
     def __repr__(self):
         return '%s(options=%r, name=%r), parent_name:%r, state:%r, inputs:%r, outputs:%r, children:%r' % (

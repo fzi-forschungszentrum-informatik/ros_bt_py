@@ -86,11 +86,9 @@ class Subtree(Leaf):
         # don't contain any OptionRefs, so don't allow references,
         # just to be sure
         self._register_node_data(source_map=subtree_inputs,
-                                 target_map=self.inputs,
-                                 allow_ref=False)
+                                 target_map=self.inputs)
         self._register_node_data(source_map=subtree_outputs,
-                                 target_map=self.outputs,
-                                 allow_ref=False)
+                                 target_map=self.outputs)
 
         # Handle forwarding inputs and outputs using the subscribe mechanics:
         for node_data in self.manager.to_msg().public_node_data:
