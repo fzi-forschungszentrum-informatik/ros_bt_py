@@ -640,7 +640,6 @@ class Node(object):
                                if not isinstance(v, OptionRef)}.iteritems():
             if key in target_map:
                 raise NodeConfigError('Duplicate data name: %s' % key)
-            self.loginfo('Adding %s: %s to node data' %( str(key), str(data_type)))
             target_map.add(key, NodeData(data_type=data_type))
             if values is not None and key in values:
                 target_map[key]= values[key]
