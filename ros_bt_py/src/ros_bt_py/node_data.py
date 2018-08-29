@@ -58,8 +58,12 @@ class NodeData(object):
         if self._static and self.updated:
             raise Exception('Trying to overwrite data in static NodeData object')
         if not isinstance(new_value, self.data_type) and new_value is not None:
-            raise TypeError('Expected data to be of type {}, got {} instead'.format(
-                self.data_type.__name__, type(new_value).__name__))
+            # Silently convert ints to float
+            if self.data_type == float and isinstance(new_value, int):
+                new_value = float(new_value)
+            else:
+                raise TypeError('Expected data to be of type {}, got {} instead'.format(
+                    self.data_type.__name__, type(new_value).__name__))
         self._value = new_value
         self.updated = True
 
