@@ -3,6 +3,7 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
+
 @define_bt_node(NodeConfig(
     options={'compare_type': type},
     inputs={
@@ -42,6 +43,7 @@ class Compare(Leaf):
     def _do_shutdown(self):
         # Nothing to do
         pass
+
 
 @define_bt_node(NodeConfig(
     options={'compare_type': type},

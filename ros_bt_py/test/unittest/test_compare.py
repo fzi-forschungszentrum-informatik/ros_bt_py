@@ -8,7 +8,7 @@ from ros_bt_py.nodes.compare import ALessThanB, LessThanConstant
 
 class TestCompare(unittest.TestCase):
     def setUp(self):
-        self.compare = Compare({'compare_type' : int})
+        self.compare = Compare({'compare_type': int})
         self.compare.setup()
         self.compare.inputs['a'] = 42
         self.compare.inputs['b'] = 42
@@ -21,7 +21,6 @@ class TestCompare(unittest.TestCase):
         # Another tick, same result
         self.compare.tick()
         self.assertEqual(self.compare.state, NodeMsg.SUCCEEDED)
-
 
         self.compare.inputs['b'] = 41
 
@@ -49,7 +48,7 @@ class TestCompare(unittest.TestCase):
 
 class TestCompareNewOnly(unittest.TestCase):
     def setUp(self):
-        self.compare = CompareNewOnly({'compare_type' : int})
+        self.compare = CompareNewOnly({'compare_type': int})
         self.compare.setup()
         self.compare.inputs['a'] = 42
         self.compare.inputs['b'] = 42
@@ -85,9 +84,10 @@ class TestCompareNewOnly(unittest.TestCase):
         self.compare.tick()
         self.assertEqual(self.compare.state, NodeMsg.SUCCEEDED)
 
+
 class TestCompareConstant(unittest.TestCase):
     def setUp(self):
-        self.compare = CompareConstant({'compare_type' : int,
+        self.compare = CompareConstant({'compare_type': int,
                                         'expected': 5})
         self.compare.setup()
         self.compare.inputs['in'] = 5
@@ -100,7 +100,6 @@ class TestCompareConstant(unittest.TestCase):
         # Another tick, same result
         self.compare.tick()
         self.assertEqual(self.compare.state, NodeMsg.SUCCEEDED)
-
 
         self.compare.inputs['in'] = 41
 

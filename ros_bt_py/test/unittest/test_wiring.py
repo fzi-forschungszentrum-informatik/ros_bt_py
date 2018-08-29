@@ -10,7 +10,8 @@ from ros_bt_py.nodes.compare import Compare
 
 from ros_bt_py.exceptions import BehaviorTreeException
 
-class testWiring(unittest.TestCase):
+
+class TestWiring(unittest.TestCase):
     def setUp(self):
         self.root = Sequence()
 

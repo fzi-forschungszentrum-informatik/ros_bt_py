@@ -106,13 +106,14 @@ class TestDictGetter(unittest.TestCase):
                               'key': 'frob',
                               'succeed_on_stale_data': True})
         dict_provider = MockLeaf(
-            options={'output_type': dict,
-                     'state_values': [NodeMsg.SUCCEEDED],
-                     'output_values': [{
-                         'foo': 5,
-                         'bar': 'hello',
-                         'frob': 42
-                     }]
+            options={
+                'output_type': dict,
+                'state_values': [NodeMsg.SUCCEEDED],
+                'output_values': [{
+                    'foo': 5,
+                    'bar': 'hello',
+                    'frob': 42
+                }]
             })
 
         getter.add_child(dict_provider)
@@ -168,8 +169,7 @@ class TestAttrGetter(unittest.TestCase):
         location_provider = MockLeaf(
             options={'output_type': NodeDataLocation,
                      'state_values': [NodeMsg.SUCCEEDED],
-                     'output_values': [NodeDataLocation(node_name='foo')]
-            })
+                     'output_values': [NodeDataLocation(node_name='foo')]})
 
         getter.add_child(location_provider)
         location_provider.outputs.subscribe('out', getter.inputs.get_callback('object'))

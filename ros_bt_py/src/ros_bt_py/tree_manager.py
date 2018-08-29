@@ -158,11 +158,11 @@ class TreeManager(object):
         """Wrap :meth:`TreeManager.tick()` and catch *all* errors"""
         try:
             self.tick()
-        except Exception, e:
+        except Exception as ex:
             # TODO(nberg): don't catch the ROSException that is raised on shutdown
-            rospy.logerr('Encountered error while ticking tree: %s', e)
+            rospy.logerr('Encountered error while ticking tree: %s', ex)
             with self._state_lock:
-                self._last_error = e
+                self._last_error = ex
                 self.tree_msg.state = Tree.ERROR
 
     def tick(self, once=None):
@@ -317,17 +317,17 @@ class TreeManager(object):
             # load tree file and parse yaml, then convert to Tree message
             try:
                 tree_file = open(file_path, 'r')
-            except IOError, e:
+            except IOError as ex:
                 response.success = False
-                response.error_message = ('Error opening file %s: %s' % (file_path, str(e)))
+                response.error_message = ('Error opening file %s: %s' % (file_path, str(ex)))
                 return response
             with tree_file:
                 data = yaml.load_all(tree_file)
                 read_data = False
-                for d in data:
+                for datum in data:
                     if not read_data:
                         tree = Tree()
-                        genpy.message.fill_message_args(tree, d, keys={})
+                        genpy.message.fill_message_args(tree, datum, keys={})
                         read_data = True
                     else:
                         response.success = False
@@ -393,7 +393,7 @@ class TreeManager(object):
             request.collect_performance_data)
         return SetExecutionModeResponse()
 
-    def debug_step(self, request):
+    def debug_step(self, _):
         """Continue execution
 
         If single step mode is enabled, advance a single step. If we're
@@ -494,9 +494,9 @@ class TreeManager(object):
                         rospy.loginfo('Unticking a tree with no nodes.')
                         response.tree_state = Tree.IDLE
                         response.success = True
-                except TreeTopologyError as e:
+                except TreeTopologyError as ex:
                     response.success = False
-                    response.error_message = str(e)
+                    response.error_message = str(ex)
 
                 self.publish_info(self.debug_manager.get_debug_info_msg())
             else:
@@ -512,9 +512,9 @@ class TreeManager(object):
                         root.shutdown()
                     else:
                         rospy.loginfo('Shutting down a tree with no nodes.')
-                except TreeTopologyError, e:
+                except TreeTopologyError as ex:
                     response.success = False
-                    response.error_message = str(e)
+                    response.error_message = str(ex)
 
                 # Now the tree is editable again - all nodes are in a state
                 # where they must be initialized.
@@ -563,9 +563,9 @@ class TreeManager(object):
                                                   'is %s, not IDLE' % self.tree_msg.state)
                         response.success = False
                         rospy.logerr(response.error_message)
-                except TreeTopologyError, e:
+                except TreeTopologyError as ex:
                     response.success = False
-                    response.error_message = str(e)
+                    response.error_message = str(ex)
                     response.tree_state = self.tree_msg.state
 
         elif (request.command == ControlTreeExecutionRequest.TICK_PERIODICALLY or
@@ -593,9 +593,9 @@ class TreeManager(object):
                     self._tick_thread.start()
                     response.success = True
                     response.tree_state = Tree.TICKING
-                except TreeTopologyError, e:
+                except TreeTopologyError as ex:
                     response.success = False
-                    response.error_message = str(e)
+                    response.error_message = str(ex)
                     response.tree_state = self.tree_msg.state
 
         elif request.command == ControlTreeExecutionRequest.RESET:
@@ -615,9 +615,9 @@ class TreeManager(object):
                         self.tree_msg.state = Tree.IDLE
                     response.success = True
                     response.tree_state = self.tree_msg.state
-                except TreeTopologyError, e:
+                except TreeTopologyError as ex:
                     response.success = False
-                    response.error_message = str(e)
+                    response.error_message = str(ex)
                     response.tree_state = self.tree_msg.state
 
             self.publish_info(self.debug_manager.get_debug_info_msg())
@@ -766,7 +766,7 @@ class TreeManager(object):
             del self.nodes[name]
 
         # Unwire wirings that have removed nodes as source or target
-        unwire_resp = self.unwire_data(WireNodeDataRequest(
+        self.unwire_data(WireNodeDataRequest(
             tree_name=self.tree_msg.name,
             wirings=[wiring for wiring in self.tree_msg.data_wirings
                      if (wiring.source.node_name in names_to_remove or
@@ -804,10 +804,10 @@ class TreeManager(object):
         try:
             deserialized_options = dict((option.key, jsonpickle.decode(option.serialized_value))
                                         for option in request.options)
-        except ValueError, e:
+        except ValueError as ex:
             return SetOptionsResponse(
                 success=False,
-                error_message='Failed to deserialize option value: %s' % str(e))
+                error_message='Failed to deserialize option value: %s' % str(ex))
         # Find any options values that
         # a) the node does not expect
         # b) have the wrong type
@@ -884,9 +884,9 @@ class TreeManager(object):
 
             try:
                 parent.remove_child(node.name)
-            except KeyError as e:
+            except KeyError as ex:
                 error_message = ('Failed to remove old instance of node %s: %s' %
-                                 (node.name, str(e)))
+                                 (node.name, str(ex)))
                 rewire_resp = self.wire_data(wire_request)
                 if not rewire_resp.success:
                     error_message += '\nAlso failed to restore data wirings!'
@@ -897,16 +897,16 @@ class TreeManager(object):
 
             try:
                 parent.add_child(new_node, at_index=old_child_index)
-            except (KeyError, BehaviorTreeException) as e:
+            except (KeyError, BehaviorTreeException) as ex:
                 error_message = ('Failed to add new instance of node %s: %s' %
-                                 (node.name, str(e)))
+                                 (node.name, str(ex)))
 
                 try:
                     parent.add_child(node, at_index=old_child_index)
                     rewire_resp = self.wire_data(wire_request)
                     if not rewire_resp.success:
                         error_message += '\nAlso failed to restore data wirings!'
-                except (KeyError, BehaviorTreeException) as e:
+                except (KeyError, BehaviorTreeException):
                     error_message += '\n Also failed to restore old node.'
 
                 return SetOptionsResponse(
@@ -926,10 +926,10 @@ class TreeManager(object):
                 try:
                     parent.remove_child(new_node.name)
                     parent.add_child(node)
-                except (KeyError, BehaviorTreeException) as e:
-                    error_message += '\nError restoring old node: %s' % str(e)
+                except (KeyError, BehaviorTreeException) as ex:
+                    error_message += '\nError restoring old node: %s' % str(ex)
             recovery_wire_response = self.wire_data(wire_request)
-            if not rewire_resp.success:
+            if not recovery_wire_response.success:
                 error_message += 'Failed to re-wire data to restored node %s' % new_node.name
 
             return SetOptionsResponse(
@@ -976,7 +976,7 @@ class TreeManager(object):
 
         new_parent_max_children = self.nodes[request.new_parent_name].node_config.max_children
         if (new_parent_max_children is not None and
-            len(self.nodes[request.new_parent_name].children) == new_parent_max_children):
+                len(self.nodes[request.new_parent_name].children) == new_parent_max_children):
             return MoveNodeResponse(
                 success=False,
                 error_message=("Cannot move node %s to new parent node %s. "
@@ -988,9 +988,9 @@ class TreeManager(object):
 
         # If the new parent is part of the moved node's subtree, we'd
         # get a cycle, so check for that and fail if true!
-        if request.new_parent_name in [node.name
-                                       for node
-                                       in self.nodes[request.node_name] \
+        if request.new_parent_name in [subtree_node.name
+                                       for subtree_node
+                                       in self.nodes[request.node_name]
                                        .get_subtree_msg()[0].nodes]:
             return MoveNodeResponse(
                 success=False,
@@ -1038,16 +1038,16 @@ class TreeManager(object):
         # be an issue if there were too many children before. Which
         # shouldn't happen. But you know, better safe than sorry!
         if (new_node_max_children is not None and
-            len(old_node.children) > new_node_max_children):
+                len(old_node.children) > new_node_max_children):
             return ReplaceNodeResponse(
                 success=False,
                 error_message="Replacement node (\"%s\") does not support the number of \
                                children required (%s has %d children, %s supports %d." % (
-                    request.new_node_name,
-                    request.old_node_name,
-                    len(old_node.children),
-                    request.new_node_name,
-                    new_node_max_children))
+                                   request.new_node_name,
+                                   request.old_node_name,
+                                   len(old_node.children),
+                                   request.new_node_name,
+                                   new_node_max_children))
 
         # TODO(nberg): Actually implement this
 
@@ -1088,10 +1088,10 @@ class TreeManager(object):
         # parent.children = [C, A]
         #
         # Which is wrong!
-        if (new_node.parent is not None
-            and old_node_parent is not None
-            and new_node.parent.name == old_node_parent.name
-            and old_node_child_index > 0):
+        if (new_node.parent is not None and
+                old_node_parent is not None and
+                new_node.parent.name == old_node_parent.name and
+                old_node_child_index > 0):
             for index, child in enumerate(new_node.parent.children):
                 if child.name == request.new_node_name:
                     if index < old_node_child_index:
@@ -1147,9 +1147,9 @@ class TreeManager(object):
             root = self.find_root()
             if not root:
                 raise TreeTopologyError('No nodes in tree')
-        except TreeTopologyError, e:
+        except TreeTopologyError as ex:
             response.success = False
-            response.error_message = 'Unable to find root node: %s' % str(e)
+            response.error_message = 'Unable to find root node: %s' % str(ex)
             return response
 
         successful_wirings = []
@@ -1162,9 +1162,9 @@ class TreeManager(object):
             try:
                 target_node.wire_data(wiring)
                 successful_wirings.append(wiring)
-            except (KeyError, BehaviorTreeException), e:
+            except (KeyError, BehaviorTreeException) as ex:
                 response.success = False
-                response.error_message = 'Failed to execute wiring "%s": %s' % (wiring, str(e))
+                response.error_message = 'Failed to execute wiring "%s": %s' % (wiring, str(ex))
                 break
 
         if not response.success:
@@ -1173,11 +1173,11 @@ class TreeManager(object):
                 target_node = root.find_node(wiring.target.node_name)
                 try:
                     target_node.unwire_data(wiring)
-                except (KeyError, BehaviorTreeException), e:
+                except (KeyError, BehaviorTreeException) as ex:
                     response.success = False
                     response.error_message = (
                         'Failed to undo wiring "%s": %s\nPrevious error: %s'
-                        % (wiring, str(e), response.error_message))
+                        % (wiring, str(ex), response.error_message))
                     rospy.logerr('Failed to undo successful wiring after error. '
                                  'Tree is in undefined state!')
                     with self._state_lock:
@@ -1212,9 +1212,9 @@ class TreeManager(object):
             root = self.find_root()
             if not root:
                 raise TreeTopologyError('No nodes in tree')
-        except TreeTopologyError, e:
+        except TreeTopologyError as ex:
             response.success = False
-            response.error_message = 'Unable to find root node: %s' % str(e)
+            response.error_message = 'Unable to find root node: %s' % str(ex)
             return response
 
         successful_unwirings = []
@@ -1227,9 +1227,9 @@ class TreeManager(object):
             try:
                 target_node.unwire_data(wiring)
                 successful_unwirings.append(wiring)
-            except (KeyError, BehaviorTreeException), e:
+            except (KeyError, BehaviorTreeException) as ex:
                 response.success = False
-                response.error_message = 'Failed to remove wiring "%s": %s' % (wiring, str(e))
+                response.error_message = 'Failed to remove wiring "%s": %s' % (wiring, str(ex))
                 break
 
         if not response.success:
@@ -1238,11 +1238,11 @@ class TreeManager(object):
                 target_node = root.find_node(wiring.target.node_name)
                 try:
                     target_node.wire_data(wiring)
-                except (KeyError, BehaviorTreeException), e:
+                except (KeyError, BehaviorTreeException) as ex:
                     response.success = False
                     response.error_message = (
                         'Failed to redo wiring "%s": %s\nPrevious error: %s'
-                        % (wiring, str(e), response.error_message))
+                        % (wiring, str(ex), response.error_message))
                     rospy.logerr('Failed to rewire successful unwiring after error. '
                                  'Tree is in undefined state!')
                     with self._state_lock:

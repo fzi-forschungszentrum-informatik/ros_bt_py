@@ -642,7 +642,7 @@ class Node(object):
                 raise NodeConfigError('Duplicate data name: %s' % key)
             target_map.add(key, NodeData(data_type=data_type))
             if values is not None and key in values:
-                target_map[key]= values[key]
+                target_map[key] = values[key]
 
         # Now process OptionRefs
         for key, data_type in {k: v for (k, v) in source_map.iteritems()
@@ -665,7 +665,7 @@ class Node(object):
                                       (target_map.name, key, data_type.option_key))
             target_map.add(key, NodeData(data_type=self.options[data_type.option_key]))
             if values is not None and key in values:
-                target_map[key]= values[key]
+                target_map[key] = values[key]
 
     def __repr__(self):
         return '%s(options=%r, name=%r), parent_name:%r, state:%r, inputs:%r, outputs:%r, children:%r' % (

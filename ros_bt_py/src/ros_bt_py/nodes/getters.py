@@ -142,7 +142,7 @@ class GetAttr(Decorator):
         if self.inputs.is_updated('object'):
             try:
                 self.outputs['attr'] = getattr(self.inputs['object'],
-                                                 self.options['attr_name'])
+                                               self.options['attr_name'])
                 return NodeMsg.SUCCEEDED
             except AttributeError:
                 self.logerr('Object %s does not have attribute %s'
