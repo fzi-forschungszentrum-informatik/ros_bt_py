@@ -1,4 +1,3 @@
-from threading import Lock
 import rospy
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
