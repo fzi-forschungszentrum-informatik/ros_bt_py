@@ -82,9 +82,7 @@ class Subtree(Leaf):
             outputs=subtree_outputs,
             max_children=0))
 
-        # Register the input and output values from the subtree - they
-        # don't contain any OptionRefs, so don't allow references,
-        # just to be sure
+        # Register the input and output values from the subtree
         self._register_node_data(source_map=subtree_inputs,
                                  target_map=self.inputs)
         self._register_node_data(source_map=subtree_outputs,
