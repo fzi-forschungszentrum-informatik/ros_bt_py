@@ -6,7 +6,7 @@ from ros_bt_py_msgs.msg import NodeDataLocation
 
 from ros_bt_py.nodes.mock_nodes import MockLeaf
 from ros_bt_py.nodes.sequence import Sequence
-from ros_bt_py.nodes.test import Test
+from ros_bt_py.nodes.compare import Compare
 
 from ros_bt_py.exceptions import BehaviorTreeException
 
@@ -21,8 +21,8 @@ class testWiring(unittest.TestCase):
         })
         self.root.add_child(self.first)
 
-        self.second = Test({
-            'test_type': str
+        self.second = Compare({
+            'compare_type': str
         })
         self.root.add_child(self.second)
 
@@ -39,7 +39,7 @@ class testWiring(unittest.TestCase):
                 target=NodeDataLocation(
                     node_name=self.second.name,
                     data_kind=NodeDataLocation.INPUT_DATA,
-                    data_key='in'
+                    data_key='a'
                 )))
 
     def testWiringFromMissingKey(self):
@@ -55,12 +55,12 @@ class testWiring(unittest.TestCase):
                 target=NodeDataLocation(
                     node_name=self.second.name,
                     data_kind=NodeDataLocation.INPUT_DATA,
-                    data_key='in'
+                    data_key='a'
                 )))
 
     def testWiringToMissingKey(self):
         with self.assertRaises(KeyError):
-            # Source is valid, but target key should be 'in', not
+            # Source is valid, but target key should be 'a', not
             # 'input'
             self.second.wire_data(NodeDataWiring(
                 source=NodeDataLocation(
@@ -87,7 +87,7 @@ class testWiring(unittest.TestCase):
                 target=NodeDataLocation(
                     node_name='other',
                     data_kind=NodeDataLocation.INPUT_DATA,
-                    data_key='in'
+                    data_key='a'
                 )))
 
     def testCorrectWiring(self):
@@ -100,7 +100,7 @@ class testWiring(unittest.TestCase):
             target=NodeDataLocation(
                 node_name=self.second.name,
                 data_kind=NodeDataLocation.INPUT_DATA,
-                data_key='in'
+                data_key='a'
             )))
 
         self.assertEqual(len(self.first.subscribers), 1)
@@ -109,7 +109,7 @@ class testWiring(unittest.TestCase):
         self.assertEqual(len(self.second.subscriptions), 1)
 
     def testMultipleWirings(self):
-        self.second.inputs['in'] = 'asdf'
+        self.second.inputs['a'] = 'asdf'
         self.second.wire_data(NodeDataWiring(
             source=NodeDataLocation(
                 node_name=self.first.name,
@@ -119,7 +119,7 @@ class testWiring(unittest.TestCase):
             target=NodeDataLocation(
                 node_name=self.second.name,
                 data_kind=NodeDataLocation.INPUT_DATA,
-                data_key='in'
+                data_key='a'
             )))
 
         self.second.wire_data(NodeDataWiring(
@@ -131,7 +131,7 @@ class testWiring(unittest.TestCase):
             target=NodeDataLocation(
                 node_name=self.second.name,
                 data_kind=NodeDataLocation.INPUT_DATA,
-                data_key='expected'
+                data_key='b'
             )))
 
         self.assertEqual(len(self.first.subscribers), 2)
