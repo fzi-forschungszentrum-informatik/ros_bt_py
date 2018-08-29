@@ -6,7 +6,7 @@ from ros_bt_py_msgs.msg import NodeData, NodeDataLocation
 
 from ros_bt_py.exceptions import BehaviorTreeException, NodeConfigError
 from ros_bt_py.nodes.mock_nodes import MockLeaf
-from ros_bt_py.nodes.getters import GetListItem, GetDictItem
+from ros_bt_py.nodes.getters import GetListItem, GetDictItem, GetAttr
 
 
 class TestListGetter(unittest.TestCase):
@@ -29,8 +29,8 @@ class TestListGetter(unittest.TestCase):
         self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
         self.assertEqual(getter.outputs['item'], 4)
 
-        # Tick should fail on stale data
-        self.assertEqual(NodeMsg.FAILED, getter.tick())
+        # Tick should return RUNNING on stale data
+        self.assertEqual(NodeMsg.RUNNING, getter.tick())
 
         getter = GetListItem({'list_type': int,
                               'index': 3,
@@ -84,8 +84,8 @@ class TestDictGetter(unittest.TestCase):
         self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
         self.assertEqual(getter.outputs['value'], 42)
 
-        # Tick should fail on stale data
-        self.assertEqual(NodeMsg.FAILED, getter.tick())
+        # Tick should return RUNNING on stale data
+        self.assertEqual(NodeMsg.RUNNING, getter.tick())
 
         getter = GetDictItem({'value_type': int,
                               'key': 'frob',
@@ -126,3 +126,59 @@ class TestDictGetter(unittest.TestCase):
         # Succeed on fail is true, so this should work too
         self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
         self.assertEqual(getter.outputs['value'], 42)
+
+
+class TestAttrGetter(unittest.TestCase):
+    def testAttrGetter(self):
+        getter = GetAttr({'attr_type': str,
+                          'attr_name': 'node_name',
+                          'succeed_on_stale_data': False})
+        getter.setup()
+        self.assertEqual(NodeMsg.IDLE, getter.state)
+
+        getter.inputs['object'] = NodeData(key='baz', serialized_value='')
+        self.assertTrue(getter.inputs.is_updated('object'))
+
+        # NodeData doesn't have a 'node_name' attribute
+        self.assertEqual(NodeMsg.FAILED, getter.tick())
+
+        getter.inputs['object'] = NodeDataLocation(node_name='foo')
+
+        # NodeDataLocation *does* have node_name, and it's foo
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
+        self.assertEqual(getter.outputs['attr'], 'foo')
+
+        # Tick should return RUNNING on stale data
+        self.assertEqual(NodeMsg.RUNNING, getter.tick())
+
+        getter = GetAttr({'attr_type': str,
+                          'attr_name': 'node_name',
+                          'succeed_on_stale_data': True})
+        getter.setup()
+        getter.inputs['object'] = NodeDataLocation(node_name='foo')
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
+
+        # This tick should succeed on stale data
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
+
+    def testAttrGetterAsDecorator(self):
+        getter = GetAttr({'attr_type': str,
+                          'attr_name': 'node_name',
+                          'succeed_on_stale_data': False})
+        location_provider = MockLeaf(
+            options={'output_type': NodeDataLocation,
+                     'state_values': [NodeMsg.SUCCEEDED],
+                     'output_values': [NodeDataLocation(node_name='foo')]
+            })
+
+        getter.add_child(location_provider)
+        location_provider.outputs.subscribe('out', getter.inputs.get_callback('object'))
+
+        getter.setup()
+
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
+        self.assertEqual(getter.outputs['attr'], 'foo')
+
+        # Succeed on fail is true, so this should work too
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
+        self.assertEqual(getter.outputs['attr'], 'foo')
