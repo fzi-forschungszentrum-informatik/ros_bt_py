@@ -50,6 +50,11 @@ class TestNode(unittest.TestCase):
     def testMissingOption(self):
         self.assertRaises(ValueError, PassthroughNode)
 
+    def testExtraOption(self):
+        with self.assertRaises(ValueError):
+            PassthroughNode({'passthrough_type': int,
+                             'foo': 42})
+
 
 class TestNodeConfig(unittest.TestCase):
     def setUp(self):

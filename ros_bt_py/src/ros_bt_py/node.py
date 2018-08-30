@@ -228,6 +228,14 @@ class Node(object):
             raise ValueError('Missing options: %s'
                              % str(unset_option_keys))
 
+        # Warn about extra options
+        if options is not None:
+            extra_option_keys = [key for key in options
+                                 if key not in self.options]
+            if extra_option_keys:
+                raise ValueError('Extra options: %s'
+                                 % str(extra_option_keys))
+
         self.inputs = NodeDataMap(name='inputs')
         self._register_node_data(source_map=self.node_config.inputs,
                                  target_map=self.inputs)
@@ -430,6 +438,18 @@ class Node(object):
         """
         if self.state is NodeMsg.UNINITIALIZED:
             raise BehaviorTreeException('Trying to reset uninitialized node!')
+
+        # Reset inputs and outputs to None before calling _do_reset()
+        # - the node can overwrite the None with more appropriate
+        # values if need be.
+        for input_key in self.inputs:
+            self.inputs[input_key] = None
+        self.inputs.reset_updated()
+
+        for output_key in self.outputs:
+            self.outputs[output_key] = None
+        self.outputs.reset_updated()
+
         self.state = self._do_reset()
         self.raise_if_in_invalid_state(allowed_states=[NodeMsg.IDLE],
                                        action_name='reset()')
