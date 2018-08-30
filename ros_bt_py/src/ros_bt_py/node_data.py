@@ -62,6 +62,13 @@ class NodeData(object):
             if self.data_type == float and isinstance(new_value, int):
                 new_value = float(new_value)
             else:
+                if type(new_value) == dict and "py/type" in new_value:
+                    raise TypeError(
+                        ('Expected data to be of type {}, got {} instead. '
+                         'Looks like failed jsonpickle decode, does type %s exist?').format(
+                             self.data_type.__name__,
+                             type(new_value).__name__,
+                             new_value['py/type']))
                 raise TypeError('Expected data to be of type {}, got {} instead'.format(
                     self.data_type.__name__, type(new_value).__name__))
         self._value = new_value
