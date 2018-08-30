@@ -3,6 +3,7 @@ project(ros_bt_py_msgs)
 
 find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
+  geometry_msgs
   message_generation)
 
 ## Generate messages in the 'msg' folder
@@ -31,6 +32,7 @@ add_service_files(
   GetAvailableNodes.srv
   GetAvailableSubtrees.srv
   GetJsonpickleInstance.srv
+  GetTarget.srv
   InsertNode.srv
   LoadTree.srv
   ModifyBreakpoints.srv
@@ -50,7 +52,7 @@ add_action_files(
 
 ## Generate added messages and services with any dependencies listed here
  generate_messages(
-   DEPENDENCIES actionlib_msgs
+   DEPENDENCIES actionlib_msgs geometry_msgs
    )
 
 catkin_package(

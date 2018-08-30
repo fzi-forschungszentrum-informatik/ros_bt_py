@@ -19,6 +19,7 @@
   <build_depend>message_generation</build_depend>
   <build_depend>actionlib</build_depend>
   <build_depend>actionlib_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
   <build_export_depend>message_generation</build_export_depend>
   <exec_depend>message_runtime</exec_depend>
   <buildtool_depend>catkin</buildtool_depend>
