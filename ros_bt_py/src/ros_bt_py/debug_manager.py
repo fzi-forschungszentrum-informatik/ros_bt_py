@@ -35,7 +35,7 @@ class DebugManager(object):
         # searching.
         with self._lock:
             self._debug_info_msg = DebugInfo()
-            self._debug_info_msg.tree_name = tree_name if tree_name else ''
+            self._debug_info_msg.tree_name = tree_name if tree_name is not None else ''
             self._debug_info_msg.window_size = window_size
 
         # set_tick_frequency() uses _lock, so don't put it in the with block,
@@ -174,8 +174,8 @@ class DebugManager(object):
             # TODO(nberg): Really autoremove all breakpoints?
             if node_instance.name in self._debug_settings_msg.breakpoint_names:
                 self._debug_settings_msg.breakpoint_names.remove(node_instance.name)
-            if self.publish_debug_settings:
-                self.publish_debug_settings(self._debug_settings_msg)
+                if self.publish_debug_settings:
+                    self.publish_debug_settings(self._debug_settings_msg)
 
     def wait_for_continue(self):
         # If we have a publish callback, publish debug info

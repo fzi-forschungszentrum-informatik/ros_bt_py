@@ -86,6 +86,8 @@ class TreeManager(object):
                           '- building our own with default parameters')
             self.debug_manager = DebugManager()
 
+        if name is None:
+            name = ''
         self.debug_manager.set_tree_name(name)
         self.debug_manager.set_tick_frequency(tick_frequency_hz)
         self.debug_manager.publish_debug_info = self.publish_info
