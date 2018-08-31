@@ -62,11 +62,6 @@ class PoseDistance(Leaf):
         pass
 
     def _do_reset(self):
-        self.outputs['item'] = None
-        self.outputs.reset_updated()
-        self.inputs['list'] = None
-        self._do_setup()
-        self.inputs.reset_updated()
         return NodeMsg.IDLE
 
     def _do_untick(self):
