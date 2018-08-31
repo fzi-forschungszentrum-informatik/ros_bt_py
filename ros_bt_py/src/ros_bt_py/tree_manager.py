@@ -98,6 +98,7 @@ class TreeManager(object):
         self._state_lock = Lock()
         self._edit_lock = RLock()
 
+        self._setting_up = False
         # Stop the tick thread after a single tick
         self._once = False
         # Stop the tick thread after the tree returns something other than
@@ -198,7 +199,11 @@ class TreeManager(object):
         with self._state_lock:
             self.tree_msg.root_name = root.name
         if root.state == NodeMsg.UNINITIALIZED or root.state == NodeMsg.SHUTDOWN:
+            with self._state_lock:
+                self._setting_up = True
             root.setup()
+            with self._state_lock:
+                self._setting_up = False
         sleep_duration_sec = (1.0/self.tree_msg.tick_frequency_hz)
 
         while True:
@@ -453,11 +458,16 @@ class TreeManager(object):
                 if self._tick_thread.is_alive():
                     # Give the tick thread some time to finish
                     self._tick_thread.join((1.0 / self.tree_msg.tick_frequency_hz) * 4.0)
-                    # If we're debugging (and ROS is not shutting down), keep
-                    # sleepin until the thread finishes
+                    # If we're debugging or setting up (and ROS is not
+                    # shutting down), keep sleepin until the thread
+                    # finishes
                     while (self._tick_thread.is_alive() and
-                           not rospy.is_shutdown() and
-                           self.debug_manager.is_debugging()):
+                           not rospy.is_shutdown()):
+                        setting_up = False
+                        with self._state_lock:
+                            setting_up = self._setting_up
+                        if not self.debug_manager.is_debugging() and not setting_up:
+                            break
                         self._tick_thread.join((1.0 / self.tree_msg.tick_frequency_hz) * 4.0)
                     if self._tick_thread.is_alive():
                         raise BehaviorTreeException('Tried to join tick thread after requesting '
@@ -540,11 +550,16 @@ class TreeManager(object):
                     self._tick_thread.start()
                     # Give the tick thread some time to finish
                     self._tick_thread.join((1.0 / self.tree_msg.tick_frequency_hz) * 4.0)
-                    # If we're debugging (and ROS is not shutting down), keep
-                    # sleepin until the thread finishes
+                    # If we're debugging or setting up (and ROS is not
+                    # shutting down), keep sleepin until the thread
+                    # finishes
                     while (self._tick_thread.is_alive() and
-                           not rospy.is_shutdown() and
-                           self.debug_manager.is_debugging()):
+                           not rospy.is_shutdown()):
+                        setting_up = False
+                        with self._state_lock:
+                            setting_up = self._setting_up
+                        if not self.debug_manager.is_debugging() and not setting_up:
+                            break
                         self._tick_thread.join((1.0 / self.tree_msg.tick_frequency_hz) * 4.0)
                     if self._tick_thread.is_alive():
                         raise BehaviorTreeException('Tried to join tick thread after requesting '

@@ -82,7 +82,7 @@ class NodeData(object):
         marked static, in which case we do not expect updates).
         """
         if not self.updated:
-            rospy.logwarn('Reading non-updated value!')
+            rospy.loginfo('Reading non-updated value!')
         return self._value
 
     def set_updated(self):

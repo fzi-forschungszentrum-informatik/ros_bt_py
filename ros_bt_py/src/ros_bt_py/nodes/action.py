@@ -58,12 +58,7 @@ class Action(Leaf):
             self._feedback = feedback
 
     def _do_tick(self):
-        current_state = self._ac.get_state()
-        self.loginfo('current_state: %s' % current_state)
-        with self._lock:
-            self.outputs['goal_status'] = current_state
-            self.outputs['feedback'] = self._feedback
-        if current_state is GoalStatus.LOST and not self._has_active_goal:
+        if not self._has_active_goal:
             # get_state returns LOST when the action client isn't tracking a
             # goal - so we can send a new one!
             self.loginfo('Sending goal: %s' % str(self.inputs['goal']))
@@ -71,6 +66,11 @@ class Action(Leaf):
             self._last_goal_time = rospy.Time.now()
             self._has_active_goal = True
             return NodeMsg.RUNNING
+        current_state = self._ac.get_state()
+        self.loginfo('current_state: %s' % current_state)
+        with self._lock:
+            self.outputs['goal_status'] = current_state
+            self.outputs['feedback'] = self._feedback
 
         if self.options['timeout_seconds'] != 0 and self._last_goal_time is not None:
             seconds_since_goal_start = (rospy.Time.now() - self._last_goal_time).to_sec()
@@ -111,7 +111,8 @@ class Action(Leaf):
 
     def _do_untick(self):
         # stop the current goal but keep outputs
-        self._ac.cancel_goal()
+        if self._has_active_goal:
+            self._ac.cancel_goal()
         self._last_goal_time = None
         self._has_active_goal = False
         self._feedback = None
