@@ -484,7 +484,10 @@ class Node(object):
 
         :meth:`_do_shutdown` will not be called if the node has not been initialized yet.
         """
-        if self.state != NodeMsg.SHUTDOWN:
+        if self.state == NodeMsg.UNINITIALIZED:
+            self.loginfo('Not calling shutdown method, node has not been initialized yet')
+            self.state = NodeMsg.SHUTDOWN
+        elif self.state != NodeMsg.SHUTDOWN:
             self._do_shutdown()
             self.state = NodeMsg.SHUTDOWN
         else:
