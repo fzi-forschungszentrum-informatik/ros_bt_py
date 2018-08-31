@@ -2162,7 +2162,7 @@ class SelectedNode extends Component
       // Number input with free increments
       changeHandler = (event) =>
           {
-            var newValue = event.target.value;
+            var newValue = parseFloat(event.target.value);
             if (isNaN(newValue))
             {
               newValue = 0;
