@@ -2,9 +2,10 @@ import jsonpickle
 from threading import Lock
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
-from ros_bt_py_msgs.msg import UtilityBounds, Tree, NodeData, NodeDataLocation
-from ros_bt_py_msgs.srv import LoadTreeRequest, ControlTreeExecutionRequest, SetOptionsRequest
+from ros_bt_py_msgs.msg import UtilityBounds, Tree, NodeDataLocation
+from ros_bt_py_msgs.srv import LoadTreeRequest
 
+from ros_bt_py.exceptions import BehaviorTreeException
 from ros_bt_py.tree_manager import TreeManager, _get_success, _get_error_message
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig
@@ -32,15 +33,12 @@ class Subtree(Leaf):
         """Create the tree manager, load the subtree and call `super.__init__()`"""
         super(Subtree, self).__init__(options, debug_manager, name)
 
-        self.tree_msg = None
-        self.tree_msg_lock = Lock()
-
+        self.root = None
         # TODO(nberg): Maybe don't use the parent debug_manager? Could
         # break with duplicate node names?
         self.manager = TreeManager(
-            name=name,
-            publish_tree_callback=self._update_tree_msg,
-            debug_manager=debug_manager)
+            name=name)
+#            debug_manager=debug_manager)
 
         response = self.manager.load_tree(LoadTreeRequest(tree=Tree(
             path=self.options['subtree_path'])))
@@ -101,46 +99,28 @@ class Subtree(Leaf):
                     callback=self.outputs.get_callback(
                         '%s.%s' % (node_data.node_name, node_data.data_key)))
 
-    def _update_tree_msg(self, new_msg):
-        with self.tree_msg_lock:
-            self.tree_msg = new_msg
-
     def _do_setup(self):
-        self.manager.find_root().setup()
+        self.root = self.manager.find_root()
+        self.root.setup()
 
     def _do_tick(self):
-        new_state = self._send_command(ControlTreeExecutionRequest.TICK_ONCE)
-
-        return new_state
+        return self.root.tick()
 
     def _do_untick(self):
-        return self._send_command(ControlTreeExecutionRequest.STOP)
+        new_state = self.root.untick()
+        return new_state
 
     def _do_reset(self):
-        return self._send_command(ControlTreeExecutionRequest.RESET)
+        return self.root.reset()
 
     def _do_shutdown(self):
-        return self._send_command(ControlTreeExecutionRequest.SHUTDOWN)
+        self.root.shutdown()
 
-    def _send_command(self, command):
-        """Send the given command to the TreeManager
-
-        Returns the state of the subtree's root node, if any, and
-        `ros_bt_py_msgs.msg.Node.FAILED` otherwise.
-        """
-        response = self.manager.control_execution(ControlTreeExecutionRequest(
-            command=command))
-
-        if not _get_success(response):
-            self.logerr(_get_error_message(response))
-            return NodeMsg.FAILED
-
-        return self._get_root_state()
-
-    def _get_root_state(self):
-        with self.tree_msg_lock:
-            if self.tree_msg:
-                for node in self.tree_msg.nodes:
-                    if node.name == self.tree_msg.root_name:
-                        return node.state
-        return NodeMsg.FAILED
+    def _do_calculate_utility(self):
+        if self.root is not None:
+            return self.root.calculate_utility()
+        else:
+            return UtilityBounds(has_lower_bound_success=False,
+                                 has_upper_bound_success=False,
+                                 has_lower_bound_failure=False,
+                                 has_upper_bound_failure=False)
