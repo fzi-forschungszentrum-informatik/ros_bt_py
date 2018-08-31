@@ -410,6 +410,7 @@ class Node(object):
                                        action_name='untick()')
 
         self.outputs.reset_updated()
+        return self.state
 
     @_required
     def _do_untick(self):
@@ -453,6 +454,7 @@ class Node(object):
         self.state = self._do_reset()
         self.raise_if_in_invalid_state(allowed_states=[NodeMsg.IDLE],
                                        action_name='reset()')
+        return self.state
 
     @_required
     def _do_reset(self):
