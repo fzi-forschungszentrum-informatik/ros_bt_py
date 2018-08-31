@@ -65,7 +65,7 @@ class NodeData(object):
                 if type(new_value) == dict and "py/type" in new_value:
                     raise TypeError(
                         ('Expected data to be of type {}, got {} instead. '
-                         'Looks like failed jsonpickle decode, does type %s exist?').format(
+                         'Looks like failed jsonpickle decode, does type {} exist?').format(
                              self.data_type.__name__,
                              type(new_value).__name__,
                              new_value['py/type']))
