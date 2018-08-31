@@ -279,6 +279,7 @@ class App extends Component
       messageType : 'ros_bt_py_msgs/Tree'
     });
 
+    this.lastTreeUpdate = null;
     this.topicTimeoutID = null;
     this.newMsgDelay = 200;  // ms
 
@@ -291,15 +292,12 @@ class App extends Component
 
   onTreeUpdate(msg)
   {
-    if (this.topicTimeoutID !== null)
+    var now = Date.now();
+    if (this.lastTreeUpdate === null || (now - this.lastTreeUpdate) > this.newMsgDelay)
     {
-      window.clearTimeout(this.topicTimeoutID);
-      this.topicTimeoutID = null;
+      this.setState({last_tree_msg: msg});
+      this.lastTreeUpdate = now;
     }
-    this.topicTimeoutID = window.setTimeout(
-      this.setState.bind(this),
-      this.newMsgDelay,
-      {last_tree_msg: msg});
   }
 
   findPossibleParents()
@@ -1626,7 +1624,7 @@ class D3BehaviorTreeEditor extends Component
           else
           {
             this.props.onError("Failed to wire data " + this.nextWiringSource +
-                               "to " + this.nextWiringTarget);
+                               " to " + this.nextWiringTarget + ": " + JSON.stringify(response));
           }
         }.bind(this));
     }
@@ -1863,7 +1861,6 @@ class D3BehaviorTreeEditor extends Component
       }
     }
 
-    console.log("hiding drop targets");
     d3.select(this.svg_ref.current).select("g.drop_targets")
       .attr("visibility", "hidden")
       .selectAll(".drop_target")
@@ -2005,7 +2002,7 @@ class SelectedNode extends Component
                onChange={this.nameChangeHandler}/>
         <h4>{this.state.name}</h4>
         {this.renderParamInputs(this.state.options, 'options')}
-        {/* {this.renderParamInputs(this.state.inputs, 'inputs')} */}
+        {/* this.renderParamInputs(this.state.inputs, 'inputs') */}
         {/* {this.renderParamInputs(this.state.outputs, 'outputs')} */}
       </div>
     );
