@@ -1,4 +1,6 @@
 from multiprocessing import Process, Manager
+import os
+import signal
 
 import rospy
 
@@ -31,10 +33,10 @@ class AsyncServiceProxy(object):
 
     def stop_call(self):
         if self._process is not None and self._data['state'] == self.RUNNING:
-            self._process.terminate()
-            self._process.join()
-            if self._process.is_alive():
-                raise Exception('Failed to terminate process')
+            # kill -9 the stuck process - not clean, but reliable
+            # Fire...
+            os.kill(self._process.pid, signal.SIGKILL)
+            # and forget!
             self._process = None
             self._data['state'] = AsyncServiceProxy.ABORTED
 
