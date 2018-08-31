@@ -61,13 +61,13 @@ class Action(Leaf):
         if not self._has_active_goal:
             # get_state returns LOST when the action client isn't tracking a
             # goal - so we can send a new one!
-            self.loginfo('Sending goal: %s' % str(self.inputs['goal']))
+            self.logdebug('Sending goal: %s' % str(self.inputs['goal']))
             self._ac.send_goal(self.inputs['goal'], feedback_cb=self._feedback_cb)
             self._last_goal_time = rospy.Time.now()
             self._has_active_goal = True
             return NodeMsg.RUNNING
         current_state = self._ac.get_state()
-        self.loginfo('current_state: %s' % current_state)
+        self.logdebug('current_state: %s' % current_state)
         with self._lock:
             self.outputs['goal_status'] = current_state
             self.outputs['feedback'] = self._feedback
