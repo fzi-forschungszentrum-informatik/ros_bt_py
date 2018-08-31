@@ -28,6 +28,20 @@ class TestSubtree(unittest.TestCase):
         subtree.untick()
         self.assertEqual(subtree.state, NodeMsg.IDLE)
 
+    def testSubtreeUntick(self):
+        subtree = Subtree(options=self.subtree_options)
+
+        self.assertTrue(subtree.outputs['load_success'])
+        subtree.setup()
+        subtree.tick()
+        subtree.shutdown()
+        self.assertEqual(subtree.state, NodeMsg.SHUTDOWN)
+        subtree.setup()
+        subtree.untick()
+
+        self.assertTrue(subtree.state == NodeMsg.IDLE or subtree.state == NodeMsg.PAUSED,
+                        'subtree node is neither IDLE nor PAUSED after unticking!')
+
     def testIOSubtree(self):
         self.subtree_options['subtree_path'] = 'package://ros_bt_py/etc/trees/io_test.yaml'
         subtree = Subtree(options=self.subtree_options)

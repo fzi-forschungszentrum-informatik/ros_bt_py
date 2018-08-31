@@ -106,8 +106,7 @@ class Subtree(Leaf):
             self.tree_msg = new_msg
 
     def _do_setup(self):
-        """Nothing to do - the tree manager will call `root.setup()` on tick if necessary."""
-        pass
+        self.manager.find_root().setup()
 
     def _do_tick(self):
         new_state = self._send_command(ControlTreeExecutionRequest.TICK_ONCE)
