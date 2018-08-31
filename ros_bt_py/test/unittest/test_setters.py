@@ -60,7 +60,7 @@ class TestAppendListItem(unittest.TestCase):
 
 
 class TestSetAttr(unittest.TestCase):
-    def setCorrectAttr(self):
+    def testSetCorrectAttr(self):
         set_attr = SetAttr({'object_type': NodeMsg,
                             'attr_name': 'name',
                             'attr_type': str})

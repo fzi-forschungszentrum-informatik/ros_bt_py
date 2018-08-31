@@ -49,7 +49,7 @@ class SetAttr(Leaf):
     def _do_tick(self):
         if self.inputs.is_updated('object') or self.inputs.is_updated('attr_value'):
             obj = deepcopy(self.inputs['object'])
-            setattr(obj, self.options['attr_value'])
+            setattr(obj, self.options['attr_name'], self.inputs['attr_value'])
             self.outputs['new_object'] = obj
         return NodeMsg.SUCCEEDED
 
