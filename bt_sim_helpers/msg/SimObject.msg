@@ -1,4 +1,4 @@
-uint32 id
+uint32 object_id
 uint8 state
 geometry_msgs/PoseStamped pose
 
