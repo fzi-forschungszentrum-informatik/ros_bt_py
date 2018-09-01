@@ -7,10 +7,12 @@
       [[9, 8], [10.5, 3]]
     </rosparam>
   </node>
-  <!-- <node pkg="bt_sim_helpers" type="sim_doors_node.py" name="sim_doors"> -->
-  <!--   <param name="world_frame" type="str" value="map" /> -->
-  <!--   <rosparam param="positions"> -->
-  <!--     [[7.5, 4.5], [9.5, 4.5]] -->
-  <!--   </rosparam> -->
-  <!-- </node> -->
+  <node pkg="bt_sim_helpers" type="sim_doors_node.py" name="sim_doors">
+    <param name="door_frame_prefix" type="str" value="door" />
+    <param name="world_frame" type="str" value="map" />
+    <param name="max_interact_distance" type="double" value="0.2" />
+    <rosparam param="positions">
+      [[7.5, 4.5], [9.5, 4.5]]
+    </rosparam>
+  </node>
 </launch>
