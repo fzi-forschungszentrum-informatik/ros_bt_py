@@ -229,7 +229,7 @@ class TreeManager(object):
                 return
 
             tick_duration = time.time() - start_time
-            if tick_duration <= 0:
+            if tick_duration > sleep_duration_sec:
                 rospy.logwarn('Tick took longer than set period, cannot tick at %.2f Hz',
                               self.tree_msg.tick_frequency_hz)
             else:
