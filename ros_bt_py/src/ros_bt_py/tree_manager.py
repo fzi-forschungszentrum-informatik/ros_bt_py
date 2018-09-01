@@ -41,14 +41,14 @@ def is_edit_service(func):
 
     """
     def service_handler(self, request):
-        with self._state_lock:
-            if self.tree_msg.state != Tree.EDITABLE:
-                return {
-                    'success': False,
-                    'error_message': ('Cannot edit tree in state %s. You need to '
-                                      'shut down the tree to enable editing.'
-                                      % self.tree_msg.state)
-                    }
+        tree_state = self.get_state()
+        if tree_state != Tree.EDITABLE:
+            return {
+                'success': False,
+                'error_message': ('Cannot edit tree in state %s. You need to '
+                                  'shut down the tree to enable editing.'
+                                  % tree_state)
+                }
         with self._edit_lock:
             return func(self, request)
     return service_handler
@@ -121,6 +121,10 @@ class TreeManager(object):
                 load_node_module(module_name)
 
         self.publish_info(self.debug_manager.get_debug_info_msg())
+
+    def get_state(self):
+        with self._state_lock:
+            return self.tree_msg.state
 
     def publish_info(self, debug_info_msg=None):
         """Publish the current tree state using the callback supplied to the constructor
@@ -208,9 +212,8 @@ class TreeManager(object):
 
         while True:
             start_time = time.time()
-            with self._state_lock:
-                if self.tree_msg.state == Tree.STOP_REQUESTED:
-                    break
+            if self.get_state() == Tree.STOP_REQUESTED:
+                break
             root.tick()
             self.publish_info(self.debug_manager.get_debug_info_msg())
 
@@ -432,8 +435,7 @@ class TreeManager(object):
         """
         response = ControlTreeExecutionResponse(success=False)
         if self._tick_thread is not None:
-            with self._state_lock:
-                is_idle = self.tree_msg.state == Tree.IDLE
+            is_idle = self.get_state() == Tree.IDLE
             if is_idle and self._tick_thread.is_alive():
                 self._tick_thread.join(0.5)
                 if self._tick_thread.is_alive():
@@ -445,10 +447,9 @@ class TreeManager(object):
         if self._tick_thread is None or not self._tick_thread.is_alive():
             self._tick_thread = Thread(target=self.tick_report_exceptions)
 
+        tree_state = self.get_state()
         if (request.command == ControlTreeExecutionRequest.STOP or
                 request.command == ControlTreeExecutionRequest.SHUTDOWN):
-            with self._state_lock:
-                tree_state = self.tree_msg.state
             if tree_state == Tree.TICKING:
                 with self._state_lock:
                     self.tree_msg.state = Tree.STOP_REQUESTED
@@ -472,16 +473,17 @@ class TreeManager(object):
                     if self._tick_thread.is_alive():
                         raise BehaviorTreeException('Tried to join tick thread after requesting '
                                                     'stop, but failed!')
-                if self.tree_msg.state == Tree.IDLE:
+                state_after_joining = self.get_state()
+                if state_after_joining == Tree.IDLE:
                     response.tree_state = Tree.IDLE
                     response.success = True
-                elif self.tree_msg.state == Tree.ERROR:
+                elif state_after_joining == Tree.ERROR:
                     response.error_message = ('Error stopping tick: %s' % str(self._last_error))
                     response.success = False
                     rospy.logerr(response.error_message)
                 else:
                     response.error_message = ('Successfully stopped ticking, but tree state is '
-                                              '%s, not IDLE' % self.tree_msg.state)
+                                              '%s, not IDLE' % state_after_joining)
                     response.success = False
                     rospy.logerr(response.error_message)
             elif tree_state == Tree.WAITING_FOR_TICK:
@@ -514,7 +516,7 @@ class TreeManager(object):
             else:
                 rospy.loginfo('Received stop command, but tree was not running')
                 response.success = True
-                response.tree_state = self.tree_msg.state
+                response.tree_state = tree_state
 
             # actually shut down the tree
             if request.command == ControlTreeExecutionRequest.SHUTDOWN:
@@ -536,7 +538,7 @@ class TreeManager(object):
             self.publish_info(self.debug_manager.get_debug_info_msg())
 
         elif request.command == ControlTreeExecutionRequest.TICK_ONCE:
-            if self._tick_thread.is_alive() or self.tree_msg.state == Tree.TICKING:
+            if self._tick_thread.is_alive() or self.get_state() == Tree.TICKING:
                 response.success = False
                 response.error_message = 'Tried to tick when tree is already running, aborting'
                 rospy.logwarn(response.error_message)
@@ -562,36 +564,37 @@ class TreeManager(object):
                             break
                         self._tick_thread.join((1.0 / self.tree_msg.tick_frequency_hz) * 4.0)
                     if self._tick_thread.is_alive():
-                        raise BehaviorTreeException('Tried to join tick thread after requesting '
-                                                    'stop, but failed!')
-                    if self.tree_msg.state == Tree.IDLE:
-                        response.tree_state = Tree.IDLE
+                        raise BehaviorTreeException('Tried to join tick thread after single '
+                                                    'tick, but failed!')
+                    state_after_joining = self.get_state()
+                    if state_after_joining == Tree.IDLE:
+                        response.state_after_joining = Tree.IDLE
                         response.success = True
-                    if self.tree_msg.state == Tree.WAITING_FOR_TICK:
-                        response.tree_state = Tree.WAITING_FOR_TICK
+                    if state_after_joining == Tree.WAITING_FOR_TICK:
+                        response.state_after_joining = Tree.WAITING_FOR_TICK
                         response.success = True
-                    elif self.tree_msg.state == Tree.ERROR:
+                    elif state_after_joining == Tree.ERROR:
                         response.error_message = ('Error during single tick: %s'
                                                   % str(self._last_error))
                         response.success = False
                         rospy.logerr(response.error_message)
                     else:
                         response.error_message = ('Successfully stopped ticking, but tree state '
-                                                  'is %s, not IDLE' % self.tree_msg.state)
+                                                  'is %s, not IDLE' % state_after_joining)
                         response.success = False
                         rospy.logerr(response.error_message)
                 except TreeTopologyError as ex:
                     response.success = False
                     response.error_message = str(ex)
-                    response.tree_state = self.tree_msg.state
+                    response.tree_state = self.get_state()
 
         elif (request.command == ControlTreeExecutionRequest.TICK_PERIODICALLY or
               request.command == ControlTreeExecutionRequest.TICK_UNTIL_RESULT):
-            if self._tick_thread.is_alive() or self.tree_msg.state == Tree.TICKING:
+            if self._tick_thread.is_alive() or tree_state == Tree.TICKING:
                 response.success = False
                 response.error_message = ('Tried to start periodic ticking when tree is '
                                           'already running, aborting')
-                response.tree_state = self.tree_msg.state
+                response.tree_state = tree_state
                 rospy.logwarn(response.error_message)
             else:
                 try:
@@ -613,13 +616,13 @@ class TreeManager(object):
                 except TreeTopologyError as ex:
                     response.success = False
                     response.error_message = str(ex)
-                    response.tree_state = self.tree_msg.state
+                    response.tree_state = self.get_state()
 
         elif request.command == ControlTreeExecutionRequest.RESET:
-            if self._tick_thread.is_alive() or self.tree_msg.state == Tree.TICKING:
+            if self._tick_thread.is_alive() or tree_state == Tree.TICKING:
                 response.success = False
                 response.error_message = ('Tried to reset tree while it is running, aborting')
-                response.tree_state = self.tree_msg.state
+                response.tree_state = tree_state
                 rospy.logwarn(response.error_message)
             else:
                 try:
@@ -631,11 +634,11 @@ class TreeManager(object):
                     with self._state_lock:
                         self.tree_msg.state = Tree.IDLE
                     response.success = True
-                    response.tree_state = self.tree_msg.state
+                    response.tree_state = self.get_state()
                 except TreeTopologyError as ex:
                     response.success = False
                     response.error_message = str(ex)
-                    response.tree_state = self.tree_msg.state
+                    response.tree_state = self.get_state()
 
             self.publish_info(self.debug_manager.get_debug_info_msg())
         else:
