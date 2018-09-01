@@ -1,0 +1,42 @@
+<!--
+  Turtlebot navigation simulation:
+  - stdr
+  - move_base
+  - amcl
+  - map_server
+  - rviz view
+ -->
+<launch>
+  <arg name="base"       default="$(optenv TURTLEBOT_BASE kobuki)"/>  <!-- create, rhoomba -->
+  <arg name="stacks"     default="$(optenv TURTLEBOT_STACKS hexagons)"/>  <!-- circles, hexagons -->
+  <arg name="3d_sensor"  default="$(optenv TURTLEBOT_3D_SENSOR kinect)"/>  <!-- kinect, asus_xtion_pro -->
+  <arg name="laser_topic" default="robot0/laser_0"/> <!-- default laser topic in stdr for 1 robot -->
+  <arg name="odom_topic" default="robot0/odom"/>
+  <arg name="odom_frame_id" default="map"/>
+  <arg name="base_frame_id" default="robot0"/>
+  <arg name="global_frame_id" default="world"/>
+  <!-- Name of the map to use (without path nor extension) and initial position -->
+  <arg name="map_file"       default="$(env TURTLEBOT_STDR_MAP_FILE)"/>
+  <arg name="initial_pose_x" default="2.0"/>
+  <arg name="initial_pose_y" default="2.0"/>
+  <arg name="initial_pose_a" default="0.0"/>
+  <arg name="min_obstacle_height" default="0.0"/>
+  <arg name="max_obstacle_height" default="5.0"/>
+
+  <!--  ******************** Stdr********************  -->
+  <include file="$(find stdr_robot)/launch/robot_manager.launch" />
+  <!-- Run STDR server with a prefedined map-->
+  <node pkg="stdr_server" type="stdr_server_node" name="stdr_server" output="screen" args="$(arg map_file)"/>
+  <!-- Run Gui  -->
+  <include file="$(find stdr_gui)/launch/stdr_gui.launch"/>
+
+ <!-- ********** Small tf tree connector between robot0 and base_footprint********* -->
+  <node name="tf_connector" pkg="turtlebot_stdr" type="tf_connector.py" output="screen"/>
+
+  <!--  **************** Visualisation ****************  -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find turtlebot_stdr)/rviz/robot_navigation.rviz"/>
+
+
+
+
+</launch>

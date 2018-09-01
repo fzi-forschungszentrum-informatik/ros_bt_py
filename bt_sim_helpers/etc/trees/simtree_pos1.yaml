@@ -1,0 +1,564 @@
+name: ''
+path: ''
+root_name: "Sequence"
+nodes: 
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.ros_nodes.lookup_tf"
+    node_class: "LookupTF"
+    max_children: 0
+    name: "LookupRobotTF"
+    child_names: []
+    options: 
+      - 
+        key: "child_frame"
+        serialized_value: "\"robot0\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "parent_frame"
+        serialized_value: "\"map\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+    inputs: []
+    outputs: 
+      - 
+        key: "transform_pose"
+        serialized_value: "{\"py/object\": \"geometry_msgs.msg._Pose.Pose\", \"py/state\": [{\"py/object\":\
+  \ \"geometry_msgs.msg._Point.Point\", \"py/state\": [1.9187708114876558, 2.067671804839077,\
+  \ 0.0]}, {\"py/object\": \"geometry_msgs.msg._Quaternion.Quaternion\", \"py/state\"\
+  : [0.0, 0.0, -0.09126187471464367, 0.9958269278461839]}]}"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._Pose.Pose\"}"
+    state: "SUCCEEDED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.ros_nodes.message_from_dict"
+    node_class: "MessageFromConstDict"
+    max_children: 0
+    name: "EmptyMoveBaseGoal"
+    child_names: []
+    options: 
+      - 
+        key: "message_type"
+        serialized_value: "{\"py/type\": \"move_base_msgs.msg._MoveBaseGoal.MoveBaseGoal\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "dict"
+        serialized_value: "{\"target_pose\": {\"header\": {\"frame_id\": \"map\"}}}"
+        serialized_type: "{\"py/type\": \"__builtin__.dict\"}"
+    inputs: []
+    outputs: 
+      - 
+        key: "message"
+        serialized_value: "{\"py/object\": \"move_base_msgs.msg._MoveBaseGoal.MoveBaseGoal\", \"py/state\":\
+  \ [{\"py/object\": \"geometry_msgs.msg._PoseStamped.PoseStamped\", \"py/state\"\
+  : [{\"py/object\": \"std_msgs.msg._Header.Header\", \"py/state\": [0, {\"py/object\"\
+  : \"rospy.rostime.Time\", \"py/state\": [1535707085, 507186889]}, \"map\"]}, {\"\
+  py/object\": \"geometry_msgs.msg._Pose.Pose\", \"py/state\": [{\"py/object\": \"\
+  geometry_msgs.msg._Point.Point\", \"py/state\": [0.0, 0.0, 0.0]}, {\"py/object\"\
+  : \"geometry_msgs.msg._Quaternion.Quaternion\", \"py/state\": [0.0, 0.0, 0.0, 0.0]}]}]}]}"
+        serialized_type: "{\"py/type\": \"move_base_msgs.msg._MoveBaseGoal.MoveBaseGoal\"}"
+    state: "IDLE"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.action"
+    node_class: "Action"
+    max_children: 0
+    name: "GotoTarget1Action"
+    child_names: []
+    options: 
+      - 
+        key: "result_type"
+        serialized_value: "{\"py/type\": \"move_base_msgs.msg._MoveBaseResult.MoveBaseResult\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "timeout_seconds"
+        serialized_value: "30.0"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+      - 
+        key: "feedback_type"
+        serialized_value: "{\"py/type\": \"move_base_msgs.msg._MoveBaseFeedback.MoveBaseFeedback\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "action_name"
+        serialized_value: "\"/turtlebot0/move_base\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "action_type"
+        serialized_value: "{\"py/type\": \"move_base_msgs.msg._MoveBaseAction.MoveBaseAction\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "wait_for_action_server_seconds"
+        serialized_value: "2.0"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+      - 
+        key: "goal_type"
+        serialized_value: "{\"py/type\": \"move_base_msgs.msg._MoveBaseGoal.MoveBaseGoal\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "goal"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"move_base_msgs.msg._MoveBaseGoal.MoveBaseGoal\"}"
+    outputs: 
+      - 
+        key: "goal_status"
+        serialized_value: "9"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      - 
+        key: "feedback"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"move_base_msgs.msg._MoveBaseFeedback.MoveBaseFeedback\"}"
+      - 
+        key: "result"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"move_base_msgs.msg._MoveBaseResult.MoveBaseResult\"}"
+    state: "IDLE"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    max_children: -1
+    name: "Sequence"
+    child_names: [GetTarget1Request, GetTargetService, GetAttr, GotoTarget1Fallback]
+    options: []
+    inputs: []
+    outputs: []
+    state: "RUNNING"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.fallback"
+    node_class: "Fallback"
+    max_children: -1
+    name: "GotoTarget1Fallback"
+    child_names: [CheckTarget1DistSequence, GotoTarget1ActionSequence]
+    options: []
+    inputs: []
+    outputs: []
+    state: "SUCCEEDED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    max_children: -1
+    name: "GotoTarget1ActionSequence"
+    child_names: [EmptyMoveBaseGoal, GetPoseFromGoal, SetGoal1TargetPose, SetGoal1TargetPoseStamped,
+  GotoTarget1Action]
+    options: []
+    inputs: []
+    outputs: []
+    state: "IDLE"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.service"
+    node_class: "Service"
+    max_children: 0
+    name: "GetTargetService"
+    child_names: []
+    options: 
+      - 
+        key: "wait_for_service_seconds"
+        serialized_value: "1.2"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+      - 
+        key: "service_name"
+        serialized_value: "\"/get_target\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "wait_for_response_seconds"
+        serialized_value: "1.2"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+      - 
+        key: "request_type"
+        serialized_value: "{\"py/type\": \"ros_bt_py_msgs.srv._GetTarget.GetTargetRequest\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "response_type"
+        serialized_value: "{\"py/type\": \"ros_bt_py_msgs.srv._GetTarget.GetTargetResponse\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "service_type"
+        serialized_value: "{\"py/type\": \"ros_bt_py_msgs.srv._GetTarget.GetTarget\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "request"
+        serialized_value: "{\"py/object\": \"ros_bt_py_msgs.srv._GetTarget.GetTargetRequest\", \"py/state\"\
+  : [0]}"
+        serialized_type: "{\"py/type\": \"ros_bt_py_msgs.srv._GetTarget.GetTargetRequest\"}"
+    outputs: 
+      - 
+        key: "response"
+        serialized_value: "{\"py/object\": \"ros_bt_py_msgs.srv._GetTarget.GetTargetResponse\", \"py/state\"\
+  : [{\"py/object\": \"geometry_msgs.msg._Pose.Pose\", \"py/state\": [{\"py/object\"\
+  : \"geometry_msgs.msg._Point.Point\", \"py/state\": [2.0, 2.0, 0.0]}, {\"py/object\"\
+  : \"geometry_msgs.msg._Quaternion.Quaternion\", \"py/state\": [0.0, 0.0, 0.0, 1.0]}]}]}"
+        serialized_type: "{\"py/type\": \"ros_bt_py_msgs.srv._GetTarget.GetTargetResponse\"}"
+    state: "RUNNING"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.ros_nodes.pose_distance"
+    node_class: "PoseDistance"
+    max_children: 0
+    name: "Target1Distance"
+    child_names: []
+    options: 
+      - 
+        key: "succeed_on_stale_data"
+        serialized_value: "true"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+    inputs: 
+      - 
+        key: "pose_a"
+        serialized_value: "{\"py/object\": \"geometry_msgs.msg._Pose.Pose\", \"py/state\": [{\"py/object\":\
+  \ \"geometry_msgs.msg._Point.Point\", \"py/state\": [2.0, 2.0, 0.0]}, {\"py/object\"\
+  : \"geometry_msgs.msg._Quaternion.Quaternion\", \"py/state\": [0.0, 0.0, 0.0, 1.0]}]}"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._Pose.Pose\"}"
+      - 
+        key: "pose_b"
+        serialized_value: "{\"py/object\": \"geometry_msgs.msg._Pose.Pose\", \"py/state\": [{\"py/object\":\
+  \ \"geometry_msgs.msg._Point.Point\", \"py/state\": [1.9187708114876558, 2.067671804839077,\
+  \ 0.0]}, {\"py/object\": \"geometry_msgs.msg._Quaternion.Quaternion\", \"py/state\"\
+  : [0.0, 0.0, -0.09126187471464367, 0.9958269278461839]}]}"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._Pose.Pose\"}"
+    outputs: 
+      - 
+        key: "distance_angle"
+        serialized_value: "0.18277806892278237"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+      - 
+        key: "distance_pos"
+        serialized_value: "0.10572442592207379"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+    state: "SUCCEEDED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.setters"
+    node_class: "SetAttr"
+    max_children: 0
+    name: "SetGoal1TargetPose"
+    child_names: []
+    options: 
+      - 
+        key: "object_type"
+        serialized_value: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "attr_name"
+        serialized_value: "\"pose\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "attr_type"
+        serialized_value: "{\"py/type\": \"geometry_msgs.msg._Pose.Pose\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "object"
+        serialized_value: "{\"py/object\": \"geometry_msgs.msg._PoseStamped.PoseStamped\", \"py/state\": [{\"\
+  py/object\": \"std_msgs.msg._Header.Header\", \"py/state\": [0, {\"py/object\":\
+  \ \"rospy.rostime.Time\", \"py/state\": [1535707085, 507186889]}, \"map\"]}, {\"\
+  py/object\": \"geometry_msgs.msg._Pose.Pose\", \"py/state\": [{\"py/object\": \"\
+  geometry_msgs.msg._Point.Point\", \"py/state\": [0.0, 0.0, 0.0]}, {\"py/object\"\
+  : \"geometry_msgs.msg._Quaternion.Quaternion\", \"py/state\": [0.0, 0.0, 0.0, 0.0]}]}]}"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
+      - 
+        key: "attr_value"
+        serialized_value: "{\"py/object\": \"geometry_msgs.msg._Pose.Pose\", \"py/state\": [{\"py/object\":\
+  \ \"geometry_msgs.msg._Point.Point\", \"py/state\": [2.0, 2.0, 0.0]}, {\"py/object\"\
+  : \"geometry_msgs.msg._Quaternion.Quaternion\", \"py/state\": [0.0, 0.0, 0.0, 1.0]}]}"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._Pose.Pose\"}"
+    outputs: 
+      - 
+        key: "new_object"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
+    state: "IDLE"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.getters"
+    node_class: "GetAttr"
+    max_children: 1
+    name: "GetPoseFromGoal"
+    child_names: []
+    options: 
+      - 
+        key: "succeed_on_stale_data"
+        serialized_value: "true"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+      - 
+        key: "attr_name"
+        serialized_value: "\"target_pose\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "attr_type"
+        serialized_value: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "object"
+        serialized_value: "{\"py/object\": \"move_base_msgs.msg._MoveBaseGoal.MoveBaseGoal\", \"py/state\":\
+  \ [{\"py/object\": \"geometry_msgs.msg._PoseStamped.PoseStamped\", \"py/state\"\
+  : [{\"py/object\": \"std_msgs.msg._Header.Header\", \"py/state\": [0, {\"py/object\"\
+  : \"rospy.rostime.Time\", \"py/state\": [1535707085, 507186889]}, \"map\"]}, {\"\
+  py/object\": \"geometry_msgs.msg._Pose.Pose\", \"py/state\": [{\"py/object\": \"\
+  geometry_msgs.msg._Point.Point\", \"py/state\": [0.0, 0.0, 0.0]}, {\"py/object\"\
+  : \"geometry_msgs.msg._Quaternion.Quaternion\", \"py/state\": [0.0, 0.0, 0.0, 0.0]}]}]}]}"
+        serialized_type: "{\"py/type\": \"__builtin__.object\"}"
+    outputs: 
+      - 
+        key: "attr"
+        serialized_value: "{\"py/object\": \"geometry_msgs.msg._PoseStamped.PoseStamped\", \"py/state\": [{\"\
+  py/object\": \"std_msgs.msg._Header.Header\", \"py/state\": [0, {\"py/object\":\
+  \ \"rospy.rostime.Time\", \"py/state\": [1535707085, 507186889]}, \"map\"]}, {\"\
+  py/object\": \"geometry_msgs.msg._Pose.Pose\", \"py/state\": [{\"py/object\": \"\
+  geometry_msgs.msg._Point.Point\", \"py/state\": [0.0, 0.0, 0.0]}, {\"py/object\"\
+  : \"geometry_msgs.msg._Quaternion.Quaternion\", \"py/state\": [0.0, 0.0, 0.0, 0.0]}]}]}"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
+    state: "IDLE"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.getters"
+    node_class: "GetAttr"
+    max_children: 1
+    name: "GetAttr"
+    child_names: []
+    options: 
+      - 
+        key: "succeed_on_stale_data"
+        serialized_value: "true"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+      - 
+        key: "attr_name"
+        serialized_value: "\"target_pose\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "attr_type"
+        serialized_value: "{\"py/type\": \"geometry_msgs.msg._Pose.Pose\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "object"
+        serialized_value: "{\"py/object\": \"ros_bt_py_msgs.srv._GetTarget.GetTargetResponse\", \"py/state\"\
+  : [{\"py/object\": \"geometry_msgs.msg._Pose.Pose\", \"py/state\": [{\"py/object\"\
+  : \"geometry_msgs.msg._Point.Point\", \"py/state\": [2.0, 2.0, 0.0]}, {\"py/object\"\
+  : \"geometry_msgs.msg._Quaternion.Quaternion\", \"py/state\": [0.0, 0.0, 0.0, 1.0]}]}]}"
+        serialized_type: "{\"py/type\": \"__builtin__.object\"}"
+    outputs: 
+      - 
+        key: "attr"
+        serialized_value: "{\"py/object\": \"geometry_msgs.msg._Pose.Pose\", \"py/state\": [{\"py/object\":\
+  \ \"geometry_msgs.msg._Point.Point\", \"py/state\": [2.0, 2.0, 0.0]}, {\"py/object\"\
+  : \"geometry_msgs.msg._Quaternion.Quaternion\", \"py/state\": [0.0, 0.0, 0.0, 1.0]}]}"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._Pose.Pose\"}"
+    state: "SUCCEEDED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.compare"
+    node_class: "LessThanConstant"
+    max_children: 0
+    name: "CompareTarget1Distance"
+    child_names: []
+    options: 
+      - 
+        key: "target"
+        serialized_value: "0.2"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+    inputs: 
+      - 
+        key: "a"
+        serialized_value: "0.10572442592207379"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+    outputs: []
+    state: "SUCCEEDED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.ros_nodes.message_from_dict"
+    node_class: "MessageFromConstDict"
+    max_children: 0
+    name: "GetTarget1Request"
+    child_names: []
+    options: 
+      - 
+        key: "message_type"
+        serialized_value: "{\"py/type\": \"ros_bt_py_msgs.srv._GetTarget.GetTargetRequest\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "dict"
+        serialized_value: "{\"target_id\": 1}"
+        serialized_type: "{\"py/type\": \"__builtin__.dict\"}"
+    inputs: []
+    outputs: 
+      - 
+        key: "message"
+        serialized_value: "{\"py/object\": \"ros_bt_py_msgs.srv._GetTarget.GetTargetRequest\", \"py/state\"\
+  : [0]}"
+        serialized_type: "{\"py/type\": \"ros_bt_py_msgs.srv._GetTarget.GetTargetRequest\"}"
+    state: "SUCCEEDED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    max_children: -1
+    name: "CheckTarget1DistSequence"
+    child_names: [LookupRobotTF, Target1Distance, CompareTarget1Distance]
+    options: []
+    inputs: []
+    outputs: []
+    state: "SUCCEEDED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.setters"
+    node_class: "SetAttr"
+    max_children: 0
+    name: "SetGoal1TargetPoseStamped"
+    child_names: []
+    options: 
+      - 
+        key: "object_type"
+        serialized_value: "{\"py/type\": \"move_base_msgs.msg._MoveBaseGoal.MoveBaseGoal\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "attr_name"
+        serialized_value: "\"target_pose\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "attr_type"
+        serialized_value: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "object"
+        serialized_value: "{\"py/object\": \"move_base_msgs.msg._MoveBaseGoal.MoveBaseGoal\", \"py/state\":\
+  \ [{\"py/object\": \"geometry_msgs.msg._PoseStamped.PoseStamped\", \"py/state\"\
+  : [{\"py/object\": \"std_msgs.msg._Header.Header\", \"py/state\": [0, {\"py/object\"\
+  : \"rospy.rostime.Time\", \"py/state\": [1535707085, 507186889]}, \"map\"]}, {\"\
+  py/object\": \"geometry_msgs.msg._Pose.Pose\", \"py/state\": [{\"py/object\": \"\
+  geometry_msgs.msg._Point.Point\", \"py/state\": [0.0, 0.0, 0.0]}, {\"py/object\"\
+  : \"geometry_msgs.msg._Quaternion.Quaternion\", \"py/state\": [0.0, 0.0, 0.0, 0.0]}]}]}]}"
+        serialized_type: "{\"py/type\": \"move_base_msgs.msg._MoveBaseGoal.MoveBaseGoal\"}"
+      - 
+        key: "attr_value"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
+    outputs: 
+      - 
+        key: "new_object"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"move_base_msgs.msg._MoveBaseGoal.MoveBaseGoal\"}"
+    state: "IDLE"
+data_wirings: 
+  - 
+    source: 
+      node_name: "GetTarget1Request"
+      data_kind: "outputs"
+      data_key: "message"
+    target: 
+      node_name: "GetTargetService"
+      data_kind: "inputs"
+      data_key: "request"
+  - 
+    source: 
+      node_name: "GetTargetService"
+      data_kind: "outputs"
+      data_key: "response"
+    target: 
+      node_name: "GetAttr"
+      data_kind: "inputs"
+      data_key: "object"
+  - 
+    source: 
+      node_name: "GetAttr"
+      data_kind: "outputs"
+      data_key: "attr"
+    target: 
+      node_name: "Target1Distance"
+      data_kind: "inputs"
+      data_key: "pose_a"
+  - 
+    source: 
+      node_name: "Target1Distance"
+      data_kind: "outputs"
+      data_key: "distance_pos"
+    target: 
+      node_name: "CompareTarget1Distance"
+      data_kind: "inputs"
+      data_key: "a"
+  - 
+    source: 
+      node_name: "LookupRobotTF"
+      data_kind: "outputs"
+      data_key: "transform_pose"
+    target: 
+      node_name: "Target1Distance"
+      data_kind: "inputs"
+      data_key: "pose_b"
+  - 
+    source: 
+      node_name: "EmptyMoveBaseGoal"
+      data_kind: "outputs"
+      data_key: "message"
+    target: 
+      node_name: "GetPoseFromGoal"
+      data_kind: "inputs"
+      data_key: "object"
+  - 
+    source: 
+      node_name: "GetPoseFromGoal"
+      data_kind: "outputs"
+      data_key: "attr"
+    target: 
+      node_name: "SetGoal1TargetPose"
+      data_kind: "inputs"
+      data_key: "object"
+  - 
+    source: 
+      node_name: "GetAttr"
+      data_kind: "outputs"
+      data_key: "attr"
+    target: 
+      node_name: "SetGoal1TargetPose"
+      data_kind: "inputs"
+      data_key: "attr_value"
+  - 
+    source: 
+      node_name: "SetGoal1TargetPose"
+      data_kind: "outputs"
+      data_key: "new_object"
+    target: 
+      node_name: "SetGoal1TargetPoseStamped"
+      data_kind: "inputs"
+      data_key: "attr_value"
+  - 
+    source: 
+      node_name: "EmptyMoveBaseGoal"
+      data_kind: "outputs"
+      data_key: "message"
+    target: 
+      node_name: "SetGoal1TargetPoseStamped"
+      data_kind: "inputs"
+      data_key: "object"
+  - 
+    source: 
+      node_name: "SetGoal1TargetPoseStamped"
+      data_kind: "outputs"
+      data_key: "new_object"
+    target: 
+      node_name: "GotoTarget1Action"
+      data_kind: "inputs"
+      data_key: "goal"
+tick_frequency_hz: 20.0
+state: "WAITING_FOR_TICK"
+public_node_data: []

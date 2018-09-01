@@ -1,0 +1,12 @@
+<launch>
+  <arg name="map_file"
+       default="$(find turtlebot_stdr)/maps/sparse_obstacles.yaml" />
+
+  <!--  ******************** Stdr********************  -->
+  <include file="$(find stdr_robot)/launch/robot_manager.launch" />
+  <!-- Run STDR server with a prefedined map-->
+  <node pkg="stdr_server" type="stdr_server_node" name="stdr_server" output="screen" args="$(arg map_file)"/>
+
+  <!-- Run Gui  -->
+  <include file="$(find stdr_gui)/launch/stdr_gui.launch"/>
+</launch>

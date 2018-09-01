@@ -1,0 +1,86 @@
+<!-- Spawns a turtlebot into an existing STDR simulation:
+
+     - spawn robot
+     - start map_server and move_base
+
+     Required parameter:
+     - robot_index: should be 0 for the first robot spawned, 1 for the second, and so on
+-->
+<launch>
+  <arg name="robot_index" />
+  <arg name="laser_topic" default="/robot$(arg robot_index)/laser_0"/> <!-- default laser topic in stdr for 1 robot -->
+  <arg name="odom_topic" default="/robot$(arg robot_index)/odom"/>
+  <arg name="odom_frame_id" default="map"/>
+  <arg name="base_frame_id" default="robot$(arg robot_index)"/>
+  <arg name="global_frame_id" default="map"/>
+  <!-- Name of the map to use (without path nor extension) and initial position -->
+  <arg name="map_file"       default="$(env TURTLEBOT_STDR_MAP_FILE)"/>
+  <arg name="initial_pose_x" default="2.0"/>
+  <arg name="initial_pose_y" default="2.0"/>
+  <arg name="initial_pose_a" default="0.0"/>
+  <arg name="min_obstacle_height" default="0.0"/>
+  <arg name="max_obstacle_height" default="5.0"/>
+
+  <!--  ******************** Stdr********************  -->
+  <!--Spawn new robot at init position 2 2 0-->
+  <node pkg="stdr_robot"
+        type="robot_handler"
+        name="$(anon robot_spawn)"
+        args="add $(find turtlebot_stdr)/robot/turtlebot.yaml $(arg initial_pose_x) $(arg initial_pose_y) $(arg initial_pose_a)"/>
+
+  <node name="$(anon relay_cmd_data)" pkg="topic_tools" type="relay"
+        args="turtlebot$(arg robot_index)/mobile_base/commands/velocity robot$(arg robot_index)/cmd_vel"/>
+
+
+
+<group ns="turtlebot$(arg robot_index)">
+  <!--  ***************** Robot Model *****************  -->
+  <param name="robot_description" command="$(find xacro)/xacro --inorder 'kobuki_simple.urdf.xacro' tf_prefix:=robot$(arg robot_index)_" />
+
+  <!-- important generally, but specifically utilised by the current app manager -->
+  <param name="robot/name" value="$(optenv ROBOT turtlebot)"/>
+  <param name="robot/type" value="turtlebot"/>
+
+  <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+    <param name="publish_frequency" type="double" value="5.0" />
+  </node>
+  <node pkg="diagnostic_aggregator" type="aggregator_node" name="diagnostic_aggregator" >
+    <rosparam command="load" file="$(find turtlebot_bringup)/param/kobuki/diagnostics.yaml" />
+  </node>
+
+  <!-- Command Velocity multiplexer -->
+
+  <node pkg="nodelet" type="nodelet" name="mobile_base_nodelet_manager" args="manager"/>
+  <node pkg="nodelet" type="nodelet" name="cmd_vel_mux" args="load yocs_cmd_vel_mux/CmdVelMuxNodelet mobile_base_nodelet_manager">
+    <param name="yaml_cfg_file" value="$(find turtlebot_bringup)/param/mux.yaml"/>
+    <remap from="cmd_vel_mux/output" to="mobile_base/commands/velocity"/>
+  </node>
+
+  <!-- ****** Maps ***** -->
+  <node name="map_server" pkg="map_server" type="map_server" args="$(arg map_file)">
+   <param name="frame_id" value="$(arg global_frame_id)"/>
+  </node>
+
+  <!--  ************** Navigation  ***************  -->
+
+  <include file="$(find turtlebot_navigation)/launch/includes/move_base.launch.xml">
+   <arg name="odom_topic" value="$(arg odom_topic)"/>
+   <arg name="laser_topic" value="$(arg laser_topic)"/>
+   <arg name="odom_frame_id"   value="$(arg odom_frame_id)"/>
+   <arg name="base_frame_id"   value="$(arg base_frame_id)"/>
+   <arg name="global_frame_id" value="$(arg global_frame_id)"/>
+  </include>
+
+  <!-- ***************** Manually setting some parameters ************************* -->
+    <param name="move_base/local_costmap/obstacle_layer/scan/min_obstacle_height" value="$(arg min_obstacle_height)"/>
+    <param name="move_base/local_costmap/obstacle_layer/scan/max_obstacle_height" value="$(arg max_obstacle_height)"/>
+    <param name="move_base/global_costmap/obstacle_layer/scan/min_obstacle_height" value="$(arg min_obstacle_height)"/>
+    <param name="move_base/global_costmap/obstacle_layer/scan/max_obstacle_height" value="$(arg max_obstacle_height)"/>
+
+    <!-- connect base_footprint tf to robot0 -->
+    <node pkg="tf" type="static_transform_publisher"
+          name="tf_connector"
+          args="0 0 0 0 0 0 robot$(arg robot_index) robot$(arg robot_index)_base_footprint 20" />
+
+</group>
+</launch>

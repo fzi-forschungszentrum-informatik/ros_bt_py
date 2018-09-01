@@ -1,0 +1,5 @@
+string opener_frame
+uint32 door_id
+---
+bool success
+string error_message
