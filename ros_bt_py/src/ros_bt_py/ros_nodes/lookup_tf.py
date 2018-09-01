@@ -7,6 +7,7 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig
 
+
 @define_bt_node(NodeConfig(
     options={
         'parent_frame': str,
