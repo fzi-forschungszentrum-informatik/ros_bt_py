@@ -56,5 +56,5 @@ add_action_files(
    )
 
 catkin_package(
-  CATKIN_DEPENDS message_runtime
+  CATKIN_DEPENDS message_runtime actionlib_msgs geometry_msgs
   )
