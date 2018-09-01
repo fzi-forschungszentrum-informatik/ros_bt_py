@@ -568,10 +568,10 @@ class TreeManager(object):
                                                     'tick, but failed!')
                     state_after_joining = self.get_state()
                     if state_after_joining == Tree.IDLE:
-                        response.state_after_joining = Tree.IDLE
+                        response.tree_state = Tree.IDLE
                         response.success = True
                     if state_after_joining == Tree.WAITING_FOR_TICK:
-                        response.state_after_joining = Tree.WAITING_FOR_TICK
+                        response.tree_state = Tree.WAITING_FOR_TICK
                         response.success = True
                     elif state_after_joining == Tree.ERROR:
                         response.error_message = ('Error during single tick: %s'
