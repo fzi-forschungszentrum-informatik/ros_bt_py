@@ -991,7 +991,7 @@ class Node(object):
         """
         if wiring.source.node_name != self.name:
             raise KeyError('%s: Trying to subscribe to another node (%s)' %
-                           (self.name, source.node_name))
+                           (self.name, wiring.source.node_name))
 
         for sub, _, _ in self.subscribers:
             if sub.target == wiring.target:
