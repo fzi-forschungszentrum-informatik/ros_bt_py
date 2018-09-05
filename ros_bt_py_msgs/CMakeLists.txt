@@ -32,6 +32,7 @@ add_service_files(
   GetAvailableNodes.srv
   GetAvailableSubtrees.srv
   GetJsonpickleInstance.srv
+  GetSubtree.srv
   GetTarget.srv
   InsertNode.srv
   LoadTree.srv

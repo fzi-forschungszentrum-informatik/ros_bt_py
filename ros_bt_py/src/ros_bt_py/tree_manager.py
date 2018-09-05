@@ -14,6 +14,7 @@ from ros_bt_py_msgs.srv import WireNodeDataResponse, AddNodeResponse, RemoveNode
 from ros_bt_py_msgs.srv import ContinueResponse
 from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, ControlTreeExecutionResponse
 from ros_bt_py_msgs.srv import GetAvailableNodesResponse
+from ros_bt_py_msgs.srv import GetSubtreeResponse
 from ros_bt_py_msgs.srv import SetExecutionModeResponse
 from ros_bt_py_msgs.srv import SetOptionsResponse
 from ros_bt_py_msgs.srv import ModifyBreakpointsResponse
@@ -1336,6 +1337,22 @@ class TreeManager(object):
 
         response.success = True
         return response
+
+    def get_subtree(self, request):
+        if request.subtree_root_name not in self.nodes:
+            return GetSubtreeResponse(
+                success=False,
+                error_message='Node "%s" does not exist!' % request.subtree_root_name)
+        try:
+            return GetSubtreeResponse(
+                success=True,
+                subtree=self.nodes[request.subtree_root_name].get_subtree_msg()[0])
+        except BehaviorTreeException as exc:
+            return GetSubtreeResponse(
+                success=False,
+                error_message='Error retrieving subtree rooted at %s: %s' % (
+                    request.subtree_root_name,
+                    str(exc)))
 
     #########################
     # Service Handlers Done #

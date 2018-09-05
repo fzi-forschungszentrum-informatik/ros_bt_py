@@ -5,7 +5,7 @@ import rospy
 from ros_bt_py_msgs.msg import Tree, DebugInfo, DebugSettings
 from ros_bt_py_msgs.srv import AddNode, ControlTreeExecution, ModifyBreakpoints, RemoveNode, \
      WireNodeData, GetAvailableNodes, SetExecutionMode, SetOptions, Continue, LoadTree, \
-     MoveNode, ReplaceNode
+     MoveNode, ReplaceNode, GetSubtree
 from ros_bt_py_msgs.srv import ControlTreeExecutionRequest
 from ros_bt_py.tree_manager import TreeManager, _get_success, _get_error_message
 from ros_bt_py.debug_manager import DebugManager
@@ -65,6 +65,10 @@ class TreeNode(object):
         self.get_available_nodes_service = rospy.Service('~get_available_nodes',
                                                          GetAvailableNodes,
                                                          self.tree_manager.get_available_nodes)
+
+        self.get_subtree_service = rospy.Service('~get_subtree',
+                                                 GetSubtree,
+                                                 self.tree_manager.get_subtree)
 
         self.set_execution_mode_service = rospy.Service('~debug/set_execution_mode',
                                                         SetExecutionMode,
