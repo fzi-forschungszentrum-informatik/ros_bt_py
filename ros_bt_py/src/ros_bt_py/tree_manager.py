@@ -744,7 +744,7 @@ class TreeManager(object):
         # Shutdown node - this should also shutdown all children, but you
         # never know, so check later.
         self.nodes[request.node_name].shutdown()
-        names_to_remove = {request.node_name}
+        names_to_remove = [request.node_name]
         if request.remove_children:
             add_children_of = [request.node_name]
             children_added = set()
@@ -757,15 +757,26 @@ class TreeManager(object):
                                               (request.node_name, name, self.tree_msg.name))
                     return response
                 if name not in children_added:
-                    names_to_remove |= {child.name for child
-                                        in self.nodes[name].children}
+                    names_to_remove.extend([child.name for child
+                                            in self.nodes[name].children])
                     add_children_of.extend([child.name for child
                                             in self.nodes[name].children])
         else:
             # If we're not removing the children, at least set their parent to None
             for child in self.nodes[request.node_name].children:
                 child.parent = None
-        for name in names_to_remove:
+        # Remove nodes in the reverse order they were added to the
+        # list, i.e. the "deepest" ones first. This ensures that the
+        # parent we refer to in the error message still exists.
+
+        # set to prevent us from removing a node twice - no node
+        # *should* have more than one parent, but better safe than
+        # sorry
+        removed_names = set()
+        for name in reversed(names_to_remove):
+            if name in removed_names:
+                continue
+            removed_names.add(name)
             # Check if node is already in shutdown state. If not, call
             # shutdown, but warn, because the parent node should have
             # done that!
