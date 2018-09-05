@@ -1340,7 +1340,11 @@ class TreeManager(object):
     #########################
 
     def instantiate_node_from_msg(self, node_msg, allow_rename):
-        node_instance = Node.from_msg(node_msg)
+        try:
+            node_instance = Node.from_msg(node_msg)
+        except TypeError as exc:
+            raise BehaviorTreeException(str(exc))
+
         if node_instance.name in self.nodes:
             if allow_rename:
                 node_instance.name = self.make_name_unique(node_instance.name)

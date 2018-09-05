@@ -315,6 +315,17 @@ class TestTreeManager(unittest.TestCase):
         self.assertFalse(get_success(response))
         self.assertEqual(len(self.manager.nodes), 0)
 
+    def testAddWithInvalidOption(self):
+        self.node_msg.options = [
+            NodeData(key='passthrough_type',
+                     # passthrough_type must be a type, not an int
+                     serialized_value=jsonpickle.encode(42))]
+        add_request = AddNodeRequest(tree_name='',
+                                     node=self.node_msg)
+        response = self.manager.add_node(add_request)
+
+        self.assertFalse(get_success(response))
+
     def testBuildCycle(self):
         add_request = AddNodeRequest(tree_name='',
                                      node=self.sequence_msg)
