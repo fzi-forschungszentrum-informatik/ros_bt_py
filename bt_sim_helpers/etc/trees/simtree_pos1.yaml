@@ -6,7 +6,7 @@ nodes:
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.ros_nodes.lookup_tf"
-    node_class: "LookupTF"
+    node_class: "LookupTFConst"
     max_children: 0
     name: "LookupRobotTF"
     child_names: []
