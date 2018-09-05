@@ -489,6 +489,10 @@ class Node(object):
         if self.state == NodeMsg.UNINITIALIZED:
             self.loginfo('Not calling shutdown method, node has not been initialized yet')
             self.state = NodeMsg.SHUTDOWN
+            # Call shutdown on all children - this should only set
+            # their state to shutdown
+            for child in self.children:
+                child.shutdown()
         elif self.state != NodeMsg.SHUTDOWN:
             self._do_shutdown()
             self.state = NodeMsg.SHUTDOWN
