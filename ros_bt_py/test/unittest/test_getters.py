@@ -6,14 +6,14 @@ from ros_bt_py_msgs.msg import NodeData, NodeDataLocation
 
 from ros_bt_py.exceptions import BehaviorTreeException, NodeConfigError
 from ros_bt_py.nodes.mock_nodes import MockLeaf
-from ros_bt_py.nodes.getters import GetListItem, GetDictItem, GetAttr
+from ros_bt_py.nodes.getters import GetConstListItem, GetDictItem, GetAttr
 
 
 class TestListGetter(unittest.TestCase):
     def testListGetter(self):
-        getter = GetListItem({'list_type': int,
-                              'index': 3,
-                              'succeed_on_stale_data': False})
+        getter = GetConstListItem({'list_type': int,
+                                   'index': 3,
+                                   'succeed_on_stale_data': False})
         getter.setup()
         self.assertEqual(NodeMsg.IDLE, getter.state)
 
@@ -32,9 +32,9 @@ class TestListGetter(unittest.TestCase):
         # Tick should return RUNNING on stale data
         self.assertEqual(NodeMsg.RUNNING, getter.tick())
 
-        getter = GetListItem({'list_type': int,
-                              'index': 3,
-                              'succeed_on_stale_data': True})
+        getter = GetConstListItem({'list_type': int,
+                                   'index': 3,
+                                   'succeed_on_stale_data': True})
         getter.setup()
         getter.inputs['list'] = [1, 2, 3, 4]
         self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
@@ -43,9 +43,9 @@ class TestListGetter(unittest.TestCase):
         self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
 
     def testListGetterAsDecorator(self):
-        getter = GetListItem({'list_type': int,
-                              'index': 3,
-                              'succeed_on_stale_data': True})
+        getter = GetConstListItem({'list_type': int,
+                                   'index': 3,
+                                   'succeed_on_stale_data': True})
         list_provider = MockLeaf(
             options={'output_type': list,
                      'state_values': [NodeMsg.SUCCEEDED],
