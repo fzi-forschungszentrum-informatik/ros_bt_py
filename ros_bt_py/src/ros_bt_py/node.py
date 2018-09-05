@@ -926,7 +926,7 @@ class Node(object):
                     connected_inputs[wiring.target.node_name].append(wiring.target.data_key)
                 else:
                     connected_inputs[wiring.target.node_name] = [wiring.target.data_key]
-        self.logerr(connected_inputs)
+
         for node in subtree.nodes:
             for node_input in node.inputs:
                 if (node.name not in connected_inputs or
