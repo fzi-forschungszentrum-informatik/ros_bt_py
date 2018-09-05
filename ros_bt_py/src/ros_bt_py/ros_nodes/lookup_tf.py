@@ -49,8 +49,9 @@ class LookupTFConst(Leaf):
 
 
 @define_bt_node(NodeConfig(
-    options={'parent_frame': str},
-    inputs={'child_frame': str},
+    options={},
+    inputs={'parent_frame': str,
+            'child_frame': str},
     outputs={'transform_pose': Pose},
     max_children=0))
 class LookupTF(Leaf):
@@ -61,7 +62,7 @@ class LookupTF(Leaf):
 
     def _do_tick(self):
         try:
-            trans = self.tf_buffer.lookup_transform(self.options['parent_frame'],
+            trans = self.tf_buffer.lookup_transform(self.inputs['parent_frame'],
                                                     self.inputs['child_frame'],
                                                     rospy.Time())
             self.outputs['transform_pose'] = Pose(Point(trans.transform.translation.x,
