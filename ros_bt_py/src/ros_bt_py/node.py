@@ -912,9 +912,30 @@ class Node(object):
                     subtree.public_node_data.append(wiring.source)
                     external_connections.append(wiring)
 
-        # TODO(berg): Maybe also make the currently unconnected inputs of all
-        # nodes publicly available by default?
-
+        # Make the currently unconnected inputs of all nodes publicly
+        # available
+        connected_inputs = dict()
+        for wiring in subtree.data_wirings:
+            if wiring.source.data_kind == NodeDataLocation.INPUT_DATA:
+                if wiring.source.node_name in connected_inputs:
+                    connected_inputs[wiring.source.node_name].append(wiring.source.data_key)
+                else:
+                    connected_inputs[wiring.source.node_name] = [wiring.source.data_key]
+            elif wiring.target.data_kind == NodeDataLocation.INPUT_DATA:
+                if wiring.target.node_name in connected_inputs:
+                    connected_inputs[wiring.target.node_name].append(wiring.target.data_key)
+                else:
+                    connected_inputs[wiring.target.node_name] = [wiring.target.data_key]
+        self.logerr(connected_inputs)
+        for node in subtree.nodes:
+            for node_input in node.inputs:
+                if (node.name not in connected_inputs or
+                        node_input.key not in connected_inputs[node.name]):
+                    # Input is unconnected, list it as public
+                    subtree.public_node_data.append(NodeDataLocation(
+                        node_name=node.name,
+                        data_kind=NodeDataLocation.INPUT_DATA,
+                        data_key=node_input.key))
         return subtree, external_connections
 
     def find_node(self, other_name):

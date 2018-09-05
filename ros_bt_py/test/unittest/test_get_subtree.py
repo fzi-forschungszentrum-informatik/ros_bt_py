@@ -93,3 +93,23 @@ class TestSubtree(unittest.TestCase):
         self.assertEqual(len([d for d in subtree.public_node_data
                               if d.data_kind == NodeDataLocation.OUTPUT_DATA]), 1)
         self.assertEqual(len(external_connections), 2)
+
+    def testUnconnectedInputsArePublic(self):
+        smol_tree = Sequence(name='Sequence')\
+            .add_child(self.inner_passthrough)\
+            .add_child(self.outer_passthrough)
+
+        passthrough_wiring = NodeDataWiring()
+        passthrough_wiring.source.node_name = 'inner_passthrough'
+        passthrough_wiring.source.data_kind = NodeDataLocation.OUTPUT_DATA
+        passthrough_wiring.source.data_key = 'out'
+        passthrough_wiring.target.node_name = 'outer_passthrough'
+        passthrough_wiring.target.data_kind = NodeDataLocation.INPUT_DATA
+        passthrough_wiring.target.data_key = 'in'
+
+        self.outer_passthrough.wire_data(passthrough_wiring)
+        subtree, external_connections = smol_tree.get_subtree_msg()
+
+        self.assertEqual(len(subtree.nodes), 3)
+        self.assertEqual(len(external_connections), 0)
+        self.assertEqual(len(subtree.public_node_data), 1)
