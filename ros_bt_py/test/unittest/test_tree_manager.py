@@ -938,6 +938,19 @@ class TestTreeManager(unittest.TestCase):
         self.assertTrue(get_success(self.manager.control_execution(ControlTreeExecutionRequest(
             command=ControlTreeExecutionRequest.TICK_ONCE))))
 
+    def testLoadFromValidFileWithEmptyObject(self):
+        """Load a tree from a rostopic echo file that has "---" at the end"""
+        load_request = LoadTreeRequest(tree=Tree(name='from_file',
+                                                 path='package://ros_bt_py/etc/trees/test_extra_empty.yaml'))
+        response = self.manager.load_tree(load_request)
+
+        self.assertTrue(get_success(response), get_error_message(response))
+        # test.yaml contains a sequence, two succeeders, a fallback and a failer
+        self.assertEqual(len(self.manager.nodes), 5)
+
+        self.assertTrue(get_success(self.manager.control_execution(ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.TICK_ONCE))))
+
     def testLoadFromFileWithIndirection(self):
         request = self.manager.load_tree(
             LoadTreeRequest(tree=Tree(name='from_file',

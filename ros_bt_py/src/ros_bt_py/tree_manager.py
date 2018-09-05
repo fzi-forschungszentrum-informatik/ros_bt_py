@@ -335,6 +335,8 @@ class TreeManager(object):
                 data = yaml.load_all(tree_file)
                 read_data = False
                 for datum in data:
+                    if datum is None:
+                        continue
                     if not read_data:
                         tree = Tree()
                         genpy.message.fill_message_args(tree, datum, keys={})
