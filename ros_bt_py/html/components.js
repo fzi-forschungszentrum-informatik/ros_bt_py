@@ -79,9 +79,10 @@ function getDefaultValue(typeName, options)
   }
   else if (typeName.startsWith('OptionRef('))
   {
-    var optionType = options.find(x => {
-      return x === typeName.substring(
+    var optionTypeName = typeName.substring(
         'OptionRef('.length, typeName.length - 1);
+    var optionType = options.find(x => {
+      return x.key === optionTypeName;
     });
     if (optionType)
     {
@@ -92,7 +93,7 @@ function getDefaultValue(typeName, options)
     {
       return {
         type: 'unset_optionref',
-        value: 'None'
+        value: 'Ref to "' + optionTypeName + '"'
       };
     }
   }
@@ -374,7 +375,7 @@ class App extends Component
                     <SelectedNode
                       ros={this.ros}
                       bt_namespace={this.state.bt_namespace}
-                      key={this.state.selected_node ? (this.state.selected_node.module + this.state.selected_node.class_name) : ''}
+                      key={this.state.selected_node ? (this.state.selected_node.module + this.state.selected_node.node_class) : ''}
                       node={this.state.selected_node}
                       parents={this.findPossibleParents()}
                       />
@@ -2000,7 +2001,7 @@ class SelectedNode extends Component
                type="text"
                value={this.state.name}
                onChange={this.nameChangeHandler}/>
-        <h4>{this.state.name}</h4>
+        <h4>{this.props.node.node_class}</h4>
         {this.renderParamInputs(this.state.options, 'options')}
         {/* this.renderParamInputs(this.state.inputs, 'inputs') */}
         {/* {this.renderParamInputs(this.state.outputs, 'outputs')} */}
@@ -2096,15 +2097,40 @@ class SelectedNode extends Component
       }
     };
 
-    if (paramType.toLowerCase() == 'options')
+    if (paramType.toLowerCase() === 'options')
     {
+      var ref_keys = this.props.node.options
+          .filter(x => prettyprint_type(x.serialized_value).startsWith('OptionRef('))
+          .map(x => [x.key, prettyprint_type(x.serialized_value).substring(
+            'OptionRef('.length, prettyprint_type(x.serialized_value).length - 1)])
+          .filter(x => x[1] === key);
       this.setState(
         (prevState, props) =>
           {
-            return {options: prevState.options.map(map_fun)};
+            var new_options = prevState.options.map(map_fun);
+            // update the options in our state that are references to
+            // the changed key - this will discard any values entered
+            // already, but they'd be incompatible anyway
+
+            var resolved_options = new_options.map(x => {
+              var refData = ref_keys.find(ref => ref[0] === x.key);
+              if (refData)
+              {
+                var optionType = new_options.find(opt => opt.key === refData[1]);
+                if (optionType)
+                {
+                  return {
+                    key: x.key,
+                    value: getDefaultValue(optionType.value.value.replace('__builtin__.', ''))
+                  };
+                }
+              }
+              return x;
+            });
+            return {options: resolved_options};
           });
     }
-    else if (paramType.toLowerCase() == 'inputs')
+    else if (paramType.toLowerCase() === 'inputs')
     {
       this.setState(
         (prevState, props) =>
@@ -2112,7 +2138,7 @@ class SelectedNode extends Component
             return {inputs: prevState.inputs.map(map_fun)};
           });
     }
-    else if (paramType.toLowerCase() == 'outputs')
+    else if (paramType.toLowerCase() === 'outputs')
     {
       this.setState(
         (prevState, props) =>
@@ -2170,7 +2196,7 @@ class SelectedNode extends Component
       return (
         <div className="form-group">
           <label>{paramItem.key}
-            <input type="number" name="integer"
+            <input type="number" name="float"
                    className="form-control"
                    onChange={changeHandler}
                    placeholder="float"
@@ -2253,8 +2279,8 @@ class SelectedNode extends Component
           <label>{paramItem.key}
             <input type="text"
                    className="form-control mt-2"
-                   disabled="true"
-                   checked={this.state.value}/>
+                   value={paramItem.value.value}
+                   disabled="true"/>
           </label>
         </div>
       );
