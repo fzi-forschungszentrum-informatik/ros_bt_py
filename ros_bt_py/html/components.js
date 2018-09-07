@@ -7,6 +7,10 @@ var render = ReactDOM.render;
 var createRef = React.createRef;
 var Fragment = React.Fragment; //'x-fragment';
 
+// uuid is used to assign unique IDs to tags so we can use labels properly
+let idx = 0;
+const uuid = () => idx++;
+
 var python_builtin_types = [
   'int',
   'float',
@@ -263,21 +267,33 @@ class App extends Component
   {
     super(props);
 
+    var ros_uri = 'ws://10.211.55.3:9090';
     this.state = {
       bt_namespace: '/tree_node/',
-      ros_uri: 'ws://10.211.55.3:9090',
+      ros_uri: ros_uri,
+      selected_tree: {
+        is_subtree: false,
+        name: ''
+      },
+      subtree_names: [],
       selected_node: null,
       showDataGraph: true,
-      last_tree_msg: null
+      last_tree_msg: null,
+      ros: new ROSLIB.Ros({
+        url : ros_uri
+      })
     };
-    this.ros = new ROSLIB.Ros({
-      url : this.state.ros_uri
-    });
 
     this.tree_topic = new ROSLIB.Topic({
-      ros : this.ros,
+      ros : this.state.ros,
       name : this.state.bt_namespace + 'tree',
       messageType : 'ros_bt_py_msgs/Tree'
+    });
+
+    this.debug_topic = new ROSLIB.Topic({
+      ros : this.state.ros,
+      name: this.state.bt_namespace + 'debug/debug_info',
+      messageType: 'ros_bt_py_msgs/DebugInfo'
     });
 
     this.lastTreeUpdate = null;
@@ -288,10 +304,38 @@ class App extends Component
     this.onError = this.onError.bind(this);
     this.onSelectionChange = this.onSelectionChange.bind(this);
     this.onTreeUpdate = this.onTreeUpdate.bind(this);
+    this.onDebugUpdate = this.onDebugUpdate.bind(this);
     this.findPossibleParents = this.findPossibleParents.bind(this);
+    this.onSelectedTreeChange = this.onSelectedTreeChange.bind(this);
+    this.onNamespaceChange = this.onNamespaceChange.bind(this);
+    this.updateTreeMsg = this.updateTreeMsg.bind(this);
   }
 
   onTreeUpdate(msg)
+  {
+    if (!this.state.selected_tree.is_subtree)
+    {
+      console.log('updating main tree?');
+      this.updateTreeMsg(msg);
+    }
+  }
+
+  onDebugUpdate(msg)
+  {
+    this.setState({subtree_names: msg.subtree_states.map(x => x.name).sort()});
+    if (this.state.selected_tree.is_subtree)
+    {
+      var selectedSubtree = msg.subtree_states
+          .find(x => x.name === this.state.selected_tree.name);
+      if (selectedSubtree)
+      {
+        console.log('updating subtree?');
+        this.updateTreeMsg(selectedSubtree);
+      }
+    }
+  }
+
+  updateTreeMsg(msg)
   {
     var now = Date.now();
     if (this.lastTreeUpdate === null || (now - this.lastTreeUpdate) > this.newMsgDelay)
@@ -301,12 +345,62 @@ class App extends Component
     }
   }
 
+  onSelectedTreeChange(is_subtree, name)
+  {
+    this.setState({
+      selected_tree: {
+        is_subtree: is_subtree,
+        name: name
+      }
+    });
+  }
+
+  onNamespaceChange(namespace)
+  {
+    console.log('Namespace changed to: ', namespace);
+    if (namespace !== this.state.bt_namespace)
+    {
+      // Unsubscribe, then replace, topics
+      this.tree_topic.unsubscribe(this.onTreeUpdate);
+      this.debug_topic.unsubscribe(this.onDebugUpdate);
+
+      this.tree_topic = new ROSLIB.Topic({
+        ros : this.state.ros,
+        name : namespace + 'tree',
+        messageType : 'ros_bt_py_msgs/Tree'
+      });
+
+      this.debug_topic = new ROSLIB.Topic({
+        ros : this.state.ros,
+        name: namespace + 'debug/debug_info',
+        messageType: 'ros_bt_py_msgs/DebugInfo'
+      });
+
+      // Subscribe again
+      this.tree_topic.subscribe(this.onTreeUpdate);
+      this.debug_topic.subscribe(this.onDebugUpdate);
+
+      this.setState({bt_namespace: namespace});
+    }
+  }
+
   findPossibleParents()
   {
     if (this.state.last_tree_msg)
     {
       return this.state.last_tree_msg.nodes
-        .filter(node => (node.max_children < 0 || node.child_names.length < node.max_children));
+        .filter(node => (node.max_children < 0 || node.child_names.length < node.max_children))
+        .sort(function(a, b) {
+          if (a.name < b.name) {
+            return -1;
+          }
+          else if (a.name > b.name) {
+            return 1;
+          }
+          else {
+            return 0;
+          }
+        });
     }
     return [];
   }
@@ -314,11 +408,13 @@ class App extends Component
   componentDidMount()
   {
     this.tree_topic.subscribe(this.onTreeUpdate);
+    this.debug_topic.subscribe(this.onDebugUpdate);
   }
 
   componentWillUnmount()
   {
     this.tree_topic.unsubscribe(this.onTreeUpdate);
+    this.debug_topic.unsubscribe(this.onDebugUpdate);
   }
 
   onError(error_message)
@@ -335,23 +431,39 @@ class App extends Component
   {
     return (
       <Fragment>
-        <ExecutionBar ros={this.ros}
-                      bt_namespace={this.state.bt_namespace}
+        <ExecutionBar key={this.state.bt_namespace}
+                      ros={this.state.ros}
+                      subtreeNames={this.state.subtree_names}
+                      currentNamespace={this.state.bt_namespace}
+                      onSelectedTreeChange={this.onSelectedTreeChange}
+                      onNamespaceChange={this.onNamespaceChange}
                       onError={this.onError}/>
 
         <div className="container-fluid">
           <div className="row row-height">
             <div className="col scroll-col" id="nodelist_container">
-              <NodeList ros={this.ros}
+              <NodeList key={this.state.bt_namespace}
+                        ros={this.state.ros}
                         bt_namespace={this.state.bt_namespace}
                         onError={this.onError}
                         onSelectionChange={this.onSelectionChange}/>
             </div>
             <div className="col-9 scroll-col" id="main_pane">
               <div className="container-fluid">
+                <div className="row">
+                  <div className="col">
+                    <SelectTree key={this.state.bt_namespace}
+                                ros={this.state.ros}
+                                bt_namespace={this.state.bt_namespace}
+                                subtreeNames={this.state.subtree_names}
+                                onSelectedTreeChange={this.onSelectedTreeChange}
+                                onError={this.onError}/>
+                  </div>
+                </div>
                 <div className="row edit_canvas">
                   <div className="col">
-                    <D3BehaviorTreeEditor ros={this.ros}
+                    <D3BehaviorTreeEditor key={this.state.bt_namespace}
+                                          ros={this.state.ros}
                                           bt_namespace={this.state.bt_namespace}
                                           tree_message={this.state.last_tree_msg}
                                           onSelectionChange={this.onSelectionChange}
@@ -373,15 +485,23 @@ class App extends Component
                 <div className="row">
                   <div className="col">
                     <SelectedNode
-                      ros={this.ros}
+                      ros={this.state.ros}
                       bt_namespace={this.state.bt_namespace}
-                      key={this.state.selected_node ? (this.state.selected_node.module + this.state.selected_node.node_class) : ''}
+                      key={
+                        this.state.bt_namespace
+                          + (this.state.selected_node ?
+                             (this.state.selected_node.module
+                              + this.state.selected_node.node_class)
+                             :
+                             '')
+                      }
                       node={this.state.selected_node}
                       parents={this.findPossibleParents()}
                       />
                   </div>
                   <div className="col">
-                    <RemoveNode ros={this.ros}
+                    <RemoveNode key={this.state.bt_namespace}
+                                ros={this.state.ros}
                                 bt_namespace={this.state.bt_namespace}
                                 onError={this.onError}/>
                   </div>
@@ -399,6 +519,11 @@ function ExecutionBar(props)
 {
   return (
     <header id="header" className="d-flex flex-column flex-md-row align-items-center control-bar">
+      <NamespaceSelect
+        ros={props.ros}
+        currentNamespace={props.bt_namespace}
+        onNamespaceChange={props.onNamespaceChange}
+        onError={props.onError}/>
       <DebugControls
         ros={props.ros}
         bt_namespace={props.bt_namespace}
@@ -409,6 +534,97 @@ function ExecutionBar(props)
         onError={props.onError}/>
     </header>
   );
+}
+
+class NamespaceSelect extends Component
+{
+  constructor(props)
+  {
+    super(props);
+
+    this.state = {
+      available_namespaces: []
+    };
+
+    this.topicsForTypeClient = new ROSLIB.Service({
+      ros: props.ros,
+      name: '/rosapi/topics_for_type',
+      serviceType: 'rosapi/TopicsForType'
+    });
+
+    this.updateAvailableNamespaces = this.updateAvailableNamespaces.bind(this);
+    this.handleNamespaceChange = this.handleNamespaceChange.bind(this);
+  }
+
+  componentDidMount()
+  {
+    this.updateAvailableNamespaces();
+  }
+
+  updateAvailableNamespaces()
+  {
+    this.topicsForTypeClient.callService(
+      // Search for all Tree topics - we expect each BT node to
+      // publish one of these, and also offer the corresponding
+      // editing and runtime control services.
+      new ROSLIB.ServiceRequest({
+        type: 'ros_bt_py_msgs/Tree'
+      }),
+      function(response) {
+        this.setState({
+          // Chop off the topic name, which leaves us with the BT
+          // namespace
+          available_namespaces: response.topics.map(
+            x => x.substr(0, x.lastIndexOf('/'))
+          )
+        });
+      }.bind(this));
+  }
+
+  handleNamespaceChange(event)
+  {
+    this.props.onNamespaceCHange(event.target.value);
+  }
+
+  render()
+  {
+    return (
+      <Fragment>
+        <div className="form-inline">
+          <label className="ml-1">BT Namespace:
+            <select className="custom-select ml-1"
+                    defaultValue={this.props.currentNamespace}
+                    onChange={this.handleNamespaceChange}>
+              {
+                this.state.available_namespaces.map(
+                  x => (<option key={x}
+                                value={x}>{x}</option>))
+              }
+            </select>
+          </label>
+        </div>
+        <button type="button"
+                className="btn btn-sm m-1"
+                onClick={this.updateAvailableNamespaces}>
+          <span aria-hidden="true" className="fas fa-sync" />
+          <span className="sr-only">Refresh Namespaces</span>
+        </button>
+      </Fragment>
+    );
+  }
+}
+
+class SelectTree extends Component
+{
+  constructor(props)
+  {
+    super(props);
+  }
+
+  render()
+  {
+    return (<div/>);
+  }
 }
 
 class TickControls extends Component
@@ -481,7 +697,10 @@ class DebugControls extends Component
   {
     super(props);
 
-    this.state = {value: false};
+    this.state = {
+      debugging: false,
+      publishing_subtrees: false
+    };
 
     this.debug_settings_sub = new ROSLIB.Topic({
       ros: props.ros,
@@ -501,9 +720,13 @@ class DebugControls extends Component
       serviceType: 'ros_bt_py_msgs/Continue'
     });
 
+    this.debugCheckID = 'debug_' + uuid();
+    this.publishSubtreesID = 'publish_subtrees_' + uuid();
+
     this.onNewDebugSettings = this.onNewDebugSettings.bind(this);
     this.onClickStep = this.onClickStep.bind(this);
-    this.handleChange = this.handleChange.bind(this);
+    this.handleDebugChange = this.handleDebugChange.bind(this);
+    this.handlePubSubtreesChange = this.handlePubSubtreesChange.bind(this);
   }
 
   componentDidMount()
@@ -518,7 +741,8 @@ class DebugControls extends Component
 
   onNewDebugSettings(msg)
   {
-    this.setState({value: msg.single_step});
+    this.setState({debugging: msg.single_step,
+                   publishing_subtrees: msg.publish_subtrees});
   }
 
   onClickStep()
@@ -535,37 +759,67 @@ class DebugControls extends Component
       }.bind(this));
   }
 
-  handleChange(event)
+  handleDebugChange(event)
   {
     var enable = event.target.checked;
-      this.set_execution_mode_service.callService(
-    new ROSLIB.ServiceRequest({
-      single_step: enable,
-      collect_performance_data: true
-    }),
-    function(response) {
-      if (enable) {
-        console.log('enabled stepping');
-      }
-      else {
-        console.log('disabled stepping');
-      }
-    }.bind(this));
-    this.setState({value: event.target.value});
+    this.set_execution_mode_service.callService(
+      new ROSLIB.ServiceRequest({
+        single_step: enable,
+        publish_subtrees: this.state.publishing_subtrees,
+        collect_performance_data: true
+      }),
+      function(response) {
+        if (enable) {
+          console.log('enabled stepping');
+        }
+        else {
+          console.log('disabled stepping');
+        }
+      }.bind(this));
+    this.setState({debugging: enable});
+  }
+
+  handlePubSubtreesChange(event)
+  {
+    var enable = event.target.checked;
+    this.set_execution_mode_service.callService(
+      new ROSLIB.ServiceRequest({
+        single_step: this.state.debugging,
+        publish_subtrees: enable,
+        collect_performance_data: true
+      }),
+      function(response) {
+        if (enable) {
+          console.log('enabled stepping');
+        }
+        else {
+          console.log('disabled stepping');
+        }
+      }.bind(this));
+    this.setState({publishing_subtrees: enable});
   }
 
   render()
   {
     return (
       <Fragment>
-        <div className="form-check m-1">
+        <div className="custom-control m-1">
           <input type="checkbox"
-                 id="debugging"
-                 className="form-check-input"
-                 checked={this.state.value}
-                 onChange={this.handleChange} />
-          <label className="form-check-label"
-                 htmlFor="debugging">Debug</label>
+                 id={this.debugCheckID}
+                 className="custom-control-input"
+                 checked={this.state.debugging}
+                 onChange={this.handleDebugChange} />
+          <label className="custom-control-label"
+                 htmlFor={this.debugCheckID}>Debug</label>
+        </div>
+        <div className="custom-control m-1">
+          <input type="checkbox"
+                 id={this.publishSubtreesID}
+                 className="custom-control-input"
+                 checked={this.state.publishing_subtrees}
+                 onChange={this.handlePubSubtreesChange} />
+          <label className="custom-control-label"
+                 htmlFor={this.publishSubtreesID}>Publish Subtrees</label>
         </div>
         <button onClick={this.onClickStep}
                 className="btn btn-primary m-1">
@@ -679,29 +933,35 @@ class D3BehaviorTreeEditor extends Component
 
   componentDidUpdate()
   {
-    this.drawEverything(this.props.tree_message);
-
-    // Disable all interaction (except for zooming and panning) when
-    // the tree isn't editable
-    if (treeIsEditable(this.props.tree_message))
+    if (this.props.tree_message)
     {
+      this.drawEverything(this.props.tree_message);
 
+      // Disable all interaction (except for zooming and panning) when
+      // the tree isn't editable
+      if (treeIsEditable(this.props.tree_message))
+      {
+
+      }
     }
-
     // Hide or show data graph
     if (this.props.showDataGraph)
     {
-      d3.select(this.svg_ref.current).select(".data_graph").attr("visibility", "hidden");
+      d3.select(this.svg_ref.current).select(".data_graph").attr("visibility", "visible");
     }
     else
     {
-      d3.select(this.svg_ref.current).select(".data_graph").attr("visibility", "visible");
+      d3.select(this.svg_ref.current).select(".data_graph").attr("visibility", "hidden");
     }
 
   }
 
   drawEverything(tree_msg)
   {
+    if (!tree_msg)
+    {
+      return;
+    };
     var forest_root = {
       name: "__forest_root",
       child_names: [],
@@ -1990,14 +2250,17 @@ class SelectedNode extends Component
                 disabled={!this.state.isValid}
                 onClick={this.onClickAdd}>Add to Tree</button>
         <label className="pt-2 pb-2">Parent
-          <select className="form-control d-block"
+          <select className="custom-control d-block"
                   disabled={this.props.parents.length == 0}
                   ref={this.selectRef}
                   defaultValue={ (this.props.parents.length > 0) ? this.props.parents[0].name : null }>
-            {this.props.parents.map(x => (<option key={x.name} value={x.name}>{x.name}</option>))}
+            {
+              this.props.parents
+                .map(x => (<option key={x.name} value={x.name}>{x.name}</option>))
+            }
           </select>
         </label>
-        <input className="d-block"
+        <input className="d-block custom-control-input"
                type="text"
                value={this.state.name}
                onChange={this.nameChangeHandler}/>
@@ -2170,7 +2433,7 @@ class SelectedNode extends Component
         <div className="form-group">
           <label>{paramItem.key}
             <input type="number" name="integer"
-                   className="form-control"
+                   className="custom-control-input"
                    onChange={changeHandler}
                    placeholder="integer"
                    step="1.0"
@@ -2197,7 +2460,7 @@ class SelectedNode extends Component
         <div className="form-group">
           <label>{paramItem.key}
             <input type="number" name="float"
-                   className="form-control"
+                   className="custom-control-input"
                    onChange={changeHandler}
                    placeholder="float"
                    value={paramItem.value.value}>
@@ -2218,7 +2481,7 @@ class SelectedNode extends Component
         <div className="form-group">
           <label>{paramItem.key}
             <input type="text"
-                   className="form-control mt-2"
+                   className="custom-control-input mt-2"
                    value={paramItem.value.value}
                    onChange={changeHandler}/>
           </label>
@@ -2246,7 +2509,7 @@ class SelectedNode extends Component
         <div className="form-group">
           <label>{paramItem.key}
             <input type="text"
-                   className="form-control mt-2"
+                   className="custom-control-input mt-2"
                    value={paramItem.value.value}
                    onChange={changeHandler}/>
           </label>
@@ -2263,9 +2526,9 @@ class SelectedNode extends Component
 
       return (
         <div className="form-check m-1">
-          <label className="form-check-label">{paramItem.key}
+          <label className="custom-control-label">{paramItem.key}
             <input type="checkbox"
-                   className="form-check-input"
+                   className="custom-control-input"
                    checked={this.state.value}
                    onChange={this.handleChange} />
           </label>
@@ -2278,9 +2541,9 @@ class SelectedNode extends Component
         <div className="form-group m-1">
           <label>{paramItem.key}
             <input type="text"
-                   className="form-control mt-2"
+                   className="custom-control-input mt-2"
                    value={paramItem.value.value}
-                   disabled="true"/>
+                   disabled={true}/>
           </label>
         </div>
       );
@@ -2402,7 +2665,7 @@ class JSONInput extends Component
   {
     return (
       <input type="textarea"
-             className={'form-control mt-2 ' + (this.state.is_valid ? '' : 'is-invalid')}
+             className={'custom-control-input mt-2 ' + (this.state.is_valid ? '' : 'is-invalid')}
              value={this.state.value}
              onChange={this.changeHandler}/>
     );
