@@ -1047,18 +1047,13 @@ class D3BehaviorTreeEditor extends Component
 
     node.exit().remove();
 
-    var nodeEnter = node.enter();
-
-    this.drawNodes(nodeEnter);
-
-    // node = nodeEnter.merge(node);
-    node = g_vertex
+    node = node
+      .enter()
+      .call(this.drawNodes.bind(this))
+      .merge(node)
       .selectAll(".btnode")
-      .data(root.descendants(), function(node) {
-        return node.id;
-      });
-
-    this.updateNodes(node);
+      .data(x => [x], x => x.id)
+      .call(this.updateNodes.bind(this));
 
     // TODO(nberg): Find a way to get rid of this - it's here because
     // the DOM changes in updateNodes take a while to actually happen,
@@ -1072,7 +1067,8 @@ class D3BehaviorTreeEditor extends Component
 
           this.drawDataGraph(g_data, node.data(), tree_msg.data_wirings);
         }, 100);
-    // console.log(root);
+
+    //console.log(root);
   }
 
   drawNodes(selection)
@@ -1171,6 +1167,8 @@ class D3BehaviorTreeEditor extends Component
     // Find the maximum size of all the nodes, for layout purposes
     var max_size = [0,0];
     g_vertex.selectAll('.btnode')
+      .data(root.descendants(),
+            x => x.id)
       .each(function(d, index){
         var rect = this.getBoundingClientRect();
         rect.x /= zoom;
