@@ -313,6 +313,7 @@ class App extends Component
 
   onTreeUpdate(msg)
   {
+    this.last_received_tree_msg = msg;
     if (!this.state.selected_tree.is_subtree)
     {
       console.log('updating main tree?');
@@ -322,6 +323,7 @@ class App extends Component
 
   onDebugUpdate(msg)
   {
+    this.last_received_debug_msg = msg;
     this.setState({subtree_names: msg.subtree_states.map(x => x.name).sort()});
     if (this.state.selected_tree.is_subtree)
     {
@@ -347,12 +349,38 @@ class App extends Component
 
   onSelectedTreeChange(is_subtree, name)
   {
-    this.setState({
-      selected_tree: {
-        is_subtree: is_subtree,
-        name: name
-      }
-    });
+    // Find the correct tree message (if any) to set for the new
+    // selected tree
+    var tree_msg = undefined;
+    if (is_subtree)
+    {
+      tree_msg = this.last_received_debug_msg.subtree_states.find(x => x.name === name);
+    }
+    else
+    {
+      tree_msg = this.last_received_tree_msg;
+    }
+
+    if (tree_msg)
+    {
+      this.setState({
+        selected_tree: {
+          is_subtree: is_subtree,
+          name: name
+        },
+        last_tree_msg: tree_msg
+      });
+      this.last_tree_update = Date.now();
+    }
+    else
+    {
+      this.setState({
+        selected_tree: {
+          is_subtree: is_subtree,
+          name: name
+        }
+      });
+    }
   }
 
   onNamespaceChange(namespace)
@@ -624,11 +652,46 @@ class SelectTree extends Component
   constructor(props)
   {
     super(props);
+
+    this.onChange = this.onChange.bind(this);
+  }
+
+  onChange(event)
+  {
+    var value = parseInt(event.target.value);
+    if (value < 0)
+    {
+      this.props.onSelectedTreeChange(
+        /*is_subtree=*/ false,
+        /*name=*/ ''); // no name needed, there's only one not-subtree
+    }
+    else
+    {
+      this.props.onSelectedTreeChange(
+        /*is_subtree=*/ true,
+        /*name=*/ this.props.subtreeNames[value]);
+    }
   }
 
   render()
   {
-    return (<div/>);
+    return (
+      <div className="form-inline">
+        <label className="m-1">Tree:
+          <select className="custom-select ml-1"
+                  defaultValue="main"
+                  onChange={this.onChange}>
+            <option value="-1">Main Tree</option>
+            <optgroup label="Subtrees">
+              {
+                this.props.subtreeNames.map(
+                  (name, index) =>  (<option key={name} value={index}>{name}</option>))
+              }
+            </optgroup>
+          </select>
+        </label>
+      </div>
+    );
   }
 }
 
