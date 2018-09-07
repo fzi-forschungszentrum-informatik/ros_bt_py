@@ -41,7 +41,8 @@ def is_edit_service(func):
     each other if need be.
 
     """
-    def service_handler(self, request):
+    @wraps(func)
+    def service_handler(self, request, **kwds):
         tree_state = self.get_state()
         if tree_state != Tree.EDITABLE:
             return {
@@ -51,7 +52,7 @@ def is_edit_service(func):
                                   % tree_state)
                 }
         with self._edit_lock:
-            return func(self, request)
+            return func(self, request, **kwds)
     return service_handler
 
 
@@ -287,8 +288,10 @@ class TreeManager(object):
         self.publish_info(self.debug_manager.get_debug_info_msg())
 
     @is_edit_service
-    def load_tree(self, request):
+    def load_tree(self, request, prefix=None):
         """Load a tree from the given message (which may point to a file)
+
+        :param ros_bt_py_msgs.srv.LoadTree request:
 
         `request.tree` describes the tree to be loaded, including
         nodes, wirings and public node data.
@@ -297,7 +300,17 @@ class TreeManager(object):
         `path` to load a tree from, we open the file it points to and
         load that.
 
+        :param str prefix:
+
+        If set, all node names in the tree will be prefixed with this string.
+
+        This is used by the subtree node (using its own name as a
+        prefix, since that must be unique in the tree) to ensure
+        unique node names for easier debugging.
+
         """
+        if prefix is None:
+            prefix = ''
         response = LoadTreeResponse()
         tree = request.tree
         rospack = rospkg.RosPack()
@@ -354,6 +367,17 @@ class TreeManager(object):
                     return response
 
         # we should have a tree message with all the info we need now
+
+        # prefix all the node names, if prefix is not the empty string
+        if prefix != '':
+            for node in tree.nodes:
+                node.name = prefix + node.name
+                node.child_names = [prefix + child_name for child_name in node.child_names]
+            for wiring in tree.data_wirings:
+                wiring.source.node_name = prefix + wiring.source.node_name
+                wiring.target.node_name = prefix + wiring.target.node_name
+            for public_datum in tree.public_node_data:
+                public_datum.node_name = prefix + public_datum.node_name
 
         # Clear existing tree, then replace it with the message's contents
         self.clear(None)
@@ -1384,6 +1408,9 @@ class TreeManager(object):
         return name
 
     def to_msg(self):
+        # TODO(nberg): Maybe switch over to using
+        # root.get_subtree_msg(), but for now we maybe don't want that
+        # overhead?
         self.tree_msg.nodes = [node.to_msg() for node in self.nodes.itervalues()]
         return self.tree_msg
 
