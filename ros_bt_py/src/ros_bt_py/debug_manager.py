@@ -8,6 +8,7 @@ import time
 
 import rospy
 
+from ros_bt_py.exceptions import BehaviorTreeException
 from ros_bt_py_msgs.msg import DebugInfo, DebugSettings, Node, TickTime
 
 
@@ -30,6 +31,8 @@ class DebugManager(object):
         self.publish_debug_info = debug_info_publish_callback
         self.publish_debug_settings = debug_settings_publish_callback
 
+        self.subtrees = dict()
+
         # TODO(nberg): Check performance, maybe hold dict of TickTime objects
         # instead of just using the list in DebugInfo to reduce time spent
         # searching.
@@ -47,6 +50,8 @@ class DebugManager(object):
             breakpoint_names=[],
             # Only collect analytics if this is True
             collect_performance_data=False,
+            # Don't publish subtree states by default
+            publish_subtrees=False,
             # if True, wait for a continue request before and after every tick
             single_step=False)
 
@@ -61,10 +66,11 @@ class DebugManager(object):
             self._debug_info_msg.target_tick_time = rospy.Duration.from_sec(
                 1.0 / frequency_hz)
 
-    def set_execution_mode(self, single_step, collect_performance_data):
+    def set_execution_mode(self, single_step, collect_performance_data, publish_subtrees):
         with self._lock:
             self._debug_settings_msg.single_step = single_step
             self._debug_settings_msg.collect_performance_data = collect_performance_data
+            self._debug_settings_msg.publish_subtrees = publish_subtrees
         if self.publish_debug_settings:
             self.publish_debug_settings(self._debug_settings_msg)
 
@@ -189,6 +195,39 @@ class DebugManager(object):
     def get_debug_info_msg(self):
         with self._lock:
             return deepcopy(self._debug_info_msg)
+
+    def add_subtree_info(self, node_name, subtree_msg):
+        """Used by the :class:`ros_bt_py.nodes.Subtree` node to publish subtree states
+
+        Serialization of subtrees (and calling this method) should
+        only happen when the `publish_subtrees` option is set via
+        `SetExecutionMode`.
+
+        :param str node_name:
+
+        The name of the subtree node. This will be prefixed to the
+        subtree name to ensure it is unique.
+
+        :raises: `ros_bt_py.exceptions.BehaviorTreeException`
+
+        If this method is called when `publish_subtrees` is `False`.
+        """
+        subtree_name = '{}.{}'.format(node_name, subtree_msg.name)
+        with self._lock:
+            if not self._debug_settings_msg.publish_subtrees:
+                raise BehaviorTreeException(
+                    'Trying to add subtree info when subtree publishing is disabled!')
+            self.subtrees[subtree_name] = subtree_msg
+            self._debug_info_msg.subtree_states = [msg for msg in self.subtrees.iteritems()]
+
+    def clear_subtrees(self):
+        with self._lock:
+            self.subtree_dict.clear()
+            self._debug_info_msg.subtree_states = []
+
+    def get_publish_subtrees(self):
+        with self._lock:
+            return self._debug_settings_msg.publish_subtrees
 
 
 def _duration_greater(first, second):

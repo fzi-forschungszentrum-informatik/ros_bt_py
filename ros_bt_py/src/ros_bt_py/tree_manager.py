@@ -426,8 +426,9 @@ class TreeManager(object):
         :param request ros_bt_msgs.srv.SetExecutionModeRequest:
         """
         self.debug_manager.set_execution_mode(
-            request.single_step,
-            request.collect_performance_data)
+            single_step=request.single_step,
+            collect_performance_data=request.collect_performance_data,
+            publish_subtrees=request.publish_subtrees)
         return SetExecutionModeResponse()
 
     def debug_step(self, _):
