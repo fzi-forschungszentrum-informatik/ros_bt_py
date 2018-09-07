@@ -111,34 +111,34 @@ class Subtree(Leaf):
         self.root.setup()
         if self.debug_manager and self.debug_manager.get_publish_subtrees():
             self.debug_manager.add_subtree_info(
-                self.name, self.manager.to_msg)
+                self.name, self.manager.to_msg())
 
     def _do_tick(self):
         new_state = self.root.tick()
         if self.debug_manager and self.debug_manager.get_publish_subtrees():
             self.debug_manager.add_subtree_info(
-                self.name, self.manager.to_msg)
+                self.name, self.manager.to_msg())
         return new_state
 
     def _do_untick(self):
         new_state = self.root.untick()
         if self.debug_manager and self.debug_manager.get_publish_subtrees():
             self.debug_manager.add_subtree_info(
-                self.name, self.manager.to_msg)
+                self.name, self.manager.to_msg())
         return new_state
 
     def _do_reset(self):
         new_state = self.root.reset()
         if self.debug_manager and self.debug_manager.get_publish_subtrees():
             self.debug_manager.add_subtree_info(
-                self.name, self.manager.to_msg)
+                self.name, self.manager.to_msg())
         return new_state
 
     def _do_shutdown(self):
         self.root.shutdown()
         if self.debug_manager and self.debug_manager.get_publish_subtrees():
             self.debug_manager.add_subtree_info(
-                self.name, self.manager.to_msg)
+                self.name, self.manager.to_msg())
 
     def _do_calculate_utility(self):
         if self.root is not None:
