@@ -1060,125 +1060,18 @@ class D3BehaviorTreeEditor extends Component
 
     this.updateNodes(node);
 
-    // k is the zoom level - we need to apply this to the values we get
-    // from getBoundingClientRect, or we get fun scaling effects.
-    var zoom = d3.zoomTransform(d3.select(this.viewport_ref.current).node()).k;
+    // TODO(nberg): Find a way to get rid of this - it's here because
+    // the DOM changes in updateNodes take a while to actually happen,
+    // and layoutNodes needs getBoundingClientRect information...
+    window.setTimeout(
+      () =>
+        {
+          this.layoutNodes(svg, width, height, root);
 
-    // Find the maximum size of all the nodes, for layout purposes
-    var max_size = [0,0];
-    g_vertex.selectAll('.btnode').data(root.descendants(), d => d.id)
-      .each(function(d, index){
-        var rect = this.getBoundingClientRect();
-        rect.x /= zoom;
-        rect.y /= zoom;
-        rect.width /= zoom;
-        rect.height /= zoom;
-        d._size = rect;
-        this.parentElement.setAttribute('width', rect.width);
-        this.parentElement.setAttribute('height', rect.height);
-      });
+          this.drawDropTargets();
 
-    var tree_size = [width - max_size[0], height - (40 + max_size[1])];
-
-    var tree = d3.flextree()
-        .nodeSize(function(node) {
-          return [node._size.width + this.horizontal_spacing,
-                  node._size.height + this.vertical_spacing];
-        }.bind(this))
-    (root);
-
-    // Move new nodes to their starting positions
-    g_vertex.selectAll(".node").data(root.descendants(), d => d.id)
-      .filter(d => d._entering)
-      .attr("transform", function(d) {
-        // Start at parent position
-        var p = this.findExistingParent(d);
-        return "translate(" + Math.round(p.x) + "," + Math.round(p.y) + ") scale(0.1)";
-      }.bind(this));
-
-    var link = g_edge.selectAll(".link")
-        .data(tree.links(), function(d) { return '' + d.source.id + d.target.id; });
-    link.exit().remove();
-
-    link = link
-      .enter().append("path")
-      .attr("class", "link")
-      .attr("d", d3.linkVertical()
-            .source(function(d) {
-              var parent = this.findExistingParent(d.source);
-              return [Math.round(parent.x), Math.round(parent.y + parent._size.height)];
-            }.bind(this))
-            .target(function(d) {
-              var parent = this.findExistingParent(d.target);
-              return [Math.round(parent.x), Math.round(parent.y)];
-            }.bind(this)))
-      .merge(link);
-
-    g_vertex.selectAll(".node").each(function(d) {
-      d._entering = false;
-    });
-
-    link.transition()
-      .duration(250).
-      attr("d", d3.linkVertical()
-           .source(function(d) {
-             return [Math.round(d.source.x), Math.round(d.source.y + d.source._size.height)];
-           })
-           .target(function(d) {
-             return [Math.round(d.target.x), Math.round(d.target.y)];
-           }));
-
-
-    // new selection, now with the elements we just added with enter()
-    // above
-    node = g_vertex.selectAll(".node")
-      .data(root.descendants(), function(node) {return node.id;});
-
-    var t = d3.transition()
-        .duration(250);
-    node.transition(t)
-      .attr("transform", function(d) {
-        // animate to actual position
-        return "translate(" + Math.round(d.x - d._size.width / 2.0) + "," + Math.round(d.y) + ") scale(1.0)";
-      });
-
-    this.drawDropTargets();
-
-    this.drawDataGraph(g_data, node.data(), tree_msg.data_wirings);
-
-    node
-      .selectAll(".btnode")
-      .transition(t)
-      .ease(d3.easeQuad)
-    // Update color based on node state
-      .style("border-color", function(d) {
-        switch (d.data.state) {
-        case "RUNNING": {
-          return "#ffc107";
-        }
-        case "IDLE":{
-          return "#007bff";
-        }
-        case "SUCCEEDED": {
-          return "#28a745";
-        }
-        case "FAILED": {
-          return "#dc3545";
-        }
-        case "DEBUG_PRE_TICK":
-        case "DEBUG_POST_TICK":
-        case "DEBUG_TICK": {
-          return "#17a2b8";
-        }
-        case "SHUTDOWN": {
-          return "#7c1e27";
-        }
-        case "UNINITIALIZED":
-        default: {
-          return "#4E5666";
-        }
-        };
-      });
+          this.drawDataGraph(g_data, node.data(), tree_msg.data_wirings);
+        }, 100);
     // console.log(root);
   }
 
@@ -1264,6 +1157,127 @@ class D3BehaviorTreeEditor extends Component
     values.exit().remove();
     values = values.enter().append("td").attr("class", "value").merge(values);
     values.text(d => d);
+  }
+
+  layoutNodes(svg, width, height, root)
+  {
+    var g_edge = svg.select("g.edges");
+    var g_vertex = svg.selectAll("g.vertices");
+
+    // k is the zoom level - we need to apply this to the values we get
+    // from getBoundingClientRect, or we get fun scaling effects.
+    var zoom = d3.zoomTransform(d3.select(this.viewport_ref.current).node()).k;
+
+    // Find the maximum size of all the nodes, for layout purposes
+    var max_size = [0,0];
+    g_vertex.selectAll('.btnode')
+      .each(function(d, index){
+        var rect = this.getBoundingClientRect();
+        rect.x /= zoom;
+        rect.y /= zoom;
+        rect.width /= zoom;
+        rect.height /= zoom;
+        d._size = rect;
+        this.parentElement.setAttribute('width', rect.width);
+        this.parentElement.setAttribute('height', rect.height);
+      });
+
+    var tree_size = [width - max_size[0], height - (40 + max_size[1])];
+
+    var tree = d3.flextree()
+        .nodeSize(function(node) {
+          return [node._size.width + this.horizontal_spacing,
+                  node._size.height + this.vertical_spacing];
+        }.bind(this))
+    (root);
+
+    // Move new nodes to their starting positions
+    g_vertex.selectAll(".node")
+      .filter(d => d._entering)
+      .attr("transform", function(d) {
+        // Start at parent position
+        var p = this.findExistingParent(d);
+        return "translate(" + Math.round(p.x) + "," + Math.round(p.y) + ") scale(0.1)";
+      }.bind(this));
+
+    var link = g_edge.selectAll(".link")
+        .data(tree.links(), function(d) { return '' + d.source.id + d.target.id; });
+    link.exit().remove();
+
+    link = link
+      .enter().append("path")
+      .attr("class", "link")
+      .attr("d", d3.linkVertical()
+            .source(function(d) {
+              var parent = this.findExistingParent(d.source);
+              return [Math.round(parent.x), Math.round(parent.y + parent._size.height)];
+            }.bind(this))
+            .target(function(d) {
+              var parent = this.findExistingParent(d.target);
+              return [Math.round(parent.x), Math.round(parent.y)];
+            }.bind(this)))
+      .merge(link);
+
+    g_vertex.selectAll(".node").each(function(d) {
+      d._entering = false;
+    });
+
+    link.transition()
+      .duration(250).
+      attr("d", d3.linkVertical()
+           .source(function(d) {
+             return [Math.round(d.source.x), Math.round(d.source.y + d.source._size.height)];
+           })
+           .target(function(d) {
+             return [Math.round(d.target.x), Math.round(d.target.y)];
+           }));
+
+
+    // new selection, now with the elements we just added with enter()
+    // above
+    var node = g_vertex.selectAll(".node")
+      .data(root.descendants(), function(node) {return node.id;});
+
+    var t = d3.transition()
+        .duration(250);
+    node.transition(t)
+      .attr("transform", function(d) {
+        // animate to actual position
+        return "translate(" + Math.round(d.x - d._size.width / 2.0) + "," + Math.round(d.y) + ") scale(1.0)";
+      });
+        node
+      .selectAll(".btnode")
+      .transition(t)
+      .ease(d3.easeQuad)
+    // Update color based on node state
+      .style("border-color", function(d) {
+        switch (d.data.state) {
+        case "RUNNING": {
+          return "#ffc107";
+        }
+        case "IDLE":{
+          return "#007bff";
+        }
+        case "SUCCEEDED": {
+          return "#28a745";
+        }
+        case "FAILED": {
+          return "#dc3545";
+        }
+        case "DEBUG_PRE_TICK":
+        case "DEBUG_POST_TICK":
+        case "DEBUG_TICK": {
+          return "#17a2b8";
+        }
+        case "SHUTDOWN": {
+          return "#7c1e27";
+        }
+        case "UNINITIALIZED":
+        default: {
+          return "#4E5666";
+        }
+        };
+      });
   }
 
   findExistingParent(d)
