@@ -269,7 +269,7 @@ class App extends Component
 
     var ros_uri = 'ws://10.211.55.3:9090';
     this.state = {
-      bt_namespace: '/tree_node/',
+      bt_namespace: '',
       ros_uri: ros_uri,
       selected_tree: {
         is_subtree: false,
@@ -521,16 +521,16 @@ function ExecutionBar(props)
     <header id="header" className="d-flex flex-column flex-md-row align-items-center control-bar">
       <NamespaceSelect
         ros={props.ros}
-        currentNamespace={props.bt_namespace}
+        currentNamespace={props.currentNamespace}
         onNamespaceChange={props.onNamespaceChange}
         onError={props.onError}/>
       <DebugControls
         ros={props.ros}
-        bt_namespace={props.bt_namespace}
+        bt_namespace={props.currentNamespace}
         onError={props.onError}/>
       <TickControls
         ros={props.ros}
-        bt_namespace={props.bt_namespace}
+        bt_namespace={props.currentNamespace}
         onError={props.onError}/>
     </header>
   );
@@ -546,10 +546,10 @@ class NamespaceSelect extends Component
       available_namespaces: []
     };
 
-    this.topicsForTypeClient = new ROSLIB.Service({
+    this.servicesForTypeClient = new ROSLIB.Service({
       ros: props.ros,
-      name: '/rosapi/topics_for_type',
-      serviceType: 'rosapi/TopicsForType'
+      name: '/rosapi/services_for_type',
+      serviceType: 'rosapi/ServicesForType'
     });
 
     this.updateAvailableNamespaces = this.updateAvailableNamespaces.bind(this);
@@ -563,27 +563,32 @@ class NamespaceSelect extends Component
 
   updateAvailableNamespaces()
   {
-    this.topicsForTypeClient.callService(
+    this.servicesForTypeClient.callService(
       // Search for all Tree topics - we expect each BT node to
       // publish one of these, and also offer the corresponding
       // editing and runtime control services.
       new ROSLIB.ServiceRequest({
-        type: 'ros_bt_py_msgs/Tree'
+        type: 'ros_bt_py_msgs/AddNode'
       }),
       function(response) {
+        var namespaces = response.services.map(
+          x => x.substr(0, x.lastIndexOf('/')) + '/'
+        );
         this.setState({
-          // Chop off the topic name, which leaves us with the BT
+          // Chop off the topic name (but not the last slash), which leaves us with the BT
           // namespace
-          available_namespaces: response.topics.map(
-            x => x.substr(0, x.lastIndexOf('/'))
-          )
+          available_namespaces: namespaces
         });
+        if (this.props.currentNamespace === '' && namespaces.length > 0)
+        {
+          this.props.onNamespaceChange(namespaces[0]);
+        }
       }.bind(this));
   }
 
   handleNamespaceChange(event)
   {
-    this.props.onNamespaceCHange(event.target.value);
+    this.props.onNamespaceChange(event.target.value);
   }
 
   render()
@@ -931,7 +936,7 @@ class D3BehaviorTreeEditor extends Component
     );
   }
 
-  componentDidUpdate()
+  componentDidUpdate(prevProps, prevState)
   {
     if (this.props.tree_message)
     {
