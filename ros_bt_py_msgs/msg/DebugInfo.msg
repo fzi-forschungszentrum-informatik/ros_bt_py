@@ -5,4 +5,4 @@ uint32 window_size
 TickTime tree_tick_time
 duration target_tick_time
 TickTime[] node_tick_times
-
+Tree[] subtree_states
