@@ -34,22 +34,17 @@ class Subtree(Leaf):
         super(Subtree, self).__init__(options, debug_manager, name)
 
         self.root = None
-        # TODO(nberg): Maybe don't use the parent debug_manager? Could
-        # break with duplicate node names?
+        self.prefix = self.name + '.'
+        # since the subtree gets a prefix, we can just have it use the
+        # parent debug manager
         self.manager = TreeManager(
-            name=name)
-#            debug_manager=debug_manager)
+            name=name,
+            debug_manager=debug_manager)
 
-        response = self.manager.load_tree(LoadTreeRequest(tree=Tree(
-            path=self.options['subtree_path'])))
-
-        # TODO(nberg):
-        #
-        # Check self.options for keys that aren't in the original
-        # NodeConfig. Those option keys must be public options of the
-        # subtree.
-        #
-        # Then tell the TreeManager to set those options.
+        response = self.manager.load_tree(
+            request=LoadTreeRequest(tree=Tree(
+                path=self.options['subtree_path'])),
+            prefix=self.prefix)
 
         if not _get_success(response):
             self.outputs['load_success'] = False
@@ -63,11 +58,17 @@ class Subtree(Leaf):
         subtree_inputs = {}
         subtree_outputs = {}
         for node_data in self.manager.to_msg().public_node_data:
+            # Remove the prefix from the node name to make for nicer
+            # input/output names (and also not break wirings)
+            node_name = node_data.node_name
+            if node_name.startswith(self.prefix):
+                node_name = node_name[len(self.prefix):]
+
             if node_data.data_kind == NodeDataLocation.INPUT_DATA:
-                subtree_inputs['%s.%s' % (node_data.node_name, node_data.data_key)] = \
+                subtree_inputs['%s.%s' % (node_name, node_data.data_key)] = \
                     self.manager.nodes[node_data.node_name].inputs.get_type(node_data.data_key)
             elif node_data.data_kind == NodeDataLocation.OUTPUT_DATA:
-                subtree_outputs['%s.%s' % (node_data.node_name, node_data.data_key)] = \
+                subtree_outputs['%s.%s' % (node_name, node_data.data_key)] = \
                     self.manager.nodes[node_data.node_name].outputs.get_type(node_data.data_key)
             elif node_data.data_kind == NodeDataLocation.OPTION_DATA:
                 raise BehaviorTreeException('Option values cannot be public!')
@@ -88,33 +89,56 @@ class Subtree(Leaf):
 
         # Handle forwarding inputs and outputs using the subscribe mechanics:
         for node_data in self.manager.to_msg().public_node_data:
+            # get the node name without prefix to match our renamed
+            # inputs and outputs
+            node_name = node_data.node_name
+            if node_name.startswith(self.prefix):
+                node_name = node_name[len(self.prefix):]
+
             if node_data.data_kind == NodeDataLocation.INPUT_DATA:
                 self.inputs.subscribe(
-                    key='%s.%s' % (node_data.node_name, node_data.data_key),
+                    key='%s.%s' % (node_name, node_data.data_key),
                     callback=self.manager.nodes[node_data.node_name].inputs.get_callback(
                         node_data.data_key))
             elif node_data.data_kind == NodeDataLocation.OUTPUT_DATA:
                 self.manager.nodes[node_data.node_name].outputs.subscribe(
                     key=node_data.data_key,
                     callback=self.outputs.get_callback(
-                        '%s.%s' % (node_data.node_name, node_data.data_key)))
+                        '%s.%s' % (node_name, node_data.data_key)))
 
     def _do_setup(self):
         self.root = self.manager.find_root()
         self.root.setup()
+        if self.debug_manager and self.debug_manager.get_publish_subtrees():
+            self.debug_manager.add_subtree_info(
+                self.name, self.manager.to_msg)
 
     def _do_tick(self):
-        return self.root.tick()
+        new_state = self.root.tick()
+        if self.debug_manager and self.debug_manager.get_publish_subtrees():
+            self.debug_manager.add_subtree_info(
+                self.name, self.manager.to_msg)
+        return new_state
 
     def _do_untick(self):
         new_state = self.root.untick()
+        if self.debug_manager and self.debug_manager.get_publish_subtrees():
+            self.debug_manager.add_subtree_info(
+                self.name, self.manager.to_msg)
         return new_state
 
     def _do_reset(self):
-        return self.root.reset()
+        new_state = self.root.reset()
+        if self.debug_manager and self.debug_manager.get_publish_subtrees():
+            self.debug_manager.add_subtree_info(
+                self.name, self.manager.to_msg)
+        return new_state
 
     def _do_shutdown(self):
         self.root.shutdown()
+        if self.debug_manager and self.debug_manager.get_publish_subtrees():
+            self.debug_manager.add_subtree_info(
+                self.name, self.manager.to_msg)
 
     def _do_calculate_utility(self):
         if self.root is not None:
