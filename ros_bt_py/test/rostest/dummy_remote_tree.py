@@ -116,7 +116,7 @@ class RunTreeActionServer(object):
                 if self._tree_state not in [NodeMsg.RUNNING,
                                             NodeMsg.IDLE,
                                             NodeMsg.UNINITIALIZED]:
-                    self._as.set_succeeded(RunTreeResult(final_tree=self._tree_manager.to_msg()))
+                    self._as.set_succeeded(RunTreeResult(final_tree=self._tree))
                     break
             sleep_rate.sleep()
 

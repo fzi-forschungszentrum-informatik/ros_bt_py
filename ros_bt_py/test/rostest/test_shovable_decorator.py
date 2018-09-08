@@ -1,11 +1,16 @@
 #!/usr/bin/env python2.7
+
 from threading import Lock
 import unittest
 
 import rospy
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
+from ros_bt_py_msgs.msg import NodeDataWiring, NodeDataLocation
 
+from ros_bt_py.nodes.constant import Constant
+from ros_bt_py.nodes.passthrough_node import PassthroughNode
+from ros_bt_py.nodes.sequence import Sequence
 from ros_bt_py.nodes.shovable import Shovable
 from ros_bt_py.nodes.mock_nodes import MockLeaf
 
@@ -38,6 +43,20 @@ class TestShovable(unittest.TestCase):
             'output_type': int,
             'state_values': [NodeMsg.RUNNING],
             'output_values': [1]})
+        self.constant = Constant(options={
+            'constant_type': int,
+            'constant_value': 42
+            })
+        self.inner_passthrough = PassthroughNode(
+            name='inner',
+            options={
+                'passthrough_type': int
+            })
+        self.outer_passthrough = PassthroughNode(
+            name='outer',
+            options={
+                'passthrough_type': int
+            })
 
     def testLocalExecution(self):
         shovable = make_shovable('evaluate_utility_local')
@@ -88,6 +107,58 @@ class TestShovable(unittest.TestCase):
         # If anything, the second time around should take fewer ticks, since we
         # don't need to wait for the ActionServer to connect!
         self.assertGreaterEqual(ticks, ticks2)
+
+    def testRemoteExecutionWithIO(self):
+        shovable = make_shovable('evaluate_utility_remote')
+        root = Sequence()\
+            .add_child(self.constant)\
+            .add_child(shovable
+                       .add_child(self.inner_passthrough))\
+            .add_child(self.outer_passthrough)
+
+        self.inner_passthrough.wire_data(
+            NodeDataWiring(
+                source=NodeDataLocation(
+                    node_name=self.constant.name,
+                    data_kind=NodeDataLocation.OUTPUT_DATA,
+                    data_key='constant'),
+                target=NodeDataLocation(
+                    node_name=self.inner_passthrough.name,
+                    data_kind=NodeDataLocation.INPUT_DATA,
+                    data_key='in')))
+
+        self.outer_passthrough.wire_data(
+            NodeDataWiring(
+                source=NodeDataLocation(
+                    node_name=self.inner_passthrough.name,
+                    data_kind=NodeDataLocation.OUTPUT_DATA,
+                    data_key='out'),
+                target=NodeDataLocation(
+                    node_name=self.outer_passthrough.name,
+                    data_kind=NodeDataLocation.INPUT_DATA,
+                    data_key='in')))
+
+        root.setup()
+
+        # Do this twice, to ensure we can execute a tree repeatedly
+        for _ in range(2):
+            # Keep ticking for a maximum of 1 second, but stop if the node succeeds
+            # before the limit
+            ticks = 1
+            new_state = root.tick()
+            for _ in range(10):
+                if new_state == NodeMsg.RUNNING:
+                    rospy.sleep(0.1)
+                    new_state = root.tick()
+                    ticks += 1
+                else:
+                    break
+
+            self.assertEqual(new_state, NodeMsg.SUCCEEDED)
+            self.assertTrue(shovable.outputs['running_remotely'])
+            self.assertEqual(self.outer_passthrough.outputs['out'],
+                             self.constant.outputs['constant'])
+
 
 if __name__ == '__main__':
     rospy.init_node('test_shovable_decorator')

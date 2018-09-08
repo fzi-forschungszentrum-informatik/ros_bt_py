@@ -1,3 +1,5 @@
+import jsonpickle
+
 from actionlib.simple_action_client import SimpleActionClient
 from actionlib_msgs.msg import GoalStatus
 import rospy
@@ -10,6 +12,7 @@ from ros_bt_py.node import Decorator, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
 from ros_bt_py.ros_helpers import AsyncServiceProxy
+from ros_bt_py.exceptions import BehaviorTreeException
 
 
 @define_bt_node(NodeConfig(
@@ -70,11 +73,31 @@ class Shovable(Decorator):
             self.logwarn(msg)
             raise BehaviorTreeException(msg)
 
+        _, incoming_conns, outgoing_conns = \
+            self.children[0].get_subtree_msg()
+
+        # These should be references to all the children with external inputs.
+        #
+        # It's fine to cache this list: Our children can only change
+        # when the tree is shutdown, so setup() will be called again
+        # when they do.
+        self._children_with_external_outputs = {
+            child_node.name: child_node
+            for child_node in self.get_children_recursive()
+            if child_node.name in [conn.source.node_name for conn in outgoing_conns]}
+
+        self._external_outputs_by_name = {}
+        for conn in outgoing_conns:
+            if conn.source.node_name not in self._external_outputs_by_name:
+                self._external_outputs_by_name[conn.source.node_name] = []
+            self._external_outputs_by_name[conn.source.node_name].append(conn.source.data_key)
+
     def _do_tick(self):
         # If the child is not currently running, check where best to execute it
         if self._state == Shovable.IDLE:
             # Kick off a service call
-            self._subtree_msg, _ = self.children[0].get_subtree_msg()
+            self._subtree_msg, _, _ = \
+                self.children[0].get_subtree_msg()
 
             self._evaluator_client.call_service(
                 EvaluateUtilityRequest(tree=self._subtree_msg))
@@ -94,11 +117,10 @@ class Shovable(Decorator):
 
                 if eval_response.local_is_best:
                     self._state = Shovable.EXECUTE_LOCAL
-
                 else:
                     # No need to re-initialize the ActionClient, skip ahead
                     if eval_response.best_executor_namespace == self._remote_namespace:
-                        self._state = START_REMOTE_EXEC_ACTION
+                        self._state = Shovable.START_REMOTE_EXEC_ACTION
                     else:
                         self._remote_namespace = eval_response.best_executor_namespace
 
@@ -115,7 +137,7 @@ class Shovable(Decorator):
 
             elif eval_state == AsyncServiceProxy.ERROR:
                 self.logerr('Cannot determine best evaluator for subtree')
-                self._state = IDLE
+                self._state = Shovable.IDLE
                 return NodeMsg.FAILED
 
         # Note that this and the following are if's, not elif's!
@@ -129,6 +151,11 @@ class Shovable(Decorator):
                 self._state = Shovable.ACTION_CLIENT_INIT
 
         if self._state == Shovable.START_REMOTE_EXEC_ACTION:
+            # Ensure the updated state of children with outputs is set
+            # correctly when executing remotely
+            for child_node in self._children_with_external_outputs.itervalues():
+                child_node.outputs.reset_updated()
+
             self.logdebug('Sending goal to action server at %s'
                           % self._remote_namespace + '/run_tree')
             self._subtree_action_start_time = rospy.Time.now()
@@ -150,13 +177,26 @@ class Shovable(Decorator):
                 self.cleanup()
                 self._state = Shovable.IDLE
                 return NodeMsg.FAILED
-            # Forward subtree inputs/outputs - not needed if the subtree is
-            # finished already, but it doesn't hurt either
 
             action_state = self._subtree_action_client.get_state()
             if action_state == GoalStatus.SUCCEEDED:
+                final_tree = self._subtree_action_client.get_result().final_tree
+                final_state = NodeMsg.BROKEN
+
+                # Set and handle external outputs
+                for node in final_tree.nodes:
+                    if node.name in self._external_outputs_by_name:
+                        for output in node.outputs:
+                            if output.key in self._external_outputs_by_name[node.name]:
+                                self._children_with_external_outputs[node.name]\
+                                    .outputs[output.key] = jsonpickle.decode(
+                                        output.serialized_value)
+                        self._children_with_external_outputs[node.name]._handle_outputs()
+                    if node.name == final_tree.root_name:
+                        final_state = node.state
+
                 self.cleanup()
-                return NodeMsg.SUCCEEDED
+                return final_state
             elif action_state in [GoalStatus.PENDING, GoalStatus.ACTIVE]:
                 return NodeMsg.RUNNING
             else:
@@ -172,7 +212,7 @@ class Shovable(Decorator):
 
     def _do_reset(self):
         if self._state == Shovable.EXECUTE_LOCAL:
-            for child in children:
+            for child in self.children:
                 child.reset()
         elif self._subtree_action_client is not None:
             self._subtree_action_client.cancel_goal()
@@ -185,3 +225,5 @@ class Shovable(Decorator):
         self._subtree_data_update_publisher = None
         self._subtree_msg = None
         self._state = Shovable.IDLE
+        self._children_with_external_outputs = {}
+        self._external_outputs_by_name = {}
