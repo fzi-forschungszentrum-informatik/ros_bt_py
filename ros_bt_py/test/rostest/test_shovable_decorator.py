@@ -144,13 +144,11 @@ class TestShovable(unittest.TestCase):
         for _ in range(2):
             # Keep ticking for a maximum of 1 second, but stop if the node succeeds
             # before the limit
-            ticks = 1
             new_state = root.tick()
             for _ in range(10):
                 if new_state == NodeMsg.RUNNING:
                     rospy.sleep(0.1)
                     new_state = root.tick()
-                    ticks += 1
                 else:
                     break
 
