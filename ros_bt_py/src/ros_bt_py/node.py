@@ -866,15 +866,23 @@ class Node(object):
 
         :returns:
 
-        A tuple consisting of a :class:`ros_bt_py_msgs.msg.Tree` message and a
-        list of :class:`ros_bt_py_msgs.msg.NodeDataWiring` messages
-        (external_connections). The latter can be used to determine what
-        parameters need to be forwarded to / from the remote executor if
-        the subtree is to be executed remotely.
+        A tuple consisting of a :class:`ros_bt_py_msgs.msg.Tree`
+        message and two lists of
+        :class:`ros_bt_py_msgs.msg.NodeDataWiring` messages
+        (incoming_connections and outgoing_connections). The latter
+        can be used to determine what parameters need to be forwarded
+        to / from the remote executor if the subtree is to be executed
+        remotely.
 
         Crucially, the resulting subtree will not be tick-able until all
         the incoming wirings from external_connections have been
         connected.
+
+        However, if the subtree is to be shoved to a different
+        executor, it's enough for the incoming wirings to be connected
+        in the host tree - this will cause input values to be set and
+        sent to the remote executor.
+
         """
         subtree_name = "%s_subtree" % self.name
         subtree = Tree(name=subtree_name,
@@ -883,7 +891,8 @@ class Node(object):
                        state=Tree.IDLE)
 
         node_map = {node.name: node for node in subtree.nodes}
-        external_connections = []
+        incoming_connections = []
+        outgoing_connections = []
         for node in self.get_children_recursive():
             for sub in node.subscriptions:
                 source_node = node_map.get(sub.source.node_name)
@@ -898,10 +907,10 @@ class Node(object):
                 # In the other cases, add that datum to public_node_data
                 elif source_node:
                     subtree.public_node_data.append(sub.source)
-                    external_connections.append(sub)
+                    outgoing_connections.append(sub)
                 elif target_node:
                     subtree.public_node_data.append(sub.target)
-                    external_connections.append(sub)
+                    incoming_connections.append(sub)
                 else:
                     raise BehaviorTreeException(
                         "Subscription in subtree has source *AND* target "
@@ -910,7 +919,7 @@ class Node(object):
             for wiring, _, _ in node.subscribers:
                 if wiring.target.node_name not in node_map:
                     subtree.public_node_data.append(wiring.source)
-                    external_connections.append(wiring)
+                    outgoing_connections.append(wiring)
 
         # Make the currently unconnected inputs of all nodes publicly
         # available
@@ -936,15 +945,17 @@ class Node(object):
                         node_name=node.name,
                         data_kind=NodeDataLocation.INPUT_DATA,
                         data_key=node_input.key))
-        return subtree, external_connections
+        return subtree, incoming_connections, outgoing_connections
 
     def find_node(self, other_name):
         """Try to find the node with the given name in the tree
 
         This is not a particularly cheap operation, since it ascends
         the tree up to the root and then recursively descends back
-        until it finds the node.  Probably best not to use it in a
-        tick function.
+        until it finds the node.
+
+        Probably best not to use it in a tick function.
+
         """
         root = self
         while root.parent is not None:

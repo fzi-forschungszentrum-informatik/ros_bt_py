@@ -41,9 +41,11 @@ class TestSubtree(unittest.TestCase):
                  .add_child(self.outer_passthrough)
 
     def testSubtree(self):
-        subtree, external_connections = self.root.find_node('inner_seq').get_subtree_msg()
+        subtree, incoming_connections, outgoing_connections = \
+            self.root.find_node('inner_seq').get_subtree_msg()
         self.assertEqual(len(subtree.nodes), 4)
-        self.assertEqual(len(external_connections), 0)
+        self.assertEqual(len(incoming_connections), 0)
+        self.assertEqual(len(outgoing_connections), 0)
 
     def testSubtreeWiring(self):
         # This wiring is between two nodes in the subtree, so it shouldn't be
@@ -85,14 +87,16 @@ class TestSubtree(unittest.TestCase):
 
         self.outer_passthrough.wire_data(outgoing_wiring)
 
-        subtree, external_connections = self.root.find_node('inner_seq').get_subtree_msg()
+        subtree, incoming_connections, outgoing_connections = \
+            self.root.find_node('inner_seq').get_subtree_msg()
         self.assertEqual(len(subtree.nodes), 4)
         self.assertEqual(len(subtree.public_node_data), 2)
         self.assertEqual(len([d for d in subtree.public_node_data
                               if d.data_kind == NodeDataLocation.INPUT_DATA]), 1)
         self.assertEqual(len([d for d in subtree.public_node_data
                               if d.data_kind == NodeDataLocation.OUTPUT_DATA]), 1)
-        self.assertEqual(len(external_connections), 2)
+        self.assertEqual(len(incoming_connections), 1)
+        self.assertEqual(len(outgoing_connections), 1)
 
     def testUnconnectedInputsArePublic(self):
         smol_tree = Sequence(name='Sequence')\
@@ -108,8 +112,9 @@ class TestSubtree(unittest.TestCase):
         passthrough_wiring.target.data_key = 'in'
 
         self.outer_passthrough.wire_data(passthrough_wiring)
-        subtree, external_connections = smol_tree.get_subtree_msg()
+        subtree, incoming_conns, outgoing_conns = smol_tree.get_subtree_msg()
 
         self.assertEqual(len(subtree.nodes), 3)
-        self.assertEqual(len(external_connections), 0)
+        self.assertEqual(len(incoming_conns), 0)
+        self.assertEqual(len(outgoing_conns), 0)
         self.assertEqual(len(subtree.public_node_data), 1)

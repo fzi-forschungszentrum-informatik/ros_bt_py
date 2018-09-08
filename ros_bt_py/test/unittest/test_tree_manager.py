@@ -968,7 +968,7 @@ class TestTreeManager(unittest.TestCase):
         fallback = self.manager.find_root().find_node('fallback')
         self.assertIsNotNone(fallback)
 
-        subtree, external_connections = fallback.get_subtree_msg()
+        subtree, _, _ = fallback.get_subtree_msg()
 
         # Now load the subtree
         load_request = LoadTreeRequest(tree=subtree)
