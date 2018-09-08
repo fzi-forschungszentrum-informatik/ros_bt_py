@@ -1,5 +1,5 @@
 ## Run the given tree (with the given set of inputs) until it
-## succeeds.
+## succeeds or fails.
 ##
 ## Be aware that you cannot change the inputs on each tick like you
 ## could with the service interface!
