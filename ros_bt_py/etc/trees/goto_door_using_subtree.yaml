@@ -1,0 +1,280 @@
+name: ''
+path: ''
+root_name: ''
+nodes: 
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    max_children: -1
+    name: "Sequence"
+    child_names: [TopicSubscriber, GetDoorList, GetFirstDoor, GetDoorPose, RobotFrame, MaxDistance,
+  Subtree]
+    options: []
+    inputs: []
+    outputs: []
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.topic"
+    node_class: "TopicSubscriber"
+    max_children: 0
+    name: "TopicSubscriber"
+    child_names: []
+    options: 
+      - 
+        key: "topic_type"
+        serialized_value: "{\"py/type\": \"bt_sim_helpers.msg._Doors.Doors\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "topic_name"
+        serialized_value: "\"/doors\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+    inputs: []
+    outputs: 
+      - 
+        key: "message"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"bt_sim_helpers.msg._Doors.Doors\"}"
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.subtree"
+    node_class: "Subtree"
+    max_children: 0
+    name: "Subtree"
+    child_names: []
+    options: 
+      - 
+        key: "subtree_path"
+        serialized_value: "\"package://ros_bt_py/etc/trees/subtree_goto_posestamped.yaml\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+    inputs: 
+      - 
+        key: "TargetPose.in"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
+      - 
+        key: "RobotFrame.in"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "DistanceTolerance.in"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+    outputs: 
+      - 
+        key: "load_success"
+        serialized_value: "true"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+      - 
+        key: "load_error_msg"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.getters"
+    node_class: "GetAttr"
+    max_children: 1
+    name: "GetDoorPose"
+    child_names: []
+    options: 
+      - 
+        key: "succeed_on_stale_data"
+        serialized_value: "true"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+      - 
+        key: "attr_name"
+        serialized_value: "\"pose\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "attr_type"
+        serialized_value: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "object"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.object\"}"
+    outputs: 
+      - 
+        key: "attr"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.getters"
+    node_class: "GetConstListItem"
+    max_children: 1
+    name: "GetFirstDoor"
+    child_names: []
+    options: 
+      - 
+        key: "succeed_on_stale_data"
+        serialized_value: "true"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+      - 
+        key: "index"
+        serialized_value: "0"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      - 
+        key: "list_type"
+        serialized_value: "{\"py/type\": \"bt_sim_helpers.msg._Door.Door\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "list"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.list\"}"
+    outputs: 
+      - 
+        key: "item"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"bt_sim_helpers.msg._Door.Door\"}"
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.constant"
+    node_class: "Constant"
+    max_children: 0
+    name: "MaxDistance"
+    child_names: []
+    options: 
+      - 
+        key: "constant_value"
+        serialized_value: "0.15"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+      - 
+        key: "constant_type"
+        serialized_value: "{\"py/type\": \"__builtin__.float\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: []
+    outputs: 
+      - 
+        key: "constant"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.constant"
+    node_class: "Constant"
+    max_children: 0
+    name: "RobotFrame"
+    child_names: []
+    options: 
+      - 
+        key: "constant_value"
+        serialized_value: "\"robot0\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "constant_type"
+        serialized_value: "{\"py/type\": \"__builtin__.str\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: []
+    outputs: 
+      - 
+        key: "constant"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.getters"
+    node_class: "GetAttr"
+    max_children: 1
+    name: "GetDoorList"
+    child_names: []
+    options: 
+      - 
+        key: "succeed_on_stale_data"
+        serialized_value: "true"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+      - 
+        key: "attr_name"
+        serialized_value: "\"doors\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "attr_type"
+        serialized_value: "{\"py/type\": \"__builtin__.list\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "object"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.object\"}"
+    outputs: 
+      - 
+        key: "attr"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.list\"}"
+    state: "UNINITIALIZED"
+data_wirings: 
+  - 
+    source: 
+      node_name: "RobotFrame"
+      data_kind: "outputs"
+      data_key: "constant"
+    target: 
+      node_name: "Subtree"
+      data_kind: "inputs"
+      data_key: "RobotFrame.in"
+  - 
+    source: 
+      node_name: "MaxDistance"
+      data_kind: "outputs"
+      data_key: "constant"
+    target: 
+      node_name: "Subtree"
+      data_kind: "inputs"
+      data_key: "DistanceTolerance.in"
+  - 
+    source: 
+      node_name: "TopicSubscriber"
+      data_kind: "outputs"
+      data_key: "message"
+    target: 
+      node_name: "GetDoorList"
+      data_kind: "inputs"
+      data_key: "object"
+  - 
+    source: 
+      node_name: "GetDoorList"
+      data_kind: "outputs"
+      data_key: "attr"
+    target: 
+      node_name: "GetFirstDoor"
+      data_kind: "inputs"
+      data_key: "list"
+  - 
+    source: 
+      node_name: "GetFirstDoor"
+      data_kind: "outputs"
+      data_key: "item"
+    target: 
+      node_name: "GetDoorPose"
+      data_kind: "inputs"
+      data_key: "object"
+  - 
+    source: 
+      node_name: "GetDoorPose"
+      data_kind: "outputs"
+      data_key: "attr"
+    target: 
+      node_name: "Subtree"
+      data_kind: "inputs"
+      data_key: "TargetPose.in"
+tick_frequency_hz: 20.0
+state: "EDITABLE"
+public_node_data: []
+---

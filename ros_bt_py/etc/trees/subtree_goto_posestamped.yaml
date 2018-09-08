@@ -1,0 +1,536 @@
+name: "GotoPoseSequence_subtree"
+path: ''
+root_name: "GotoPoseSequence"
+nodes: 
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    max_children: -1
+    name: "GotoPoseSequence"
+    child_names: [RobotFrame, TargetPose, DistanceTolerance, GetTargetHeader, GetTargetFrame, GotoPoseFallback]
+    options: []
+    inputs: []
+    outputs: []
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.passthrough_node"
+    node_class: "PassthroughNode"
+    max_children: 0
+    name: "RobotFrame"
+    child_names: []
+    options: 
+      - 
+        key: "passthrough_type"
+        serialized_value: "{\"py/type\": \"__builtin__.str\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "in"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+    outputs: 
+      - 
+        key: "out"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.passthrough_node"
+    node_class: "PassthroughNode"
+    max_children: 0
+    name: "TargetPose"
+    child_names: []
+    options: 
+      - 
+        key: "passthrough_type"
+        serialized_value: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "in"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
+    outputs: 
+      - 
+        key: "out"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.passthrough_node"
+    node_class: "PassthroughNode"
+    max_children: 0
+    name: "DistanceTolerance"
+    child_names: []
+    options: 
+      - 
+        key: "passthrough_type"
+        serialized_value: "{\"py/type\": \"__builtin__.float\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "in"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+    outputs: 
+      - 
+        key: "out"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.getters"
+    node_class: "GetAttr"
+    max_children: 1
+    name: "GetTargetHeader"
+    child_names: []
+    options: 
+      - 
+        key: "succeed_on_stale_data"
+        serialized_value: "true"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+      - 
+        key: "attr_name"
+        serialized_value: "\"header\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "attr_type"
+        serialized_value: "{\"py/type\": \"std_msgs.msg._Header.Header\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "object"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.object\"}"
+    outputs: 
+      - 
+        key: "attr"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"std_msgs.msg._Header.Header\"}"
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.getters"
+    node_class: "GetAttr"
+    max_children: 1
+    name: "GetTargetFrame"
+    child_names: []
+    options: 
+      - 
+        key: "succeed_on_stale_data"
+        serialized_value: "true"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+      - 
+        key: "attr_name"
+        serialized_value: "\"frame_id\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "attr_type"
+        serialized_value: "{\"py/type\": \"__builtin__.str\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "object"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.object\"}"
+    outputs: 
+      - 
+        key: "attr"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.fallback"
+    node_class: "Fallback"
+    max_children: -1
+    name: "GotoPoseFallback"
+    child_names: [CheckAtTargetSequence, GotoTargetSequence]
+    options: []
+    inputs: []
+    outputs: []
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    max_children: -1
+    name: "CheckAtTargetSequence"
+    child_names: [GetTargetPose, RobotPoseInTargetFrame, CalculateDistance, DistanceLessThanTolerance]
+    options: []
+    inputs: []
+    outputs: []
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.getters"
+    node_class: "GetAttr"
+    max_children: 1
+    name: "GetTargetPose"
+    child_names: []
+    options: 
+      - 
+        key: "succeed_on_stale_data"
+        serialized_value: "true"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+      - 
+        key: "attr_name"
+        serialized_value: "\"pose\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "attr_type"
+        serialized_value: "{\"py/type\": \"geometry_msgs.msg._Pose.Pose\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "object"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.object\"}"
+    outputs: 
+      - 
+        key: "attr"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._Pose.Pose\"}"
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.ros_nodes.lookup_tf"
+    node_class: "LookupTF"
+    max_children: 0
+    name: "RobotPoseInTargetFrame"
+    child_names: []
+    options: []
+    inputs: 
+      - 
+        key: "child_frame"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "parent_frame"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+    outputs: 
+      - 
+        key: "transform_pose"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._Pose.Pose\"}"
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.ros_nodes.pose_distance"
+    node_class: "PoseDistance"
+    max_children: 0
+    name: "CalculateDistance"
+    child_names: []
+    options: 
+      - 
+        key: "succeed_on_stale_data"
+        serialized_value: "true"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+    inputs: 
+      - 
+        key: "pose_a"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._Pose.Pose\"}"
+      - 
+        key: "pose_b"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._Pose.Pose\"}"
+    outputs: 
+      - 
+        key: "distance_angle"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+      - 
+        key: "distance_pos"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.compare"
+    node_class: "ALessThanB"
+    max_children: 0
+    name: "DistanceLessThanTolerance"
+    child_names: []
+    options: []
+    inputs: 
+      - 
+        key: "a"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+      - 
+        key: "b"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+    outputs: []
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    max_children: -1
+    name: "GotoTargetSequence"
+    child_names: [BuildGoalMsg, SetGoalPose, GotoTargetAction]
+    options: []
+    inputs: []
+    outputs: []
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.ros_nodes.message_from_dict"
+    node_class: "MessageFromConstDict"
+    max_children: 0
+    name: "BuildGoalMsg"
+    child_names: []
+    options: 
+      - 
+        key: "message_type"
+        serialized_value: "{\"py/type\": \"move_base_msgs.msg._MoveBaseGoal.MoveBaseGoal\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "dict"
+        serialized_value: "{}"
+        serialized_type: "{\"py/type\": \"__builtin__.dict\"}"
+    inputs: []
+    outputs: 
+      - 
+        key: "message"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"move_base_msgs.msg._MoveBaseGoal.MoveBaseGoal\"}"
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.setters"
+    node_class: "SetAttr"
+    max_children: 0
+    name: "SetGoalPose"
+    child_names: []
+    options: 
+      - 
+        key: "object_type"
+        serialized_value: "{\"py/type\": \"move_base_msgs.msg._MoveBaseGoal.MoveBaseGoal\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "attr_name"
+        serialized_value: "\"target_pose\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "attr_type"
+        serialized_value: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "object"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"move_base_msgs.msg._MoveBaseGoal.MoveBaseGoal\"}"
+      - 
+        key: "attr_value"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
+    outputs: 
+      - 
+        key: "new_object"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"move_base_msgs.msg._MoveBaseGoal.MoveBaseGoal\"}"
+    state: "UNINITIALIZED"
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.action"
+    node_class: "Action"
+    max_children: 0
+    name: "GotoTargetAction"
+    child_names: []
+    options: 
+      - 
+        key: "result_type"
+        serialized_value: "{\"py/type\": \"move_base_msgs.msg._MoveBaseResult.MoveBaseResult\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "timeout_seconds"
+        serialized_value: "60.0"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+      - 
+        key: "feedback_type"
+        serialized_value: "{\"py/type\": \"move_base_msgs.msg._MoveBaseFeedback.MoveBaseFeedback\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "action_name"
+        serialized_value: "\"move_base\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "action_type"
+        serialized_value: "{\"py/type\": \"move_base_msgs.msg._MoveBaseAction.MoveBaseAction\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "wait_for_action_server_seconds"
+        serialized_value: "1.2"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+      - 
+        key: "goal_type"
+        serialized_value: "{\"py/type\": \"move_base_msgs.msg._MoveBaseGoal.MoveBaseGoal\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "goal"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"move_base_msgs.msg._MoveBaseGoal.MoveBaseGoal\"}"
+    outputs: 
+      - 
+        key: "goal_status"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      - 
+        key: "feedback"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"move_base_msgs.msg._MoveBaseFeedback.MoveBaseFeedback\"}"
+      - 
+        key: "result"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"move_base_msgs.msg._MoveBaseResult.MoveBaseResult\"}"
+    state: "UNINITIALIZED"
+data_wirings: 
+  - 
+    source: 
+      node_name: "TargetPose"
+      data_kind: "outputs"
+      data_key: "out"
+    target: 
+      node_name: "GetTargetHeader"
+      data_kind: "inputs"
+      data_key: "object"
+  - 
+    source: 
+      node_name: "GetTargetHeader"
+      data_kind: "outputs"
+      data_key: "attr"
+    target: 
+      node_name: "GetTargetFrame"
+      data_kind: "inputs"
+      data_key: "object"
+  - 
+    source: 
+      node_name: "TargetPose"
+      data_kind: "outputs"
+      data_key: "out"
+    target: 
+      node_name: "GetTargetPose"
+      data_kind: "inputs"
+      data_key: "object"
+  - 
+    source: 
+      node_name: "GetTargetFrame"
+      data_kind: "outputs"
+      data_key: "attr"
+    target: 
+      node_name: "RobotPoseInTargetFrame"
+      data_kind: "inputs"
+      data_key: "parent_frame"
+  - 
+    source: 
+      node_name: "RobotFrame"
+      data_kind: "outputs"
+      data_key: "out"
+    target: 
+      node_name: "RobotPoseInTargetFrame"
+      data_kind: "inputs"
+      data_key: "child_frame"
+  - 
+    source: 
+      node_name: "RobotPoseInTargetFrame"
+      data_kind: "outputs"
+      data_key: "transform_pose"
+    target: 
+      node_name: "CalculateDistance"
+      data_kind: "inputs"
+      data_key: "pose_a"
+  - 
+    source: 
+      node_name: "GetTargetPose"
+      data_kind: "outputs"
+      data_key: "attr"
+    target: 
+      node_name: "CalculateDistance"
+      data_kind: "inputs"
+      data_key: "pose_b"
+  - 
+    source: 
+      node_name: "CalculateDistance"
+      data_kind: "outputs"
+      data_key: "distance_pos"
+    target: 
+      node_name: "DistanceLessThanTolerance"
+      data_kind: "inputs"
+      data_key: "a"
+  - 
+    source: 
+      node_name: "DistanceTolerance"
+      data_kind: "outputs"
+      data_key: "out"
+    target: 
+      node_name: "DistanceLessThanTolerance"
+      data_kind: "inputs"
+      data_key: "b"
+  - 
+    source: 
+      node_name: "BuildGoalMsg"
+      data_kind: "outputs"
+      data_key: "message"
+    target: 
+      node_name: "SetGoalPose"
+      data_kind: "inputs"
+      data_key: "object"
+  - 
+    source: 
+      node_name: "TargetPose"
+      data_kind: "outputs"
+      data_key: "out"
+    target: 
+      node_name: "SetGoalPose"
+      data_kind: "inputs"
+      data_key: "attr_value"
+  - 
+    source: 
+      node_name: "SetGoalPose"
+      data_kind: "outputs"
+      data_key: "new_object"
+    target: 
+      node_name: "GotoTargetAction"
+      data_kind: "inputs"
+      data_key: "goal"
+tick_frequency_hz: 0.0
+state: "IDLE"
+public_node_data: 
+  - 
+    node_name: "RobotFrame"
+    data_kind: "inputs"
+    data_key: "in"
+  - 
+    node_name: "TargetPose"
+    data_kind: "inputs"
+    data_key: "in"
+  - 
+    node_name: "DistanceTolerance"
+    data_kind: "inputs"
+    data_key: "in"
