@@ -30,7 +30,7 @@ function prettyprint_type(jsonpickled_type) {
   if (json_type['py/type'] !== undefined)
   {
     // Remove the "builtin" prefix jsonpickle adds
-    return json_type['py/type'].replace('__builtin__.', '');
+    return json_type['py/type'].replace('__builtin__.', '').replace('basestring', 'string');
   }
 
   // If the type doesn't have a py/type field, maybe it's an
@@ -188,40 +188,17 @@ class NodeList extends Component
     super(props);
 
     this.state = {
-      available_nodes: [],
       package_name: 'ros_bt_py.nodes.sequence'
     };
 
-    this.get_nodes_service = new ROSLIB.Service({
-      ros: props.ros,
-      name: props.bt_namespace + 'get_available_nodes',
-      serviceType: 'ros_bt_py_msgs/GetAvailableNodes'
-    });
-
-    this.getNodes = this.getNodes.bind(this);
     this.handleChange = this.handleChange.bind(this);
   }
 
   componentDidMount()
   {
-    this.getNodes('');
+    this.props.getNodes('');
   }
 
-  getNodes(package_name)
-  {
-    this.get_nodes_service.callService(
-      new ROSLIB.ServiceRequest({
-        node_modules: [package_name]
-      }),
-      function(response) {
-        if (response.success) {
-          this.setState({available_nodes: response.available_nodes});
-        }
-        else {
-          this.props.onError('Failed to get list of nodes: ' + response.error_message);
-        }
-      }.bind(this));
-  }
 
   handleChange(e)
   {
@@ -230,7 +207,7 @@ class NodeList extends Component
 
   render()
   {
-    var items = this.state.available_nodes.map( (node) => {
+    var items = this.props.availableNodes.map( (node) => {
       return (<NodeListItem node={node}
               key={node.module + node.node_class}
               onSelectionChange={this.props.onSelectionChange}/>);
@@ -240,7 +217,7 @@ class NodeList extends Component
         <div className="form-group">
           <button id="refresh"
                   className="btn btn-block btn-primary mt-2"
-                  onClick={this.getNodes.bind(this, '')}>
+                  onClick={() => this.props.getNodes('')}>
             Refresh
           </button>
           <input type="text" id="package_name"
@@ -249,7 +226,7 @@ class NodeList extends Component
                  onChange={this.handleChange}/>
           <button id="load_package"
                   className="btn btn-block btn-primary mt-2"
-                  onClick={this.getNodes.bind(this, this.state.package_name)}>
+                  onClick={() => this.props.getNodes(this.state.package_name)}>
             Load package
           </button>
         </div>
@@ -275,10 +252,19 @@ class App extends Component
         is_subtree: false,
         name: ''
       },
+      available_nodes: [],
       subtree_names: [],
       selected_node: null,
       showDataGraph: true,
       last_tree_msg: null,
+      // Can be 'nodelist' or 'editor'. The value decides whether the
+      // "Add node" or "change node options" widget is shown.
+      last_selection_source: 'nodelist',
+      // The corresponding object from available_nodes for the
+      // currently selected node. We need this because information
+      // about OptionRefs isn't included in live nodes, but we need it
+      // to edit options.
+      selected_node_info: null,
       ros: new ROSLIB.Ros({
         url : ros_uri
       })
@@ -296,13 +282,21 @@ class App extends Component
       messageType: 'ros_bt_py_msgs/DebugInfo'
     });
 
+    this.get_nodes_service = new ROSLIB.Service({
+      ros: this.state.ros,
+      name: props.bt_namespace + 'get_available_nodes',
+      serviceType: 'ros_bt_py_msgs/GetAvailableNodes'
+    });
+
     this.lastTreeUpdate = null;
     this.topicTimeoutID = null;
     this.newMsgDelay = 200;  // ms
 
     // Bind these here so this works as expected in callbacks
+    this.getNodes = this.getNodes.bind(this);
     this.onError = this.onError.bind(this);
-    this.onSelectionChange = this.onSelectionChange.bind(this);
+    this.onNodeListSelectionChange = this.onNodeListSelectionChange.bind(this);
+    this.onEditorSelectionChange = this.onEditorSelectionChange.bind(this);
     this.onTreeUpdate = this.onTreeUpdate.bind(this);
     this.onDebugUpdate = this.onDebugUpdate.bind(this);
     this.findPossibleParents = this.findPossibleParents.bind(this);
@@ -408,6 +402,13 @@ class App extends Component
       this.tree_topic.subscribe(this.onTreeUpdate);
       this.debug_topic.subscribe(this.onDebugUpdate);
 
+      // Update GetAvailableNodes Service
+      this.get_nodes_service = new ROSLIB.Service({
+        ros: this.state.ros,
+        name: namespace + 'get_available_nodes',
+        serviceType: 'ros_bt_py_msgs/GetAvailableNodes'
+      });
+
       this.setState({bt_namespace: namespace});
     }
   }
@@ -433,6 +434,22 @@ class App extends Component
     return [];
   }
 
+  getNodes(package_name)
+  {
+    this.get_nodes_service.callService(
+      new ROSLIB.ServiceRequest({
+        node_modules: [package_name]
+      }),
+      function(response) {
+        if (response.success) {
+          this.setState({available_nodes: response.available_nodes});
+        }
+        else {
+          this.onError('Failed to get list of nodes: ' + response.error_message);
+        }
+      }.bind(this));
+  }
+
   componentDidMount()
   {
     this.tree_topic.subscribe(this.onTreeUpdate);
@@ -450,13 +467,67 @@ class App extends Component
     console.log(error_message);
   }
 
-  onSelectionChange(new_selected_node)
+  onNodeListSelectionChange(new_selected_node)
   {
-    this.setState({selected_node: new_selected_node});
+    this.setState({selected_node: new_selected_node,
+                   last_selection_source: 'nodelist'});
+  }
+
+  onEditorSelectionChange(new_selected_node)
+  {
+    this.setState((prevState, props) => (
+      {
+        selected_node: new_selected_node,
+        last_selection_source: 'editor',
+        selected_node_info: prevState.available_nodes.find(
+          x => (x.module === new_selected_node.module
+                && x.node_class === new_selected_node.node_class))
+      }
+    ));
   }
 
   render()
   {
+    var selectedNodeComponent = null;
+
+    if (this.state.last_selection_source === 'nodelist')
+    {
+      selectedNodeComponent = (
+        <NewNode
+          ros={this.state.ros}
+          bt_namespace={this.state.bt_namespace}
+          key={
+            this.state.bt_namespace
+              + (this.state.selected_node ?
+                 (this.state.selected_node.module
+                  + this.state.selected_node.node_class)
+                 :
+                 '')
+          }
+          node={this.state.selected_node}
+          parents={this.findPossibleParents()}
+        />);
+    }
+    else if (this.state.last_selection_source === 'editor')
+    {
+      selectedNodeComponent = (
+        <SelectedNode
+          ros={this.state.ros}
+          bt_namespace={this.state.bt_namespace}
+          key={
+            this.state.bt_namespace
+              + (this.state.selected_node ?
+                 this.state.selected_node.name
+                 :
+                 '')
+          }
+          node={this.state.selected_node}
+          nodeInfo={this.state.selected_node_info}
+          onError={this.onError}
+        />);
+    }
+
+
     return (
       <Fragment>
         <ExecutionBar key={this.state.bt_namespace}
@@ -471,10 +542,9 @@ class App extends Component
           <div className="row row-height">
             <div className="col scroll-col" id="nodelist_container">
               <NodeList key={this.state.bt_namespace}
-                        ros={this.state.ros}
-                        bt_namespace={this.state.bt_namespace}
-                        onError={this.onError}
-                        onSelectionChange={this.onSelectionChange}/>
+                        availableNodes={this.state.available_nodes}
+                        getNodes={this.getNodes}
+                        onSelectionChange={this.onNodeListSelectionChange}/>
             </div>
             <div className="col-9 scroll-col" id="main_pane">
               <div className="container-fluid">
@@ -494,7 +564,7 @@ class App extends Component
                                           ros={this.state.ros}
                                           bt_namespace={this.state.bt_namespace}
                                           tree_message={this.state.last_tree_msg}
-                                          onSelectionChange={this.onSelectionChange}
+                                          onSelectionChange={this.onEditorSelectionChange}
                                           showDataGraph={this.state.showDataGraph}
                                           onError={this.onError}/>
                   </div>
@@ -512,20 +582,7 @@ class App extends Component
                 </div>
                 <div className="row">
                   <div className="col">
-                    <SelectedNode
-                      ros={this.state.ros}
-                      bt_namespace={this.state.bt_namespace}
-                      key={
-                        this.state.bt_namespace
-                          + (this.state.selected_node ?
-                             (this.state.selected_node.module
-                              + this.state.selected_node.node_class)
-                             :
-                             '')
-                      }
-                      node={this.state.selected_node}
-                      parents={this.findPossibleParents()}
-                      />
+                    {selectedNodeComponent}
                   </div>
                   <div className="col">
                     <RemoveNode key={this.state.bt_namespace}
@@ -944,8 +1001,6 @@ class D3BehaviorTreeEditor extends Component
 
     this.svg_ref = createRef();
     this.viewport_ref = createRef();
-
-    this.onSelectionChange = props.onSelectionChange;
 
     this.getIOCoords = this.getIOCoords.bind(this);
     this.getIOCoordsFromNode = this.getIOCoordsFromNode.bind(this);
@@ -2214,7 +2269,7 @@ class D3BehaviorTreeEditor extends Component
 
   nodeClickHandler(d, index, group)
   {
-    console.log("Node clicked!");
+    this.props.onSelectionChange(d.data);
   }
 
   nodeMousedownHandler(d, domObject)
@@ -2272,7 +2327,8 @@ function RemoveNode(props)
     </div>
   );
 }
-class SelectedNode extends Component
+
+class NewNode extends Component
 {
   constructor(props)
   {
@@ -2310,6 +2366,7 @@ class SelectedNode extends Component
 
     this.nameChangeHandler = this.nameChangeHandler.bind(this);
     this.updateValidity = this.updateValidity.bind(this);
+    this.updateValue = this.updateValue.bind(this);
     this.onClickAdd = this.onClickAdd.bind(this);
   }
 
@@ -2330,7 +2387,7 @@ class SelectedNode extends Component
                 disabled={!this.state.isValid}
                 onClick={this.onClickAdd}>Add to Tree</button>
         <label className="pt-2 pb-2">Parent
-          <select className="custom-control d-block"
+          <select className="custom-select d-block"
                   disabled={this.props.parents.length == 0}
                   ref={this.selectRef}
                   defaultValue={ (this.props.parents.length > 0) ? this.props.parents[0].name : null }>
@@ -2340,14 +2397,16 @@ class SelectedNode extends Component
             }
           </select>
         </label>
-        <input className="d-block custom-control-input"
-               type="text"
-               value={this.state.name}
-               onChange={this.nameChangeHandler}/>
-        <h4>{this.props.node.node_class}</h4>
-        {this.renderParamInputs(this.state.options, 'options')}
-        {/* this.renderParamInputs(this.state.inputs, 'inputs') */}
-        {/* {this.renderParamInputs(this.state.outputs, 'outputs')} */}
+        <EditableNode key={this.state.name}
+                      name={this.state.name}
+                      nodeClass={this.props.node.node_class}
+                      updateValidity={this.updateValidity}
+                      updateValue={this.updateValue}
+                      nameChangeHandler={this.nameChangeHandler}
+                      options={this.state.options}
+                      inputs={this.state.inputs}
+                      outputs={this.state.outputs}
+        />
       </div>
     );
   }
@@ -2513,7 +2572,7 @@ class SelectedNode extends Component
         <div className="form-group">
           <label>{paramItem.key}
             <input type="number" name="integer"
-                   className="custom-control-input"
+                   className="form-control"
                    onChange={changeHandler}
                    placeholder="integer"
                    step="1.0"
@@ -2540,7 +2599,8 @@ class SelectedNode extends Component
         <div className="form-group">
           <label>{paramItem.key}
             <input type="number" name="float"
-                   className="custom-control-input"
+                   step="any"
+                   className="form-control"
                    onChange={changeHandler}
                    placeholder="float"
                    value={paramItem.value.value}>
@@ -2561,7 +2621,7 @@ class SelectedNode extends Component
         <div className="form-group">
           <label>{paramItem.key}
             <input type="text"
-                   className="custom-control-input mt-2"
+                   className="form-control mt-2"
                    value={paramItem.value.value}
                    onChange={changeHandler}/>
           </label>
@@ -2589,7 +2649,7 @@ class SelectedNode extends Component
         <div className="form-group">
           <label>{paramItem.key}
             <input type="text"
-                   className="custom-control-input mt-2"
+                   className="form-control mt-2"
                    value={paramItem.value.value}
                    onChange={changeHandler}/>
           </label>
@@ -2621,7 +2681,7 @@ class SelectedNode extends Component
         <div className="form-group m-1">
           <label>{paramItem.key}
             <input type="text"
-                   className="custom-control-input mt-2"
+                   className="form-control mt-2"
                    value={paramItem.value.value}
                    disabled={true}/>
           </label>
@@ -2673,6 +2733,614 @@ class SelectedNode extends Component
             {param_rows}
           </tbody>
         </table>
+      </div>
+    );
+  }
+
+  getDefaultValues(paramList, options)
+  {
+    options = options || [];
+
+    return paramList.map(x => {
+      return {
+        key: x.key,
+        value: getDefaultValue(
+          prettyprint_type(x.serialized_value), options),
+      };
+    });
+  }
+}
+
+class SelectedNode extends Component
+{
+  constructor(props)
+  {
+    super(props);
+
+    var getValues = x =>
+      {
+        var type = prettyprint_type(x.serialized_type);
+        var json_value = JSON.parse(x.serialized_value);
+        if (type === 'type')
+        {
+          json_value = json_value['py/type']
+            .replace('__builtin__.', '')
+            .replace('basestring', 'string');
+        }
+        return {
+          key: x.key,
+          value: {type: type,
+                  value: json_value}
+        };
+      };
+    if (props.node) {
+      this.state = {
+        name: props.node.name,
+        isValid: true,
+        options: props.node.options.map(getValues),
+        inputs: props.node.inputs.map(getValues),
+        outputs: props.node.outputs.map(getValues)
+      };
+    }
+    else
+    {
+      this.state = {
+        name: '',
+        isValid: false,
+        options: [],
+        inputs: [],
+        outputs: []
+      };
+    }
+
+    this.set_options_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.bt_namespace + 'set_options',
+      serviceType: 'ros_bt_py_msgs/SetOptions'
+    });
+
+    this.nameChangeHandler = this.nameChangeHandler.bind(this);
+    this.updateValidity = this.updateValidity.bind(this);
+    this.onClickUpdate = this.onClickUpdate.bind(this);
+  }
+
+  nameChangeHandler(event)
+  {
+    this.setState({name: event.target.value});
+  }
+
+  onClickUpdate(event)
+  {
+    console.log('updating node');
+    this.set_options_service.callService(
+      new ROSLIB.ServiceRequest({
+        tree_name: '',
+        node_name: this.props.node.name,
+        rename_node: true,
+        new_name: this.state.name,
+        options: this.state.options.map(x => {
+          var option = {
+            key: x.key,
+            serialized_value: ''
+          };
+          if (x.value.type === 'type') {
+            if (python_builtin_types.indexOf(x.value.value) >= 0)
+            {
+              x.value.value = '__builtin__.' + x.value.value;
+            }
+            option.serialized_value = JSON.stringify({
+              "py/type": x.value.value
+            });
+          }
+          else if (x.value.type.startsWith('__'))
+          {
+            x.value.value["py/object"] = x.value.substring('__'.length);
+            option.serialized_value = JSON.stringify(x.value.value);
+          }
+          else
+          {
+            option.serialized_value = JSON.stringify(x.value.value);
+          }
+          return option;
+        })
+      }),
+      function(response) {
+        if (response.success) {
+          console.log('Updated node!');
+        }
+        else {
+          this.props.onError('Failed to update node '
+                             + this.props.node.name + ': '
+                             + response.error_message);
+        }
+      }.bind(this));
+  }
+
+  render()
+  {
+    return (
+      <div className="p-2 d-flex flex-column">
+        <button className="btn btn-block btn-primary mb-2"
+                disabled={!this.state.isValid}
+                onClick={this.onClickUpdate}>Update</button>
+        <EditableNode key={this.props.node.name}
+                      name={this.state.name}
+                      nodeClass={this.props.node.node_class}
+                      updateValidity={this.updateValidity}
+                      updateValue={this.updateValue}
+                      nameChangeHandler={this.nameChangeHandler}
+                      options={this.state.options}
+                      inputs={this.state.inputs}
+                      outputs={this.state.outputs}
+          optionRefs
+        />
+      </div>
+    );
+  }
+
+  updateValidity(newValidity)
+  {
+    this.setState({isValid: newValidity || false});
+  }
+
+  updateValue(paramType, key, new_value)
+  {
+    var map_fun = function(x)
+    {
+      if (x.key === key) {
+        return {
+          key: key,
+          value: {
+            type: x.value.type,
+            value: new_value
+          }
+        };
+      }
+      else
+      {
+        return x;
+      }
+    };
+
+    if (paramType.toLowerCase() === 'options')
+    {
+      // All of these are lists containing lists of [key, ref_key]
+      //
+      // That is, if options = { foo : int, bar : OptionRef(foo) }
+      // ref_keys will be [[bar, foo]]
+      var ref_keys = this.props.nodeInfo.options
+          .filter(x => prettyprint_type(x.serialized_value).startsWith('OptionRef('))
+          .map(x => [x.key, prettyprint_type(x.serialized_value).substring(
+            'OptionRef('.length, prettyprint_type(x.serialized_value).length - 1)])
+          .filter(x => x[1] === key);
+      var input_option_ref_keys = this.props.nodeInfo.inputs
+          .filter(x => prettyprint_type(x.serialized_value).startsWith('OptionRef('))
+          .map(x => [x.key, prettyprint_type(x.serialized_value).substring(
+            'OptionRef('.length, prettyprint_type(x.serialized_value).length - 1)])
+          .filter(x => x[1] === key);
+      var output_option_ref_keys = this.props.nodeInfo.inputs
+          .filter(x => prettyprint_type(x.serialized_value).startsWith('OptionRef('))
+          .map(x => [x.key, prettyprint_type(x.serialized_value).substring(
+            'OptionRef('.length, prettyprint_type(x.serialized_value).length - 1)])
+          .filter(x => x[1] === key);
+      this.setState(
+        (prevState, props) =>
+          {
+            // Replace the option value
+            var new_options = prevState.options.map(map_fun);
+
+            // update the options in our state that are references to
+            // the changed key - this will discard any values entered
+            // already, but they'd be incompatible anyway
+
+            var resolve_refs = current_item => {
+              // See if the current option references the changed key
+              var refData = ref_keys.find(ref => ref[0] === current_item.key);
+              if (refData)
+              {
+                // If it does, find the type of the referred key
+                var optionType = new_options.find(opt => opt.key === refData[1]);
+                if (optionType)
+                {
+                  // Get a default value for the type indicated by the
+                  // referenced option
+                  return {
+                    key: current_item.key,
+                    value: getDefaultValue(optionType.value.value.replace('__builtin__.', ''))
+                  };
+                }
+              }
+              return current_item;
+            };
+
+            var resolved_options = new_options.map(resolve_refs);
+            var newState = {options: resolved_options};
+            // if there's inputs or outputs that reference the changed
+            // option key, update them too (this is just for display
+            // and won't change anything in the backend)
+            if (input_option_ref_keys.length > 0)
+            {
+              newState.inputs = prevState.inputs.map(resolve_refs);
+            }
+            if (output_option_ref_keys.length > 0)
+            {
+              newState.outputs = prevState.outputs.map(resolve_refs);
+            }
+            return newState;
+          });
+    }
+    else if (paramType.toLowerCase() === 'inputs')
+    {
+      this.setState(
+        (prevState, props) =>
+          {
+            return {inputs: prevState.inputs.map(map_fun)};
+          });
+    }
+    else if (paramType.toLowerCase() === 'outputs')
+    {
+      this.setState(
+        (prevState, props) =>
+          {
+            return {outputs: prevState.outputs.map(map_fun)};
+          });
+    }
+  }
+}
+
+class EditableNode extends Component
+{
+  constructor(props)
+  {
+    super(props);
+  }
+
+  render()
+  {
+    return(
+      <div className="d-flex flex-column">
+        <input className="d-block form-control mb-1"
+               type="text"
+               value={this.props.name}
+               onChange={this.props.nameChangeHandler}/>
+        <h4>{this.props.nodeClass}</h4>
+        {this.renderParamInputs(this.props.options, 'options')}
+        {this.renderParamDisplays(this.props.inputs, 'inputs')}
+        {this.renderParamDisplays(this.props.outputs, 'outputs')}
+      </div>
+    );
+  }
+
+  updateValue(paramType, key, new_value)
+  {
+    var map_fun = function(x)
+    {
+      if (x.key === key) {
+        return {
+          key: key,
+          value: {
+            type: x.value.type,
+            value: new_value
+          }
+        };
+      }
+      else
+      {
+        return x;
+      }
+    };
+
+    if (paramType.toLowerCase() === 'options')
+    {
+      var ref_keys = this.props.options
+          .filter(x => prettyprint_type(x.serialized_value).startsWith('OptionRef('))
+          .map(x => [x.key, prettyprint_type(x.serialized_value).substring(
+            'OptionRef('.length, prettyprint_type(x.serialized_value).length - 1)])
+          .filter(x => x[1] === key);
+
+      var new_options = this.props.options.map(map_fun);
+      // update the options in our state that are references to
+      // the changed key - this will discard any values entered
+      // already, but they'd be incompatible anyway
+
+      var resolved_options = new_options.map(x => {
+        var refData = ref_keys.find(ref => ref[0] === x.key);
+        if (refData)
+        {
+          var optionType = new_options.find(opt => opt.key === refData[1]);
+          if (optionType)
+          {
+            return {
+              key: x.key,
+              value: getDefaultValue(optionType.value.value.replace('__builtin__.', ''))
+            };
+          }
+        }
+        return x;
+      });
+
+      this.props.setOptions(resolved_options);
+    }
+    else if (paramType.toLowerCase() === 'inputs')
+    {
+      this.props.setInputs(this.props.inputs.map(map_fun));
+    }
+    else if (paramType.toLowerCase() === 'outputs')
+    {
+      this.props.setOutputs(this.props.outputs.map(map_fun));
+    }
+  }
+
+  inputForValue(paramItem, onValidityChange, onNewValue)
+  {
+    var valueType = paramItem.value.type;
+    var changeHandler = (event) => {};
+
+    if (valueType === 'int')
+    {
+      // Number input with integer increments
+      changeHandler = (event) =>
+          {
+            var newValue = Math.round(event.target.value);
+            if (isNaN(newValue))
+            {
+              newValue = 0;
+            }
+            onNewValue(newValue);
+          };
+
+      return (
+        <div className="form-group">
+          <label>{paramItem.key}
+            <input type="number" name="integer"
+                   className="form-control"
+                   onChange={changeHandler}
+                   placeholder="integer"
+                   step="1.0"
+                   value={paramItem.value.value}>
+            </input>
+          </label>
+        </div>
+      );
+    }
+    if (valueType === 'float')
+    {
+      // Number input with free increments
+      changeHandler = (event) =>
+          {
+            var newValue = parseFloat(event.target.value);
+            if (isNaN(newValue))
+            {
+              newValue = 0;
+            }
+            onNewValue(newValue);
+          };
+
+      return (
+        <div className="form-group">
+          <label>{paramItem.key}
+            <input type="number" name="float"
+                   step="any"
+                   className="form-control"
+                   onChange={changeHandler}
+                   placeholder="float"
+                   value={paramItem.value.value}>
+            </input>
+          </label>
+        </div>
+      );
+    }
+    else if (valueType === 'string')
+    {
+      // Regular input
+      changeHandler = (event) =>
+        {
+          onNewValue(event.target.value || '');
+        };
+
+      return (
+        <div className="form-group">
+          <label>{paramItem.key}
+            <input type="text"
+                   className="form-control mt-2"
+                   value={paramItem.value.value}
+                   onChange={changeHandler}/>
+          </label>
+        </div>
+      );
+    }
+    else if (valueType === 'type')
+    {
+      // Regular input
+      changeHandler = (event) =>
+        {
+          var newTypeName = event.target.value || '';
+          if (python_builtin_types.indexOf(newTypeName) >= 0)
+          {
+            onNewValue('__builtin__.' + newTypeName);
+          }
+          else
+          {
+            onNewValue(newTypeName);
+          }
+        };
+
+      return (
+        <div className="form-group">
+          <label>{paramItem.key}
+            <input type="text"
+                   className="form-control mt-2"
+                   value={paramItem.value.value}
+                   onChange={changeHandler}/>
+          </label>
+        </div>
+      );
+    }
+    else if (valueType === 'boolean')
+    {
+      // Checkbox
+      changeHandler = (event) =>
+        {
+          onNewValue(event.target.checked || false);
+        };
+
+      return (
+        <div className="form-check m-1">
+          <label className="custom-control-label">{paramItem.key}
+            <input type="checkbox"
+                   className="custom-control-input"
+                   checked={paramItem.value.value}
+                   onChange={changeHandler} />
+          </label>
+        </div>
+      );
+    }
+    else if (valueType === 'unset_optionref')
+    {
+      return (
+        <div className="form-group m-1">
+          <label>{paramItem.key}
+            <input type="text"
+                   className="form-control mt-2"
+                   value={paramItem.value.value}
+                   disabled={true}/>
+          </label>
+        </div>
+      );
+    }
+    // TODO(nberg): implement these two
+
+    // else if (valueType === 'list')
+    // {
+
+    // }
+    // else if (valueType === 'dict')
+    // {
+
+    // }
+    else  // if (valueType === 'object')
+    {
+      // textarea with JSON.stringify(value), parse back when changed
+      return (
+        <div className="form-group">
+          <label>{paramItem.key}
+            <JSONInput initialValue={JSON.stringify(paramItem.value.value)}
+                       onValidityChange={onValidityChange}
+                       onNewValue={onNewValue}/>
+          </label>
+        </div>
+      );
+    }
+  }
+
+  displayForValue(paramItem)
+  {
+    var valueType = paramItem.value.type;
+
+    if (valueType === 'int'
+        || valueType === 'float'
+        || valueType ==='string')
+    {
+      // Number input with integer increments
+      return (
+        <Fragment>
+          <h5>{paramItem.key}</h5>
+          <span>{paramItem.value.value}</span>
+        </Fragment>
+      );
+    }
+    else if (valueType === 'type')
+    {
+      return (
+        <Fragment>
+          <h5>{paramItem.key}</h5>
+          <pre>{paramItem.value.value}</pre>
+        </Fragment>
+      );
+    }
+    else if (valueType === 'boolean')
+    {
+      return (
+        <Fragment>
+          <h5>{paramItem.key}</h5>
+          <pre>{paramItem.value.value ? 'True' : 'False'}</pre>
+        </Fragment>
+      );
+    }
+    else if (valueType === 'unset_optionref')
+    {
+      return (
+        <Fragment>
+          <h5>{paramItem.key}</h5>
+          <pre className="text-muted">{paramItem.value.value}</pre>
+        </Fragment>
+      );
+    }
+    // TODO(nberg): implement these two
+
+    // else if (valueType === 'list')
+    // {
+
+    // }
+    // else if (valueType === 'dict')
+    // {
+
+    // }
+    else  // if (valueType === 'object')
+    {
+      console.log('item with non-basic type: ', paramItem);
+      return (
+        <Fragment>
+          <h5>{paramItem.key}</h5>
+          <pre>{JSON.stringify(paramItem.value.value)}</pre>
+        </Fragment>
+      );
+    }
+  }
+
+  renderParamInputs(params, name)
+  {
+    var param_rows = params.map(x => {
+      return (
+        <div className="list-group-item"
+             key={name + x.key}>
+            {
+              this.inputForValue(
+                x,
+                this.props.updateValidity,
+                (newVal) => this.props.updateValue(name, x.key, newVal))
+            }
+        </div>
+      );
+    });
+
+    return (
+      <div className="mb-2">
+        <h5>{name}</h5>
+        <div className="list-group">
+          {param_rows}
+        </div>
+      </div>
+    );
+  }
+
+  renderParamDisplays(params, name)
+  {
+    var param_rows = params.map(x => {
+      return (
+        <div className="list-group-item"
+             key={name + x.key}>
+          {this.displayForValue(x)}
+        </div>
+      );
+    });
+
+    return (
+      <div className="mb-2">
+        <h5>{name}</h5>
+        <div className="list-group">
+            {param_rows}
+        </div>
       </div>
     );
   }
@@ -2745,7 +3413,7 @@ class JSONInput extends Component
   {
     return (
       <input type="textarea"
-             className={'custom-control-input mt-2 ' + (this.state.is_valid ? '' : 'is-invalid')}
+             className={'form-control mt-2 ' + (this.state.is_valid ? '' : 'is-invalid')}
              value={this.state.value}
              onChange={this.changeHandler}/>
     );
