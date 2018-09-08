@@ -1,3 +1,4 @@
+from copy import deepcopy
 from functools import wraps
 from threading import Thread, Lock, RLock
 import time
@@ -858,6 +859,16 @@ class TreeManager(object):
                     request.node_name,
                     request.tree_name))
 
+        if (request.rename_node and
+                request.new_name != request.node_name and
+                request.new_name in self.nodes):
+            return SetOptionsResponse(
+                success=False,
+                error_message=('Unable to rename node %s to %s - a node with '
+                               'that name exists already.') % (
+                                   request.node_name,
+                                   request.new_name))
+
         node = self.nodes[request.node_name]
         unknown_options = []
         incompatible_options = []
@@ -908,7 +919,7 @@ class TreeManager(object):
         # (i.e. `root.setup()` will be called before anything that
         # needs the node to be set up)
         new_node = node.__class__(options=deserialized_options,
-                                  name=node.name,
+                                  name=request.new_name if request.rename_node else node.name,
                                   debug_manager=node.debug_manager)
 
         # Use this request to unwire any data connections the existing
@@ -924,10 +935,12 @@ class TreeManager(object):
                          wiring.target.node_name == node.name)])
 
         unwire_resp = self.unwire_data(wire_request)
-        if not unwire_resp.success:
+        if not _get_success(unwire_resp):
             return SetOptionsResponse(
                 success=False,
-                error_message='Failed to unwire data for node %s' % node.name)
+                error_message='Failed to unwire data for node %s: %s' % (
+                    node.name,
+                    _get_error_message(unwire_resp)))
 
         parent = None
         if node.parent:
@@ -948,8 +961,9 @@ class TreeManager(object):
                 error_message = ('Failed to remove old instance of node %s: %s' %
                                  (node.name, str(ex)))
                 rewire_resp = self.wire_data(wire_request)
-                if not rewire_resp.success:
-                    error_message += '\nAlso failed to restore data wirings!'
+                if not _get_success(rewire_resp):
+                    error_message += '\nAlso failed to restore data wirings: %s' % (
+                        _get_error_message(rewire_resp))
 
                 return SetOptionsResponse(
                     success=False,
@@ -964,8 +978,9 @@ class TreeManager(object):
                 try:
                     parent.add_child(node, at_index=old_child_index)
                     rewire_resp = self.wire_data(wire_request)
-                    if not rewire_resp.success:
-                        error_message += '\nAlso failed to restore data wirings!'
+                    if not _get_success(rewire_resp):
+                        error_message += '\nAlso failed to restore data wirings: %s' % (
+                            _get_error_message(rewire_resp))
                 except (KeyError, BehaviorTreeException):
                     error_message += '\n Also failed to restore old node.'
 
@@ -974,13 +989,25 @@ class TreeManager(object):
                     error_message=error_message)
 
         # Add the new node to self.nodes
-        self.nodes[node.name] = new_node
+        del self.nodes[node.name]
+        self.nodes[new_node.name] = new_node
 
         # Re-wire all the data, just as it was before
-        rewire_resp = self.wire_data(wire_request)
-        if not rewire_resp.success:
-            error_message = 'Failed to re-wire data to new node %s' % new_node.name
+        new_wire_request = deepcopy(wire_request)
+        if request.rename_node:
+            for wiring in new_wire_request.wirings:
+                if wiring.source.node_name == node.name:
+                    wiring.source.node_name = new_node.name
+                if wiring.target.node_name == node.name:
+                    wiring.target.node_name = new_node.name
+
+        rewire_resp = self.wire_data(new_wire_request)
+        if not _get_success(rewire_resp):
+            error_message = 'Failed to re-wire data to new node %s: %s' % (
+                new_node.name,
+                _get_error_message(rewire_resp))
             # Try to undo everything
+            del self.nodes[new_node.name]
             self.nodes[node.name] = node
             if parent is not None:
                 try:
@@ -989,8 +1016,9 @@ class TreeManager(object):
                 except (KeyError, BehaviorTreeException) as ex:
                     error_message += '\nError restoring old node: %s' % str(ex)
             recovery_wire_response = self.wire_data(wire_request)
-            if not recovery_wire_response.success:
-                error_message += 'Failed to re-wire data to restored node %s' % new_node.name
+            if not _get_success(recovery_wire_response):
+                error_message += '\nFailed to re-wire data to restored node %s: %s' % (
+                    node.name, _get_error_message(recovery_wire_response))
 
             return SetOptionsResponse(
                 success=False,
@@ -1169,13 +1197,13 @@ class TreeManager(object):
             node_name=request.old_node_name,
             remove_children=True))
 
-        if not res.success:
+        if not _get_success(res):
             with self._state_lock:
                 self.tree_msg.state = Tree.ERROR
             self.publish_info(self.debug_manager.get_debug_info_msg())
             return ReplaceNodeResponse(
                 success=False,
-                error_message="Could not remove old node: \"%s\"" % res.error_message)
+                error_message="Could not remove old node: \"%s\"" % _get_error_message(res))
 
         # Move the new node to the old node's parent (if it had one)
         if old_node_parent is not None:

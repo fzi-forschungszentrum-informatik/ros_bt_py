@@ -34,6 +34,16 @@ class TestTreeManager(unittest.TestCase):
                              serialized_value=jsonpickle.encode(42))],
             options=[NodeData(key='passthrough_type',
                               serialized_value=jsonpickle.encode(int))])
+
+        self.constant_msg = NodeMsg(
+            is_subtree=False,
+            module='ros_bt_py.nodes.constant',
+            node_class='Constant',
+            options=[NodeData(key='constant_type',
+                              serialized_value=jsonpickle.encode(int)),
+                     NodeData(key='constant_value',
+                              serialized_value=jsonpickle.encode(42))])
+
         self.sequence_msg = NodeMsg(
             is_subtree=False,
             module='ros_bt_py.nodes.sequence',
@@ -794,18 +804,21 @@ class TestTreeManager(unittest.TestCase):
         # unparseable values should fail
         self.assertFalse(get_success(self.manager.set_options(
             SetOptionsRequest(tree_name='', node_name='PassthroughNode',
+                              rename_node=False,
                               options=[NodeData(key='passthrough_type',
                                                 serialized_value='invalid_value')]))))
 
         # assigning values to invalid keys should fail too
         self.assertFalse(get_success(self.manager.set_options(
             SetOptionsRequest(tree_name='', node_name='PassthroughNode',
+                              rename_node=False,
                               options=[NodeData(key='invalid_key',
                                                 serialized_value=jsonpickle.encode(str))]))))
 
         # assigning values of the wrong type should also fail
         self.assertFalse(get_success(self.manager.set_options(
             SetOptionsRequest(tree_name='', node_name='PassthroughNode',
+                              rename_node=False,
                               options=[NodeData(key='passthrough_type',
                                                 serialized_value=jsonpickle.encode(
                                                    'I am not a type, but a string!'))]))))
@@ -813,10 +826,55 @@ class TestTreeManager(unittest.TestCase):
         # finally, this is valid :)
         self.assertTrue(get_success(self.manager.set_options(
             SetOptionsRequest(tree_name='', node_name='PassthroughNode',
+                              rename_node=False,
                               options=[NodeData(key='passthrough_type',
                                                 serialized_value=jsonpickle.encode(str))]))))
         node = self.tree_msg.nodes[0]
         self.assertEqual(node.options[0].serialized_value, jsonpickle.encode(str))
+
+    def testSetSomeOptions(self):
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.constant_msg))))
+        # We expect the old value of constant_type (int) to be
+        # preserved - if it weren't Node.__init__() would raise an
+        # error!
+        self.assertTrue(get_success(self.manager.set_options(
+            SetOptionsRequest(tree_name='', node_name='Constant',
+                              rename_node=False,
+                              options=[NodeData(key='constant_value',
+                                                serialized_value=jsonpickle.encode(23))]))))
+
+    def testRename(self):
+        self.sequence_msg.name = 'foo'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           node=self.sequence_msg))))
+
+        self.constant_msg.name = 'const'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(tree_name='',
+                           parent_name=self.sequence_msg.name,
+                           node=self.constant_msg))))
+
+        set_options_response = self.manager.set_options(
+            SetOptionsRequest(tree_name='', node_name=self.constant_msg.name,
+                              rename_node=True,
+                              new_name='bar'))
+
+        self.assertTrue(get_success(set_options_response),
+                        get_error_message(set_options_response))
+
+        self.assertIn('bar', (node.name for node in self.tree_msg.nodes))
+        self.assertNotIn('const', (node.name for node in self.tree_msg.nodes))
+
+        set_options_response = self.manager.set_options(
+            SetOptionsRequest(tree_name='', node_name='bar',
+                              rename_node=True,
+                              new_name='foo'))
+
+        # 'foo' is already taken, so this shouldn't succeed
+        self.assertFalse(get_success(set_options_response))
 
     def testSetOptionsWithWirings(self):
         # Add a Sequence with two children
