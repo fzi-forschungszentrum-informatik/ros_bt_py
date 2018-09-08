@@ -1,0 +1,72 @@
+<launch>
+  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+  <include file="$(find roswww)/launch/roswww.launch">
+    <arg name="webpath" value="html" />
+  </include>
+
+  <!-- publishers for door/object topics and TFs + interaction services -->
+  <group>
+    <remap from="open_door" to="turtlebot0/open_door" />
+    <remap from="interact" to="turtlebot1/interact" />
+    <include file="$(find bt_sim_helpers)/launch/sim_helpers.launch" />
+  </group>
+
+  <include file="$(find bt_sim_helpers)/launch/start_stdr_env.launch" />
+  <!-- spawn a turtlebot -->
+  <include file="$(find bt_sim_helpers)/launch/spawn_turtlebot_stdr.launch">
+    <arg name="robot_index" value="0" />
+  </include>
+  <group ns="turtlebot0">
+    <!-- start tree node in robot NS -->
+    <node name="tree_node" pkg="ros_bt_py" type="tree_node.py" output="log">
+      <rosparam param="node_modules">
+        [
+        ros_bt_py.nodes.sequence,
+        ros_bt_py.nodes.fallback,
+        ros_bt_py.nodes.mock_nodes,
+        ros_bt_py.nodes.action,
+        ros_bt_py.nodes.service,
+        ros_bt_py.nodes.topic,
+        ros_bt_py.nodes.compare,
+        ros_bt_py.nodes.getters,
+        ros_bt_py.nodes.setters,
+        ros_bt_py.nodes.passthrough_node,
+        ros_bt_py.nodes.shovable,
+        ros_bt_py.nodes.subtree,
+        ros_bt_py.ros_nodes.message_from_dict,
+        ros_bt_py.ros_nodes.pose_distance
+        ]
+      </rosparam>
+      <param name="target_tick_frequency_hz" value="1.0" />
+    </node>
+  </group>
+
+  <!-- spawn second turtlebot -->
+  <include file="$(find bt_sim_helpers)/launch/spawn_turtlebot_stdr.launch">
+    <arg name="robot_index" value="1" />
+  </include>
+  <group ns="turtlebot1">
+    <!-- start tree node in robot NS -->
+    <node name="tree_node" pkg="ros_bt_py" type="tree_node.py" output="log">
+      <rosparam param="node_modules">
+        [
+        ros_bt_py.nodes.sequence,
+        ros_bt_py.nodes.fallback,
+        ros_bt_py.nodes.mock_nodes,
+        ros_bt_py.nodes.action,
+        ros_bt_py.nodes.service,
+        ros_bt_py.nodes.topic,
+        ros_bt_py.nodes.compare,
+        ros_bt_py.nodes.getters,
+        ros_bt_py.nodes.setters,
+        ros_bt_py.nodes.passthrough_node,
+        ros_bt_py.nodes.shovable,
+        ros_bt_py.nodes.subtree,
+        ros_bt_py.ros_nodes.message_from_dict,
+        ros_bt_py.ros_nodes.pose_distance
+        ]
+      </rosparam>
+      <param name="target_tick_frequency_hz" value="1.0" />
+    </node>
+  </group>
+</launch>
