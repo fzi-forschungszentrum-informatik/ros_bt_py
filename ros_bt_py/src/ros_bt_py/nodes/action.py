@@ -1,3 +1,4 @@
+from copy import deepcopy
 from threading import Lock
 import rospy
 from actionlib import SimpleActionClient
@@ -39,7 +40,7 @@ class Action(Leaf):
     def _do_setup(self):
         self._lock = Lock()
         self._feedback = None
-        self._has_active_goal = False
+        self._active_goal = None
 
         self._ac = SimpleActionClient(self.options['action_name'],
                                       self.options['action_type'])
@@ -58,13 +59,19 @@ class Action(Leaf):
             self._feedback = feedback
 
     def _do_tick(self):
-        if not self._has_active_goal:
+        if self._active_goal is not None and self.inputs['goal'] != self._active_goal:
+            # Goal message has changed since last tick, abort old goal
+            # and return RUNNING
+            self._ac.cancel_goal()
+            self._active_goal = None
+
+        if self._active_goal is None:
             # get_state returns LOST when the action client isn't tracking a
             # goal - so we can send a new one!
             self.logdebug('Sending goal: %s' % str(self.inputs['goal']))
             self._ac.send_goal(self.inputs['goal'], feedback_cb=self._feedback_cb)
             self._last_goal_time = rospy.Time.now()
-            self._has_active_goal = True
+            self._active_goal = deepcopy(self.inputs['goal'])
             return NodeMsg.RUNNING
         current_state = self._ac.get_state()
         self.logdebug('current_state: %s' % current_state)
@@ -81,7 +88,7 @@ class Action(Leaf):
                 self._ac.cancel_goal()
                 self._ac.stop_tracking_goal()
                 self._last_goal_time = None
-                self._has_active_goal = False
+                self._active_goal = None
 
                 return NodeMsg.FAILED
 
@@ -99,7 +106,7 @@ class Action(Leaf):
             # returns LOST again
             self._ac.cancel_goal()
             self._ac.stop_tracking_goal()
-            self._has_active_goal = False
+            self._active_goal = None
 
             # Fail if final goal status was not SUCCEEDED
             if current_state == GoalStatus.SUCCEEDED:
@@ -111,10 +118,10 @@ class Action(Leaf):
 
     def _do_untick(self):
         # stop the current goal but keep outputs
-        if self._has_active_goal:
+        if self._active_goal is not None:
             self._ac.cancel_goal()
         self._last_goal_time = None
-        self._has_active_goal = False
+        self._active_goal = None
         self._feedback = None
         return NodeMsg.IDLE
 
