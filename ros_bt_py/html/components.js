@@ -68,7 +68,7 @@ function getDefaultValue(typeName, options)
   }
   else if (typeName === 'bool')
   {
-    return {type: 'boolean',
+    return {type: 'bool',
             value: true};
   }
   else if (typeName === 'list')
@@ -2397,7 +2397,9 @@ class NewNode extends Component
             }
           </select>
         </label>
-        <EditableNode key={this.state.name}
+        <EditableNode key={this.props.node.module
+                           + this.props.node.node_class
+                           + this.props.node.name}
                       name={this.state.name}
                       nodeClass={this.props.node.node_class}
                       updateValidity={this.updateValidity}
@@ -2656,7 +2658,7 @@ class NewNode extends Component
         </div>
       );
     }
-    else if (valueType === 'boolean')
+    else if (valueType === 'bool')
     {
       // Checkbox
       changeHandler = (event) =>
@@ -2764,12 +2766,14 @@ class SelectedNode extends Component
         if (type === 'type')
         {
           json_value = json_value['py/type']
-            .replace('__builtin__.', '')
-            .replace('basestring', 'string');
+            .replace('__builtin__.', '');
         }
         return {
           key: x.key,
-          value: {type: type,
+          value: {type: type
+                  .replace(/^basestring$/, 'string')
+                  .replace(/^str$/, 'string')
+                  .replace(/^unicode$/, 'string'),
                   value: json_value}
         };
       };
@@ -2801,6 +2805,7 @@ class SelectedNode extends Component
 
     this.nameChangeHandler = this.nameChangeHandler.bind(this);
     this.updateValidity = this.updateValidity.bind(this);
+    this.updateValue = this.updateValue.bind(this);
     this.onClickUpdate = this.onClickUpdate.bind(this);
   }
 
@@ -2863,7 +2868,9 @@ class SelectedNode extends Component
         <button className="btn btn-block btn-primary mb-2"
                 disabled={!this.state.isValid}
                 onClick={this.onClickUpdate}>Update</button>
-        <EditableNode key={this.props.node.name}
+        <EditableNode key={this.props.node.module
+                           + this.props.node.node_class
+                           + this.props.node.name}
                       name={this.state.name}
                       nodeClass={this.props.node.node_class}
                       updateValidity={this.updateValidity}
@@ -2872,7 +2879,6 @@ class SelectedNode extends Component
                       options={this.state.options}
                       inputs={this.state.inputs}
                       outputs={this.state.outputs}
-          optionRefs
         />
       </div>
     );
@@ -3176,7 +3182,7 @@ class EditableNode extends Component
         </div>
       );
     }
-    else if (valueType === 'boolean')
+    else if (valueType === 'bool')
     {
       // Checkbox
       changeHandler = (event) =>
