@@ -47,7 +47,15 @@ class Sequence(FlowControl):
         if not self.children:
             self.logwarn('Ticking without children. Is this really what you want?')
             return NodeMsg.FAILED
+
+        # If we've previously succeeded or failed, reset all children
+        # so we get a clean run
+        if self.state in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
+            for child in self.children:
+                child.reset()
+
         # Tick children until one returns FAILED or RUNNING
+        result = NodeMsg.FAILED
         for index, child in enumerate(self.children):
             result = child.tick()
             if result != NodeMsg.SUCCEEDED:
@@ -57,9 +65,9 @@ class Sequence(FlowControl):
                     # succeeded
                     for untick_child in self.children[index + 1:]:
                         untick_child.untick()
-                return result
-        # If all children succeeded, we too succeed
-        return NodeMsg.SUCCEEDED
+                break
+
+        return result
 
     def _do_untick(self):
         for child in self.children:
@@ -179,20 +187,27 @@ class MemorySequence(FlowControl):
         if not self.children:
             self.logwarn('Ticking without children. Is this really what you want?')
             return NodeMsg.FAILED
+
+        # If we've previously succeeded or failed, reset all children
+        # so we get a clean run
+        if self.state in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
+            for child in self.children:
+                child.reset()
+
         # Tick children until one returns FAILED or RUNNING
         for index, child in enumerate(self.children):
             if index < self.last_running_child:
                 continue
             result = child.tick()
+
             if result != NodeMsg.SUCCEEDED:
-                # For all states other than RUNNING...
-                if result != NodeMsg.RUNNING:
-                    # ...untick all children after the one that hasn't
-                    # succeeded
+                if result == NodeMsg.RUNNING:
+                    self.last_running_child = index
+                else:
+                    # For all states other than RUNNING, untick all
+                    # children after the one that hasn't succeeded
                     for untick_child in self.children[index + 1:]:
                         untick_child.untick()
-                else:
-                    self.last_running_child = index
                 return result
         # If all children succeeded, we too succeed
         self.last_running_child = 0
