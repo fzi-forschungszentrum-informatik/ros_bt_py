@@ -14,20 +14,28 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
     outputs={'out': OptionRef('output_type'),
              'current_index': int,
              'tick_count': int,
-             'untick_count': int},
+             'untick_count': int,
+             'reset_count': int,
+             'shutdown_count': int},
     max_children=0))
 class MockLeaf(Leaf):
     def _do_setup(self):
         self.outputs['current_index'] = 0
-        self.outputs['tick_count'] = 0
-        self.outputs['untick_count'] = 0
+        self.tick_count = 0
+        self.outputs['tick_count'] = self.tick_count
+        self.untick_count = 0
+        self.outputs['untick_count'] = self.untick_count
+        self.reset_count = 0
+        self.outputs['reset_count'] = self.reset_count
+        self.shutdown_count = 0
+        self.outputs['shutdown_count'] = self.shutdown_count
 
         if len(self.options['state_values']) != len(self.options['output_values']):
             raise NodeConfigError('state_values and output_values must have the same length!')
         for value in self.options['output_values']:
             try:
                 self.outputs['out'] = value
-            except TypeError, e:
+            except TypeError:
                 raise NodeConfigError('Provided output value "%s (%s)" is not compatible with '
                                       'output type %s' %
                                       (str(value), type(value).__name__,
@@ -41,25 +49,27 @@ class MockLeaf(Leaf):
         self.outputs['current_index'] = ((self.outputs['current_index'] + 1) %
                                          len(self.options['state_values']))
 
-        self.outputs['tick_count'] = self.outputs['tick_count'] + 1
+        self.tick_count += 1
+        self.outputs['tick_count'] = self.tick_count
         return new_state
 
     def _do_untick(self):
         # We leave current_index untouched, so paused is the most semantically
         # correct state
-        self.outputs['untick_count'] = self.outputs['untick_count'] + 1
+        self.untick_count += 1
+        self.outputs['untick_count'] = self.untick_count
         return NodeMsg.PAUSED
 
     def _do_reset(self):
         self.outputs['current_index'] = 0
-        self.outputs['tick_count'] = 0
-        self.outputs['untick_count'] = 0
-
+        self.reset_count += 1
+        self.outputs['reset_count'] = self.reset_count
         return NodeMsg.IDLE
 
     def _do_shutdown(self):
         self.outputs['current_index'] = 0
-
+        self.shutdown_count += 1
+        self.outputs['shutdown_count'] = self.shutdown_count
 
 @define_bt_node(NodeConfig(
     options={'utility_lower_bound_success': float,

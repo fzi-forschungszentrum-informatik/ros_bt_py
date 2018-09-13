@@ -58,9 +58,10 @@ class TestMockLeaf(unittest.TestCase):
         self.leaf.tick()
         self.assertEqual(self.leaf.state, self.state_output_pairs[0][0])
         self.assertEqual(self.leaf.outputs['out'], self.state_output_pairs[0][1])
-        self.assertEqual(self.leaf.outputs['tick_count'], 1)
+        self.assertEqual(self.leaf.tick_count, 1)
         self.leaf.reset()
-        self.assertEqual(self.leaf.outputs['tick_count'], 0)
+        self.assertEqual(self.leaf.tick_count, 1)
+        self.assertEqual(self.leaf.reset_count, 1)
         self.assertEqual(self.leaf.state, Node.IDLE)
 
         # After resetting, we should get the first output and state again

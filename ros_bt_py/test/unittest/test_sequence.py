@@ -74,7 +74,6 @@ class TestSequence(unittest.TestCase):
         self.sequence.tick()
         self.assertEqual(self.failer.outputs['tick_count'], 1)
         self.assertEqual(self.failer.state, Node.FAILED)
-        self.assertEqual(self.succeeder.outputs['tick_count'], 0)
         self.assertEqual(self.succeeder.outputs['untick_count'], 1)
         self.assertEqual(self.succeeder.state, Node.PAUSED)
         self.assertEqual(self.sequence.state, Node.FAILED)
@@ -256,7 +255,6 @@ class TestMemorySequence(unittest.TestCase):
         self.mem_sequence.tick()
         self.assertEqual(self.failer.outputs['tick_count'], 1)
         self.assertEqual(self.failer.state, Node.FAILED)
-        self.assertEqual(self.succeeder.outputs['tick_count'], 0)
         self.assertEqual(self.succeeder.outputs['untick_count'], 1)
         self.assertEqual(self.succeeder.state, Node.PAUSED)
         self.assertEqual(self.mem_sequence.state, Node.FAILED)
@@ -265,7 +263,10 @@ class TestMemorySequence(unittest.TestCase):
         self.mem_sequence.tick()
         self.assertEqual(self.failer.outputs['tick_count'], 2)
         self.assertEqual(self.failer.state, Node.FAILED)
-        self.assertEqual(self.succeeder.outputs['tick_count'], 0)
+        # untick() once for each tick (its predecessor failed, so we
+        # want to stop this node) + reset() once for ticking after
+        # having produced a result (to get a "clean slate")
+        self.assertEqual(self.succeeder.outputs['reset_count'], 1)
         self.assertEqual(self.succeeder.outputs['untick_count'], 2)
         self.assertEqual(self.succeeder.state, Node.PAUSED)
         self.assertEqual(self.mem_sequence.state, Node.FAILED)
