@@ -36,8 +36,8 @@ class TestCompare(unittest.TestCase):
         self.compare.reset()
         self.assertEqual(self.compare.state, NodeMsg.IDLE)
         # Neither of the inputs have updated, so ticking fails
-        with self.assertRaises(ValueError):
-            self.compare.tick()
+        self.compare.tick()
+        self.assertEqual(self.compare.state, NodeMsg.FAILED)
 
         # If we update the inputs, the result changes to SUCCEEDED
         self.compare.inputs['a'] = 42
@@ -74,9 +74,10 @@ class TestCompareNewOnly(unittest.TestCase):
 
         self.compare.reset()
         self.assertEqual(self.compare.state, NodeMsg.IDLE)
-        # Neither of the inputs have updated, so ticking fails
-        with self.assertRaises(ValueError):
-            self.compare.tick()
+        # Neither of the inputs have updated, so the node stays
+        # RUNNING
+        self.compare.tick()
+        self.assertEqual(self.compare.state, NodeMsg.RUNNING)
 
         # If we update the inputs, the result changes to SUCCEEDED
         self.compare.inputs['a'] = 42
@@ -115,8 +116,8 @@ class TestCompareConstant(unittest.TestCase):
         self.compare.reset()
         self.assertEqual(self.compare.state, NodeMsg.IDLE)
         # The input hasn't updated yet, so ticking fails
-        with self.assertRaises(ValueError):
-            self.compare.tick()
+        self.compare.tick()
+        self.assertEqual(self.compare.state, NodeMsg.FAILED)
 
         # If we update the input, the result changes to SUCCEEDED
         self.compare.inputs['in'] = 5

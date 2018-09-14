@@ -218,11 +218,14 @@ class Shovable(Decorator):
             self._subtree_action_client.cancel_goal()
         self.cleanup()
 
+        return NodeMsg.IDLE
+
     def cleanup(self):
         self._remote_namespace = ''
         self._subtree_action_client = None
-        self._subtree_data_update_publisher.unregister()
-        self._subtree_data_update_publisher = None
+        if self._subtree_data_update_publisher is not None:
+            self._subtree_data_update_publisher.unregister()
+            self._subtree_data_update_publisher = None
         self._subtree_msg = None
         self._state = Shovable.IDLE
         self._children_with_external_outputs = {}

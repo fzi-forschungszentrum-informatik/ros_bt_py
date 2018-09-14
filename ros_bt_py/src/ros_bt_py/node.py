@@ -440,11 +440,9 @@ class Node(object):
         if self.state is NodeMsg.UNINITIALIZED:
             raise BehaviorTreeException('Trying to reset uninitialized node!')
 
-        # Reset inputs and outputs to None before calling _do_reset()
-        # - the node can overwrite the None with more appropriate
-        # values if need be.
-        for input_key in self.inputs:
-            self.inputs[input_key] = None
+        # Reset input/output reset state and set outputs to None
+        # before calling _do_reset() - the node can overwrite the None
+        # with more appropriate values if need be.
         self.inputs.reset_updated()
 
         for output_key in self.outputs:

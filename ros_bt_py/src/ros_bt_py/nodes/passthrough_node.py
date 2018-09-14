@@ -28,8 +28,6 @@ class PassthroughNode(Leaf):
         pass
 
     def _do_reset(self):
-        self.inputs['in'] = None
-        self.inputs.reset_updated()
         self.outputs['out'] = None
         self.outputs.reset_updated()
         return NodeMsg.IDLE

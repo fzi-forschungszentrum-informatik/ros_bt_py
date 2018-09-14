@@ -2,7 +2,7 @@ import rospy
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
 
-from ros_bt_py.node import Leaf, define_bt_node
+from ros_bt_py.node import Decorator, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
@@ -26,6 +26,7 @@ class GetListItem(Decorator):
             # error this way because we know what we're doing, don't use this
             # gratuitously!
             self.inputs['list'] = []
+            self.inputs.reset_updated()
         return NodeMsg.IDLE
 
     def _do_tick(self):
@@ -54,7 +55,6 @@ class GetListItem(Decorator):
     def _do_reset(self):
         self.outputs['item'] = None
         self.outputs.reset_updated()
-        self.inputs['list'] = None
         self._do_setup()
         self.inputs.reset_updated()
         return NodeMsg.IDLE

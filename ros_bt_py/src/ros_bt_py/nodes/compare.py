@@ -18,26 +18,33 @@ class Compare(Leaf):
     Will succeed if `a == b` and fail otherwise
     """
     def _do_setup(self):
+        self._received_a = False
+        self._received_b = False
         return NodeMsg.IDLE
 
     def _do_tick(self):
-        # if self.inputs.is_updated('in') or self.inputs.is_updated('expected'):
-        if self.inputs['a'] == self.inputs['b']:
-            return NodeMsg.SUCCEEDED
-        else:
-            return NodeMsg.FAILED
+        if not self._received_a:
+            if self.inputs.is_updated('a'):
+                self._received_a = True
+        if not self._received_b:
+            if self.inputs.is_updated('b'):
+                self._received_b = True
+        if self._received_a and self._received_b:
+            if self.inputs['a'] == self.inputs['b']:
+                return NodeMsg.SUCCEEDED
+
+        # If we didn't received both values yet, or we did and they're
+        # not equal, fail
+        return NodeMsg.FAILED
 
     def _do_untick(self):
         # Nothing to do
         return NodeMsg.IDLE
 
     def _do_reset(self):
-        # Reset output to False, so we'll return False until we
-        # receive a new input.
-        self.inputs['a'] = None
-        self.inputs['b'] = None
         self.inputs.reset_updated()
-
+        self._received_a = False
+        self._received_b = False
         return NodeMsg.IDLE
 
     def _do_shutdown(self):
@@ -77,8 +84,6 @@ updated this tick.
     def _do_reset(self):
         # Reset output to False, so we'll return False until we
         # receive a new input.
-        self.inputs['a'] = None
-        self.inputs['b'] = None
         self.inputs.reset_updated()
 
         return NodeMsg.IDLE
@@ -102,11 +107,15 @@ class CompareConstant(Leaf):
     Will succeed if `expected == in` and fail otherwise
     """
     def _do_setup(self):
+        self._received_in = False
         return NodeMsg.IDLE
 
     def _do_tick(self):
-        # if self.inputs.is_updated('in') or self.inputs.is_updated('expected'):
-        if self.options['expected'] == self.inputs['in']:
+        if not self._received_in:
+            if self.inputs.is_updated('in'):
+                self._received_in = True
+
+        if self._received_in and self.options['expected'] == self.inputs['in']:
             return NodeMsg.SUCCEEDED
         else:
             return NodeMsg.FAILED
@@ -116,10 +125,8 @@ class CompareConstant(Leaf):
         return NodeMsg.IDLE
 
     def _do_reset(self):
-        # Reset output to False, so we'll return False until we
-        # receive a new input.
-        self.inputs['in'] = None
         self.inputs.reset_updated()
+        self._received_in = False
 
         return NodeMsg.IDLE
 
@@ -142,26 +149,33 @@ class ALessThanB(Leaf):
     Will succeed if `a < b` and fail otherwise
     """
     def _do_setup(self):
+        self._received_a = False
+        self._received_b = False
         return NodeMsg.IDLE
 
     def _do_tick(self):
-        # if self.inputs.is_updated('in') or self.inputs.is_updated('expected'):
-        if self.inputs['a'] < self.inputs['b']:
-            return NodeMsg.SUCCEEDED
-        else:
-            return NodeMsg.FAILED
+        if not self._received_a:
+            if self.inputs.is_updated('a'):
+                self._received_a = True
+        if not self._received_b:
+            if self.inputs.is_updated('b'):
+                self._received_b = True
+        if self._received_a and self._received_b:
+            if self.inputs['a'] < self.inputs['b']:
+                return NodeMsg.SUCCEEDED
+
+        # If we didn't received both values yet, or we did and they're
+        # not equal, fail
+        return NodeMsg.FAILED
 
     def _do_untick(self):
         # Nothing to do
         return NodeMsg.IDLE
 
     def _do_reset(self):
-        # Reset output to False, so we'll return False until we
-        # receive a new input.
-        self.inputs['a'] = None
-        self.inputs['b'] = None
         self.inputs.reset_updated()
-
+        self._received_a = False
+        self._received_b = False
         return NodeMsg.IDLE
 
     def _do_shutdown(self):
@@ -179,16 +193,20 @@ class ALessThanB(Leaf):
     outputs={},
     max_children=0))
 class LessThanConstant(Leaf):
-    """Compares `a` and `b`
+    """Compares `a` and `target`
 
-    Will succeed if `a < b` and fail otherwise
+    Will succeed if `a < target` and fail otherwise
     """
     def _do_setup(self):
+        self._received_in = False
         return NodeMsg.IDLE
 
     def _do_tick(self):
-        # if self.inputs.is_updated('in') or self.inputs.is_updated('expected'):
-        if self.inputs['a'] < self.options['target']:
+        if not self._received_in:
+            if self.inputs.is_updated('a'):
+                self._received_in = True
+
+        if self._received_in and self.inputs['a'] < self.options['target']:
             return NodeMsg.SUCCEEDED
         else:
             return NodeMsg.FAILED
@@ -198,10 +216,8 @@ class LessThanConstant(Leaf):
         return NodeMsg.IDLE
 
     def _do_reset(self):
-        # Reset output to False, so we'll return False until we
-        # receive a new input.
-        self.inputs['a'] = None
         self.inputs.reset_updated()
+        self._received_in = False
 
         return NodeMsg.IDLE
 

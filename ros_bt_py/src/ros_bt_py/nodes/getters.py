@@ -28,6 +28,7 @@ class GetConstListItem(Decorator):
             # error this way because we know what we're doing, don't use this
             # gratuitously!
             self.inputs['list'] = []
+            self.inputs.reset_updated()
         return NodeMsg.IDLE
 
     def _do_tick(self):
@@ -45,6 +46,9 @@ class GetConstListItem(Decorator):
                 return NodeMsg.FAILED
         else:
             if self.options['succeed_on_stale_data']:
+                # We don't need to check whether we have gotten any
+                # data at all, because if we hadn't the tick method
+                # would raise an error
                 return NodeMsg.SUCCEEDED
             else:
                 self.loginfo('No new data since last tick!')
@@ -56,9 +60,7 @@ class GetConstListItem(Decorator):
     def _do_reset(self):
         self.outputs['item'] = None
         self.outputs.reset_updated()
-        self.inputs['list'] = None
         self._do_setup()
-        self.inputs.reset_updated()
         return NodeMsg.IDLE
 
     def _do_untick(self):
@@ -87,6 +89,7 @@ class GetListItem(Decorator):
             # error this way because we know what we're doing, don't use this
             # gratuitously!
             self.inputs['list'] = []
+            self.inputs.reset_updated()
         return NodeMsg.IDLE
 
     def _do_tick(self):
@@ -115,7 +118,6 @@ class GetListItem(Decorator):
     def _do_reset(self):
         self.outputs['item'] = None
         self.outputs.reset_updated()
-        self.inputs['list'] = None
         self._do_setup()
         self.inputs.reset_updated()
         return NodeMsg.IDLE
@@ -139,6 +141,7 @@ class GetDictItem(Decorator):
             # error this way because we know what we're doing, don't use this
             # gratuitously!
             self.inputs['dict'] = {}
+            self.inputs.reset_updated()
         return NodeMsg.IDLE
 
     def _do_tick(self):
@@ -167,7 +170,6 @@ class GetDictItem(Decorator):
     def _do_reset(self):
         self.outputs['value'] = None
         self.outputs.reset_updated()
-        self.inputs['dict'] = None
         self._do_setup()
         self.inputs.reset_updated()
         return NodeMsg.IDLE
@@ -191,6 +193,7 @@ class GetAttr(Decorator):
             # error this way because we know what we're doing, don't use this
             # gratuitously!
             self.inputs['object'] = object()
+            self.inputs.reset_updated()
         return NodeMsg.IDLE
 
     def _do_tick(self):
@@ -220,7 +223,6 @@ class GetAttr(Decorator):
     def _do_reset(self):
         self.outputs['attr'] = None
         self.outputs.reset_updated()
-        self.inputs['object'] = None
         self._do_setup()
         self.inputs.reset_updated()
         return NodeMsg.IDLE

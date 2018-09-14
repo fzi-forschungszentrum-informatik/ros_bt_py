@@ -145,13 +145,13 @@ class TestPassthroughNode(unittest.TestCase):
         passthrough.inputs['in'] = 0
         self.assertEqual(passthrough.outputs['out'], 42)
 
-        # Calling reset() should bring the node back into the same state if was
-        # in when it was freshly created:
+        # Calling reset() should bring the node back into the same
+        # state if was in when it was freshly created, save for the
+        # input values (the updated state should be the same though)
         passthrough.reset()
 
         fresh_passthrough = PassthroughNode({'passthrough_type': int})
 
-        self.assertEqual(passthrough.inputs['in'], fresh_passthrough.inputs['in'])
         self.assertEqual(passthrough.outputs['out'], fresh_passthrough.outputs['out'])
         self.assertEqual(passthrough.inputs.is_updated('in'),
                          fresh_passthrough.inputs.is_updated('in'))
