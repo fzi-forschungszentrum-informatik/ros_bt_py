@@ -11,6 +11,27 @@ var Fragment = React.Fragment; //'x-fragment';
 let idx = 0;
 const uuid = () => idx++;
 
+function typesCompatible(a, b)
+{
+  if (a.nodeName === b.nodeName) {
+    return false;
+  }
+
+  if (a.kind === b.kind) {
+    return false;
+  }
+
+  var from = a.kind === 'output' ? a : b;
+  var to = a.kind === 'input' ? a : b;
+
+  // object is compatible with anything
+  if (to.type === "{\"py/type\": \"__builtin__.object\"}") {
+    return true;
+  }
+
+  return prettyprint_type(from.type) === prettyprint_type(to.type);
+}
+
 var python_builtin_types = [
   'int',
   'float',
@@ -30,7 +51,11 @@ function prettyprint_type(jsonpickled_type) {
   if (json_type['py/type'] !== undefined)
   {
     // Remove the "builtin" prefix jsonpickle adds
-    return json_type['py/type'].replace('__builtin__.', '').replace('basestring', 'string');
+    return json_type['py/type']
+      .replace('__builtin__.', '')
+      .replace(/^basestring$/, 'string')
+      .replace(/^unicode$/, 'string')
+      .replace(/^str$/, 'string');
   }
 
   // If the type doesn't have a py/type field, maybe it's an
@@ -1788,8 +1813,8 @@ class D3BehaviorTreeEditor extends Component
       .enter()
       .append("g")
       .attr("class", d => "gripper-group " + d.kind + "-gripper-group")
-      .on("mouseover", this.IOGroupDefaultMouseoverHandler)
-      .on("mouseout", this.IOGroupDefaultMouseoutHandler)
+      .on("mouseover.highlight", this.IOGroupDefaultMouseoverHandler)
+      .on("mouseout.highlight", this.IOGroupDefaultMouseoutHandler)
       .merge(groups);
 
     groups
@@ -1879,14 +1904,14 @@ class D3BehaviorTreeEditor extends Component
 
     // select source gripper
     selectIOGripper(vertex_selection, my_data.source)
-      .each(function(d) {
-        this.dispatchEvent(new CustomEvent("mouseover"));
+      .each(function(d, index, group) {
+        this.dispatchEvent(new CustomEvent("mouseover.highlight"));
       });
 
     // select target gripper
     selectIOGripper(vertex_selection, my_data.target)
-      .each(function(d) {
-        this.dispatchEvent(new CustomEvent("mouseover"));
+      .each(function(d, index, group) {
+        this.dispatchEvent(new CustomEvent("mouseover.highlight"));
       });
   }
 
@@ -1901,13 +1926,13 @@ class D3BehaviorTreeEditor extends Component
     // deselect source gripper
     selectIOGripper(vertex_selection, my_data.source)
       .each(function(d) {
-        this.dispatchEvent(new CustomEvent("mouseout"));
+        this.dispatchEvent(new CustomEvent("mouseout.highlight"));
       });
 
     // deselect target gripper
     selectIOGripper(vertex_selection, my_data.target)
       .each(function(d) {
-        this.dispatchEvent(new CustomEvent("mouseout"));
+        this.dispatchEvent(new CustomEvent("mouseout.highlight"));
       });
   }
 
@@ -1942,14 +1967,11 @@ class D3BehaviorTreeEditor extends Component
 
     // Give compatible IOs a new listener and highlight them
     io_grippers
-      .filter(
-        d => d.nodeName !== datum.nodeName
-          && d.kind !== datum.kind
-          && d.serialized_type === datum.serialized_type)
+      .filter(d => typesCompatible(d, datum))
       .classed("compatible", true)
-      .on("mouseover",
+      .on("mouseover.drag",
           this.IOGroupDraggingMouseoverHandler.bind(this))
-      .on("mouseout",
+      .on("mouseout.drag",
           this.IOGroupDraggingMouseoutHandler.bind(this))
       .selectAll(".label")
       .attr("visibility", "visible");
@@ -2038,8 +2060,9 @@ class D3BehaviorTreeEditor extends Component
       .classed("compatible", false);
 
     io_grippers
-      .on("mouseover", this.IOGroupDefaultMouseoverHandler)
-      .on("mouseout", this.IOGroupDefaultMouseoutHandler)
+    // Remove the drag listeners
+      .on("mouseover.drag", null)
+      .on("mouseout.drag", null)
     // And hide the labels again
       .selectAll(".label")
       .attr("visibility", "hidden");
@@ -2309,7 +2332,6 @@ class D3BehaviorTreeEditor extends Component
   {
     this.nodeDropTarget = datum;
     d3.select(domElement).attr("opacity", 0.8);
-    console.log(datum);
   }
 
   dropTargetDefaultMouseoutHandler(domElement, datum)
