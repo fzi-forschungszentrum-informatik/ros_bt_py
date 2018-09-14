@@ -1168,6 +1168,17 @@ class Node(object):
             return
         source_node._unsubscribe(wiring)
         self.subscriptions.remove(wiring)
+        # If the removed wiring was the last subscription for this
+        # datum, set it to None
+        if not [sub for sub in self.subscriptions
+                if (sub.target.data_kind == wiring.target.data_kind and
+                    sub.target.data_key == wiring.target.data_key)]:
+            if wiring.target.data_kind == NodeDataLocation.INPUT_DATA:
+                self.inputs[wiring.target.data_key] = None
+            elif wiring.target.data_kind == NodeDataLocation.OUTPUT_DATA:
+                self.outputs[wiring.target.data_key] = None
+            elif wiring.target.data_kind == NodeDataLocation.OPTION_DATA:
+                self.options[wiring.target.data_key] = None
 
     def to_msg(self):
         """Populate a ROS message with the information from this Node
