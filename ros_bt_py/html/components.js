@@ -81,7 +81,8 @@ function getDefaultValue(typeName, options)
     return {type: 'int',
             value: 0};
   }
-  else if (typeName === 'str' || typeName === 'basestring' || typeName === 'unicode')
+  else if (typeName === 'str' || typeName === 'basestring' || typeName === 'unicode'
+           || typeName === 'string')
   {
     return {type: 'string',
             value: 'foo'};
@@ -129,7 +130,7 @@ function getDefaultValue(typeName, options)
   else
   {
     return {type: '__' + typeName,
-            value: ''};
+            value: {}};
   }
 }
 
@@ -2486,7 +2487,7 @@ class NewNode extends Component
         }
         else if (x.value.type.startsWith('__'))
         {
-          x.value.value["py/object"] = x.value.substring('__'.length);
+          x.value.value["py/object"] = x.value.type.substring('__'.length);
           option.serialized_value = JSON.stringify(x.value.value);
         }
         else
@@ -2861,7 +2862,7 @@ class SelectedNode extends Component
           }
           else if (x.value.type.startsWith('__'))
           {
-            x.value.value["py/object"] = x.value.substring('__'.length);
+            x.value.value["py/object"] = x.value.type.substring('__'.length);
             option.serialized_value = JSON.stringify(x.value.value);
           }
           else
