@@ -264,10 +264,9 @@ class TestMemorySequence(unittest.TestCase):
         self.assertEqual(self.failer.outputs['tick_count'], 2)
         self.assertEqual(self.failer.state, Node.FAILED)
         # untick() once for each tick (its predecessor failed, so we
-        # want to stop this node) + reset() once for ticking after
+        # want to stop this node) + once for ticking after
         # having produced a result (to get a "clean slate")
-        self.assertEqual(self.succeeder.outputs['reset_count'], 1)
-        self.assertEqual(self.succeeder.outputs['untick_count'], 2)
+        self.assertEqual(self.succeeder.outputs['untick_count'], 3)
         self.assertEqual(self.succeeder.state, Node.PAUSED)
         self.assertEqual(self.mem_sequence.state, Node.FAILED)
 

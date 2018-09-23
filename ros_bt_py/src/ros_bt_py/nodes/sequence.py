@@ -48,11 +48,10 @@ class Sequence(FlowControl):
             self.logwarn('Ticking without children. Is this really what you want?')
             return NodeMsg.FAILED
 
-        # If we've previously succeeded or failed, reset all children
-        # so we get a clean run
+        # If we've previously succeeded or failed, untick all children
         if self.state in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
             for child in self.children:
-                child.reset()
+                child.untick()
 
         # Tick children until one returns FAILED or RUNNING
         result = NodeMsg.FAILED
@@ -188,11 +187,10 @@ class MemorySequence(FlowControl):
             self.logwarn('Ticking without children. Is this really what you want?')
             return NodeMsg.FAILED
 
-        # If we've previously succeeded or failed, reset all children
-        # so we get a clean run
+        # If we've previously succeeded or failed, untick all children
         if self.state in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
             for child in self.children:
-                child.reset()
+                child.untick()
 
         # Tick children until one returns FAILED or RUNNING
         for index, child in enumerate(self.children):
