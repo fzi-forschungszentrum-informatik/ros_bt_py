@@ -35,7 +35,7 @@
 
 <group ns="turtlebot$(arg robot_index)">
   <!--  ***************** Robot Model *****************  -->
-  <param name="robot_description" command="$(find xacro)/xacro --inorder 'kobuki_simple.urdf.xacro' tf_prefix:=robot$(arg robot_index)_" />
+  <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find bt_sim_helpers)/launch/kobuki_simple.urdf.xacro' tf_prefix:=robot$(arg robot_index)_" />
 
   <!-- important generally, but specifically utilised by the current app manager -->
   <param name="robot/name" value="$(optenv ROBOT turtlebot)"/>
