@@ -40,6 +40,7 @@ class TopicSubscriber(Leaf):
     def _do_reset(self):
         # discard the last received message, nothing else to reset
         self._msg = None
+        self._subscriber.unregister()
         return NodeMsg.IDLE
 
     def _do_untick(self):
