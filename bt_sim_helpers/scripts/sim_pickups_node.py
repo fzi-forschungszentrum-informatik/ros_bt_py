@@ -138,8 +138,9 @@ class ObjectHelper(object):
                 trans.transform.translation.y,
                 trans.transform.translation.z)
 
-        # All done, publish new transform for object
+        # All done, publish new transform for object and object list
         self.publish_object_tf(self.objects.sim_objects[req.object_id])
+        self.objects_pub.publish(self.objects)
         return InteractObjectResponse(success=True)
 
 
