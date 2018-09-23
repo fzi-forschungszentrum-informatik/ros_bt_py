@@ -1,3 +1,4 @@
+import jsonpickle
 import rospy
 
 
@@ -19,6 +20,7 @@ class NodeData(object):
     def __init__(self, data_type, initial_value=None, static=False):
         self.updated = False
         self._value = None
+        self._serialized_value = jsonpickle.encode(None)
         self._static = static
 
         # Relax type checking for string types
@@ -26,6 +28,8 @@ class NodeData(object):
             self.data_type = basestring
         else:
             self.data_type = data_type
+
+        self._serialized_type = jsonpickle.encode(self.data_type)
 
         # use set here to ensure initial_value is the right type
         # this also sets updated to True
@@ -71,6 +75,8 @@ class NodeData(object):
                              new_value['py/type']))
                 raise TypeError('Expected data to be of type {}, got {} instead'.format(
                     self.data_type.__name__, type(new_value).__name__))
+        if self._serialized_value is not None and new_value != self._value:
+            self._serialized_value = jsonpickle.encode(new_value)
         self._value = new_value
         self.updated = True
 
@@ -81,9 +87,17 @@ class NodeData(object):
         last call of :meth:`reset_updated` (unless this piece of data is
         marked static, in which case we do not expect updates).
         """
-        if not self.updated:
-            rospy.loginfo('Reading non-updated value!')
+        # if not self.updated:
+        #     rospy.loginfo('Reading non-updated value!')
         return self._value
+
+    def get_serialized(self):
+        if self._serialized_value is None:
+            self._serialized_value = jsonpickle.encode(self._value)
+        return self._serialized_value
+
+    def get_serialized_type(self):
+        return self._serialized_type
 
     def set_updated(self):
         self.updated = True
@@ -238,6 +252,22 @@ class NodeDataMap(object):
         if key not in self._map:
             raise KeyError('No member named %s' % key)
         return self._map[key].set
+
+    def get_serialized(self, key):
+        """
+        Return the jsonpickle'd value of the NodeData object at `key`
+        """
+        if key not in self._map:
+            raise KeyError('No member named %s' % key)
+        return self._map[key].get_serialized()
+
+    def get_serialized_type(self, key):
+        """
+        Return the jsonpickle'd type of the NodeData object at `key`
+        """
+        if key not in self._map:
+            raise KeyError('No member named %s' % key)
+        return self._map[key].get_serialized_type()
 
     def get_type(self, key):
         """

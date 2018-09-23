@@ -1196,23 +1196,20 @@ class Node(object):
                        node_class=node_type.__name__,
                        name=self.name,
                        child_names=[child.name for child in self.children],
-                       options=[NodeDataMsg(key=key,
-                                            serialized_value=jsonpickle.encode(
-                                                self.options[key]),
-                                            serialized_type=jsonpickle.encode(
-                                                self.options.get_type(key)))
+                       options=[NodeDataMsg(
+                           key=key,
+                           serialized_value=self.options.get_serialized(key),
+                           serialized_type=self.options.get_serialized_type(key))
                                 for key in self.options],
-                       inputs=[NodeDataMsg(key=key,
-                                           serialized_value=jsonpickle.encode(
-                                               self.inputs[key]),
-                                           serialized_type=jsonpickle.encode(
-                                               self.inputs.get_type(key)))
+                       inputs=[NodeDataMsg(
+                           key=key,
+                           serialized_value=self.inputs.get_serialized(key),
+                           serialized_type=self.inputs.get_serialized_type(key))
                                for key in self.inputs],
-                       outputs=[NodeDataMsg(key=key,
-                                            serialized_value=jsonpickle.encode(
-                                                self.outputs[key]),
-                                            serialized_type=jsonpickle.encode(
-                                                self.outputs.get_type(key)))
+                       outputs=[NodeDataMsg(
+                           key=key,
+                           serialized_value=self.outputs.get_serialized(key),
+                           serialized_type=self.outputs.get_serialized_type(key))
                                 for key in self.outputs],
                        max_children=(self.node_config.max_children
                                      if self.node_config.max_children is not None
