@@ -821,12 +821,10 @@ class Node(object):
 
         # Instantiate node - this shouldn't do anything yet, since we don't
         # call setup()
-        node_instance = node_class(options=options_dict)
-
-        # Set name from ROS message
         if msg.name:
-            node_instance.name = msg.name
-
+            node_instance = node_class(name=msg.name, options=options_dict)
+        else:
+            node_instance = node_class(options=options_dict)
         # Set inputs
         try:
             for input_msg in msg.inputs:
