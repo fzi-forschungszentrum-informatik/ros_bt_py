@@ -372,6 +372,7 @@ class TreeManager(object):
 
         # prefix all the node names, if prefix is not the empty string
         if prefix != '':
+            tree.name = prefix + tree.name
             for node in tree.nodes:
                 node.name = prefix + node.name
                 node.child_names = [prefix + child_name for child_name in node.child_names]
