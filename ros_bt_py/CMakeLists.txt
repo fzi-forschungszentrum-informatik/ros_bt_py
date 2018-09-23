@@ -60,6 +60,7 @@ include_directories(
 ## in contrast to setup.py, you can choose the destination
 install(PROGRAMS
   scripts/tree_node.py
+  scripts/load_tree.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   )
 
