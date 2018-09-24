@@ -299,7 +299,8 @@ class App extends Component
     this.tree_topic = new ROSLIB.Topic({
       ros : this.state.ros,
       name : this.state.bt_namespace + 'tree',
-      messageType : 'ros_bt_py_msgs/Tree'
+      messageType : 'ros_bt_py_msgs/Tree',
+      throttle_rate : 200 // min ms between msgs
     });
 
     this.debug_topic = new ROSLIB.Topic({
@@ -415,7 +416,8 @@ class App extends Component
       this.tree_topic = new ROSLIB.Topic({
         ros : this.state.ros,
         name : namespace + 'tree',
-        messageType : 'ros_bt_py_msgs/Tree'
+        messageType : 'ros_bt_py_msgs/Tree',
+        throttle_rate : 200 // min ms between msgs
       });
 
       this.debug_topic = new ROSLIB.Topic({
@@ -2472,6 +2474,7 @@ class NewNode extends Component
       node_class: this.props.node.node_class,
       name: this.state.name,
       options: this.state.options.map(x => {
+        console.log(x);
         var option = {
           key: x.key,
           serialized_value: ''
@@ -2869,6 +2872,7 @@ class SelectedNode extends Component
           {
             option.serialized_value = JSON.stringify(x.value.value);
           }
+          console.log(x, option);
           return option;
         })
       }),
