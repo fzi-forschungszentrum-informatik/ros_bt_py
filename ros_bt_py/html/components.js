@@ -2484,7 +2484,6 @@ class NewNode extends Component
       node_class: this.props.node.node_class,
       name: this.state.name,
       options: this.state.options.map(x => {
-        console.log(x);
         var option = {
           key: x.key,
           serialized_value: ''
@@ -2882,7 +2881,6 @@ class SelectedNode extends Component
           {
             option.serialized_value = JSON.stringify(x.value.value);
           }
-          console.log(x, option);
           return option;
         })
       }),
