@@ -499,8 +499,10 @@ class App extends Component
                    last_selection_source: 'nodelist'});
   }
 
-  onEditorSelectionChange(new_selected_node)
+  onEditorSelectionChange(new_selected_node_name)
   {
+    var new_selected_node = this.last_received_tree_msg.nodes.find(
+      x => x.name === new_selected_node_name);;
     this.setState((prevState, props) => (
       {
         selected_node: new_selected_node,
@@ -1111,6 +1113,26 @@ class D3BehaviorTreeEditor extends Component
     {
       return;
     };
+
+    var onlyKeyAndType = nodeData => ({
+      key: nodeData.key,
+      serialized_type: nodeData.serialized_type
+    });
+    // Trim the serialized data values from the node data - we won't
+    // render them, so don't clutter the DOM with the data
+    var trimmed_nodes = tree_msg.nodes.map(function(node) {
+      return {
+        node_class: node.node_class,
+        module: node.module,
+        name: node.name,
+        state: node.state,
+        child_names: node.child_names,
+        options: node.options.map(onlyKeyAndType),
+        inputs: node.inputs.map(onlyKeyAndType),
+        outputs: node.outputs.map(onlyKeyAndType)
+      };
+    });
+
     var forest_root = {
       name: "__forest_root",
       child_names: [],
@@ -1119,17 +1141,17 @@ class D3BehaviorTreeEditor extends Component
       options: []
     };
 
-    if (tree_msg.nodes.findIndex(x => x.name === "__forest_root") < 0)
+    if (trimmed_nodes.findIndex(x => x.name === "__forest_root") < 0)
     {
-      tree_msg.nodes.push(forest_root);
+      trimmed_nodes.push(forest_root);
     }
     // Update the visual tree
     var parents = {};
     var node_dict = {};
     // Find parents for all nodes once
     (function(){
-      for (var i in tree_msg.nodes) {
-        var node = tree_msg.nodes[i];
+      for (var i in trimmed_nodes) {
+        var node = trimmed_nodes[i];
         node_dict[node.name] = node;
         for (var j in node.child_names) {
           parents[node.child_names[j]] = node.name;
@@ -1152,20 +1174,15 @@ class D3BehaviorTreeEditor extends Component
             forest_root.child_names.push(node.name);
             return forest_root.name;
           }
-        })(tree_msg.nodes);
+        })(trimmed_nodes);
 
     root.sort(function(a, b) {
       if (a.depth !== b.depth) {
         return b.depth - a.depth;
       }
-      if (a.parent !== b.parent) {
+      while (a.parent !== b.parent) {
         a = a.parent;
         b = b.parent;
-        while (a_parent !== b_parent) {
-          a = a.parent;
-          b = b.parent;
-        }
-        console.log("shouldn't happen");
       }
       var child_list = a.parent.data.child_names;
       return (
@@ -1250,36 +1267,18 @@ class D3BehaviorTreeEditor extends Component
     var title = selection.selectAll(".node_name").data(function(d) {
       return [d];
     });
-    title = title.enter().append("h3").attr("class", "node_name").merge(title);
+    title = title.enter().append("h4").attr("class", "node_name").merge(title);
     title.html(function(d) {
       return d.id;
     });
 
-    var container = selection.selectAll(".table_container").data(d => [d]);
-    container = container.enter()
-      .append("div")
-      .attr("class", "table_container")
-      .merge(container);
-
-    var tables = container.selectAll("table").data(function(d) {
-      return d3.entries({
-        inputs: d.data.inputs || [],
-        outputs: d.data.outputs || [],
-        options: d.data.options || []
-      }).filter(x => x.value.length > 0);
-    }, d => d.key);
-    tables = tables.enter().append("table").attr("class", d => [d.key]).merge(tables);
-
-    tables.selectAll("thead").data(d=>[d]).enter()
-      .append("thead")
-      .append("tr")
-      .append("th")
-      .text(d => d.key);
-    tables.selectAll("tbody").data(d=>[d]).enter()
-      .append("tbody")
-      .attr("class", d => d.key);
-
-    this.fillTables(tables.select("tbody"));
+    var className = selection.selectAll(".class_name").data(function(d) {
+      return [d];
+    });
+    className = className.enter().append("h5").attr("class", "class_name").merge(className);
+    className.html(function(d) {
+      return d.data.node_class;
+    });
   }
 
   fillTables (tbody)
@@ -2293,7 +2292,7 @@ class D3BehaviorTreeEditor extends Component
 
   nodeClickHandler(d, index, group)
   {
-    this.props.onSelectionChange(d.data);
+    this.props.onSelectionChange(d.data.name);
   }
 
   nodeMousedownHandler(d, domObject)
