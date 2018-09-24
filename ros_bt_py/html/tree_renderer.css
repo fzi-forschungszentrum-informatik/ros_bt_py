@@ -36,6 +36,10 @@
   overflow-wrap: break-word;
 }
 
+.btnode h5 {
+    color: #858e99;
+}
+
 .node_list{
   font-family: sans-serif;
   display: inline-block;
