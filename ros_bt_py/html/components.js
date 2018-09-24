@@ -1913,15 +1913,11 @@ class D3BehaviorTreeEditor extends Component
 
     // select source gripper
     selectIOGripper(vertex_selection, my_data.source)
-      .each(function(d, index, group) {
-        this.dispatchEvent(new CustomEvent("mouseover.highlight"));
-      });
+      .dispatch("mouseover");
 
     // select target gripper
     selectIOGripper(vertex_selection, my_data.target)
-      .each(function(d, index, group) {
-        this.dispatchEvent(new CustomEvent("mouseover.highlight"));
-      });
+      .dispatch("mouseover");
   }
 
   DataEdgeDefaultMouseoutHandler(d, index, group)
@@ -1934,15 +1930,11 @@ class D3BehaviorTreeEditor extends Component
 
     // deselect source gripper
     selectIOGripper(vertex_selection, my_data.source)
-      .each(function(d) {
-        this.dispatchEvent(new CustomEvent("mouseout.highlight"));
-      });
+      .dispatch("mouseout");
 
     // deselect target gripper
     selectIOGripper(vertex_selection, my_data.target)
-      .each(function(d) {
-        this.dispatchEvent(new CustomEvent("mouseout.highlight"));
-      });
+      .dispatch("mouseout");
   }
 
   IOGripperMousedownHandler(datum, index, group)
@@ -1952,14 +1944,22 @@ class D3BehaviorTreeEditor extends Component
       return;
     }
     // Remove mouseover / out listeners from all gripper-groups, then add new ones
-    var io_grippers = d3.select(this.svg_ref.current).selectAll(".gripper-group");
+    var svg_sel = d3.select(this.svg_ref.current);
+    var io_grippers = svg_sel.selectAll(".gripper-group");
 
     io_grippers
       .on("mouseover", null)
       .on("mouseout", null);
 
+    // Remove mouseover listener from data edges so we don't
+    // accidentally send a mouseover event to a gripper while crossing
+    // an edge connected to it
+    svg_sel.selectAll('.data-link')
+      .on("mouseover", null)
+      .on("mouseout", null);
+
     // Hide this gripper's label
-    d3.select(this.svg_ref.current).selectAll(".label").datum(datum).attr("visibility", "hidden");
+    svg_sel.selectAll(".label").datum(datum).attr("visibility", "hidden");
 
     // Save the datum to use in the wire request later
     if (datum.kind === "input")
@@ -2079,6 +2079,11 @@ class D3BehaviorTreeEditor extends Component
     // And hide the labels again
       .selectAll(".label")
       .attr("visibility", "hidden");
+
+
+    d3.select(this.svg_ref.current).selectAll('.data-link')
+      .on("mouseover", this.DataEdgeDefaultMouseoverHandler)
+      .on("mouseout", this.DataEdgeDefaultMouseoutHandler);
 
     // Also remove listeners from the background
     d3.select(this.viewport_ref.current)
