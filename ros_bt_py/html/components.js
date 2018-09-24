@@ -557,7 +557,7 @@ class App extends Component
 
 
     return (
-      <Fragment>
+      <div>
         <ExecutionBar key={this.state.bt_namespace}
                       ros={this.state.ros}
                       subtreeNames={this.state.subtree_names}
@@ -623,7 +623,7 @@ class App extends Component
             </div>
           </div>
         </div>
-      </Fragment>
+      </div>
     );
   }
 }
