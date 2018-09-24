@@ -20,10 +20,10 @@
 
 .link {
     fill: none;
-    stroke: #ccc;
-    stroke-width: 1.5px;
+    stroke: #1e2226;
+    stroke-width: 3.5px;
 }
-.btnode{
+.btnode, .label{
   font-family: sans-serif;
   display: inline-block;
   background: #2a2d36;
@@ -31,6 +31,9 @@
   border-width: 6px;
   border-color: #4E5666;
   color: #eff0f4;
+  fill: #eff0f4;
+  max-width: 200px;
+  overflow-wrap: break-word;
 }
 
 .node_list{
@@ -121,16 +124,17 @@
     background: #bebebe;
 }
 
-.data-link, .drawing-indicator {
-    fill: none;
-    stroke: #444;
-    stroke-width: 3.5px;
-}
-
-.data-hover {
+path.data-hover {
     stroke: #148050;
     background: #148050;
 }
+
+.data-link, .drawing-indicator {
+    fill: none;
+    stroke: #64676f;
+    stroke-width: 3.0px;
+}
+
 
 .data-hover rect {
     stroke: #148050;
@@ -144,4 +148,12 @@
 
 .drawing-indicator {
     pointer-events: none;
+}
+
+#editor_viewport {
+  background: #34393c;
+}
+
+.gripper {
+    fill: #74777f;
 }
