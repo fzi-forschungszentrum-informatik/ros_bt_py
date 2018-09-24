@@ -2005,12 +2005,16 @@ class D3BehaviorTreeEditor extends Component
       return;
     }
 
-    var drawingLine = d3.select(this.viewport_ref.current).selectAll(".drawing-indicator").data([
-      {
-        start: this.dragStartPos,
-        end: d3.mouse(this.viewport_ref.current)
-      }],
-                                                                                                /*key=*/d => JSON.stringify(d.start));
+    var drawingLine = d3
+        .select(this.viewport_ref.current)
+        .selectAll(".drawing-indicator")
+        .data(
+          [{
+            start: this.dragStartPos,
+            end: d3.mouse(this.viewport_ref.current)
+          }],
+          /*key=*/d => JSON.stringify(d.start));
+
     drawingLine.exit().remove();
     drawingLine = drawingLine
       .enter()
