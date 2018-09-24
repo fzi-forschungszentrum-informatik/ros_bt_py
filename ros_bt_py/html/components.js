@@ -337,7 +337,6 @@ class App extends Component
     this.last_received_tree_msg = msg;
     if (!this.state.selected_tree.is_subtree)
     {
-      console.log('updating main tree?');
       this.updateTreeMsg(msg);
     }
   }
@@ -352,7 +351,6 @@ class App extends Component
           .find(x => x.name === this.state.selected_tree.name);
       if (selectedSubtree)
       {
-        console.log('updating subtree?');
         this.updateTreeMsg(selectedSubtree);
       }
     }
