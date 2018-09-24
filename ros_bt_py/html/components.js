@@ -586,7 +586,7 @@ class App extends Component
                                 onError={this.onError}/>
                   </div>
                 </div>
-                <div className="row edit_canvas">
+                <div className="row edit_canvas pb-2">
                   <div className="col">
                     <D3BehaviorTreeEditor key={this.state.bt_namespace}
                                           ros={this.state.ros}

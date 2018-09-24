@@ -157,3 +157,7 @@ path.data-hover {
 .gripper {
     fill: #74777f;
 }
+
+#nodelist_container {
+    border-right: solid;
+}
