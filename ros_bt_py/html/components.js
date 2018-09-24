@@ -1324,6 +1324,7 @@ class D3BehaviorTreeEditor extends Component
 
     // Find the maximum size of all the nodes, for layout purposes
     var max_size = [0,0];
+    var max_height_by_depth = Array(root.height + 1).fill(0.0);
     g_vertex.selectAll('.btnode')
       .data(root.descendants(),
             x => x.id)
@@ -1334,6 +1335,7 @@ class D3BehaviorTreeEditor extends Component
         rect.width /= zoom;
         rect.height /= zoom;
         d._size = rect;
+        max_height_by_depth[d.depth] = Math.max(max_height_by_depth[d.depth], rect.height);
         this.parentElement.setAttribute('width', rect.width);
         this.parentElement.setAttribute('height', rect.height);
       });
@@ -1343,7 +1345,7 @@ class D3BehaviorTreeEditor extends Component
     var tree = d3.flextree()
         .nodeSize(function(node) {
           return [node._size.width + this.horizontal_spacing,
-                  node._size.height + this.vertical_spacing];
+                  max_height_by_depth[node.depth] + this.vertical_spacing];
         }.bind(this))
     (root);
 
