@@ -1085,7 +1085,7 @@ class D3BehaviorTreeEditor extends Component
 
   componentDidUpdate(prevProps, prevState)
   {
-    if (this.props.tree_message)
+    if (this.props.tree_message !== prevProps.tree_message)
     {
       this.drawEverything(this.props.tree_message);
 
