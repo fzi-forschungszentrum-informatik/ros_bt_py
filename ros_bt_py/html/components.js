@@ -995,6 +995,7 @@ class D3BehaviorTreeEditor extends Component
     this.min_node_drag_distance=15;
 
     this.io_gripper_spacing = 10;
+    this.io_gripper_size = 15;
     this.max_io_gripper_size = 15;
 
     this.nextWiringSource = null;
@@ -1258,7 +1259,16 @@ class D3BehaviorTreeEditor extends Component
 
     var div = fo
         .append("xhtml:body")
-        .attr("class", "btnode");
+        .attr("class", "btnode p-2")
+        .style("min-height", d => {
+          // We need to ensure a minimum height, in case the node body
+          // would otherwise be shorter than the number of grippers
+          // requires.
+          var inputs = d.data.inputs || [];
+          var outputs = d.data.outputs || [];
+          var max_num_grippers = Math.max(inputs.length, outputs.length);
+          return ((this.io_gripper_size + this.io_gripper_spacing) * max_num_grippers) + 'px';
+        });
   }
 
   updateNodes(selection)
@@ -1735,15 +1745,12 @@ class D3BehaviorTreeEditor extends Component
     var inputs = node.inputs || [];
     var outputs = node.outputs || [];
 
-    var gripperSize = this.getGripperSize(node._size.height,
-                                          inputs.length,
-                                          outputs.length);
     if (data_kind === 'inputs')
     {
       coords = this.getGripperCoords(
         node.data.inputs.findIndex(x => x.key === data_key) || 0,
         /*right=*/false,
-        gripperSize,
+        this.io_gripper_size,
         node._size.width);
     }
     else if (data_kind === 'outputs')
@@ -1751,7 +1758,7 @@ class D3BehaviorTreeEditor extends Component
       coords = this.getGripperCoords(
         node.data.outputs.findIndex(x => x.key === data_key) || 0,
         /*right=*/true,
-        gripperSize,
+        this.io_gripper_size,
         node._size.width);
     }
     else
@@ -1766,13 +1773,13 @@ class D3BehaviorTreeEditor extends Component
 
     if (centered)
     {
-      coords.x += gripperSize * 0.5;
-      coords.y += gripperSize * 0.5;
+      coords.x += this.io_gripper_size * 0.5;
+      coords.y += this.io_gripper_size * 0.5;
     }
     return {
       x: node.x + coords.x,
       y: node.y + coords.y,
-      gripperSize: gripperSize
+      gripperSize: this.io_gripper_size
     };
   }
 
