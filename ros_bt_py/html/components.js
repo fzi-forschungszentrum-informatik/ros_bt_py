@@ -3027,6 +3027,15 @@ class EditableNode extends Component
 
   render()
   {
+    var compareKeys = function(a, b) {
+      if (a.key === b.key) {
+        return 0;
+      }
+      if (a.key < b.key) {
+        return -1;
+      }
+      return 1;
+    };
     return(
       <div className="d-flex flex-column">
         <input className="d-block form-control mb-1"
@@ -3034,9 +3043,9 @@ class EditableNode extends Component
                value={this.props.name}
                onChange={this.props.nameChangeHandler}/>
         <h4>{this.props.nodeClass}</h4>
-        {this.renderParamInputs(this.props.options, 'options')}
-        {this.renderParamDisplays(this.props.inputs, 'inputs')}
-        {this.renderParamDisplays(this.props.outputs, 'outputs')}
+        {this.renderParamInputs(this.props.options.sort(compareKeys), 'options')}
+        {this.renderParamDisplays(this.props.inputs.sort(compareKeys), 'inputs')}
+        {this.renderParamDisplays(this.props.outputs.sort(compareKeys), 'outputs')}
       </div>
     );
   }
@@ -3322,7 +3331,7 @@ class EditableNode extends Component
       return (
         <Fragment>
           <h5>{paramItem.key}</h5>
-          <pre>{JSON.stringify(paramItem.value.value)}</pre>
+          <pre>{JSON.stringify(paramItem.value.value, null, 2)}</pre>
         </Fragment>
       );
     }
