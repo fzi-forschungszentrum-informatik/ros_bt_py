@@ -71,6 +71,7 @@ class MockLeaf(Leaf):
         self.shutdown_count += 1
         self.outputs['shutdown_count'] = self.shutdown_count
 
+
 @define_bt_node(NodeConfig(
     options={'utility_lower_bound_success': float,
              'utility_upper_bound_success': float,
