@@ -4,7 +4,7 @@ import unittest
 from ros_bt_py_msgs.msg import Node, UtilityBounds
 
 from ros_bt_py.nodes.mock_nodes import MockLeaf, MockUtilityLeaf
-from ros_bt_py.nodes.fallback import Fallback
+from ros_bt_py.nodes.fallback import Fallback, MemoryFallback
 
 
 class TestFallback(unittest.TestCase):
@@ -186,3 +186,84 @@ class TestFallback(unittest.TestCase):
 
         self.assertEqual(self.fallback.calculate_utility(),
                          expected_bounds)
+
+
+class TestMemoryFallback(unittest.TestCase):
+    def setUp(self):
+        self.succeeder = MockLeaf(name='succeeder',
+                                  options={'output_type': int,
+                                           'state_values': [Node.SUCCEEDED],
+                                           'output_values': [1]})
+        self.run_then_succeed = MockLeaf(name='run_then_succeed',
+                                         options={'output_type': int,
+                                                  'state_values': [Node.RUNNING, Node.SUCCEEDED],
+                                                  'output_values': [1, 1]})
+        self.failer = MockLeaf(name='failer',
+                               options={'output_type': int,
+                                        'state_values': [Node.FAILED],
+                                        'output_values': [1]})
+        self.runner = MockLeaf(name='runner',
+                               options={'output_type': int,
+                                        'state_values': [Node.RUNNING],
+                                        'output_values': [1]})
+
+        self.mem_fallback = MemoryFallback()
+
+    def tearDown(self):
+        self.mem_fallback.shutdown()
+
+    def testEmptyTickFails(self):
+        self.mem_fallback.setup()
+        self.mem_fallback.tick()
+        self.assertEqual(self.mem_fallback.state, Node.FAILED)
+
+    def testRunning(self):
+        self.mem_fallback.add_child(self.failer)\
+            .add_child(self.runner)
+
+        self.mem_fallback.setup()
+        self.mem_fallback.tick()
+
+        self.assertEqual(self.failer.outputs['tick_count'], 1)
+        self.assertEqual(self.runner.outputs['tick_count'], 1)
+        self.assertEqual(self.mem_fallback.state, Node.RUNNING)
+
+        self.mem_fallback.tick()
+
+        # The MemoryFallback remembers that failer failed, so it won't
+        # try again until it has reached an overall result other than
+        # RUNNING
+        self.assertEqual(self.failer.outputs['tick_count'], 1)
+        self.assertEqual(self.runner.outputs['tick_count'], 2)
+        self.assertEqual(self.mem_fallback.state, Node.RUNNING)
+
+    def testSuccessAfterRunning(self):
+        self.mem_fallback.add_child(self.failer)\
+            .add_child(self.run_then_succeed)
+
+        self.mem_fallback.setup()
+        self.mem_fallback.tick()
+
+        self.assertEqual(self.failer.outputs['tick_count'], 1)
+        self.assertEqual(self.run_then_succeed.outputs['tick_count'], 1)
+        self.assertEqual(self.mem_fallback.state, Node.RUNNING)
+
+        self.mem_fallback.tick()
+
+        # The MemoryFallback remembers that failer failed, so it won't
+        # try again until it has reached an overall result other than
+        # RUNNING
+        self.assertEqual(self.failer.outputs['tick_count'], 1)
+        self.assertEqual(self.run_then_succeed.outputs['tick_count'], 2)
+        self.assertEqual(self.mem_fallback.state, Node.SUCCEEDED)
+
+        self.mem_fallback.tick()
+
+        # On this third tick, the MemoryFallback should tick the
+        # failer again, because it delivered a result of SUCCEEDED
+        # last tick, and thus needs to start over
+        self.assertEqual(self.failer.outputs['tick_count'], 2)
+        self.assertEqual(self.failer.outputs['untick_count'], 1)
+        self.assertEqual(self.run_then_succeed.outputs['tick_count'], 3)
+        # run_then_succeed loops back to RUNNING
+        self.assertEqual(self.mem_fallback.state, Node.RUNNING)

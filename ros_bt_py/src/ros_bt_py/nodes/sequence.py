@@ -187,8 +187,10 @@ class MemorySequence(FlowControl):
             self.logwarn('Ticking without children. Is this really what you want?')
             return NodeMsg.FAILED
 
-        # If we've previously succeeded or failed, untick all children
+        # If we've previously succeeded or failed, reset
+        # last_running_child and untick all children
         if self.state in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
+            self.last_running_child = 0
             for child in self.children:
                 child.untick()
 
@@ -208,7 +210,6 @@ class MemorySequence(FlowControl):
                         untick_child.untick()
                 return result
         # If all children succeeded, we too succeed
-        self.last_running_child = 0
         return NodeMsg.SUCCEEDED
 
     def _do_untick(self):

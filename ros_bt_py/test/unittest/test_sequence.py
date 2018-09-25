@@ -169,6 +169,11 @@ class TestMemorySequence(unittest.TestCase):
                                         'state_values': [Node.RUNNING],
                                         'output_values': [1]})
 
+        self.run_then_fail = MockLeaf(name='run_then_fail',
+                                      options={'output_type': int,
+                                               'state_values': [Node.RUNNING, Node.FAILED],
+                                               'output_values': [1, 1]})
+
         self.cheap_fail = MockUtilityLeaf(
             name='cheap_fail',
             options={
@@ -272,13 +277,26 @@ class TestMemorySequence(unittest.TestCase):
 
     def testTickFailingAfterSuccess(self):
         self.mem_sequence.add_child(self.succeeder)
-        self.mem_sequence.add_child(self.failer)
+        self.mem_sequence.add_child(self.succeeder_2)
+        self.mem_sequence.add_child(self.run_then_fail)
         self.mem_sequence.setup()
         self.mem_sequence.tick()
         self.assertEqual(self.succeeder.outputs['tick_count'], 1)
         self.assertEqual(self.succeeder.state, Node.SUCCEEDED)
-        self.assertEqual(self.failer.outputs['tick_count'], 1)
-        self.assertEqual(self.failer.state, Node.FAILED)
+        self.assertEqual(self.succeeder_2.outputs['tick_count'], 1)
+        self.assertEqual(self.succeeder_2.state, Node.SUCCEEDED)
+        self.assertEqual(self.run_then_fail.outputs['tick_count'], 1)
+        self.assertEqual(self.run_then_fail.state, Node.RUNNING)
+        self.assertEqual(self.mem_sequence.state, Node.RUNNING)
+
+        # The two succeeders shouldn't be ticked
+        self.mem_sequence.tick()
+        self.assertEqual(self.succeeder.outputs['tick_count'], 1)
+        self.assertEqual(self.succeeder.state, Node.SUCCEEDED)
+        self.assertEqual(self.succeeder_2.outputs['tick_count'], 1)
+        self.assertEqual(self.succeeder_2.state, Node.SUCCEEDED)
+        self.assertEqual(self.run_then_fail.outputs['tick_count'], 2)
+        self.assertEqual(self.run_then_fail.state, Node.FAILED)
         self.assertEqual(self.mem_sequence.state, Node.FAILED)
 
         # The MemorySequence failed, so it starts over, ticking both
@@ -286,9 +304,12 @@ class TestMemorySequence(unittest.TestCase):
         self.mem_sequence.tick()
         self.assertEqual(self.succeeder.outputs['tick_count'], 2)
         self.assertEqual(self.succeeder.state, Node.SUCCEEDED)
-        self.assertEqual(self.failer.outputs['tick_count'], 2)
-        self.assertEqual(self.failer.state, Node.FAILED)
-        self.assertEqual(self.mem_sequence.state, Node.FAILED)
+        self.assertEqual(self.succeeder_2.outputs['tick_count'], 2)
+        self.assertEqual(self.succeeder_2.state, Node.SUCCEEDED)
+        self.assertEqual(self.run_then_fail.outputs['tick_count'], 3)
+        # run_then_fail rolls back over to RUNNING
+        self.assertEqual(self.run_then_fail.state, Node.RUNNING)
+        self.assertEqual(self.mem_sequence.state, Node.RUNNING)
 
     def testNested(self):
         inner_sequence = Sequence(name='inner')

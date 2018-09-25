@@ -197,8 +197,11 @@ class MemoryFallback(FlowControl):
             self.logwarn('Ticking without children. Is this really what you want?')
             return NodeMsg.FAILED
 
-        # If we've previously succeeded or failed, untick all children
+        self.logerr(self.state)
+        # If we've previously succeeded or failed, reset
+        # last_running_child and untick all children
         if self.state in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
+            self.last_running_child = 0
             for child in self.children:
                 child.untick()
 
@@ -217,7 +220,6 @@ class MemoryFallback(FlowControl):
                         untick_child.untick()
                 return result
         # If all children failed, we too fail
-        self.last_running_child = 0
         return NodeMsg.FAILED
 
     def _do_untick(self):
