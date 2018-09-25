@@ -274,7 +274,7 @@ class TreeManager(object):
     ####################
 
     @is_edit_service
-    def clear(self, _):
+    def clear(self, _):  # second parameter is needed to fit the edit_service interface!
         root = self.find_root()
         if not root:
             # No root, no problems
