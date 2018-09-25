@@ -1223,9 +1223,11 @@ class D3BehaviorTreeEditor extends Component
 
     var node = g_vertex
         .selectAll(".node")
-        .data(root.descendants(), function(node) {
-          return node.id;
-        });
+        .data(root.descendants()
+              .filter(node => node.id !== forest_root.name),
+              function(node) {
+                return node.id;
+              });
 
     node.exit().remove();
 
@@ -1333,6 +1335,8 @@ class D3BehaviorTreeEditor extends Component
     var g_edge = svg.select("g.edges");
     var g_vertex = svg.selectAll("g.vertices");
 
+    var nodes_without_forest_root = root.descendants()
+        .filter(node => node.id !== '__forest_root');
     // k is the zoom level - we need to apply this to the values we get
     // from getBoundingClientRect, or we get fun scaling effects.
     var zoom = d3.zoomTransform(d3.select(this.viewport_ref.current).node()).k;
@@ -1341,7 +1345,7 @@ class D3BehaviorTreeEditor extends Component
     var max_size = [0,0];
     var max_height_by_depth = Array(root.height + 1).fill(0.0);
     g_vertex.selectAll('.btnode')
-      .data(root.descendants(),
+      .data(nodes_without_forest_root,
             x => x.id)
       .each(function(d, index){
         var rect = this.getBoundingClientRect();
@@ -1359,8 +1363,15 @@ class D3BehaviorTreeEditor extends Component
 
     var tree = d3.flextree()
         .nodeSize(function(node) {
-          return [node._size.width + this.horizontal_spacing,
-                  max_height_by_depth[node.depth] + this.vertical_spacing];
+          if (node._size)
+          {
+            return [node._size.width + this.horizontal_spacing,
+                    max_height_by_depth[node.depth] + this.vertical_spacing];
+          }
+          else
+          {
+            return [1,1];
+          }
         }.bind(this))
     (root);
 
@@ -1374,7 +1385,9 @@ class D3BehaviorTreeEditor extends Component
       }.bind(this));
 
     var link = g_edge.selectAll(".link")
-        .data(tree.links(), function(d) { return '' + d.source.id + d.target.id; });
+        .data(tree.links()
+              .filter(x=>x.source.id !== '__forest_root' && x.target.id !== '__forest_root'),
+              function(d) { return '' + d.source.id + d.target.id; });
     link.exit().remove();
 
     link = link
@@ -1455,7 +1468,7 @@ class D3BehaviorTreeEditor extends Component
 
   findExistingParent(d)
   {
-    while (d._entering && d.parent) {
+    while (d._entering && d.parent && d.parent._size) {
       d = d.parent;
     }
     return d;
