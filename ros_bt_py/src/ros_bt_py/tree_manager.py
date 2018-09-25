@@ -1030,17 +1030,6 @@ class TreeManager(object):
         return SetOptionsResponse(success=True)
 
     @is_edit_service
-    def move_child(self, node_name, child_name, new_index):
-        """Move the named child of a node to the given index.
-
-        Will fail if `new_index` is invalid.
-
-        For moving a node to a different parent, see
-        :meth:`move_node`
-        """
-        pass
-
-    @is_edit_service
     def move_node(self, request):
         """Move the named node to a different parent and insert it at the given index.
 

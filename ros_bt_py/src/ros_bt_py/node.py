@@ -604,21 +604,6 @@ class Node(object):
         # return self to allow chaining of addChild calls
         return self
 
-    def move_child(self, child_name, new_index):
-        """Move the child with the name `child_name` to `new_index`
-
-        :raises:
-
-        IndexError if `new_index` is invalid, KeyError if no child
-        with the name `child_name` exists
-
-        """
-        old_index = self.get_child_index(child_name)
-        if old_index is None:
-            raise KeyError('Node %s has no child named "%s"' % (self.name, child_name))
-        self.children[old_index], self.children[new_index] = \
-            self.children[new_index], self.children[old_index]
-
     def remove_child(self, child_name):
         """Remove the child with the given name and return it.
 
@@ -1244,32 +1229,6 @@ def increment_name(name):
 
     name += '_%d' % (prev_number + 1)
     return name
-
-
-def is_valid_node_message(msg, node_dict=None):
-    """Check whether a message contains a valid message definition.
-
-    Tries to instantiate the node using :meth:`Node.from_msg` and
-    returns a tuple `(success, error_message)`.
-
-    :param ros_bt_py_msgs.msg.Node node: The message to check
-
-    :param dict node_dict:
-
-    If given, check missing parent errors against this dictionary. If
-    not given, those errors are ignored since of course there's no
-    parent.
-    """
-    try:
-        Node.from_msg(msg, node_dict)
-        return (True, '')
-    except KeyError, e:
-        if node_dict is None:
-            return (True, '')
-        else:
-            return (False, str(e))
-    except BehaviorTreeException, e:
-        return (False, str(e))
 
 
 @define_bt_node(NodeConfig(
