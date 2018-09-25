@@ -98,3 +98,15 @@ class MockUtilityLeaf(Leaf):
 
     def _do_shutdown(self):
         pass
+
+    def _do_setup(self):
+        pass
+
+    def _do_tick(self):
+        return NodeMsg.SUCCEEDED
+
+    def _do_untick(self):
+        return NodeMsg.IDLE
+
+    def _do_reset(self):
+        return NodeMsg.IDLE
