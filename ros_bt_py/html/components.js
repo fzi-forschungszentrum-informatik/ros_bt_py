@@ -1004,8 +1004,7 @@ class D3BehaviorTreeEditor extends Component
   {
     super(props);
 
-    this.horizontal_spacing = 80;
-    this.vertical_spacing = 40;
+    this.spacing = 80;
 
     this.min_node_drag_distance=15;
 
@@ -1365,8 +1364,8 @@ class D3BehaviorTreeEditor extends Component
         .nodeSize(function(node) {
           if (node._size)
           {
-            return [node._size.width + this.horizontal_spacing,
-                    max_height_by_depth[node.depth] + this.vertical_spacing];
+            return [node._size.width + this.spacing,
+                    max_height_by_depth[node.depth] + this.spacing];
           }
           else
           {
@@ -1544,9 +1543,9 @@ class D3BehaviorTreeEditor extends Component
             .append("rect")
             .attr("class", "drop_target")
             .attr("transform",
-                  "translate(" + (d.x - this.horizontal_spacing - (d._size.width * 0.5)) + ","
+                  "translate(" + (d.x - this.spacing - (d._size.width * 0.5)) + ","
                   + d.y + ")")
-            .attr("width", this.horizontal_spacing)
+            .attr("width", this.spacing)
             .attr("height", d._size.height)
             .datum({
               position: my_index,  // insert before this node
@@ -1560,7 +1559,7 @@ class D3BehaviorTreeEditor extends Component
           .attr("transform",
                 "translate(" + (d.x + (d._size.width * 0.5)) + ","
                 + d.y + ")")
-          .attr("width", this.horizontal_spacing)
+          .attr("width", this.spacing)
           .attr("height", d._size.height)
           .datum({
             position: my_index + 1,  // insert after this node
@@ -1587,9 +1586,9 @@ class D3BehaviorTreeEditor extends Component
           .attr("class", "drop_target")
           .attr("transform",
                 "translate(" + (d.x - (d._size.width * 0.5)) + ","
-                + (d.y - (this.vertical_spacing * 0.5)) + ")")
+                + (d.y - (this.spacing * 0.5)) + ")")
           .attr("width", d._size.width)
-          .attr("height", this.vertical_spacing * 0.45)
+          .attr("height", this.spacing * 0.45)
           .datum({
             // replace the node at the given index from data, and take
             // it as our own child
@@ -1610,7 +1609,7 @@ class D3BehaviorTreeEditor extends Component
                   "translate(" + (d.x - (d._size.width * 0.5)) + ","
                   + (d.y + d._size.height) + ")")
             .attr("width", d._size.width)
-            .attr("height", this.vertical_spacing * 0.45)
+            .attr("height", this.spacing * 0.45)
             .datum({
               // Add as first child of this node
               position: 0,
