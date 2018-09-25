@@ -299,8 +299,7 @@ class App extends Component
     this.tree_topic = new ROSLIB.Topic({
       ros : this.state.ros,
       name : this.state.bt_namespace + 'tree',
-      messageType : 'ros_bt_py_msgs/Tree',
-      throttle_rate : 200 // min ms between msgs
+      messageType : 'ros_bt_py_msgs/Tree'
     });
 
     this.debug_topic = new ROSLIB.Topic({
@@ -317,7 +316,7 @@ class App extends Component
 
     this.lastTreeUpdate = null;
     this.topicTimeoutID = null;
-    this.newMsgDelay = 200;  // ms
+    this.newMsgDelay = 500;  // ms
 
     // Bind these here so this works as expected in callbacks
     this.getNodes = this.getNodes.bind(this);
@@ -358,11 +357,28 @@ class App extends Component
 
   updateTreeMsg(msg)
   {
+    // Clear any timers for previously received messages (see below)
+    if (this.topicTimeoutID)
+    {
+      window.clearTimeout(this.topicTimeoutID);
+      this.topicTimeoutID = null;
+    }
+
     var now = Date.now();
     if (this.lastTreeUpdate === null || (now - this.lastTreeUpdate) > this.newMsgDelay)
     {
       this.setState({last_tree_msg: msg});
       this.lastTreeUpdate = now;
+    }
+    else
+    {
+      // if it hasn't been long enough since the last tree update,
+      // schedule a retry so we don't drop a message.
+      this.topicTimeoutID = window.setTimeout(
+        function() {
+          this.updateTreeMsg(msg);
+      }.bind(this),
+        this.newMsgDelay * 2);
     }
   }
 
@@ -414,8 +430,7 @@ class App extends Component
       this.tree_topic = new ROSLIB.Topic({
         ros : this.state.ros,
         name : namespace + 'tree',
-        messageType : 'ros_bt_py_msgs/Tree',
-        throttle_rate : 200 // min ms between msgs
+        messageType : 'ros_bt_py_msgs/Tree'
       });
 
       this.debug_topic = new ROSLIB.Topic({
