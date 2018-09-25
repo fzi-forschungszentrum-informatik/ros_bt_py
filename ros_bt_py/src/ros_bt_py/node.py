@@ -1248,7 +1248,7 @@ class Decorator(Node):
         Pass on the utility value of the (only allowed) child.
         """
         if self.children:
-            return self.children[0].calculate_utlity()
+            return self.children[0].calculate_utility()
         else:
             return UtilityBounds(has_lower_bound_success=False,
                                  has_upper_bound_success=False,
