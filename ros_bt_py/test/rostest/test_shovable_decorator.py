@@ -17,12 +17,14 @@ from ros_bt_py.nodes.mock_nodes import MockLeaf
 PKG = 'ros_bt_py'
 
 
-def make_shovable(service_name):
+def make_shovable(action_name):
     return Shovable(options={
-        'utility_evaluator_service': service_name,
-        'remote_tick_frequency_hz': 20.0,
-        'wait_for_service_seconds': 1.0,
-        'action_timeout_seconds': 1.0})
+        'find_best_executor_action': action_name,
+        'wait_for_find_best_executor_seconds': 1.0,
+        'find_best_executor_timeout_seconds': 1.0,
+        'remote_tick_frequency_hz': 20,
+        'run_tree_action_timeout_seconds': 1.0,
+        'wait_for_run_tree_seconds': 1.0})
 
 
 class TestShovable(unittest.TestCase):

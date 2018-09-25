@@ -1,4 +1,3 @@
 Tree tree
 ---
-bool local_is_best # if true, it's best to execute tree locally
-string best_executor_namespace # contains the BT services and actions
+UtilityBounds utility

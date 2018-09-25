@@ -5,6 +5,7 @@ from actionlib_msgs.msg import GoalStatus
 import rospy
 
 from ros_bt_py_msgs.srv import EvaluateUtility, EvaluateUtilityRequest
+from ros_bt_py_msgs.msg import FindBestExecutorAction, FindBestExecutorGoal
 from ros_bt_py_msgs.msg import RunTreeAction, RunTreeGoal, TreeDataUpdate
 from ros_bt_py_msgs.msg import Node as NodeMsg
 
@@ -17,28 +18,31 @@ from ros_bt_py.exceptions import BehaviorTreeException
 
 @define_bt_node(NodeConfig(
     options={
-        'utility_evaluator_service': str,
+        'find_best_executor_action': str,
+        'wait_for_find_best_executor_seconds': float,
+        'find_best_executor_timeout_seconds': float,
         'remote_tick_frequency_hz': float,
-        'wait_for_service_seconds': float,
-        'action_timeout_seconds': float},
+        'run_tree_action_timeout_seconds': float,
+        'wait_for_run_tree_seconds': float},
     inputs={},
     outputs={'running_remotely': bool},
     max_children=1))
 class Shovable(Decorator):
     """Marks the subtree below this decorator as remote-executable.
 
-    It will first send the subtree to `utility_evaluator_service' (a
-    :class:`ros_bt_py_msgs.srv.EvaluateUtility` server) to see who is
-    best suited to execute it.
+    It will first send the subtree to `find_best_executor_action' (a
+    :class:`ros_bt_py_msgs.msg.FindBestExecutorAction` server) to see
+    who is best suited to execute it.
 
     Depending on the answer, it will either tick the subtree itself of
-    use the action server from the service response to execute it
+    use the action server from the action result to execute it
     remotely.
 
     The negotiation induces some delay, so expect a few ticks' wait
     before the subtree is actually executed. Consequently, make sure
     that the subtree takes long enough to arrive at a final state
     (`SUCCEEDED` or `FAILED`) that this overhead is justified.
+
     """
     # States to structure the do_tick() method
     IDLE = 0
@@ -49,18 +53,12 @@ class Shovable(Decorator):
     EXECUTE_REMOTE = 5
 
     def _do_setup(self):
-        self._evaluator_client = AsyncServiceProxy(
-            self.options['utility_evaluator_service'],
-            EvaluateUtility)
-        # Throws an exception after timing out
-        rospy.wait_for_service(
-            self.options['utility_evaluator_service'],
-            timeout=self.options['wait_for_service_seconds'])
-
         self._state = Shovable.IDLE
         self._remote_namespace = ''
+        self._find_best_executor_start_time = None
         self._subtree_action_start_time = None
         self._subtree_action_client = None
+        self._subtree_action_client_creation_time = None
         self._subtree_data_update_publisher = None
         # Save this so we can be sure we're actually executing the same tree we
         # evaluated the utility value for
@@ -92,6 +90,18 @@ class Shovable(Decorator):
                 self._external_outputs_by_name[conn.source.node_name] = []
             self._external_outputs_by_name[conn.source.node_name].append(conn.source.data_key)
 
+        # Create an action client for FindBestExecutor
+        self._find_best_executor_ac = SimpleActionClient(
+            self.options['find_best_executor_action'],
+            FindBestExecutorAction)
+
+        if not self._find_best_executor_ac.wait_for_server(
+                timeout=rospy.Duration(self.options['wait_for_find_best_executor_seconds'])):
+            raise BehaviorTreeException(
+                'Action server %s not available after waiting %f seconds!' % (
+                    self.options['find_best_executor_action'],
+                    self.options['wait_for_find_best_executor_seconds']))
+
     def _do_tick(self):
         # If the child is not currently running, check where best to execute it
         if self._state == Shovable.IDLE:
@@ -99,49 +109,65 @@ class Shovable(Decorator):
             self._subtree_msg, _, _ = \
                 self.children[0].get_subtree_msg()
 
-            self._evaluator_client.call_service(
-                EvaluateUtilityRequest(tree=self._subtree_msg))
+            self._find_best_executor_ac.send_goal(FindBestExecutorGoal(
+                tree=self._subtree_msg))
+            self._find_best_executor_start_time = rospy.Time.now()
 
             self._state = Shovable.WAIT_FOR_UTILITY_RESPONSE
 
+        # Note that this and the following are if's, not elif's!
+        # This allows execution to "fall through" multiple states in a single tick
         if self._state == Shovable.WAIT_FOR_UTILITY_RESPONSE:
-            eval_state = self._evaluator_client.get_state()
-
-            if eval_state == AsyncServiceProxy.RUNNING:
-                return NodeMsg.RUNNING
-
-            elif eval_state == AsyncServiceProxy.RESPONSE_READY:
-                eval_response = self._evaluator_client.get_response()
-
-                self.outputs['running_remotely'] = not eval_response.local_is_best
-
-                if eval_response.local_is_best:
-                    self._state = Shovable.EXECUTE_LOCAL
-                else:
-                    # No need to re-initialize the ActionClient, skip ahead
-                    if eval_response.best_executor_namespace == self._remote_namespace:
-                        self._state = Shovable.START_REMOTE_EXEC_ACTION
-                    else:
-                        self._remote_namespace = eval_response.best_executor_namespace
-
-                        self.logdebug('Building ActionClient for action %s'
-                                      % self._remote_namespace + '/run_tree')
-                        self._subtree_action_client = SimpleActionClient(
-                            self._remote_namespace + '/run_tree', RunTreeAction)
-
-                        self._subtree_data_update_publisher = rospy.Publisher(
-                            self._remote_namespace + '/update_data', TreeDataUpdate,
-                            queue_size=1)
-
-                        self._state = Shovable.ACTION_CLIENT_INIT
-
-            elif eval_state == AsyncServiceProxy.ERROR:
-                self.logerr('Cannot determine best evaluator for subtree')
+            if (rospy.Time.now() - self._find_best_executor_start_time >
+                    rospy.Duration(self.options['find_best_executor_timeout_seconds'])):
+                self.logerr('FindBestExecutor action timed out after %.2f seconds' %
+                            self.options['find_best_executor_timeout_seconds'])
                 self._state = Shovable.IDLE
                 return NodeMsg.FAILED
 
-        # Note that this and the following are if's, not elif's!
-        # This allows execution to "fall through" in a single tick
+            find_best_executor_state = self._find_best_executor_ac.get_state()
+
+            if find_best_executor_state in [
+                    GoalStatus.PREEMPTED,
+                    GoalStatus.SUCCEEDED,
+                    GoalStatus.ABORTED,
+                    GoalStatus.REJECTED,
+                    GoalStatus.RECALLED,
+                    GoalStatus.LOST]:
+                # Fail if final goal status was not SUCCEEDED
+                if find_best_executor_state == GoalStatus.SUCCEEDED:
+                    # Figure out whether we're executing locally or remotely
+                    find_best_executor_result = self._find_best_executor_ac.get_result()
+                    if find_best_executor_result.local_is_best:
+                        self._state = Shovable.EXECUTE_LOCAL
+                    else:
+                        # No need to re-initialize the ActionClient, skip ahead
+                        namespace = find_best_executor_result.best_executor_namespace
+                        if namespace == self._remote_namespace:
+                            self._state = Shovable.START_REMOTE_EXEC_ACTION
+                        else:
+                            self._remote_namespace = namespace
+
+                            self.logdebug('Building ActionClient for action %s'
+                                          % self._remote_namespace + '/run_tree')
+                            self._subtree_action_client = SimpleActionClient(
+                                self._remote_namespace + '/run_tree', RunTreeAction)
+
+                            self._subtree_data_update_publisher = rospy.Publisher(
+                                self._remote_namespace + '/update_data', TreeDataUpdate,
+                                queue_size=1)
+
+                            self._subtree_action_client_creation_time = rospy.Time.now()
+                            self._state = Shovable.ACTION_CLIENT_INIT
+                else:
+                    self.logerr('FindBestExecutor action ended without succeeding (state ID: %d)'
+                                % find_best_executor_state)
+                    self.cleanup()
+                    return NodeMsg.FAILED
+            # If goal is still running, return running
+            else:
+                return NodeMsg.RUNNING
+
         if self._state == Shovable.ACTION_CLIENT_INIT:
             # The timeout can't be 0, because that is interpreted as "infinite"
             if self._subtree_action_client.wait_for_server(
@@ -149,6 +175,12 @@ class Shovable(Decorator):
                 self._state = Shovable.START_REMOTE_EXEC_ACTION
             else:
                 self._state = Shovable.ACTION_CLIENT_INIT
+
+            # After the set timeout, give up
+            if (rospy.Time.now() - self._subtree_action_client_creation_time >
+                    rospy.Duration(self.options['wait_for_run_tree_seconds'])):
+                self.cleanup()
+                return NodeMsg.FAILED
 
         if self._state == Shovable.START_REMOTE_EXEC_ACTION:
             # Ensure the "updated" state of children with outputs is
@@ -162,16 +194,18 @@ class Shovable(Decorator):
             self._subtree_action_client.send_goal(
                 RunTreeGoal(tree=self._subtree_msg,
                             tick_frequency_hz=self.options['remote_tick_frequency_hz']))
+            self.outputs['running_remotely'] = True
             self._state = Shovable.EXECUTE_REMOTE
 
         if self._state == Shovable.EXECUTE_LOCAL:
+            self.outputs['running_remotely'] = False
             child_result = self.children[0].tick()
 
             return child_result
 
         if self._state == Shovable.EXECUTE_REMOTE:
             seconds_since_goal = (rospy.Time.now() - self._subtree_action_start_time).to_sec()
-            if seconds_since_goal > self.options['action_timeout_seconds']:
+            if seconds_since_goal > self.options['run_tree_action_timeout_seconds']:
                 self.logerr('Remote subtree execution timed out')
                 self._subtree_action_client.cancel_goal()
                 self.cleanup()
@@ -222,7 +256,9 @@ class Shovable(Decorator):
 
     def cleanup(self):
         self._remote_namespace = ''
+        self._find_best_executor_start_time = None
         self._subtree_action_client = None
+        self._subtree_action_client_creation_time = None
         if self._subtree_data_update_publisher is not None:
             self._subtree_data_update_publisher.unregister()
             self._subtree_data_update_publisher = None

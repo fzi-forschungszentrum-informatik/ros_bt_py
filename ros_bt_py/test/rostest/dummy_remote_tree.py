@@ -9,6 +9,7 @@ from actionlib_msgs.msg import GoalStatus
 
 from ros_bt_py_msgs.srv import EvaluateUtility, EvaluateUtilityRequest, EvaluateUtilityResponse
 from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, LoadTreeRequest
+from ros_bt_py_msgs.msg import FindBestExecutorAction, FindBestExecutorGoal, FindBestExecutorResult
 from ros_bt_py_msgs.msg import RunTreeAction, RunTreeGoal, RunTreeResult, TreeDataUpdate
 from ros_bt_py_msgs.msg import Node as NodeMsg
 
@@ -36,15 +37,16 @@ def _get_error_message(response):
     return response.error_message
 
 
-def eval_util_remote_cb(EvaluateUtilityRequest):
-    return EvaluateUtilityResponse(
-        local_is_best=False,
-        best_executor_namespace=ACTION_NAMESPACE)
+class FindBestExecutorActionServer(object):
+    def __init__(self, name, callback):
+        self._as = SimpleActionServer(
+            name, FindBestExecutorAction, self.execute_cb)
+        self.callback = callback
 
+        self._as.start()
 
-def eval_util_local_cb(EvaluateUtilityRequest):
-    return EvaluateUtilityResponse(
-        local_is_best=True)
+    def execute_cb(self, goal):
+        self._as.set_succeeded(self.callback(goal))
 
 
 class RunTreeActionServer(object):
@@ -124,8 +126,16 @@ class RunTreeActionServer(object):
 if __name__ == '__main__':
     rospy.init_node('dummy_remote_tree')
 
-    rospy.Service('evaluate_utility_remote', EvaluateUtility, eval_util_remote_cb)
-    rospy.Service('evaluate_utility_local', EvaluateUtility, eval_util_local_cb)
+    evaluate_remote = FindBestExecutorActionServer(
+        'evaluate_utility_remote',
+        callback=lambda _: FindBestExecutorResult(
+            local_is_best=False,
+            best_executor_namespace=ACTION_NAMESPACE))
+
+    evaluate_local = FindBestExecutorActionServer(
+        'evaluate_utility_local',
+        callback=lambda _: FindBestExecutorResult(
+            local_is_best=True))
 
     server = RunTreeActionServer()
 
