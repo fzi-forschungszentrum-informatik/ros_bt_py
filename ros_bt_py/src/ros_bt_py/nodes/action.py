@@ -6,6 +6,7 @@ from actionlib_msgs.msg import GoalStatus
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
 
+from ros_bt_py.exceptions import BehaviorTreeException
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
@@ -44,8 +45,13 @@ class Action(Leaf):
 
         self._ac = SimpleActionClient(self.options['action_name'],
                                       self.options['action_type'])
-        self._ac.wait_for_server(rospy.Duration.from_sec(
-            self.options['wait_for_action_server_seconds']))
+        if not self._ac.wait_for_server(rospy.Duration.from_sec(
+                self.options['wait_for_action_server_seconds'])):
+            raise BehaviorTreeException(
+                'Action server %s not available after waiting %f seconds!' % (
+                    self.options['action_name'],
+                    self.options['wait_for_action_server_seconds']))
+
         self._last_goal_time = None
         self.outputs['feedback'] = None
         self.outputs['goal_status'] = GoalStatus.LOST  # the default for no active goals
