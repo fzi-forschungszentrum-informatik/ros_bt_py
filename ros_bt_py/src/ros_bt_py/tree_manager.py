@@ -419,6 +419,14 @@ class TreeManager(object):
         with self._state_lock:
             self.tree_msg.state = Tree.EDITABLE
 
+        # find and set root name
+        root = self.find_root()
+        if not root:
+            rospy.loginfo('No nodes in tree, tick will not do anything')
+            return
+        with self._state_lock:
+            self.tree_msg.root_name = root.name
+
         response.success = True
         self.publish_info(self.debug_manager.get_debug_info_msg())
         return response
