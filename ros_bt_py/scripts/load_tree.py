@@ -25,9 +25,12 @@ def main():
         default='/tree_node')
     parser.add_argument(
         '--timeout',
+        type=float,
         default=2.0)
 
-    args = parser.parse_args()
+    # Filter out ROS arguments and pass everything but the filename to
+    # argparse
+    args = parser.parse_args(rospy.myargv()[1:])
 
     service_name = '/' + args.namespace.strip().lstrip('/').rstrip('/') + '/load_tree'
     rospy.init_node('load_bt', anonymous=True)
