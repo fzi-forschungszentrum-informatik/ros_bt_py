@@ -201,6 +201,8 @@ class Shovable(Decorator):
             self.outputs['running_remotely'] = False
             child_result = self.children[0].tick()
 
+            if child_result != NodeMsg.RUNNING:
+                self.cleanup()
             return child_result
 
         if self._state == Shovable.EXECUTE_REMOTE:
@@ -240,9 +242,20 @@ class Shovable(Decorator):
             return NodeMsg.RUNNING
 
     def _do_untick(self):
-        # TODO(nberg): Pause remote subtree execution
+        # If we're in an EXECUTE state, stop the execution. otherwise,
+        # just clean up
+        new_state = NodeMsg.IDLE
+        if self._state == Shovable.WAIT_FOR_UTILITY_RESPONSE:
+            self._find_best_executor_ac.cancel_goal()
+        elif self._state == Shovable.EXECUTE_LOCAL:
+            for child in self.children:
+                new_state = child.untick()
+        elif self._state == Shovable.EXECUTE_REMOTE:
+            self._subtree_action_client.cancel_goal()
 
-        return NodeMsg.IDLE
+        # Clean up in any case
+        self.cleanup()
+        return new_state
 
     def _do_reset(self):
         if self._state == Shovable.EXECUTE_LOCAL:
