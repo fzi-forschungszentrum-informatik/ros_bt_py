@@ -3,7 +3,8 @@
   <include file="$(find roswww)/launch/roswww.launch">
     <arg name="webpath" value="html" />
   </include>
-  <node name="tree_node" pkg="ros_bt_py" type="tree_node.py" output="log">
+  <node name="tree_node" pkg="ros_bt_py" type="tree_node.py" output="log"
+        respawn="true">
     <rosparam param="node_modules">
       [
       ros_bt_py.nodes.sequence,
