@@ -1,7 +1,9 @@
 from threading import Lock
 import rospy
+from roslib.message import get_message_class
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
+from ros_bt_py_msgs.msg import UtilityBounds
 
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
@@ -45,6 +47,24 @@ class TopicSubscriber(Leaf):
 
     def _do_untick(self):
         return NodeMsg.IDLE
+
+    def _do_calculate_utility(self):
+        namespace = rospy.get_namespace()
+
+        for topic, topic_type_name in rospy.get_published_topics(namespace):
+            topic_type = get_message_class(topic_type_name)
+            if (topic == namespace + self.options['topic_name'] and
+                    topic_type == self.options['topic_type']):
+                # if the topic we want exists, our lower bound for
+                # success is 0. We don't know the upper bound, but
+                # that still compares favorably to the bounds we
+                # report if the topic is missing (none)
+                return UtilityBounds(
+                    has_lower_bound_success=True,
+                    lower_bound_success=0.0,
+                    has_lower_bound_failure=True,
+                    lower_bound_failure=0.0)
+        return UtilityBounds()
 
 
 @define_bt_node(NodeConfig(
