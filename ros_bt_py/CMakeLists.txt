@@ -61,6 +61,8 @@ include_directories(
 install(PROGRAMS
   scripts/tree_node.py
   scripts/load_tree.py
+  scripts/find_best_executor_node.py
+  scripts/remote_tree_slot_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   )
 
