@@ -107,7 +107,7 @@ class RemoteTreeSlot(object):
         if not self.run_tree_gh:
             rospy.logdebug('Received a ControlTreeExecution request with no tree loaded. '
                            'Nothing to do, succeeding.')
-            return ControlTreeExecutionRequest(success=True)
+            return ControlTreeExecutionResponse(success=True)
 
         if request.command not in [
                 ControlTreeExecutionRequest.TICK_ONCE,
@@ -154,6 +154,8 @@ class RemoteTreeSlot(object):
             goal_handle.set_canceled()
 
     def update_tree_msg(self, msg):
+        if self.run_tree_gh is None:
+            return
         with self._lock:
             self.latest_tree = msg
             for node in self.latest_tree.nodes:

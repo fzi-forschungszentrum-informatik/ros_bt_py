@@ -20,12 +20,14 @@ class FindBestExecutorServer(object):
         self._as.start()
 
     def execute_cb(self, goal):
-        eval_services = rosservice_find('ros_bt_py/EvaluateUtility')
+        eval_services = rosservice_find('ros_bt_py_msgs/EvaluateUtility')
+        rospy.loginfo('Found these eval services: %s', eval_services)
 
         bounds = []
         res = self.tree_manager.load_tree(LoadTreeRequest(tree=goal.tree))
         if res.success:
             bounds.append(('__local', self.tree_manager.find_root().calculate_utility()))
+
         for srv_name in eval_services:
             if self._as.is_preempt_requested():
                 # TODO(nberg): maybe send result with best so far?
@@ -35,21 +37,35 @@ class FindBestExecutorServer(object):
             service_client = rospy.ServiceProxy(srv_name,
                                                 EvaluateUtility)
             service_client.wait_for_service(1.0)
-            bounds.append((srv_name,
+            # Cut off the service name to get just the namespace
+            #
+            # The second paramater to rsplit limits it to one split,
+            # which neatly separates the service name from the
+            # namespace. The namespace is element 0 of the resulting array
+            srv_namespace = srv_name.rsplit('/', 1)[0]
+            bounds.append((srv_namespace,
                            service_client(
                                EvaluateUtilityRequest(tree=goal.tree)).utility))
 
+        rospy.loginfo('Utility bounds by service namespace: %s', bounds)
         if not bounds:
             self._as.set_aborted(result=None, text="")
 
-        # First sort by the number of set bounds, then by the average
-        # utility bound (over the ones that are set).
-        best_name, best_bounds = sorted(
-            bounds,
-            key=lambda x: (num_set_bounds(x), avg_bound(x)))[0]
+        # First sort bounds so that the lowest average bound
+        # (i.e. lowest cost) bounds object is first
+        bounds.sort(key=lambda x: avg_bound(x[1]))
 
-        rospy.logdebug('Executor "%s" has the best bounds:\n%s',
-                       best_name, str(best_bounds))
+        # Now sort so that the ones with the most set bounds are
+        # first. Since sort() is stable, this retains the "lowest
+        # average bound first" within sets of elements with the same
+        # number of set bounds
+        bounds.sort(reverse=True, key=lambda x: num_set_bounds(x[1]))
+
+        # Extract the best executor
+        best_name, best_bounds = bounds[0]
+
+        rospy.loginfo('Executor "%s" has the best bounds:\n%s',
+                      best_name, str(best_bounds))
         result = FindBestExecutorResult()
         if best_name == '__local':
             result.local_is_best = True
@@ -57,7 +73,7 @@ class FindBestExecutorServer(object):
             result.local_is_best = False
             result.best_executor_namespace = best_name
 
-        self.set_succeeded(result)
+        self._as.set_succeeded(result)
 
 
 def num_set_bounds(bounds):
@@ -91,4 +107,7 @@ def avg_bound(bounds):
         count += 1
         bound_sum += bounds.lower_bound_failure
 
-    return bound_sum / count
+    if count > 0:
+        return bound_sum / count
+    else:
+        return 0

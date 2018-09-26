@@ -16,17 +16,17 @@ def main():
     remote_slot = RemoteTreeSlot()
 
     # Connect the action server's callbacks to the RemoteTreeSlot
-    action_server = ActionServer(RunTreeAction,
-                                 'run_tree_in_slot',
+    action_server = ActionServer('~run_tree',
+                                 RunTreeAction,
                                  goal_cb=remote_slot.run_tree_handler,
                                  cancel_cb=remote_slot.cancel_run_tree_handler,
                                  auto_start=False)
 
     # Set up the service servers using the RemoteTreeSlot's handlers
-    rospy.Service('control_slot_execution',
+    rospy.Service('~control_slot_execution',
                   ControlTreeExecution,
                   handler=remote_slot.control_tree_execution_handler)
-    rospy.Service('evaluate_utility',
+    rospy.Service('~evaluate_utility',
                   EvaluateUtility,
                   handler=remote_slot.evaluate_utility_handler)
 

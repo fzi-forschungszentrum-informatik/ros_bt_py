@@ -40,7 +40,10 @@ def _get_error_message(response):
 class FindBestExecutorActionServer(object):
     def __init__(self, name, callback):
         self._as = SimpleActionServer(
-            name, FindBestExecutorAction, self.execute_cb)
+            name,
+            FindBestExecutorAction,
+            self.execute_cb,
+            auto_start=False)
         self.callback = callback
 
         self._as.start()

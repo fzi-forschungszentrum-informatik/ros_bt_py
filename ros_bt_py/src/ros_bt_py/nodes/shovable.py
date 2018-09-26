@@ -139,10 +139,13 @@ class Shovable(Decorator):
                     # Figure out whether we're executing locally or remotely
                     find_best_executor_result = self._find_best_executor_ac.get_result()
                     if find_best_executor_result.local_is_best:
+                        self.outputs['running_remotely'] = False
                         self._state = Shovable.EXECUTE_LOCAL
                     else:
-                        # No need to re-initialize the ActionClient, skip ahead
+                        self.outputs['running_remotely'] = True
                         namespace = find_best_executor_result.best_executor_namespace
+
+                        # No need to re-initialize the ActionClient, skip ahead
                         if namespace == self._remote_namespace:
                             self._state = Shovable.START_REMOTE_EXEC_ACTION
                         else:
@@ -179,6 +182,11 @@ class Shovable(Decorator):
             # After the set timeout, give up
             if (rospy.Time.now() - self._subtree_action_client_creation_time >
                     rospy.Duration(self.options['wait_for_run_tree_seconds'])):
+                self.logerr(('Remote RunTree ActionClient for %s did not finish loading '
+                             'after %.2f seconds. giving up.') %
+                            (self._remote_namespace + '/run_tree',
+                             self.options['wait_for_run_tree_seconds']))
+
                 self.cleanup()
                 return NodeMsg.FAILED
 
@@ -194,11 +202,9 @@ class Shovable(Decorator):
             self._subtree_action_client.send_goal(
                 RunTreeGoal(tree=self._subtree_msg,
                             tick_frequency_hz=self.options['remote_tick_frequency_hz']))
-            self.outputs['running_remotely'] = True
             self._state = Shovable.EXECUTE_REMOTE
 
         if self._state == Shovable.EXECUTE_LOCAL:
-            self.outputs['running_remotely'] = False
             child_result = self.children[0].tick()
 
             if child_result != NodeMsg.RUNNING:
@@ -238,8 +244,8 @@ class Shovable(Decorator):
             else:
                 self.cleanup()
                 return NodeMsg.FAILED
-        else:
-            return NodeMsg.RUNNING
+
+        return NodeMsg.RUNNING
 
     def _do_untick(self):
         # If we're in an EXECUTE state, stop the execution. otherwise,
@@ -266,6 +272,14 @@ class Shovable(Decorator):
         self.cleanup()
 
         return NodeMsg.IDLE
+
+    def _do_shutdown(self):
+        for child in self.children:
+            child.shutdown()
+        self._find_best_executor_ac.cancel_goal()
+        if self._subtree_action_client is not None:
+            self._subtree_action_client.cancel_goal()
+        self.cleanup()
 
     def cleanup(self):
         self._remote_namespace = ''

@@ -1,0 +1,24 @@
+<launch>
+  <node name="tree_node" pkg="ros_bt_py" type="tree_node.py" output="screen">
+    <param name="target_tick_frequency_hz" value="10.0" />
+  </node>
+  <node name="find_best_executor" pkg="ros_bt_py" type="find_best_executor_node.py" />
+
+  <!-- foo is a topic only available in the remote_slot namespace.
+
+       The tree used in the test has a Shovable subtree that
+       subscribes to that topic, so the remote_slot namespace should
+       have higher utility for that part of the tree and receive the
+       "true" value.
+  -->
+  <group ns="remote_slot">
+    <node name="remote_slot" pkg="ros_bt_py" type="remote_tree_slot_node.py" />
+
+    <node name="pub_remote" pkg="rostopic" type="rostopic"
+          args="pub -l foo std_msgs/Bool 'data: true'" />
+  </group>
+
+  <test test-name="test_topic_subscribe_leaf"
+        pkg="ros_bt_py"
+        type="test_shove_tree.py" />
+</launch>
