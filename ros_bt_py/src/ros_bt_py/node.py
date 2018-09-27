@@ -400,7 +400,10 @@ class Node(object):
         A class inheriting from :class:`Node` should override :meth:`_do_untick` instead of this!
 
         :raises: BehaviorTreeException
-          When trying to untick a node that has not been initialized yet.
+
+        When trying to untick a node that has not been initialized yet
+        by running `setup()`.
+
         """
         if self.state is NodeMsg.UNINITIALIZED:
             raise BehaviorTreeException('Trying to untick uninitialized node!')
@@ -528,32 +531,27 @@ class Node(object):
 
         However, in order to get meaningful results, one should take
         care to use as many nodes as possible that provide their own
-        implementation, since the default only reports that there are no
-        bounds.
+        implementation, since the default reports that there is no
+        cost for execution.
+
         """
         return self._do_calculate_utility()
 
     def _do_calculate_utility(self):
-        return UtilityBounds(has_lower_bound_success=False,
-                             has_upper_bound_success=False,
-                             has_lower_bound_failure=False,
-                             has_upper_bound_failure=False)
+        """Default implementation for calculating utility values
 
-    def validate(self):
-        """You must also override this.
+        :returns:
 
-        Called after constructing and wiring up a node to check that
-        everything is in proper working order.
+        A :class:`ros_bt_py_msgs.msg.UtilityBounds` message with all
+        bounds set to 0.0 and all of the `has_bound` members set to `True`.
 
-        Errors to check for:
-
-        1. if any child input hasn't been wired, that's a
-           **fatal** error
-        2. if a child input has been wired to an output of a child that
-           may execute after it (or never), that's a **warning**
-        3. any unconnected outputs are logged for possible **debugging**
+        That is, any node that does not override this method is
+        considered to execute at no cost at all.
         """
-        pass
+        return UtilityBounds(has_lower_bound_success=True,
+                             has_upper_bound_success=True,
+                             has_lower_bound_failure=True,
+                             has_upper_bound_failure=True)
 
     def get_child_index(self, child_name):
         """Get the index in the `children` array of the child with the given
@@ -1250,10 +1248,10 @@ class Decorator(Node):
         if self.children:
             return self.children[0].calculate_utility()
         else:
-            return UtilityBounds(has_lower_bound_success=False,
-                                 has_upper_bound_success=False,
-                                 has_lower_bound_failure=False,
-                                 has_upper_bound_failure=False)
+            return UtilityBounds(has_lower_bound_success=True,
+                                 has_upper_bound_success=True,
+                                 has_lower_bound_failure=True,
+                                 has_upper_bound_failure=True)
 
 
 @define_bt_node(NodeConfig(
