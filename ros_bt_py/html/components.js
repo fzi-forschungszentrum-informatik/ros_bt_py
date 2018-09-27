@@ -621,17 +621,26 @@ class App extends Component
             <div className="col-9 scroll-col" id="main_pane">
               <div className="container-fluid">
                 <div className="row">
-                  <div className="col">
+                  <div className="col d-flex">
                     <SelectTree key={this.state.bt_namespace}
                                 ros={this.state.ros}
                                 bt_namespace={this.state.bt_namespace}
                                 subtreeNames={this.state.subtree_names}
                                 onSelectedTreeChange={this.onSelectedTreeChange}
                                 onError={this.onError}/>
+                    <button className="btn btn-primary m-1"
+                            onClick={function() {
+                              this.setState(
+                                (prevstate, props) => ({showDataGraph: !prevstate.showDataGraph})
+                              );
+                            }.bind(this)
+                                    }>
+                      Toggle Data Graph
+                    </button>
                   </div>
                 </div>
                 <div className="row edit_canvas pb-2">
-                  <div className="col">
+                  <div className="col p-0">
                     <D3BehaviorTreeEditor key={this.state.bt_namespace}
                                           ros={this.state.ros}
                                           bt_namespace={this.state.bt_namespace}
@@ -640,17 +649,6 @@ class App extends Component
                                           showDataGraph={this.state.showDataGraph}
                                           onError={this.onError}/>
                   </div>
-                </div>
-                <div className="row">
-                  <button className="btn btn-primary btn-block mb-2"
-                          onClick={function() {
-                            this.setState(
-                              (prevstate, props) => ({showDataGraph: !prevstate.showDataGraph})
-                            );
-                          }.bind(this)
-                    }>
-                    Toggle Data Graph
-                  </button>
                 </div>
                 <div className="row">
                   <div className="col pl-0">
