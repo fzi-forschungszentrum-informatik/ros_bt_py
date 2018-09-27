@@ -233,10 +233,39 @@ class NodeList extends Component
 
   render()
   {
-    var items = this.props.availableNodes.map( (node) => {
-      return (<NodeListItem node={node}
-              key={node.module + node.node_class}
-              onSelectionChange={this.props.onSelectionChange}/>);
+    var byName = function(a, b) {
+      if (a.node_class < b.node_class)
+      {
+        return -1;
+      }
+      else if (a.node_class > b.node_class)
+      {
+        return 1;
+      }
+
+      return 0;
+    };
+
+    var moduleThenName = function(a, b) {
+      if (a.module < b.module)
+      {
+        return -1;
+      }
+      else if (a.module > b.module)
+      {
+        return 1;
+      }
+
+      return byName(a, b);
+    };
+
+    var items = this.props.availableNodes
+        .sort(byName)
+//        .sort(moduleThenName)
+        .map( (node) => {
+          return (<NodeListItem node={node}
+                           key={node.module + node.node_class}
+                           onSelectionChange={this.props.onSelectionChange}/>);
     });
     return(
       <div className="available-nodes m-1">
