@@ -1,7 +1,9 @@
-from threading import Lock
+from roslib.message import get_message_class
 import rospy
+import rosservice
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
+from ros_bt_py_msgs.msg import UtilityBounds
 
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
@@ -95,3 +97,28 @@ class Service(Leaf):
 
     def _do_shutdown(self):
         self._service_proxy.stop_call()
+
+    def _do_calculate_utility(self):
+        resolved_service = rospy.resolve_name(self.options['service_name'])
+
+        try:
+            service_type_name = rosservice.get_service_type(resolved_service)
+        except rosservice.ROSServiceIOException as exc:
+            # Defaults to no bounds set, dragging down the utility
+            # score
+            self.loginfo('Unable to check for service %s: %s' % (resolved_service, str(exc)))
+            return UtilityBounds()
+
+        if service_type_name:
+            service_type = get_message_class(service_type_name)
+
+            if service_type == self.options['service_type']:
+                self.loginfo(('Found service %s with correct type, returning '
+                              'filled out UtilityBounds') % resolved_service)
+                return UtilityBounds(has_lower_bound_success=True,
+                                     has_upper_bound_success=True,
+                                     has_lower_bound_failure=True,
+                                     has_upper_bound_failure=True)
+
+        self.loginfo('Service %s is unavailable or has wrong type.' % resolved_service)
+        return UtilityBounds()

@@ -49,11 +49,11 @@ class TopicSubscriber(Leaf):
         return NodeMsg.IDLE
 
     def _do_calculate_utility(self):
-        namespace = rospy.get_namespace()
+        resolved_topic = rospy.resolve_name(self.options['topic_name'])
 
-        for topic, topic_type_name in rospy.get_published_topics(namespace):
+        for topic, topic_type_name in rospy.get_published_topics():
             topic_type = get_message_class(topic_type_name)
-            if (topic == namespace + self.options['topic_name'] and
+            if (topic == resolved_topic and
                     topic_type == self.options['topic_type']):
                 # if the topic we want exists, our lower bound for
                 # success is 0. We don't know the upper bound, but

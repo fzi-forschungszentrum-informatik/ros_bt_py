@@ -1,10 +1,13 @@
 from copy import deepcopy
 from threading import Lock
+
+from roslib.message import get_message_class
 import rospy
 from actionlib import SimpleActionClient
 from actionlib_msgs.msg import GoalStatus
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
+from ros_bt_py_msgs.msg import UtilityBounds
 
 from ros_bt_py.exceptions import BehaviorTreeException
 from ros_bt_py.node import Leaf, define_bt_node
@@ -143,3 +146,21 @@ class Action(Leaf):
     def _do_shutdown(self):
         # nothing to do beyond what's done in reset
         self._do_reset()
+
+    def _do_calculate_utility(self):
+        resolved_topic = rospy.resolve_name(self.options['action_name'] + '/goal')
+
+        for topic, topic_type_name in rospy.get_published_topics():
+            topic_type = get_message_class(topic_type_name)
+            if (topic == resolved_topic and
+                    topic_type == self.options['goal_type']):
+                # if the topic we want exists, our lower bound for
+                # success is 0. We don't know the upper bound, but
+                # that still compares favorably to the bounds we
+                # report if the topic is missing (none)
+                return UtilityBounds(
+                    has_lower_bound_success=True,
+                    lower_bound_success=0.0,
+                    has_lower_bound_failure=True,
+                    lower_bound_failure=0.0)
+        return UtilityBounds()
