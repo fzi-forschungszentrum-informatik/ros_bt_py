@@ -2732,193 +2732,6 @@ class NewNode extends Component
     }
   }
 
-  inputForValue(paramItem, onValidityChange, onNewValue)
-  {
-    var valueType = paramItem.value.type;
-    var changeHandler = (event) => {};
-
-    if (valueType === 'int')
-    {
-      // Number input with integer increments
-      changeHandler = (event) =>
-          {
-            var newValue = Math.round(event.target.value);
-            if (isNaN(newValue))
-            {
-              newValue = 0;
-            }
-            onNewValue(newValue);
-          };
-
-      return (
-        <div className="form-group">
-          <label>{paramItem.key}
-            <input type="number" name="integer"
-                   className="form-control"
-                   onChange={changeHandler}
-                   placeholder="integer"
-                   step="1.0"
-                   value={paramItem.value.value}>
-            </input>
-          </label>
-        </div>
-      );
-    }
-    if (valueType === 'float')
-    {
-      // Number input with free increments
-      changeHandler = (event) =>
-          {
-            var newValue = parseFloat(event.target.value);
-            if (isNaN(newValue))
-            {
-              newValue = 0;
-            }
-            onNewValue(newValue);
-          };
-
-      return (
-        <div className="form-group">
-          <label>{paramItem.key}
-            <input type="number" name="float"
-                   step="any"
-                   className="form-control"
-                   onChange={changeHandler}
-                   placeholder="float"
-                   value={paramItem.value.value}>
-            </input>
-          </label>
-        </div>
-      );
-    }
-    else if (valueType === 'string')
-    {
-      // Regular input
-      changeHandler = (event) =>
-        {
-          onNewValue(event.target.value || '');
-        };
-
-      return (
-        <div className="form-group">
-          <label>{paramItem.key}
-            <input type="text"
-                   className="form-control mt-2"
-                   value={paramItem.value.value}
-                   onChange={changeHandler}/>
-          </label>
-        </div>
-      );
-    }
-    else if (valueType === 'type')
-    {
-      // Regular input
-      changeHandler = (event) =>
-        {
-          var newTypeName = event.target.value || '';
-          if (python_builtin_types.indexOf(newTypeName) >= 0)
-          {
-            onNewValue('__builtin__.' + newTypeName);
-          }
-          else
-          {
-            onNewValue(newTypeName);
-          }
-
-        };
-
-      return (
-        <div className="form-group">
-          <label>{paramItem.key}
-            <input type="text"
-                   className="form-control mt-2"
-                   value={paramItem.value.value}
-                   onChange={changeHandler}/>
-          </label>
-        </div>
-      );
-    }
-    else if (valueType === 'bool')
-    {
-      // Checkbox
-      changeHandler = (event) =>
-        {
-          onNewValue(event.target.checked || false);
-        };
-
-      return (
-        <div className="form-check m-1">
-          <label className="custom-control-label">{paramItem.key}
-            <input type="checkbox"
-                   className="custom-control-input"
-                   checked={this.state.value}
-                   onChange={this.handleChange} />
-          </label>
-        </div>
-      );
-    }
-    else if (valueType === 'unset_optionref')
-    {
-      return (
-        <div className="form-group m-1">
-          <label>{paramItem.key}
-            <input type="text"
-                   className="form-control mt-2"
-                   value={paramItem.value.value}
-                   disabled={true}/>
-          </label>
-        </div>
-      );
-    }
-    // TODO(nberg): implement these two
-
-    // else if (valueType === 'list')
-    // {
-
-    // }
-    // else if (valueType === 'dict')
-    // {
-
-    // }
-    else  // if (valueType === 'object')
-    {
-      // textarea with JSON.stringify(value), parse back when changed
-      return (
-        <div className="form-group">
-          <label>{paramItem.key}
-            <JSONInput initialValue={JSON.stringify(paramItem.value.value)}
-                       onValidityChange={onValidityChange}
-                       onNewValue={onNewValue}/>
-          </label>
-        </div>
-      );
-    }
-  }
-
-  renderParamInputs(params, name)
-  {
-    var param_rows = params.map(x => {
-      return (
-        <tr key={name + x.key}>
-          <td>
-            {this.inputForValue(x, this.updateValidity, this.updateValue.bind(this, name, x.key))}
-          </td>
-        </tr>
-      );
-    });
-
-    return (
-      <div>
-        <h5>{name}</h5>
-        <table>
-          <tbody>
-            {param_rows}
-          </tbody>
-        </table>
-      </div>
-    );
-  }
-
   getDefaultValues(paramList, options)
   {
     options = options || [];
@@ -3194,7 +3007,7 @@ class EditableNode extends Component
     };
     return(
       <div className="d-flex flex-column">
-        <input className="d-block form-control mb-1"
+        <input className="form-control-lg mb-2"
                type="text"
                value={this.props.name}
                onChange={this.props.nameChangeHandler}/>
@@ -3286,7 +3099,7 @@ class EditableNode extends Component
 
       return (
         <div className="form-group">
-          <label>{paramItem.key}
+          <label className="d-block">{paramItem.key}
             <input type="number" name="integer"
                    className="form-control"
                    onChange={changeHandler}
@@ -3313,7 +3126,7 @@ class EditableNode extends Component
 
       return (
         <div className="form-group">
-          <label>{paramItem.key}
+          <label className="d-block">{paramItem.key}
             <input type="number" name="float"
                    step="any"
                    className="form-control"
@@ -3335,7 +3148,7 @@ class EditableNode extends Component
 
       return (
         <div className="form-group">
-          <label>{paramItem.key}
+          <label className="d-block">{paramItem.key}
             <input type="text"
                    className="form-control mt-2"
                    value={paramItem.value.value}
@@ -3362,7 +3175,7 @@ class EditableNode extends Component
 
       return (
         <div className="form-group">
-          <label>{paramItem.key}
+          <label className="d-block">{paramItem.key}
             <input type="text"
                    className="form-control mt-2"
                    value={paramItem.value.value}
@@ -3381,7 +3194,7 @@ class EditableNode extends Component
 
       return (
         <div className="form-check m-1">
-          <label className="custom-control-label">{paramItem.key}
+          <label className="custom-control-label d-block">{paramItem.key}
             <input type="checkbox"
                    className="custom-control-input"
                    checked={paramItem.value.value}
@@ -3394,7 +3207,7 @@ class EditableNode extends Component
     {
       return (
         <div className="form-group m-1">
-          <label>{paramItem.key}
+          <label className="d-block">{paramItem.key}
             <input type="text"
                    className="form-control mt-2"
                    value={paramItem.value.value}
@@ -3418,7 +3231,7 @@ class EditableNode extends Component
       // textarea with JSON.stringify(value), parse back when changed
       return (
         <div className="form-group">
-          <label>{paramItem.key}
+          <label className="d-block">{paramItem.key}
             <JSONInput initialValue={JSON.stringify(paramItem.value.value)}
                        onValidityChange={onValidityChange}
                        onNewValue={onNewValue}/>
