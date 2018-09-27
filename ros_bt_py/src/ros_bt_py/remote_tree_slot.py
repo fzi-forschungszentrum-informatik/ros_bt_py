@@ -5,6 +5,7 @@ import rospy
 from ros_bt_py_msgs.srv import EvaluateUtilityResponse, LoadTreeRequest
 from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, ControlTreeExecutionResponse
 from ros_bt_py_msgs.msg import RunTreeResult
+from ros_bt_py_msgs.msg import RemoteSlotState
 from ros_bt_py_msgs.msg import Node as NodeMsg
 
 from ros_bt_py.tree_manager import TreeManager
@@ -32,15 +33,25 @@ class RemoteTreeSlot(object):
     allowed to execute.
 
     """
-    def __init__(self):
+    def __init__(self, publish_slot_state):
         """Initialize the `RemoteTreeSlot`
+
+        :param function publish_slot_state:
+
+        A callback that will be called with the current state of the
+        RemoteTreeSlot whenever it changes
 
         """
         self.run_tree_gh = None
         self.latest_tree = None
+        self.slot_state = RemoteSlotState(
+            tree_in_slot=False,
+            tree_running=False)
 
         self._lock = Lock()
 
+        self.publish_slot_state = publish_slot_state
+        self.publish_slot_state(self.slot_state)
         self.tree_manager = TreeManager(publish_tree_callback=self.update_tree_msg)
 
     def evaluate_utility_handler(self, request):
@@ -92,9 +103,14 @@ class RemoteTreeSlot(object):
 
         self.run_tree_gh = goal_handle
         self.latest_tree = None
-        # TODO(nberg): Check result
-        self.tree_manager.load_tree(
+
+        res = self.tree_manager.load_tree(
             LoadTreeRequest(tree=goal_handle.get_goal().tree))
+        if not res.success:
+            goal_handle.set_rejected(text=('Failed to load tree: %s' % res.error_message))
+
+        self.slot_state.tree_in_slot = True
+        self.publish_slot_state(self.slot_state)
         goal_handle.set_accepted()
 
     def control_tree_execution_handler(self, request):
@@ -119,7 +135,23 @@ class RemoteTreeSlot(object):
                 success=False,
                 error_message=('RemoteTreeSlot does not allow ControlTreeExecution command "%s"'
                                % request.command))
-        return self.tree_manager.control_execution(request)
+
+        res = self.tree_manager.control_execution(request)
+        if not res.success:
+            return res
+
+        if request.command in [
+                ControlTreeExecutionRequest.TICK_ONCE,
+                ControlTreeExecutionRequest.TICK_UNTIL_RESULT]:
+            self.slot_state.tree_running = True
+        else:
+            # combined with the if above, hitting this else means
+            # the command was either STOP, RESET or SHUTDOWN, so
+            # the tree is not running any more
+            self.slot_state.tree_running = False
+
+        self.publish_slot_state(self.slot_state)
+        return res
 
     def cancel_run_tree_handler(self, goal_handle):
         """A `cancel_callback` for the `RunTree` Action.
@@ -138,9 +170,17 @@ class RemoteTreeSlot(object):
             rospy.logdebug('Received cancel request for current goal, '
                            'stopping and clearing tree')
 
-            self.tree_manager.control_execution(ControlTreeExecutionRequest(
+            stop_res = self.tree_manager.control_execution(ControlTreeExecutionRequest(
                 command=ControlTreeExecutionRequest.SHUTDOWN))
+            if not stop_res.success:
+                raise Exception('Failed to stop tree in RemoteTreeSlot: %s'
+                                % stop_res.error_message)
+
             self.tree_manager.clear(None)
+
+            self.slot_state.tree_in_slot = False
+            self.slot_state.tree_running = False
+            self.publish_slot_state(self.slot_state)
 
             with self._lock:
                 if self.latest_tree:
@@ -165,6 +205,13 @@ class RemoteTreeSlot(object):
                             NodeMsg.FAILED,
                             NodeMsg.SHUTDOWN]:
                         # We got a result, send it back
+                        self.slot_state.tree_running = False
+                        self.publish_slot_state(self.slot_state)
+
+                        # TODO(nberg): Can't shutdown and clear the
+                        # tree from here, because that would deadlock
+                        # the TreeManager. Is that okay, or do we need
+                        # to figure out a way aruond that deadlock?
                         self.run_tree_gh.set_succeeded(result=RunTreeResult(
                             final_tree=self.latest_tree))
                         self.run_tree_gh = None

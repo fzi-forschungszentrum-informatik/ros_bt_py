@@ -88,7 +88,11 @@ class TestRemoteTreeSlot(unittest.TestCase):
             .add_child(self.run_then_succeed)\
             .add_child(self.run_then_fail)
 
-        self.remote_slot = RemoteTreeSlot()
+        self.slot_state = None
+        self.remote_slot = RemoteTreeSlot(publish_slot_state=self.update_state)
+
+    def update_state(self, msg):
+        self.slot_state = msg
 
     def testEvalUtility(self):
         utility_tree, _, _ = self.utility_root.get_subtree_msg()
@@ -99,12 +103,20 @@ class TestRemoteTreeSlot(unittest.TestCase):
     def testLoadRemoteTree(self):
         execute_tree, _, _ = self.execute_root.get_subtree_msg()
 
+        self.assertFalse(self.slot_state.tree_in_slot)
+        self.assertFalse(self.slot_state.tree_running)
+
         gh = MockGoalHandle(RunTreeGoal(tree=execute_tree), goal_id=1)
         self.assertEqual(gh.state, MockGoalHandle.INIT)
 
         self.remote_slot.run_tree_handler(gh)
 
         self.assertEqual(gh.state, MockGoalHandle.ACCEPTED)
+
+        # The RemoteTreeSlot should report a tree has been loaded (but
+        # it's not running yet)
+        self.assertTrue(self.slot_state.tree_in_slot)
+        self.assertFalse(self.slot_state.tree_running)
 
         # If we give another goal before the first is done (or
         # canceled), we get rejected
@@ -118,9 +130,13 @@ class TestRemoteTreeSlot(unittest.TestCase):
         self.remote_slot.cancel_run_tree_handler(gh)
         self.assertEqual(gh.state, MockGoalHandle.CANCELED)
 
-        # And then retry, we should be good to go!
+        # We should be notified that no tree is loaded
+        self.assertFalse(self.slot_state.tree_in_slot)
+
+        # If we then retry, we should be good to go!
         self.remote_slot.run_tree_handler(gh_2)
         self.assertEqual(gh_2.state, MockGoalHandle.ACCEPTED)
+        self.assertTrue(self.slot_state.tree_in_slot)
 
     def testExecuteRemoteTree(self):
         execute_tree, _, _ = self.execute_root.get_subtree_msg()
@@ -131,6 +147,7 @@ class TestRemoteTreeSlot(unittest.TestCase):
         self.remote_slot.run_tree_handler(gh)
 
         self.assertEqual(gh.state, MockGoalHandle.ACCEPTED)
+        self.assertTrue(self.slot_state.tree_in_slot)
 
         res = self.remote_slot.control_tree_execution_handler(ControlTreeExecutionRequest(
             command=ControlTreeExecutionRequest.TICK_PERIODICALLY,
@@ -143,6 +160,9 @@ class TestRemoteTreeSlot(unittest.TestCase):
             tick_frequency_hz=10))
 
         self.assertTrue(get_success(res), get_error_message(res))
+        # If the ControlTreeExecution call was successful, the tree
+        # should now be running
+        self.assertTrue(self.slot_state.tree_running)
 
         self.assertEqual(gh.state, MockGoalHandle.ACCEPTED)
 
@@ -151,6 +171,8 @@ class TestRemoteTreeSlot(unittest.TestCase):
         rospy.sleep(1.0)
 
         self.assertEqual(gh.state, MockGoalHandle.SUCCEEDED)
+        # Tree is done, so not running any more
+        self.assertFalse(self.slot_state.tree_running)
 
     def testCancelBeforeDone(self):
         execute_tree, _, _ = self.execute_root.get_subtree_msg()
@@ -168,12 +190,16 @@ class TestRemoteTreeSlot(unittest.TestCase):
 
         self.assertTrue(get_success(res), get_error_message(res))
         self.assertEqual(self.remote_slot.tree_manager.get_state(), Tree.TICKING)
+        # If the ControlTreeExecution call was successful, the tree
+        # should now be running
+        self.assertTrue(self.slot_state.tree_running)
 
         self.remote_slot.cancel_run_tree_handler(gh)
         self.assertEqual(gh.state, MockGoalHandle.CANCELED)
 
         # Ensure tree is actually stopped
         self.assertEqual(self.remote_slot.tree_manager.get_state(), Tree.EDITABLE)
+        self.assertFalse(self.slot_state.tree_running)
 
 
 def get_success(response):

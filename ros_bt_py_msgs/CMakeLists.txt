@@ -15,6 +15,7 @@ add_message_files(
      NodeData.msg
      NodeDataLocation.msg
      NodeDataWiring.msg
+     RemoteSlotState.msg
      TickTime.msg
      Tree.msg
      TreeDataUpdate.msg

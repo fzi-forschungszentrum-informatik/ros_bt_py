@@ -4,7 +4,7 @@ import rospy
 
 from actionlib.action_server import ActionServer
 
-from ros_bt_py_msgs.msg import RunTreeAction
+from ros_bt_py_msgs.msg import RemoteSlotState, RunTreeAction
 from ros_bt_py_msgs.srv import ControlTreeExecution, EvaluateUtility
 
 from ros_bt_py.remote_tree_slot import RemoteTreeSlot
@@ -30,7 +30,11 @@ def main():
     """
     rospy.init_node('remote_tree_slot')
 
-    remote_slot = RemoteTreeSlot()
+    slot_state_pub = rospy.Publisher('~slot_state',
+                                     RemoteSlotState,
+                                     latch=True,
+                                     queue_size=1)
+    remote_slot = RemoteTreeSlot(publish_slot_state=slot_state_pub.publish)
 
     # Connect the action server's callbacks to the RemoteTreeSlot
     action_server = ActionServer('~run_tree',
