@@ -1012,7 +1012,7 @@ class DebugControls extends Component
   {
     return (
       <Fragment>
-        <div className="custom-control m-1">
+        <div className="custom-control custom-checkbox m-1">
           <input type="checkbox"
                  id={this.debugCheckID}
                  className="custom-control-input"
@@ -1021,7 +1021,7 @@ class DebugControls extends Component
           <label className="custom-control-label"
                  htmlFor={this.debugCheckID}>Debug</label>
         </div>
-        <div className="custom-control m-1">
+        <div className="custom-control custom-checkbox m-1">
           <input type="checkbox"
                  id={this.publishSubtreesID}
                  className="custom-control-input"
@@ -3264,14 +3264,19 @@ class EditableNode extends Component
           onNewValue(event.target.checked || false);
         };
 
+      var checkID = 'input_checkbox_' + uuid();
       return (
-        <div className="form-check m-1">
-          <label className="custom-control-label d-block">{paramItem.key}
-            <input type="checkbox"
-                   className="custom-control-input"
-                   checked={paramItem.value.value}
-                   onChange={changeHandler} />
-          </label>
+        <div className="custom-control custom-checkbox m-1">
+          <input type="checkbox"
+                 id={checkID}
+                 className="custom-control-input"
+                 checked={paramItem.value.value}
+                 onChange={changeHandler} />
+          <label className="custom-control-label d-block"
+                 htmlFor={checkID}>
+            {paramItem.key}
+        </label>
+
         </div>
       );
     }
