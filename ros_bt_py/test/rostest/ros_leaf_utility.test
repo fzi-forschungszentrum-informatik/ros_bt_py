@@ -1,0 +1,26 @@
+<launch>
+  <group ns="has_stuff">
+    <!-- offers delay_1s_if_true (std_srvs/SetBool) service -->
+    <node name="test_services" pkg="ros_bt_py" type="test_service_node.py" />
+    <!-- Publishes numbers_out (std_msgs/Int32), Subscribes to numbers_in (std_msgs/Int32) -->
+    <node name="test_topics" pkg="ros_bt_py" type="test_topics_node.py" />
+    <!-- offers an ActionServer at fibonacci (actionlib_tutorials/FibonacciAction) -->
+    <node name="fib" pkg="actionlib_tutorials" type="fibonacci_server" />
+
+    <!-- has EvaluateUtility at good_slot/evaluate_utility -->
+    <node name="good_slot" pkg="ros_bt_py" type="remote_tree_slot_node.py" />
+  </group>
+
+  <group ns="no_stuff">
+    <!-- has EvaluateUtility at good_slot/evaluate_utility -->
+    <node name="pub_int" pkg="rostopic" type="rostopic"
+          args="pub -l foo std_msgs/Int32 'data: 1.0'" />
+    <node name="bad_slot" pkg="ros_bt_py" type="remote_tree_slot_node.py" />
+  </group>
+
+  <node name="find_best_exec" pkg="ros_bt_py" type="find_best_executor_node.py" />
+
+  <test test-name="test_ros_leaf_utility"
+        pkg="ros_bt_py"
+        type="test_ros_leaf_utility.py" />
+</launch>
