@@ -2,11 +2,13 @@ import jsonpickle
 
 from actionlib.simple_action_client import SimpleActionClient
 from actionlib_msgs.msg import GoalStatus
+from roslib.message import get_message_class
 import rospy
 
 from ros_bt_py_msgs.srv import EvaluateUtility, EvaluateUtilityRequest
 from ros_bt_py_msgs.msg import FindBestExecutorAction, FindBestExecutorGoal
 from ros_bt_py_msgs.msg import RunTreeAction, RunTreeGoal, TreeDataUpdate
+from ros_bt_py_msgs.msg import UtilityBounds
 from ros_bt_py_msgs.msg import Node as NodeMsg
 
 from ros_bt_py.node import Decorator, define_bt_node
@@ -280,6 +282,24 @@ class Shovable(Decorator):
         if self._subtree_action_client is not None:
             self._subtree_action_client.cancel_goal()
         self.cleanup()
+
+    def _do_calculate_utility(self):
+        resolved_topic = rospy.resolve_name(
+            self.options['find_best_executor_action'] + '/goal')
+
+        for topic, topic_type_name in rospy.get_published_topics():
+            topic_type = get_message_class(topic_type_name)
+            if (topic == resolved_topic and
+                    topic_type == FindBestExecutorGoal):
+                # if the goal topic exists, we can execute the action, but
+                # don't know much about the bounds, so set them all to
+                # zero
+                return UtilityBounds(
+                    has_lower_bound_success=True,
+                    has_upper_bound_success=True,
+                    has_lower_bound_failure=True,
+                    has_upper_bound_failure=True)
+        return UtilityBounds()
 
     def cleanup(self):
         self._remote_namespace = ''

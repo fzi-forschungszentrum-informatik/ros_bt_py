@@ -154,13 +154,12 @@ class Action(Leaf):
             topic_type = get_message_class(topic_type_name)
             if (topic == resolved_topic and
                     topic_type == self.options['goal_type']):
-                # if the topic we want exists, our lower bound for
-                # success is 0. We don't know the upper bound, but
-                # that still compares favorably to the bounds we
-                # report if the topic is missing (none)
+                # if the goal topic exists, we can execute the action, but
+                # don't know much about the bounds, so set them all to
+                # zero
                 return UtilityBounds(
                     has_lower_bound_success=True,
-                    lower_bound_success=0.0,
+                    has_upper_bound_success=True,
                     has_lower_bound_failure=True,
-                    lower_bound_failure=0.0)
+                    has_upper_bound_failure=True)
         return UtilityBounds()

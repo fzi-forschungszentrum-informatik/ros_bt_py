@@ -55,15 +55,13 @@ class TopicSubscriber(Leaf):
             topic_type = get_message_class(topic_type_name)
             if (topic == resolved_topic and
                     topic_type == self.options['topic_type']):
-                # if the topic we want exists, our lower bound for
-                # success is 0. We don't know the upper bound, but
-                # that still compares favorably to the bounds we
-                # report if the topic is missing (none)
+                # if the topic we want exists, we can do our job, so
+                # set all the bounds and leave their values at 0
                 return UtilityBounds(
                     has_lower_bound_success=True,
-                    lower_bound_success=0.0,
+                    has_upper_bound_success=True,
                     has_lower_bound_failure=True,
-                    lower_bound_failure=0.0)
+                    has_upper_bound_failure=True)
         return UtilityBounds()
 
 
