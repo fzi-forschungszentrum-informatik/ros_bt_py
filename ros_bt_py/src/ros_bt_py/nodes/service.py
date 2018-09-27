@@ -1,4 +1,4 @@
-from roslib.message import get_message_class
+from roslib.message import get_service_class
 import rospy
 import rosservice
 
@@ -110,7 +110,7 @@ class Service(Leaf):
             return UtilityBounds()
 
         if service_type_name:
-            service_type = get_message_class(service_type_name)
+            service_type = get_service_class(service_type_name)
 
             if service_type == self.options['service_type']:
                 self.loginfo(('Found service %s with correct type, returning '

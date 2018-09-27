@@ -1,6 +1,6 @@
 from threading import Lock
 
-from roslib.message import get_message_class
+from roslib.message import get_service_class
 import rospy
 import rosservice
 
@@ -127,7 +127,7 @@ class RemoteSlot(Leaf):
             return UtilityBounds()
 
         if service_type_name:
-            service_type = get_message_class(service_type_name)
+            service_type = get_service_class(service_type_name)
 
             if service_type == ControlTreeExecution:
                 self.loginfo(('Found service %s with correct type, returning '

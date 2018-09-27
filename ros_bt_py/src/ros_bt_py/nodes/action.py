@@ -4,7 +4,7 @@ from threading import Lock
 from roslib.message import get_message_class
 import rospy
 from actionlib import SimpleActionClient
-from actionlib_msgs.msg import GoalStatus
+from actionlib_msgs.msg import GoalStatus, GoalStatusArray
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import UtilityBounds
@@ -148,12 +148,12 @@ class Action(Leaf):
         self._do_reset()
 
     def _do_calculate_utility(self):
-        resolved_topic = rospy.resolve_name(self.options['action_name'] + '/goal')
+        resolved_topic = rospy.resolve_name(self.options['action_name'] + '/status')
 
-        for topic, topic_type_name in rospy.get_published_topics():
+        for topic, topic_type_name in rospy.get_published_topics(rospy.get_namespace()):
             topic_type = get_message_class(topic_type_name)
             if (topic == resolved_topic and
-                    topic_type == self.options['goal_type']):
+                    topic_type == GoalStatusArray):
                 # if the goal topic exists, we can execute the action, but
                 # don't know much about the bounds, so set them all to
                 # zero

@@ -94,6 +94,7 @@ if (CATKIN_ENABLE_TESTING)
 
   find_package(rostest REQUIRED)
   add_rostest(test/rostest/async_service.test)
+  add_rostest(test/rostest/ros_leaf_utility.test)
   add_rostest(test/rostest/ros_leaves.test)
   add_rostest(test/rostest/shovable.test)
   add_rostest(test/rostest/shove_tree.test)

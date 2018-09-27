@@ -1,12 +1,12 @@
 import jsonpickle
 
 from actionlib.simple_action_client import SimpleActionClient
-from actionlib_msgs.msg import GoalStatus
+from actionlib_msgs.msg import GoalStatus, GoalStatusArray
 from roslib.message import get_message_class
 import rospy
 
 from ros_bt_py_msgs.srv import EvaluateUtility, EvaluateUtilityRequest
-from ros_bt_py_msgs.msg import FindBestExecutorAction, FindBestExecutorGoal
+from ros_bt_py_msgs.msg import FindBestExecutorAction, FindBestExecutorGoal, FindBestExecutorResult
 from ros_bt_py_msgs.msg import RunTreeAction, RunTreeGoal, TreeDataUpdate
 from ros_bt_py_msgs.msg import UtilityBounds
 from ros_bt_py_msgs.msg import Node as NodeMsg
@@ -298,12 +298,12 @@ class Shovable(Decorator):
         # case, the tree will just fail to run, which is preferable
         # because it does not hide errors
         resolved_topic = rospy.resolve_name(
-            self.options['find_best_executor_action'] + '/goal')
+            self.options['find_best_executor_action'] + '/status')
 
-        for topic, topic_type_name in rospy.get_published_topics():
+        for topic, topic_type_name in rospy.get_published_topics(rospy.get_namespace()):
             topic_type = get_message_class(topic_type_name)
             if (topic == resolved_topic and
-                    topic_type == FindBestExecutorGoal):
+                    topic_type == GoalStatusArray):
                 # if the goal topic exists, we can execute the action, but
                 # don't know much about the bounds, so set them all to
                 # zero
