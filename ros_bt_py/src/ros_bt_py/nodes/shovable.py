@@ -45,6 +45,13 @@ class Shovable(Decorator):
     that the subtree takes long enough to arrive at a final state
     (`SUCCEEDED` or `FAILED`) that this overhead is justified.
 
+    Note that thise node will not even `setup` successfully if
+    `find_best_executor_action` is unavailable. This is by design,
+    because although we *could* fall back to always executing locally,
+    that would essentially hide any errors in the ROS graph
+    (i.e. nodes launched in the wrong namespace, nodes that did not
+    launch or crashed, etc.)
+
     """
     # States to structure the do_tick() method
     IDLE = 0
@@ -284,6 +291,12 @@ class Shovable(Decorator):
         self.cleanup()
 
     def _do_calculate_utility(self):
+        # We cannot just forward our child subtree's utility score,
+        # because we might not be the one to execute it.  The only
+        # case where we would want to just forward it is if
+        # find_best_executor_action is not available. But in that
+        # case, the tree will just fail to run, which is preferable
+        # because it does not hide errors
         resolved_topic = rospy.resolve_name(
             self.options['find_best_executor_action'] + '/goal')
 

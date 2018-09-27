@@ -11,6 +11,23 @@ from ros_bt_py.remote_tree_slot import RemoteTreeSlot
 
 
 def main():
+    """Provide :class:`ros_bt_py.remote_tree_slot.RemoteTreeSlot` functionality.
+
+    This ROS node offers a :class:`ros_bt_py_msgs.msg.RunTreeAction`
+    server, and two service servers for
+    :class:`ros_bt_py_msgs.srv.ControlTreeExecution` and
+    :class:`ros_bt_py_msgs.srv.EvaluateUtility`.
+
+    They are in the node's private namespace, making it possible to
+    run multiple `RemoteTreeSlot` nodes in the same namespace.
+
+    Most useful in conjunction with the
+    :class:`ros_bt_py.nodes.remote_tree.RemoteTree` Behavior Tree
+    node, which will send
+    :class:`ros_bt_py_msgs.srv.ControlTreeExecution` requests to the
+    slot.
+
+    """
     rospy.init_node('remote_tree_slot')
 
     remote_slot = RemoteTreeSlot()
