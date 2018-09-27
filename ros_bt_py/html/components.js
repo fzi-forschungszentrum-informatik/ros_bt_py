@@ -653,14 +653,14 @@ class App extends Component
                   </button>
                 </div>
                 <div className="row">
-                  <div className="col">
+                  <div className="col pl-0">
                     {selectedNodeComponent}
                   </div>
-                  <div className="col">
                     <RemoveNode key={this.state.bt_namespace}
                                 ros={this.state.ros}
                                 bt_namespace={this.state.bt_namespace}
                                 onError={this.onError}/>
+                  <div className="col pr-0">
                   </div>
                 </div>
               </div>
@@ -2584,14 +2584,14 @@ class NewNode extends Component
     if (this.props.node === null)
     {
       return (
-        <div className="p-2 d-flex flex-column">
+        <div className="d-flex flex-column">
           No Node Selected
         </div>
       );
     }
 
     return(
-      <div className="p-2 d-flex flex-column">
+      <div className="d-flex flex-column">
         <button className="btn btn-block btn-primary"
                 disabled={!this.state.isValid}
                 onClick={this.onClickAdd}>Add to Tree</button>
@@ -2919,7 +2919,7 @@ class SelectedNode extends Component
   render()
   {
     return (
-      <div className="p-2 d-flex flex-column">
+      <div className="d-flex flex-column">
         <div className="btn-group d-flex mb-2" role="group">
           <button className="btn btn-primary w-100"
                   disabled={!this.state.isValid}
