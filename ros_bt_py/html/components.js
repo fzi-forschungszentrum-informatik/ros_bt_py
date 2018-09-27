@@ -307,6 +307,7 @@ class App extends Component
         is_subtree: false,
         name: ''
       },
+      selected_edge: null,
       available_nodes: [],
       subtree_names: [],
       selected_node: null,
@@ -352,6 +353,7 @@ class App extends Component
     this.onError = this.onError.bind(this);
     this.onNodeListSelectionChange = this.onNodeListSelectionChange.bind(this);
     this.onEditorSelectionChange = this.onEditorSelectionChange.bind(this);
+    this.onSelectedEdgeChange = this.onSelectedEdgeChange.bind(this);
     this.onTreeUpdate = this.onTreeUpdate.bind(this);
     this.onDebugUpdate = this.onDebugUpdate.bind(this);
     this.findPossibleParents = this.findPossibleParents.bind(this);
@@ -558,6 +560,11 @@ class App extends Component
     ));
   }
 
+  onSelectedEdgeChange(new_selected_edge)
+  {
+    this.setState({selected_edge: new_selected_edge});
+  }
+
   render()
   {
     var selectedNodeComponent = null;
@@ -646,6 +653,7 @@ class App extends Component
                                           bt_namespace={this.state.bt_namespace}
                                           tree_message={this.state.last_tree_msg}
                                           onSelectionChange={this.onEditorSelectionChange}
+                                          onSelectedEdgeChange={this.onSelectedEdgeChange}
                                           showDataGraph={this.state.showDataGraph}
                                           onError={this.onError}/>
                   </div>
@@ -654,11 +662,14 @@ class App extends Component
                   <div className="col pl-0">
                     {selectedNodeComponent}
                   </div>
-                    <RemoveNode key={this.state.bt_namespace}
-                                ros={this.state.ros}
-                                bt_namespace={this.state.bt_namespace}
-                                onError={this.onError}/>
                   <div className="col pr-0">
+                    {this.state.selected_edge &&
+                     <BehaviorTreeEdge edge={this.state.selected_edge}
+                                       key={this.state.bt_namespace}
+                                       ros={this.state.ros}
+                                       bt_namespace={this.state.bt_namespace}
+                                       onSelectionChange={this.onEditorSelectionChange}
+                                       onError={this.onError}/>}
                   </div>
                 </div>
               </div>
@@ -701,18 +712,18 @@ class NamespaceSelect extends Component
       available_namespaces: []
     };
 
-    this.servicesForTypeClient = new ROSLIB.Service({
-      ros: props.ros,
-      name: '/rosapi/services_for_type',
-      serviceType: 'rosapi/ServicesForType'
-    });
-
     this.updateAvailableNamespaces = this.updateAvailableNamespaces.bind(this);
     this.handleNamespaceChange = this.handleNamespaceChange.bind(this);
   }
 
   componentDidMount()
   {
+    this.servicesForTypeClient = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: '/rosapi/services_for_type',
+      serviceType: 'rosapi/ServicesForType'
+    });
+
     this.updateAvailableNamespaces();
   }
 
@@ -803,8 +814,8 @@ class SelectTree extends Component
   render()
   {
     return (
-      <div className="form-inline">
-        <label className="m-1">Tree:
+      <div>
+        <label className="form-inline m-1">Tree:
           <select className="custom-select ml-1"
                   defaultValue="main"
                   onChange={this.onChange}>
@@ -828,13 +839,16 @@ class TickControls extends Component
   {
     super(props);
 
+  }
+  componentDidMount()
+  {
     this.tick_service = new ROSLIB.Service({
-      ros: props.ros,
-      name: props.bt_namespace + 'control_tree_execution',
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'control_tree_execution',
       serviceType: 'ros_bt_py_msgs/ControlTreeExecution'
     });
-  }
 
+  }
   controlExec(command)
   {
     this.tick_service.callService(
@@ -1866,6 +1880,7 @@ class D3BehaviorTreeEditor extends Component
       .enter()
       .append("path")
       .attr("class", "data-link")
+      .on("click", this.DataEdgeDefaultClickHandler.bind(this))
       .on("mouseover", this.DataEdgeDefaultMouseoverHandler)
       .on("mouseout", this.DataEdgeDefaultMouseoutHandler)
       .merge(link);
@@ -1978,15 +1993,14 @@ class D3BehaviorTreeEditor extends Component
   {
     var vertex_selection = d3.select(this.parentNode.parentNode)
         .select("g.data_vertices");
-    var my_data = d3.select(this).datum();
     d3.select(this).classed("data-hover", true);
 
     // select source gripper
-    selectIOGripper(vertex_selection, my_data.source)
+    selectIOGripper(vertex_selection, d.source)
       .dispatch("mouseover");
 
     // select target gripper
-    selectIOGripper(vertex_selection, my_data.target)
+    selectIOGripper(vertex_selection, d.target)
       .dispatch("mouseover");
   }
 
@@ -1994,17 +2008,21 @@ class D3BehaviorTreeEditor extends Component
   {
     var vertex_selection = d3.select(this.parentNode.parentNode)
         .select("g.data_vertices");
-    var my_data = d3.select(this).datum();
 
     d3.select(this).classed("data-hover", false);
 
     // deselect source gripper
-    selectIOGripper(vertex_selection, my_data.source)
+    selectIOGripper(vertex_selection, d.source)
       .dispatch("mouseout");
 
     // deselect target gripper
-    selectIOGripper(vertex_selection, my_data.target)
+    selectIOGripper(vertex_selection, d.target)
       .dispatch("mouseout");
+  }
+
+  DataEdgeDefaultClickHandler(d, index, group)
+  {
+    this.props.onSelectedEdgeChange(d);
   }
 
   IOGripperMousedownHandler(datum, index, group)
@@ -2525,16 +2543,6 @@ class D3BehaviorTreeEditor extends Component
   }
 }
 
-
-function RemoveNode(props)
-{
-  return (
-    <div className="p-2 placeholder">
-      Remove Node button, eventually.
-    </div>
-  );
-}
-
 class NewNode extends Component
 {
   constructor(props)
@@ -2921,9 +2929,9 @@ class SelectedNode extends Component
         <div className="btn-group d-flex mb-2" role="group">
           <button className="btn btn-primary w-100"
                   disabled={!this.state.isValid}
-                  onClick={this.onClickUpdate}>Update</button>
+                  onClick={this.onClickUpdate}>Update Node</button>
           <button className="btn btn-danger w-100"
-                  onClick={this.onClickDelete}>Delete</button>
+                  onClick={this.onClickDelete}>Delete Node</button>
         </div>
         <EditableNode key={this.props.node.module
                            + this.props.node.node_class
@@ -3430,6 +3438,80 @@ class EditableNode extends Component
     });
   }
 }
+
+class BehaviorTreeEdge extends Component
+{
+  constructor(props)
+  {
+    super(props);
+
+    this.onClickDelete = this.onClickDelete.bind(this);
+  }
+
+  componentDidMount()
+  {
+    this.unwireClient = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'unwire_data',
+      serviceType: 'ros_bt_py_msgs/WireNodeData'
+    });
+  }
+
+  onClickDelete()
+  {
+    console.log(this.props.edge);
+    this.unwireClient.callService(
+      new ROSLIB.ServiceRequest({
+        wirings: [{
+          source: this.props.edge.source,
+          target: this.props.edge.target
+        }]
+      }),
+      function(response) {
+        if (!response.success) {
+          this.props.onError(response.error_message);
+        }
+      });
+  }
+
+  render()
+  {
+    return(
+      <div className="d-flex flex-column">
+        <div className="btn-group d-flex mb-2" role="group">
+          <button className="btn btn-danger w-100"
+                  onClick={this.onClickDelete}>Delete Edge</button>
+        </div>
+        <div className="row">
+          <div className="col">
+            <a href="#"
+               className="text-primary"
+               onClick={()=>this.props.onSelectionChange(this.props.edge.source.node_name)}>
+              {this.props.edge.source.node_name}.
+            </a>
+            <span>{this.props.edge.source.data_kind}.</span>
+            <span>{this.props.edge.source.data_key}</span>
+          </div>
+          <div className="col">
+            <span aria-hidden="true" className="fas fa-lg fa-long-arrow-alt-right" />
+            <span className="sr-only">is connected to</span>
+          </div>
+           <div className="col">
+             <a href="#"
+                className="text-primary"
+                onClick={()=>this.props.onSelectionChange(this.props.edge.target.node_name)}>
+              {this.props.edge.target.node_name}.
+            </a>
+            <span>{this.props.edge.target.data_kind}.</span>
+            <span>{this.props.edge.target.data_key}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+}
+
+
 
 class JSONInput extends Component
 {
