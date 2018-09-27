@@ -169,7 +169,7 @@ class NodeListItem extends Component {
       return (
         <tr key={title+data.key}>
           <td className="io_key">{data.key}</td>
-          <td className="io_type">
+          <td className="io_type text-muted pl-2">
             {prettyprint_type(data.serialized_value)}
           </td>
         </tr>);
