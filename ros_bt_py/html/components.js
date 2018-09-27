@@ -194,7 +194,7 @@ class NodeListItem extends Component {
       <div className="border rounded p-2 mb-2"
            onClick={this.onClick.bind(this)}>
         <h4 className="node_class">{this.props.node.node_class}</h4>
-        <h5 className="node_module">{this.props.node.module}</h5>
+        <h5 className="node_module text-muted">{this.props.node.module}</h5>
         <div>{
           'max_children: ' + (this.props.node.max_children >= 0 ? this.props.node.max_children : '∞')}</div>
         <div className="list-group">
@@ -3077,7 +3077,7 @@ class EditableNode extends Component
                type="text"
                value={this.props.name}
                onChange={this.props.nameChangeHandler}/>
-        <h4>{this.props.nodeClass}</h4>
+        <h4 className="text-muted">{this.props.nodeClass}</h4>
         {this.renderParamInputs(this.props.options.sort(compareKeys), 'options')}
         {this.renderParamDisplays(this.props.inputs.sort(compareKeys), 'inputs')}
         {this.renderParamDisplays(this.props.outputs.sort(compareKeys), 'outputs')}
