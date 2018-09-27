@@ -669,6 +669,7 @@ class App extends Component
                                        ros={this.state.ros}
                                        bt_namespace={this.state.bt_namespace}
                                        onSelectionChange={this.onEditorSelectionChange}
+                                       unsetSelectedEdge={()=>this.setState({selected_edge: null})}
                                        onError={this.onError}/>}
                   </div>
                 </div>
@@ -3464,7 +3465,7 @@ class BehaviorTreeEdge extends Component
 
   onClickDelete()
   {
-    console.log(this.props.edge);
+    this.props.unsetSelectedEdge();
     this.unwireClient.callService(
       new ROSLIB.ServiceRequest({
         wirings: [{
