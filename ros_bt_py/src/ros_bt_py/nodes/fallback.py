@@ -80,71 +80,7 @@ class Fallback(FlowControl):
             child.shutdown()
 
     def _do_calculate_utility(self):
-        bounds = UtilityBounds(has_lower_bound_success=False,
-                               has_upper_bound_success=False,
-                               has_lower_bound_failure=True,
-                               lower_bound_failure=0.0,
-                               has_upper_bound_failure=True,
-                               upper_bound_failure=0.0)
-        if self.children:
-            # To figure out the best and worst case cost for success and
-            # failure, respectively, we need to figure out the cheapest and
-            # most expensive paths to success/failure.
-
-            # Since there's only one path to failure (all children fail) we're
-            # dealing with that first: It's the sum of all children's
-            # upper/lower failure bounds.
-
-            # Success is a little trickier: Any number of children may fail
-            # before the first success. So we need to find the max and min
-            # values of all possible combinations of success and failure:
-
-            # The nth element in this represents the case where the nth child
-            # succeeds. So for two children A and B, the lower and upper bounds
-            # for success of the fallback would be as follows:
-            #
-            # lower bounds: [A.lower_success, (A.lower_failure + B.lower_success)]
-            # upper bounds: [A.upper_success, (A.upper_failure + B.upper_success)]
-            have_bounds = True
-            success_bounds = [UtilityBounds(has_lower_bound_success=False,
-                                            lower_bound_success=0,
-                                            has_upper_bound_success=False,
-                                            upper_bound_success=0)
-                              for _ in self.children]
-            for index, child_bounds in enumerate((child.calculate_utility()
-                                                  for child in self.children)):
-                # We can only provide an estimate if all children have an estimate
-                # TODO(nberg): Maybe relax this?
-                have_bounds = (have_bounds and
-                               child_bounds.has_lower_bound_success and
-                               child_bounds.has_upper_bound_success and
-                               child_bounds.has_lower_bound_failure and
-                               child_bounds.has_upper_bound_failure)
-
-                bounds.has_lower_bound_failure &= child_bounds.has_lower_bound_failure
-                bounds.lower_bound_failure += child_bounds.lower_bound_failure
-                bounds.has_upper_bound_failure &= child_bounds.has_upper_bound_failure
-                bounds.upper_bound_failure += child_bounds.upper_bound_failure
-
-                success_bounds[index].lower_bound_success += child_bounds.lower_bound_success
-                success_bounds[index].upper_bound_success += child_bounds.upper_bound_success
-                # Range returns an empty range if the first parameter is larger
-                # than the second, so no bounds checking necessary
-                for i in range(index+1, len(success_bounds)):
-                    success_bounds[i].lower_bound_success += child_bounds.lower_bound_failure
-                    success_bounds[i].upper_bound_success += child_bounds.upper_bound_failure
-
-            # Select the minimum and maximum values to get the final bounds
-            bounds.lower_bound_success = min((x.lower_bound_success for x in success_bounds))
-            bounds.upper_bound_success = max((x.upper_bound_success for x in success_bounds))
-
-            # Check if we actually have bounds
-            bounds.has_lower_bound_success = have_bounds
-            bounds.has_upper_bound_success = have_bounds
-            bounds.has_lower_bound_failure = have_bounds
-            bounds.has_upper_bound_failure = have_bounds
-
-        return bounds
+        return calculate_utility_fallback(self.children)
 
 
 @define_bt_node(NodeConfig(
@@ -240,68 +176,70 @@ class MemoryFallback(FlowControl):
         self.last_running_child = 0
 
     def _do_calculate_utility(self):
-        bounds = UtilityBounds(has_lower_bound_success=False,
-                               has_upper_bound_success=False,
-                               has_lower_bound_failure=True,
-                               lower_bound_failure=0.0,
-                               has_upper_bound_failure=True,
-                               upper_bound_failure=0.0)
-        if self.children:
-            # To figure out the best and worst case cost for success and
-            # failure, respectively, we need to figure out the cheapest and
-            # most expensive paths to success/failure.
+        return calculate_utility_fallback(self.children)
 
-            # Since there's only one path to failure (all children fail) we're
-            # dealing with that first: It's the sum of all children's
-            # upper/lower failure bounds.
 
-            # Success is a little trickier: Any number of children may fail
-            # before the first success. So we need to find the max and min
-            # values of all possible combinations of success and failure:
+def calculate_utility_fallback(children):
+    """Shared Utility aggregation for Fallback and MemoryFallback"""
+    bounds = UtilityBounds(has_lower_bound_success=False,
+                           has_upper_bound_success=False,
+                           has_lower_bound_failure=True,
+                           lower_bound_failure=0.0,
+                           has_upper_bound_failure=True,
+                           upper_bound_failure=0.0)
+    if children:
+        # To figure out the best and worst case cost for success and
+        # failure, respectively, we need to figure out the cheapest and
+        # most expensive paths to success/failure.
 
-            # The nth element in this represents the case where the nth child
-            # succeeds. So for two children A and B, the lower and upper bounds
-            # for success of the fallback would be as follows:
-            #
-            # lower bounds: [A.lower_success, (A.lower_failure + B.lower_success)]
-            # upper bounds: [A.upper_success, (A.upper_failure + B.upper_success)]
-            have_bounds = True
-            success_bounds = [UtilityBounds(has_lower_bound_success=False,
-                                            lower_bound_success=0,
-                                            has_upper_bound_success=False,
-                                            upper_bound_success=0)
-                              for _ in self.children]
-            for index, child_bounds in enumerate((child.calculate_utility()
-                                                  for child in self.children)):
-                # We can only provide an estimate if all children have an estimate
-                # TODO(nberg): Maybe relax this?
-                have_bounds = (have_bounds and
-                               child_bounds.has_lower_bound_success and
-                               child_bounds.has_upper_bound_success and
-                               child_bounds.has_lower_bound_failure and
-                               child_bounds.has_upper_bound_failure)
+        # Since there's only one path to failure (all children fail) we're
+        # dealing with that first: It's the sum of all children's
+        # upper/lower failure bounds.
 
-                bounds.has_lower_bound_failure &= child_bounds.has_lower_bound_failure
-                bounds.lower_bound_failure += child_bounds.lower_bound_failure
-                bounds.has_upper_bound_failure &= child_bounds.has_upper_bound_failure
-                bounds.upper_bound_failure += child_bounds.upper_bound_failure
+        # Success is a little trickier: Any number of children may fail
+        # before the first success. So we need to find the max and min
+        # values of all possible combinations of success and failure:
 
-                success_bounds[index].lower_bound_success += child_bounds.lower_bound_success
-                success_bounds[index].upper_bound_success += child_bounds.upper_bound_success
-                # Range returns an empty range if the first parameter is larger
-                # than the second, so no bounds checking necessary
-                for i in range(index+1, len(success_bounds)):
-                    success_bounds[i].lower_bound_success += child_bounds.lower_bound_failure
-                    success_bounds[i].upper_bound_success += child_bounds.upper_bound_failure
+        # The nth element in this represents the case where the nth child
+        # succeeds. So for two children A and B, the lower and upper bounds
+        # for success of the fallback would be as follows:
+        #
+        # lower bounds: [A.lower_success, (A.lower_failure + B.lower_success)]
+        # upper bounds: [A.upper_success, (A.upper_failure + B.upper_success)]
 
-            # Select the minimum and maximum values to get the final bounds
-            bounds.lower_bound_success = min((x.lower_bound_success for x in success_bounds))
-            bounds.upper_bound_success = max((x.upper_bound_success for x in success_bounds))
+        # initialize bounds to 0.0, with all bounds set - they
+        # will become unset if any child does not have them set
+        bounds = UtilityBounds(
+            has_lower_bound_success=True,
+            has_upper_bound_success=True,
+            has_lower_bound_failure=True,
+            has_upper_bound_failure=True)
+        success_bounds = [UtilityBounds(has_lower_bound_success=False,
+                                        lower_bound_success=0,
+                                        has_upper_bound_success=False,
+                                        upper_bound_success=0)
+                          for _ in children]
+        for index, child_bounds in enumerate((child.calculate_utility()
+                                              for child in children)):
+            # Update the estimates and has_bound values. logical
+            # and means a single child with an unset bound causes
+            # the bound to be unset for the entire Fallback.
+            bounds.has_lower_bound_failure &= child_bounds.has_lower_bound_failure
+            bounds.lower_bound_failure += child_bounds.lower_bound_failure
+            bounds.has_upper_bound_failure &= child_bounds.has_upper_bound_failure
+            bounds.upper_bound_failure += child_bounds.upper_bound_failure
 
-            # Check if we actually have bounds
-            bounds.has_lower_bound_success = have_bounds
-            bounds.has_upper_bound_success = have_bounds
-            bounds.has_lower_bound_failure = have_bounds
-            bounds.has_upper_bound_failure = have_bounds
+            success_bounds[index].lower_bound_success += child_bounds.lower_bound_success
+            success_bounds[index].upper_bound_success += child_bounds.upper_bound_success
+            # Range returns an empty range if the first parameter is larger
+            # than the second, so no bounds checking necessary
+            for i in range(index+1, len(success_bounds)):
+                success_bounds[i].lower_bound_success += child_bounds.lower_bound_failure
+                success_bounds[i].upper_bound_success += child_bounds.upper_bound_failure
 
-        return bounds
+        # Select the minimum and maximum values to get the final bounds
+        bounds.lower_bound_success = min((x.lower_bound_success for x in success_bounds))
+        bounds.upper_bound_success = max((x.upper_bound_success for x in success_bounds))
+
+    return bounds
+
