@@ -1018,6 +1018,16 @@ class D3BehaviorTreeEditor extends Component
     this.draggedNode = null;
     this.dragging = false;
 
+    // ### Pan and zoom stuff ###
+    this.zoomObject = null;
+    // Begin panning if the mouse is less than this away from the
+    // viewport's edge
+    this.dragPanBoundary = 50;
+    this.panIntervalID = null;
+    this.panDirection = [0.0, 0.0];
+    this.panRate = 30;
+    this.panPerFrame = 10.0;
+
     this.wire_service = new ROSLIB.Service({
       ros: props.ros,
       name: props.bt_namespace + 'wire_data',
@@ -1045,6 +1055,8 @@ class D3BehaviorTreeEditor extends Component
     this.svg_ref = createRef();
     this.viewport_ref = createRef();
 
+    this.dragPanTimerHandler = this.dragPanTimerHandler.bind(this);
+    this.resetView = this.resetView.bind(this);
     this.getIOCoords = this.getIOCoords.bind(this);
     this.getIOCoordsFromNode = this.getIOCoordsFromNode.bind(this);
   }
@@ -1054,15 +1066,19 @@ class D3BehaviorTreeEditor extends Component
     // Give Viewport pan / zoom
     var viewport = d3.select(this.viewport_ref.current);
     var width = viewport.node().getBoundingClientRect().width;
+    var height = viewport.node().getBoundingClientRect().height;
 
-    var tmpzoom = d3.zoom();
+    this.zoomObject = d3.zoom();
     var container = d3.select(this.svg_ref.current);
 
     viewport
-      .call(tmpzoom.scaleExtent([0.3, 1.0]).on("zoom", function () {
+      .call(this.zoomObject.scaleExtent([0.3, 1.0]).on("zoom", function () {
         container.attr("transform", d3.event.transform);
       }))
-      .call(tmpzoom.translateBy, width * 0.5, 10.0);
+      .call(this.zoomObject.translateTo, 0.0, (height * 0.5) - 10.0);
+
+    // Add Mousemove listener to pan viewport while draggins
+    viewport.on("mousemove.pan_if_drag", this.canvasMousemovePanHandler.bind(this));
   }
 
   render()
@@ -1999,7 +2015,7 @@ class D3BehaviorTreeEditor extends Component
 
     // Also save the current mouse position (relative to the viewport
     // <g> tag)
-    this.dragStartPos = d3.mouse(this.viewport_ref.current);
+    this.dragStartPos = d3.mouse(this.svg_ref.current);
 
     // Give compatible IOs a new listener and highlight them
     io_grippers
@@ -2012,6 +2028,7 @@ class D3BehaviorTreeEditor extends Component
       .selectAll(".label")
       .attr("visibility", "visible");
 
+    this.dragging = true;
     // Give the canvas a move and mouseup handler
     d3.select(this.viewport_ref.current)
     // Remove any handlers for node dragging
@@ -2024,6 +2041,84 @@ class D3BehaviorTreeEditor extends Component
     d3.event.stopPropagation();
   }
 
+  canvasMousemovePanHandler(d, index, group)
+  {
+    // Don't do anything unless we're currently dragging something
+    if (!this.dragging){
+      if (this.panIntervalID !== null)
+      {
+        window.clearInterval(this.panIntervalID);
+        this.panDirection = [];
+      }
+
+      return;
+    }
+
+    var viewport = d3.select(this.viewport_ref.current);
+    var width = viewport.node().getBoundingClientRect().width;
+    var height = viewport.node().getBoundingClientRect().height;
+
+    var mouseCoords = d3.mouse(this.viewport_ref.current);
+
+    var panNeeded = false;
+    this.panDirection = [0.0, 0.0];
+
+    if (mouseCoords[0] < this.dragPanBoundary) {
+      // Left edge -> scroll right
+      panNeeded = true;
+      // 1 if mouse is at the left edge, 0 if it is dragPanBoundary pixels away
+      var leftEdgeCloseness = (this.dragPanBoundary - mouseCoords[0]) / this.dragPanBoundary;
+      this.panDirection[0] = this.panPerFrame * leftEdgeCloseness;
+    } else if (mouseCoords[0] > (width - this.dragPanBoundary)) {
+      // Right edge -> scroll left
+      panNeeded = true;
+      // 1 if mouse is at the right edge, 0 if it is dragPanBoundary pixels away
+      var rightEdgeCloseness = (this.dragPanBoundary - (width - mouseCoords[0]))
+          / this.dragPanBoundary;
+      this.panDirection[0] = -1.0 * this.panPerFrame * rightEdgeCloseness;
+    }
+    if (mouseCoords[1] < this.dragPanBoundary) {
+      // Up -> scroll down
+      panNeeded = true;
+      // 1 if mouse is at the top edge, 0 if it is dragPanBoundary pixels away
+      var topEdgeCloseness = (this.dragPanBoundary - mouseCoords[1]) / this.dragPanBoundary;
+      this.panDirection[1] = this.panPerFrame * topEdgeCloseness;
+    } else if (mouseCoords[1] > (height - this.dragPanBoundary)) {
+      // Down -> scroll up
+      panNeeded = true;
+      // 1 if mouse is at the bottom edge, 0 if it is dragPanBoundary pixels away
+      var botEdgeCloseness = (this.dragPanBoundary - (height - mouseCoords[1]))
+          / this.dragPanBoundary;
+      this.panDirection[1] = -1.0 * this.panPerFrame * botEdgeCloseness;
+    }
+
+    if (!panNeeded && this.panIntervalID !== null)
+    {
+      window.clearInterval(this.panIntervalID);
+      this.panIntervalID = null;
+      return;
+    }
+
+    if (this.panIntervalID === null)
+    {
+      // Start the interval for the panning animation, at panRate Hz
+      this.panIntervalID = window.setInterval(this.dragPanTimerHandler, 1000.0 / this.panRate);
+    }
+  }
+
+  dragPanTimerHandler()
+  {
+    if (!this.dragging && this.panIntervalID)
+    {
+      window.clearInterval(this.panIntervalID);
+      this.panIntervalID = null;
+      return;
+    }
+
+    d3.select(this.viewport_ref.current)
+      .call(this.zoomObject.translateBy, this.panDirection[0], this.panDirection[1]);
+  }
+
   canvasIOMoveHandler(d, index, group)
   {
     if ((d3.event.buttons & 1) === 0)
@@ -2033,12 +2128,12 @@ class D3BehaviorTreeEditor extends Component
     }
 
     var drawingLine = d3
-        .select(this.viewport_ref.current)
+        .select(this.svg_ref.current)
         .selectAll(".drawing-indicator")
         .data(
           [{
             start: this.dragStartPos,
-            end: d3.mouse(this.viewport_ref.current)
+            end: d3.mouse(this.svg_ref.current)
           }],
           /*key=*/d => JSON.stringify(d.start));
 
@@ -2056,6 +2151,8 @@ class D3BehaviorTreeEditor extends Component
 
   canvasIOUpHandler(d, index, group)
   {
+    this.dragging = false;
+
     if (this.nextWiringSource && this.nextWiringTarget)
     {
       this.wire_service.callService(
@@ -2128,7 +2225,6 @@ class D3BehaviorTreeEditor extends Component
 
   canvasNodeDragMoveHandler()
   {
-    // If the distance
     if (this.draggedNode === null)
     {
       return;
@@ -2325,6 +2421,8 @@ class D3BehaviorTreeEditor extends Component
       }
     }
 
+    this.dragging = false;
+
     d3.select(this.svg_ref.current).select("g.drop_targets")
       .attr("visibility", "hidden")
       .selectAll(".drop_target")
@@ -2384,7 +2482,22 @@ class D3BehaviorTreeEditor extends Component
     this.nodeDropTarget = null;
     d3.select(domElement).attr("opacity", 0.2);
   }
+
+  resetView()
+  {
+    var viewport = d3.select(this.viewport_ref.current);
+    var height = viewport.node().getBoundingClientRect().height;
+
+    var container = d3.select(this.svg_ref.current);
+
+    viewport
+      .call(this.zoomObject.scaleExtent([0.3, 1.0]).on("zoom", function () {
+        container.attr("transform", d3.event.transform);
+      }))
+      .call(this.zoomObject.translateTo, 0.0, (height * 0.5) - 10.0);
+  }
 }
+
 
 function RemoveNode(props)
 {
