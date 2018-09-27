@@ -242,4 +242,3 @@ def calculate_utility_fallback(children):
         bounds.upper_bound_success = max((x.upper_bound_success for x in success_bounds))
 
     return bounds
-

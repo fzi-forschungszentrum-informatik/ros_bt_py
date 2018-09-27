@@ -46,7 +46,8 @@ class RemoteTreeSlot(object):
         self.latest_tree = None
         self.slot_state = RemoteSlotState(
             tree_in_slot=False,
-            tree_running=False)
+            tree_running=False,
+            tree_finished=False)
 
         self._lock = Lock()
 
@@ -110,6 +111,7 @@ class RemoteTreeSlot(object):
             goal_handle.set_rejected(text=('Failed to load tree: %s' % res.error_message))
 
         self.slot_state.tree_in_slot = True
+        self.slot_state.tree_finished = False
         self.publish_slot_state(self.slot_state)
         goal_handle.set_accepted()
 
@@ -124,6 +126,9 @@ class RemoteTreeSlot(object):
             rospy.logdebug('Received a ControlTreeExecution request with no tree loaded. '
                            'Nothing to do, succeeding.')
             return ControlTreeExecutionResponse(success=True)
+
+        # No matter what happens, the tree is not finished.
+        self.slot_state.tree_finished = False
 
         if request.command not in [
                 ControlTreeExecutionRequest.TICK_ONCE,
@@ -180,6 +185,7 @@ class RemoteTreeSlot(object):
 
             self.slot_state.tree_in_slot = False
             self.slot_state.tree_running = False
+            self.slot_state.tree_finished = False
             self.publish_slot_state(self.slot_state)
 
             with self._lock:
@@ -206,6 +212,7 @@ class RemoteTreeSlot(object):
                             NodeMsg.SHUTDOWN]:
                         # We got a result, send it back
                         self.slot_state.tree_running = False
+                        self.slot_state.tree_finished = True
                         self.publish_slot_state(self.slot_state)
 
                         # TODO(nberg): Can't shutdown and clear the

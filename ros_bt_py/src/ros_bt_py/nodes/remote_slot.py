@@ -1,9 +1,11 @@
+from threading import Lock
+
 from roslib.message import get_message_class
 import rospy
 import rosservice
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
-from ros_bt_py_msgs.msg import UtilityBounds
+from ros_bt_py_msgs.msg import RemoteSlotState, UtilityBounds
 from ros_bt_py_msgs.srv import ControlTreeExecution, ControlTreeExecutionRequest
 
 from ros_bt_py.node import Leaf, define_bt_node
@@ -28,18 +30,47 @@ class RemoteSlot(Leaf):
     to the :class:`ros_bt_py.remote_tree_slot.RemoteTreeSlot` we want
     to control.
 
-    Note that this will never return `SUCCEEDED` - the surrounding
-    tree is responsible for only ticking this node when there are
-    resources to space (i.e. the main mission is idling).
+    This will return `SUCCEEDED` when the
+    :class:`ros_bt_py.remote_tree_slot.RemoteTreeSlot` reports that it
+    has finished executing its tree, **regardless of the
+    outcome**. The surrounding tree can use this information to allow
+    a slot to execute fully before getting back to another task, but
+    it can also stop the slot at any time, of course.
 
     """
     def _do_setup(self):
-        rospy.wait_for_service(self.options['control_slot_service'],
+        rospy.wait_for_service(self.options['slot_namespace'],
                                self.options['wait_for_service_seconds'])
-        self._service_proxy = AsyncServiceProxy(self.options['control_slot_service'],
-                                                ControlTreeExecution)
+
+        self._service_proxy = AsyncServiceProxy(
+            self.options['slot_namespace'] + '/control_slot_execution',
+            ControlTreeExecution)
+
+        self._lock = Lock()
+        # We're only interested in the tree_finished member of
+        # RemoteSlotState - this lets us return SUCCEEDED whenever the
+        # slot finished execution, allowing the surrounding tree to
+        # react.
+        self._slot_finished = False
+        self._slot_state_sub = rospy.Subscriber(
+            self.options['slot_namespace'] + '/slot_state',
+            RemoteSlotState,
+            callback=self._slot_state_cb)
+
+    def _slot_state_cb(self, msg):
+        with self._lock:
+            if msg.tree_finished:
+                self._slot_finished = True
 
     def _do_tick(self):
+        # If we received a RemoteSlotState message informing us the
+        # slot is finished, stop everything, reset our service proxy
+        # and return SUCCEEDED
+        with self._lock:
+            if self._slot_finished:
+                self._do_reset()
+                return NodeMsg.SUCCEEDED
+
         proxy_state = self._service_proxy.get_state()
         if proxy_state == AsyncServiceProxy.ERROR:
             return NodeMsg.FAILED
@@ -66,6 +97,8 @@ class RemoteSlot(Leaf):
             command=ControlTreeExecutionRequest.SHUTDOWN))
 
     def _do_reset(self):
+        with self._lock:
+            self._slot_finished = False
         if self._service_proxy.get_state() == AsyncServiceProxy.RUNNING:
             self._service_proxy.stop_call()
 
