@@ -2790,21 +2790,54 @@ class SelectedNode extends Component
       };
     }
 
-    this.set_options_service = new ROSLIB.Service({
-      ros: props.ros,
-      name: props.bt_namespace + 'set_options',
-      serviceType: 'ros_bt_py_msgs/SetOptions'
-    });
-
     this.nameChangeHandler = this.nameChangeHandler.bind(this);
     this.updateValidity = this.updateValidity.bind(this);
     this.updateValue = this.updateValue.bind(this);
+    this.onClickDelete = this.onClickDelete.bind(this);
     this.onClickUpdate = this.onClickUpdate.bind(this);
+  }
+
+  componentDidMount()
+  {
+    this.set_options_service = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'set_options',
+      serviceType: 'ros_bt_py_msgs/SetOptions'
+    });
+
+    this.remove_node_service = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'remove_node',
+      serviceType: 'ros_bt_py_msgs/RemoveNode'
+    });
   }
 
   nameChangeHandler(event)
   {
     this.setState({name: event.target.value});
+  }
+
+  onClickDelete(event)
+  {
+    if (!window.confirm("Really delete node " + this.props.node.name + "?"))
+    {
+      // Do nothing if user doesn't confirm
+      return;
+    }
+    this.remove_node_service.callService(
+      new ROSLIB.ServiceRequest({
+        node_name: this.props.node.name
+      }),
+      function(response) {
+        if (response.success) {
+          console.log('Removed node!');
+        }
+        else {
+          this.props.onError('Failed to remove node '
+                             + this.props.node.name + ': '
+                             + response.error_message);
+        }
+      }.bind(this));
   }
 
   onClickUpdate(event)
@@ -2858,9 +2891,13 @@ class SelectedNode extends Component
   {
     return (
       <div className="p-2 d-flex flex-column">
-        <button className="btn btn-block btn-primary mb-2"
-                disabled={!this.state.isValid}
-                onClick={this.onClickUpdate}>Update</button>
+        <div className="btn-group d-flex mb-2" role="group">
+          <button className="btn btn-primary w-100"
+                  disabled={!this.state.isValid}
+                  onClick={this.onClickUpdate}>Update</button>
+          <button className="btn btn-danger w-100"
+                  onClick={this.onClickDelete}>Delete</button>
+        </div>
         <EditableNode key={this.props.node.module
                            + this.props.node.node_class
                            + this.props.node.name}
