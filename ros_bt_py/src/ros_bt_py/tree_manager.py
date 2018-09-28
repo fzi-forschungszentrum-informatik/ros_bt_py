@@ -983,15 +983,19 @@ class TreeManager(object):
             except (KeyError, BehaviorTreeException) as ex:
                 error_message = ('Failed to add new instance of node %s: %s' %
                                  (node.name, str(ex)))
-
                 try:
                     parent.add_child(node, at_index=old_child_index)
                     rewire_resp = self.wire_data(wire_request)
                     if not _get_success(rewire_resp):
                         error_message += '\nAlso failed to restore data wirings: %s' % (
                             _get_error_message(rewire_resp))
+                        with self._state_lock:
+                            self.tree_msg.state = Tree.ERROR
+
                 except (KeyError, BehaviorTreeException):
                     error_message += '\n Also failed to restore old node.'
+                    with self._state_lock:
+                        self.tree_msg.state = Tree.ERROR
 
                 return SetOptionsResponse(
                     success=False,
@@ -1029,9 +1033,27 @@ class TreeManager(object):
                 error_message += '\nFailed to re-wire data to restored node %s: %s' % (
                     node.name, _get_error_message(recovery_wire_response))
 
+            with self._state_lock:
+                self.tree_msg.state = Tree.ERROR
             return SetOptionsResponse(
                 success=False,
                 error_message=error_message)
+
+        # Move all of node's children to new_node
+        try:
+            # This line is important: The list comprehension creates a
+            # new list that won't be affected by calling
+            # remove_child()!
+            for child_name in [child.name for child in node.children]:
+                rospy.logerr('Moving child %s' % child_name)
+                new_node.add_child(node.remove_child(child_name))
+        except BehaviorTreeException as exc:
+            with self._state_lock:
+                self.tree_msg.state = Tree.ERROR
+
+            return SetOptionsResponse(
+                success=False,
+                error_message='Failed to transfer children to new node: %s' % str(exc))
 
         # We made it!
         self.publish_info(self.debug_manager.get_debug_info_msg())
