@@ -311,6 +311,7 @@ class App extends Component
       available_nodes: [],
       subtree_names: [],
       selected_node: null,
+      selected_node_name: null,
       showDataGraph: true,
       last_tree_msg: null,
       // Can be 'nodelist' or 'editor'. The value decides whether the
@@ -542,16 +543,29 @@ class App extends Component
   onNodeListSelectionChange(new_selected_node)
   {
     this.setState({selected_node: new_selected_node,
+                   selected_node_name: null,
                    last_selection_source: 'nodelist'});
   }
 
   onEditorSelectionChange(new_selected_node_name)
   {
+    if (new_selected_node_name === null)
+    {
+      this.setState(
+        {
+          selected_node: null,
+          selected_node_name: null,
+          last_selection_source: 'editor',
+        });
+      return;
+    }
+
     var new_selected_node = this.last_received_tree_msg.nodes.find(
       x => x.name === new_selected_node_name);;
     this.setState((prevState, props) => (
       {
         selected_node: new_selected_node,
+        selected_node_name: new_selected_node_name,
         last_selection_source: 'editor',
         selected_node_info: prevState.available_nodes.find(
           x => (x.module === new_selected_node.module
@@ -569,7 +583,15 @@ class App extends Component
   {
     var selectedNodeComponent = null;
 
-    if (this.state.last_selection_source === 'nodelist')
+    if (this.state.selected_node === null)
+    {
+      selectedNodeComponent = (
+        <div className="d-flex flex-column">
+          No Node Selected
+        </div>
+      );
+    }
+    else if (this.state.last_selection_source === 'nodelist')
     {
       selectedNodeComponent = (
         <NewNode
@@ -653,6 +675,7 @@ class App extends Component
                                           bt_namespace={this.state.bt_namespace}
                                           tree_message={this.state.last_tree_msg}
                                           onSelectionChange={this.onEditorSelectionChange}
+                                          selectedNodeName={this.state.selected_node_name}
                                           onSelectedEdgeChange={this.onSelectedEdgeChange}
                                           showDataGraph={this.state.showDataGraph}
                                           onError={this.onError}/>
@@ -1121,6 +1144,11 @@ class D3BehaviorTreeEditor extends Component
 
     // Add Mousemove listener to pan viewport while draggins
     viewport.on("mousemove.pan_if_drag", this.canvasMousemovePanHandler.bind(this));
+    viewport
+      .on("click", () => {
+        // Deselect any selected node if the user clicks on the background
+        this.props.onSelectionChange(null);
+      });
   }
 
   render()
@@ -1178,6 +1206,24 @@ class D3BehaviorTreeEditor extends Component
       d3.select(this.svg_ref.current).select(".data_graph").attr("visibility", "hidden");
     }
 
+    if (this.props.selectedNodeName)
+    {
+      var that = this;
+      d3.select(this.svg_ref.current)
+        .selectAll(".btnode")
+        .each(function(d) {
+          d3.select(this).classed("node-selected", (d.id === that.props.selectedNodeName));
+        });
+    }
+    else
+    {
+      d3.select(this.svg_ref.current)
+        .selectAll(".btnode")
+        .each(function(d) {
+          d3.select(this).classed("node-selected", false);
+        });
+
+    }
   }
 
   drawEverything(tree_msg)
@@ -2482,6 +2528,8 @@ class D3BehaviorTreeEditor extends Component
   nodeClickHandler(d, index, group)
   {
     this.props.onSelectionChange(d.data.name);
+    d3.event.preventDefault();
+    d3.event.stopPropagation();
   }
 
   nodeMousedownHandler(d, domObject)
@@ -2588,15 +2636,6 @@ class NewNode extends Component
 
   render()
   {
-    if (this.props.node === null)
-    {
-      return (
-        <div className="d-flex flex-column">
-          No Node Selected
-        </div>
-      );
-    }
-
     return(
       <div className="d-flex flex-column">
         <button className="btn btn-block btn-primary"

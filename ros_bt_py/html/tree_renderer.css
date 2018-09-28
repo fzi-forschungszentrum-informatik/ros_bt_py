@@ -165,3 +165,7 @@ path.data-hover {
 #nodelist_container {
     border-right: solid;
 }
+
+.node-selected {
+    background: #27406D;
+}
