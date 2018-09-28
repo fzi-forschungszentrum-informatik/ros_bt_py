@@ -560,7 +560,7 @@ class App extends Component
       return;
     }
 
-    var new_selected_node = this.last_received_tree_msg.nodes.find(
+    var new_selected_node = this.state.last_tree_msg.nodes.find(
       x => x.name === new_selected_node_name);;
     this.setState((prevState, props) => (
       {
