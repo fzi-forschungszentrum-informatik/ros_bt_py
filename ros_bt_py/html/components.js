@@ -3619,4 +3619,4 @@ class JSONInput extends Component
   }
 }
 
-render(<App />, document.body);
+render(<App />, document.getElementById("react-container"));
