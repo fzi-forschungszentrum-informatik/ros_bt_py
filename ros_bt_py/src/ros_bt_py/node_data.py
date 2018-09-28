@@ -50,6 +50,20 @@ class NodeData(object):
     def __ne__(self, other):
         return not self == other
 
+    def takes(self, new_value):
+        """Check whether `new_value` has a type that matches this NodeData object"""
+        if self._static and self.updated:
+            return False
+
+        if isinstance(new_value, self.data_type) or new_value is None:
+            return True
+
+        # Special case for int and float
+        if self.data_type == float and isinstance(new_value, int):
+            return True
+
+        return False
+
     def set(self, new_value):
         """Set a new value
 
@@ -276,6 +290,10 @@ class NodeDataMap(object):
         if key not in self._map:
             raise KeyError('No member named %s' % key)
         return self._map[key].data_type
+
+    def compatible(self, key, new_val):
+        """Check if `new_val` can be put into the :class:`NodeData` at `key`"""
+        return self._map[key].takes(new_val)
 
     def __len__(self):
         return len(self._map)

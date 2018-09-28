@@ -897,7 +897,7 @@ class TreeManager(object):
                 continue
 
             required_type = node.options.get_type(key)
-            if not isinstance(value, required_type):
+            if not node.options.compatible(key, value):
                 incompatible_options.append((key, required_type.__name__))
 
         error_strings = []
