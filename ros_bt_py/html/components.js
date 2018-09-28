@@ -2872,6 +2872,7 @@ class SelectedNode extends Component
     this.updateValidity = this.updateValidity.bind(this);
     this.updateValue = this.updateValue.bind(this);
     this.onClickDelete = this.onClickDelete.bind(this);
+    this.onClickDeleteWithChildren = this.onClickDeleteWithChildren.bind(this);
     this.onClickUpdate = this.onClickUpdate.bind(this);
   }
 
@@ -2904,7 +2905,34 @@ class SelectedNode extends Component
     }
     this.remove_node_service.callService(
       new ROSLIB.ServiceRequest({
-        node_name: this.props.node.name
+        node_name: this.props.node.name,
+        remove_children: false
+      }),
+      function(response) {
+        if (response.success) {
+          console.log('Removed node!');
+        }
+        else {
+          this.props.onError('Failed to remove node '
+                             + this.props.node.name + ': '
+                             + response.error_message);
+        }
+      }.bind(this));
+  }
+
+  onClickDeleteWithChildren(event)
+  {
+    if (!window.confirm("Really delete node "
+                        + this.props.node.name
+                        + " and all of its children?"))
+    {
+      // Do nothing if user doesn't confirm
+      return;
+    }
+    this.remove_node_service.callService(
+      new ROSLIB.ServiceRequest({
+        node_name: this.props.node.name,
+        remove_children: true
       }),
       function(response) {
         if (response.success) {
@@ -2970,11 +2998,19 @@ class SelectedNode extends Component
     return (
       <div className="d-flex flex-column">
         <div className="btn-group d-flex mb-2" role="group">
-          <button className="btn btn-primary w-100"
+          <button className="btn btn-primary w-30"
                   disabled={!this.state.isValid}
-                  onClick={this.onClickUpdate}>Update Node</button>
-          <button className="btn btn-danger w-100"
-                  onClick={this.onClickDelete}>Delete Node</button>
+                  onClick={this.onClickUpdate}>
+            Update Node
+          </button>
+          <button className="btn btn-danger w-35"
+                  onClick={this.onClickDelete}>
+            Delete Node
+          </button>
+          <button className="btn btn-danger w-35"
+                  onClick={this.onClickDeleteWithChildren}>
+            Delete Node + Children
+          </button>
         </div>
         <EditableNode key={this.props.node.module
                            + this.props.node.node_class
