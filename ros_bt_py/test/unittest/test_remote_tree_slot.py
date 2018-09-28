@@ -152,8 +152,13 @@ class TestRemoteTreeSlot(unittest.TestCase):
         res = self.remote_slot.control_tree_execution_handler(ControlTreeExecutionRequest(
             command=ControlTreeExecutionRequest.TICK_PERIODICALLY,
             tick_frequency_hz=10))
-        self.assertFalse(get_success(res),
-                         'TICK_PERIODICALLY should not be allowed for RemoteSlot')
+        self.assertTrue(get_success(res), get_error_message(res))
+
+        rospy.sleep(0.2)
+
+        res = self.remote_slot.control_tree_execution_handler(ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.STOP))
+        self.assertTrue(get_success(res), get_error_message(res))
 
         res = self.remote_slot.control_tree_execution_handler(ControlTreeExecutionRequest(
             command=ControlTreeExecutionRequest.TICK_UNTIL_RESULT,

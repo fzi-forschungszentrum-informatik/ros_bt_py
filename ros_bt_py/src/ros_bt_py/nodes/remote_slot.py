@@ -14,7 +14,7 @@ from ros_bt_py.ros_helpers import AsyncServiceProxy
 
 
 @define_bt_node(NodeConfig(
-    options={'control_slot_service': str,
+    options={'slot_namespace': str,
              'wait_for_service_seconds': float},
     inputs={},
     outputs={},
@@ -25,10 +25,10 @@ class RemoteSlot(Leaf):
     That is, if this node is ticked, unticked or reset, any tree
     that's currently loaded into the slot receives the same command.
 
-    `control_slot_service` is the ROS name of a
+    `slot_namespace` is a ROS namespace where a
     :class:`ros_bt_py_msgs.srv.ControlTreeExecution` service belonging
     to the :class:`ros_bt_py.remote_tree_slot.RemoteTreeSlot` we want
-    to control.
+    to control lives.
 
     This will return `SUCCEEDED` when the
     :class:`ros_bt_py.remote_tree_slot.RemoteTreeSlot` reports that it
@@ -39,7 +39,7 @@ class RemoteSlot(Leaf):
 
     """
     def _do_setup(self):
-        rospy.wait_for_service(self.options['slot_namespace'],
+        rospy.wait_for_service(self.options['slot_namespace'] + '/control_slot_execution',
                                self.options['wait_for_service_seconds'])
 
         self._service_proxy = AsyncServiceProxy(
@@ -52,6 +52,8 @@ class RemoteSlot(Leaf):
         # slot finished execution, allowing the surrounding tree to
         # react.
         self._slot_finished = False
+        self._tree_loaded = False
+        self._run_command_sent = False
         self._slot_state_sub = rospy.Subscriber(
             self.options['slot_namespace'] + '/slot_state',
             RemoteSlotState,
@@ -59,6 +61,15 @@ class RemoteSlot(Leaf):
 
     def _slot_state_cb(self, msg):
         with self._lock:
+            # tree_loaded is just a convenience rename
+            self._tree_loaded = msg.tree_in_slot
+            # run_command_sent causes the next tick to send a new
+            # TICK_PERIODICALLY request
+            if not msg.tree_in_slot or not msg.tree_running:
+                self._run_command_sent = False
+            # need to save slot_finished because tree_finished might
+            # become False again before we get to report the finished
+            # execution
             if msg.tree_finished:
                 self._slot_finished = True
 
@@ -66,32 +77,45 @@ class RemoteSlot(Leaf):
         # If we received a RemoteSlotState message informing us the
         # slot is finished, stop everything, reset our service proxy
         # and return SUCCEEDED
-        with self._lock:
-            if self._slot_finished:
-                self._do_reset()
-                return NodeMsg.SUCCEEDED
+        if self._slot_finished:
+            self._do_reset()
+            # self.loginfo('quitting early to report finished slot execution')
+            return NodeMsg.SUCCEEDED
 
         proxy_state = self._service_proxy.get_state()
         if proxy_state == AsyncServiceProxy.ERROR:
+            # self.loginfo('quitting early to report service error')
             return NodeMsg.FAILED
 
         if proxy_state == AsyncServiceProxy.RESPONSE_READY:
             res = self._service_proxy.get_response()
             if not res.success:
+                # self.loginfo('quitting early to report failed service call')
                 return NodeMsg.FAILED
             # Get the proxy state after getting the response
             proxy_state = self._service_proxy.get_state()
 
-        if proxy_state in [AsyncServiceProxy.IDLE,
-                           AsyncServiceProxy.ABORTED]:
-            self._service_proxy.call_service(ControlTreeExecutionRequest(
-                command=ControlTreeExecutionRequest.TICK_ONCE))
+        if not self._run_command_sent and self._tree_loaded:
+            if proxy_state in [AsyncServiceProxy.IDLE,
+                               AsyncServiceProxy.RESPONSE_READY,
+                               AsyncServiceProxy.ABORTED]:
+                # Send a TICK_PERIODICALLY request without frequency,
+                # so the slot can decide for itself
+                self._service_proxy.call_service(ControlTreeExecutionRequest(
+                    command=ControlTreeExecutionRequest.TICK_PERIODICALLY))
+                self._run_command_sent = True
+        # else:
+        #     self.loginfo('Not sending request. command_sent: ' +
+        #                  str(self._run_command_sent) +
+        #                  ' tree_loaded: ' + str(self._tree_loaded) +
+        #                  ' proxy_state: ' + str(proxy_state))
 
         return NodeMsg.RUNNING
 
     def _do_shutdown(self):
         if self._service_proxy.get_state() == AsyncServiceProxy.RUNNING:
             self._service_proxy.stop_call()
+        self._run_command_sent = True
 
         self._service_proxy.call_service(ControlTreeExecutionRequest(
             command=ControlTreeExecutionRequest.SHUTDOWN))
@@ -99,6 +123,9 @@ class RemoteSlot(Leaf):
     def _do_reset(self):
         with self._lock:
             self._slot_finished = False
+            self._tree_loaded = False
+        self._run_command_sent = False
+
         if self._service_proxy.get_state() == AsyncServiceProxy.RUNNING:
             self._service_proxy.stop_call()
 
@@ -112,11 +139,13 @@ class RemoteSlot(Leaf):
 
         self._service_proxy.call_service(ControlTreeExecutionRequest(
             command=ControlTreeExecutionRequest.STOP))
+        self._run_command_sent = False
 
         return NodeMsg.IDLE
 
     def _do_calculate_utility(self):
-        resolved_service = rospy.resolve_name(self.options['control_slot_service'])
+        resolved_service = rospy.resolve_name(self.options['slot_namespace'] +
+                                              '/control_slot_execution')
 
         try:
             service_type_name = rosservice.get_service_type(resolved_service)

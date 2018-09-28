@@ -73,8 +73,11 @@ class Shovable(Decorator):
         # evaluated the utility value for
         self._subtree_msg = None
 
-        for child in self.children:
-            child.setup()
+        # Don't setup subtree here - we don't know yet if it is going
+        # to be executed locally, or if it even can be!
+        #
+        # for child in self.children:
+        #     child.setup()
         if not self.children:
             msg = 'Trying to set up Shovable decorator without a child!'
             self.logwarn(msg)
@@ -214,6 +217,10 @@ class Shovable(Decorator):
             self._state = Shovable.EXECUTE_REMOTE
 
         if self._state == Shovable.EXECUTE_LOCAL:
+            # Now that we know we're executing locally, setup subtree
+            # if necessary
+            if self.children[0].state == NodeMsg.UNINITIALIZED:
+                self.children[0].setup()
             child_result = self.children[0].tick()
 
             if child_result != NodeMsg.RUNNING:
