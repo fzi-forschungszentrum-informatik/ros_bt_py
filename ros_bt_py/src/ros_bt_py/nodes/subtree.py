@@ -141,6 +141,7 @@ class Subtree(Leaf):
                 self.name, self.manager.to_msg())
 
     def _do_calculate_utility(self):
+        self.root = self.manager.find_root()
         if self.root is not None:
             return self.root.calculate_utility()
         else:
