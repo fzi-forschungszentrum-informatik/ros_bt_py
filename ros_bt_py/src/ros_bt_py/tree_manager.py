@@ -68,7 +68,7 @@ class TreeManager(object):
                  name=None,
                  module_list=None,
                  debug_manager=None,
-                 tick_frequency_hz=20.0,
+                 tick_frequency_hz=10.0,
                  publish_tree_callback=None,
                  publish_debug_info_callback=None,
                  publish_debug_settings_callback=None):
@@ -92,6 +92,10 @@ class TreeManager(object):
 
         if name is None:
             name = ''
+
+        if tick_frequency_hz == 0.0:
+            tick_frequency_hz = 10.0
+
         self.debug_manager.set_tree_name(name)
         self.debug_manager.set_tick_frequency(tick_frequency_hz)
         self.debug_manager.publish_debug_info = self.publish_info
@@ -286,7 +290,9 @@ class TreeManager(object):
         self.nodes = {}
         with self._state_lock:
             self.tree_msg = Tree(name='',
-                                 state=Tree.EDITABLE)
+                                 state=Tree.EDITABLE,
+                                 tick_frequency_hz=self.tree_msg.tick_frequency_hz)
+
         self.publish_info(self.debug_manager.get_debug_info_msg())
 
     @is_edit_service
@@ -415,6 +421,9 @@ class TreeManager(object):
             return response
 
         self.tree_msg = tree
+        if self.tree_msg.tick_frequency_hz == 0.0:
+            rospy.logwarn('Tick frequency of loaded tree is 0, defaulting to 10Hz')
+            self.tree_msg.tick_frequency_hz = 10.0
         # Ensure Tree is editable after loading
         with self._state_lock:
             self.tree_msg.state = Tree.EDITABLE
@@ -655,9 +664,9 @@ class TreeManager(object):
                     # Use provided tick frequency, if any
                     if request.tick_frequency_hz != 0:
                         self.tree_msg.tick_frequency_hz = request.tick_frequency_hz
-                    if self.tree_msg.tick_frequency_hz == 0.0:
-                        rospy.logwarn('Loaded tree had frequency 0Hz. Defaulting to 20Hz')
-                        self.tree_msg.tick_frequency_hz = 20.0
+                    if self.tree_msg.tick_frequency_hz == 0:
+                        rospy.logwarn('Loaded tree had frequency 0Hz. Defaulting to 10Hz')
+                        self.tree_msg.tick_frequency_hz = 10.0
                     self._tick_thread.start()
                     response.success = True
                     response.tree_state = Tree.TICKING
