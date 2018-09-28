@@ -10,6 +10,7 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import UtilityBounds
 
 from ros_bt_py.exceptions import BehaviorTreeException
+from ros_bt_py.helpers import loglevel_is
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
@@ -77,13 +78,15 @@ class Action(Leaf):
         if self._active_goal is None:
             # get_state returns LOST when the action client isn't tracking a
             # goal - so we can send a new one!
-            self.logdebug('Sending goal: %s' % str(self.inputs['goal']))
+            if loglevel_is(rospy.DEBUG):
+                self.logdebug('Sending goal: %s' % str(self.inputs['goal']))
             self._ac.send_goal(self.inputs['goal'], feedback_cb=self._feedback_cb)
             self._last_goal_time = rospy.Time.now()
             self._active_goal = deepcopy(self.inputs['goal'])
             return NodeMsg.RUNNING
         current_state = self._ac.get_state()
-        self.logdebug('current_state: %s' % current_state)
+        if loglevel_is(rospy.DEBUG):
+            self.logdebug('current_state: %s' % current_state)
         with self._lock:
             self.outputs['goal_status'] = current_state
             self.outputs['feedback'] = self._feedback

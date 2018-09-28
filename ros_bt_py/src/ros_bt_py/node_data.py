@@ -1,6 +1,8 @@
 import jsonpickle
 import rospy
 
+from ros_bt_py.helpers import loglevel_is
+
 
 def from_string(data_type, string_value, static=False):
     return NodeData(data_type=data_type,
@@ -210,12 +212,14 @@ class NodeDataMap(object):
         been updated since the last call of
         :meth:`reset_updated`.
         """
+        debugging = loglevel_is(rospy.DEBUG)
         for key in self._map:
             if self.is_updated(key):
                 if key in self.callbacks:
                     for callback, subscriber_name in self.callbacks[key]:
-                        rospy.logdebug('Forwarding value %s of key %s to subscriber %s',
-                                       str(self[key]), key, subscriber_name)
+                        if debugging:
+                            rospy.logdebug('Forwarding value %s of key %s to subscriber %s',
+                                           str(self[key]), key, subscriber_name)
                         callback(self[key])
 
     def add(self, key, value):
