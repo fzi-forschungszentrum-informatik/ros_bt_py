@@ -48,4 +48,5 @@ class RosParam(Leaf):
                                  has_lower_bound_failure=True,
                                  has_upper_bound_failure=True)
 
+        self.loginfo('Parameter %s is not available or has wrong type' % resolved_param_name)
         return UtilityBounds()
