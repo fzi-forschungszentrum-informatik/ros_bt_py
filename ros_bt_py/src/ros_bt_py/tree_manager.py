@@ -473,6 +473,7 @@ class TreeManager(object):
 
         """
         response = ControlTreeExecutionResponse(success=False)
+
         if self._tick_thread is not None:
             is_idle = self.get_state() == Tree.IDLE
             if is_idle and self._tick_thread.is_alive():
@@ -487,6 +488,14 @@ class TreeManager(object):
             self._tick_thread = Thread(target=self.tick_report_exceptions)
 
         tree_state = self.get_state()
+
+        # Check for error state and abort if command is not SHUTDOWN -
+        # if it is, we fall through to the if below and shut down the
+        # tree
+        if tree_state == Tree.ERROR and request.command != ControlTreeExecutionRequest.SHUTDOWN:
+            response.error_message = 'Tree is in error state, the only allowed action is SHUTDOWN'
+            return response
+
         if (request.command == ControlTreeExecutionRequest.STOP or
                 request.command == ControlTreeExecutionRequest.SHUTDOWN):
             if tree_state == Tree.TICKING:
@@ -973,6 +982,8 @@ class TreeManager(object):
                 if not _get_success(rewire_resp):
                     error_message += '\nAlso failed to restore data wirings: %s' % (
                         _get_error_message(rewire_resp))
+                    with self._state_lock:
+                        self.tree_msg.state = Tree.ERROR
 
                 return SetOptionsResponse(
                     success=False,
@@ -1019,22 +1030,26 @@ class TreeManager(object):
             error_message = 'Failed to re-wire data to new node %s: %s' % (
                 new_node.name,
                 _get_error_message(rewire_resp))
-            # Try to undo everything
+            # Try to undo everything, starting with removing the new
+            # node from the node dict
             del self.nodes[new_node.name]
             self.nodes[node.name] = node
+
             if parent is not None:
                 try:
                     parent.remove_child(new_node.name)
                     parent.add_child(node)
                 except (KeyError, BehaviorTreeException) as ex:
                     error_message += '\nError restoring old node: %s' % str(ex)
+
+            # Now try to re-do the wirings
             recovery_wire_response = self.wire_data(wire_request)
             if not _get_success(recovery_wire_response):
                 error_message += '\nFailed to re-wire data to restored node %s: %s' % (
                     node.name, _get_error_message(recovery_wire_response))
 
-            with self._state_lock:
-                self.tree_msg.state = Tree.ERROR
+                with self._state_lock:
+                    self.tree_msg.state = Tree.ERROR
             return SetOptionsResponse(
                 success=False,
                 error_message=error_message)

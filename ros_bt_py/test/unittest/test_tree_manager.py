@@ -915,19 +915,21 @@ class TestTreeManager(unittest.TestCase):
         # Should fail because the wiring cannot be re-established
         # (child1.out is now a str, but child2.in still expects an
         # int)
-        self.assertFalse(get_success(self.manager.set_options(SetOptionsRequest(
+        failed_res = self.manager.set_options(SetOptionsRequest(
             tree_name='',
             node_name='child1',
             options=[NodeData(key='passthrough_type',
-                              serialized_value=jsonpickle.encode(str))]))))
+                              serialized_value=jsonpickle.encode(str))]))
+        self.assertFalse(get_success(failed_res))
 
         # The failed attempt should reset everything to the way it was
         # before, so this must still work
-        self.assertTrue(get_success(self.manager.set_options(SetOptionsRequest(
+        retry_res = self.manager.set_options(SetOptionsRequest(
             tree_name='',
             node_name='child1',
             options=[NodeData(key='passthrough_type',
-                              serialized_value=jsonpickle.encode(int))]))))
+                              serialized_value=jsonpickle.encode(int))]))
+        self.assertTrue(get_success(retry_res), get_error_message(retry_res))
 
     def testEnforceEditable(self):
         add_request = AddNodeRequest(tree_name='',
