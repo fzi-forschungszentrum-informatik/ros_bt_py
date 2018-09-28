@@ -45,6 +45,19 @@ class TestTopicSubscriberLeaf(unittest.TestCase):
         self.assertEqual(self.subscriber_leaf.state, NodeMsg.SUCCEEDED)
         self.assertEqual(self.subscriber_leaf.outputs['message'].data, 8)
 
+        self.subscriber_leaf.reset()
+        self.assertEqual(self.subscriber_leaf.state, NodeMsg.IDLE)
+        self.assertEqual(self.subscriber_leaf.outputs['message'], None)
+
+        rospy.sleep(0.1)
+        self.publisher.publish(data=9)
+        rospy.sleep(0.1)
+
+        self.subscriber_leaf.tick()
+        # Same as before
+        self.assertEqual(self.subscriber_leaf.state, NodeMsg.SUCCEEDED)
+        self.assertEqual(self.subscriber_leaf.outputs['message'].data, 9)
+
 
 if __name__ == '__main__':
     rospy.init_node('test_topic_subscribe_leaf')

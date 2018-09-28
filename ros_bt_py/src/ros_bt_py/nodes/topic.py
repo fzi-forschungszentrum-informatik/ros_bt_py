@@ -40,9 +40,13 @@ class TopicSubscriber(Leaf):
         self._subscriber.unregister()
 
     def _do_reset(self):
-        # discard the last received message, nothing else to reset
+        # discard the last received message and re-subscribe to the
+        # topic, so we receive any latched messages again
         self._msg = None
         self._subscriber.unregister()
+        self._subscriber = rospy.Subscriber(self.options['topic_name'],
+                                            self.options['topic_type'],
+                                            self._callback)
         return NodeMsg.IDLE
 
     def _do_untick(self):
