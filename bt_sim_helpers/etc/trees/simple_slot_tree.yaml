@@ -1,0 +1,29 @@
+name: ''
+path: ''
+root_name: "OpenDoorGetThingSeq"
+nodes: 
+  - 
+    is_subtree: False
+    subtree_data: ''
+    module: "ros_bt_py.nodes.remote_slot"
+    node_class: "RemoteSlot"
+    max_children: 0
+    name: "RemoteSlot"
+    child_names: []
+    options: 
+      - 
+        key: "slot_namespace"
+        serialized_value: "\"remote_tree_slot\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "wait_for_service_seconds"
+        serialized_value: "5.0"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+    inputs: []
+    outputs: []
+    state: "UNINITIALIZED"
+data_wirings: []
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: []
+---
