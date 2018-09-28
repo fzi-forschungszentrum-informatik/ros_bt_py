@@ -3386,7 +3386,7 @@ class EditableNode extends Component
         </Fragment>
       );
     }
-    else if (valueType === 'boolean')
+    else if (valueType === 'boolean' || valueType === 'bool')
     {
       return (
         <Fragment>
