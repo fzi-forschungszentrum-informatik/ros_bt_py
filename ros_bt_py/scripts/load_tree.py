@@ -32,7 +32,7 @@ def main():
     # argparse
     args = parser.parse_args(rospy.myargv()[1:])
 
-    service_name = '/' + args.namespace.strip().lstrip('/').rstrip('/') + '/load_tree'
+    service_name = args.namespace.strip().rstrip('/') + '/load_tree'
     rospy.init_node('load_bt', anonymous=True)
 
     load_tree_proxy = rospy.ServiceProxy(service_name, LoadTree)
