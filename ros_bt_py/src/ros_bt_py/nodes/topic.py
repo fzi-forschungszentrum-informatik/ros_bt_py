@@ -55,7 +55,7 @@ class TopicSubscriber(Leaf):
     def _do_calculate_utility(self):
         resolved_topic = rospy.resolve_name(self.options['topic_name'])
 
-        for topic, topic_type_name in rospy.get_published_topics(rospy.get_namespace()):
+        for topic, topic_type_name in rospy.get_published_topics():
             topic_type = get_message_class(topic_type_name)
             if (topic == resolved_topic and
                     topic_type == self.options['topic_type']):
