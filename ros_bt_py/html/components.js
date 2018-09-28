@@ -907,6 +907,10 @@ class TickControls extends Component
                 className="btn btn-primary m-1">
           Tick Periodically
         </button>
+        <button onClick={this.controlExec.bind(this, 3)}
+                className="btn btn-primary m-1">
+          Tick Until Result
+        </button>
         <button onClick={this.controlExec.bind(this, 4)}
                 className="btn btn-primary m-1">
           Stop
