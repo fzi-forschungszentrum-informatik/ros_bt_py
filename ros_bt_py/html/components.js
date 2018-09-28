@@ -1148,6 +1148,7 @@ class D3BehaviorTreeEditor extends Component
       .on("click", () => {
         // Deselect any selected node if the user clicks on the background
         this.props.onSelectionChange(null);
+        this.props.onSelectedEdgeChange(null);
       });
   }
 
@@ -2070,6 +2071,8 @@ class D3BehaviorTreeEditor extends Component
   DataEdgeDefaultClickHandler(d, index, group)
   {
     this.props.onSelectedEdgeChange(d);
+    d3.event.preventDefault();
+    d3.event.stopPropagation();
   }
 
   IOGripperMousedownHandler(datum, index, group)
