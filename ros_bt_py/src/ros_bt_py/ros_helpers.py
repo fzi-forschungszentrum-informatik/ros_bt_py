@@ -59,7 +59,8 @@ class AsyncServiceProxy(object):
             self._process.start()
 
     def get_response(self):
-        self._data['state'] = self.IDLE
+        if self._data['state'] == self.RESPONSE_READY:
+            self._data['state'] = self.IDLE
         return self._data['res']
 
     def get_state(self):
