@@ -9,7 +9,7 @@ import time
 import rospy
 
 from ros_bt_py.exceptions import BehaviorTreeException
-from ros_bt_py_msgs.msg import DebugInfo, DebugSettings, Node, TickTime
+from ros_bt_py_msgs.msg import DebugInfo, DebugSettings, Node
 
 
 class DebugManager(object):
