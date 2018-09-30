@@ -33,8 +33,7 @@ class TreeNode(object):
             latch=True,
             queue_size=1)
 
-        self.debug_manager = DebugManager(
-            target_tick_frequency_hz=rospy.get_param('~target_tick_frequency_hz'))
+        self.debug_manager = DebugManager()
         self.tree_manager = TreeManager(
             module_list=node_module_names,
             debug_manager=self.debug_manager,
