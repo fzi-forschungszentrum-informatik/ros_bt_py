@@ -20,6 +20,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
     max_children=0))
 class MockLeaf(Leaf):
     def _do_setup(self):
+        self.setup_called = True
         self.outputs['current_index'] = 0
         self.tick_count = 0
         self.outputs['tick_count'] = self.tick_count
@@ -71,6 +72,9 @@ class MockLeaf(Leaf):
         self.shutdown_count += 1
         self.outputs['shutdown_count'] = self.shutdown_count
 
+    def _do_calculate_utility(self):
+        return UtilityBounds(can_execute=True)
+
 
 @define_bt_node(NodeConfig(
     options={'can_execute': bool,
@@ -99,16 +103,23 @@ class MockUtilityLeaf(Leaf):
             upper_bound_failure=self.options['utility_upper_bound_failure'])
 
     def _do_shutdown(self):
-        pass
+        self.shutdown_count += 1
 
     def _do_setup(self):
-        pass
+        self.setup_called = True
+        self.tick_count = 0
+        self.untick_count = 0
+        self.reset_count = 0
+        self.shutdown_count = 0
 
     def _do_tick(self):
+        self.tick_count += 1
         return NodeMsg.SUCCEEDED
 
     def _do_untick(self):
+        self.untick_count += 1
         return NodeMsg.IDLE
 
     def _do_reset(self):
+        self.reset_count += 1
         return NodeMsg.IDLE

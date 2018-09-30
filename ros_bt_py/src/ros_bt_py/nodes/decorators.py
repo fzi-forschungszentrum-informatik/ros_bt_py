@@ -1,6 +1,7 @@
 import rospy
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
+from ros_bt_py_msgs.msg import UtilityBounds
 
 from ros_bt_py.node import Decorator, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
@@ -42,7 +43,8 @@ class IgnoreFailure(Decorator):
 
     def _do_untick(self):
         for child in self.children:
-            child.untick()
+            return child.untick()
+        return NodeMsg.IDLE
 
     # Decorator's default utility calculation works here
     #
@@ -88,7 +90,8 @@ class UntilSuccess(Decorator):
 
     def _do_untick(self):
         for child in self.children:
-            child.untick()
+            return child.untick()
+        return NodeMsg.IDLE
 
     # Decorator's default utility calculation works here
     #
@@ -141,9 +144,68 @@ class Retry(Decorator):
 
     def _do_untick(self):
         for child in self.children:
-            child.untick()
+            return child.untick()
+        return NodeMsg.IDLE
 
     # Decorator's default utility calculation works here
     #
     # def _do_calculate_utility(self):
     #     pass
+
+
+@define_bt_node(NodeConfig(
+    options={},
+    inputs={},
+    outputs={},
+    max_children=1))
+class Optional(Decorator):
+    """Wraps a child that may not be able to execute
+
+    A child that cannot execute will not be ticked. Instead, this
+    decorator will always return SUCCEEDED.
+
+    If the child *can* execute, the decorator will simply forward all
+    events.
+
+    """
+    def _do_setup(self):
+        self.execute_child = False
+        for child in self.children:
+            if child.calculate_utility().can_execute:
+                child.setup()
+                self.execute_child = True
+
+    def _do_tick(self):
+        if self.execute_child:
+            return self.children[0].tick()
+        else:
+            return NodeMsg.SUCCEEDED
+
+    def _do_shutdown(self):
+        if self.execute_child:
+            self.children[0].shutdown()
+
+    def _do_reset(self):
+        if self.execute_child:
+            self.children[0].reset()
+        else:
+            return NodeMsg.IDLE
+
+    def _do_untick(self):
+        if self.execute_child:
+            self.children[0].untick()
+        else:
+            return NodeMsg.IDLE
+
+    def _do_calculate_utility(self):
+        for child in self.children:
+            bounds = child.calculate_utility()
+            if bounds.can_execute:
+                return bounds
+
+        # If the child can't execute, return a UtilityBounds object
+        # that can execute, but does not have any bounds set (that is,
+        # if another executor can actually execute our child, it is
+        # pretty much guaranteed to have a better Utility score than
+        # us)
+        return UtilityBounds(can_execute=True)
