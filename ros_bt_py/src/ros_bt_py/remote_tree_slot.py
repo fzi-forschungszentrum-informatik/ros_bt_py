@@ -229,6 +229,7 @@ class RemoteTreeSlot(object):
                         # tree from here, because that would deadlock
                         # the TreeManager. Is that okay, or do we need
                         # to figure out a way aruond that deadlock?
+
                         self.run_tree_gh.set_succeeded(result=RunTreeResult(
                             final_tree=self.latest_tree))
                         self.run_tree_gh = None

@@ -509,6 +509,7 @@ class Node(object):
             self.logwarn('Not all children are shut down after calling shutdown(). '
                          'List of not-shutdown children and states:\n' +
                          '\n'.join(unshutdown_children))
+        return self.state
 
     @_required
     def _do_shutdown(self):

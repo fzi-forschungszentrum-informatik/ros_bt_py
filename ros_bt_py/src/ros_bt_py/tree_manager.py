@@ -513,8 +513,9 @@ class TreeManager(object):
                 if self._tick_thread.is_alive():
                     # Give the tick thread some time to finish
                     self._tick_thread.join((1.0 / self.tree_msg.tick_frequency_hz) * 4.0)
+
                     # If we're debugging or setting up (and ROS is not
-                    # shutting down), keep sleepin until the thread
+                    # shutting down), keep sleeping until the thread
                     # finishes
                     while (self._tick_thread.is_alive() and
                            not rospy.is_shutdown()):
