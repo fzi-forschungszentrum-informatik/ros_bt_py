@@ -36,8 +36,9 @@ add_message_files(
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
-  OpenDoor.srv
+  GetTarget.srv
   InteractObject.srv
+  OpenDoor.srv
 )
 
 ## Generate added messages and services with any dependencies listed here

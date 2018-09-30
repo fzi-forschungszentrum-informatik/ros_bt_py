@@ -1,10 +1,10 @@
 import rospy
 
 from geometry_msgs.msg import Pose, Point, Quaternion
-from ros_bt_py_msgs.srv import GetTarget, GetTargetResponse
+from bt_sim_helpers.srv import GetTarget, GetTargetResponse
 
 
-class GetTarget(object):
+class GetTargetServer(object):
     def __init__(self):
         norm_quat = Quaternion(0, 0, 0, 1)
         self.targets = [Pose(Point(2, 2, 0), norm_quat),
@@ -29,7 +29,7 @@ class GetTarget(object):
 
 def main():
     rospy.init_node('sim_helper')
-    helper = GetTarget()
+    helper = GetTargetServer()
     rospy.spin()
 
 
