@@ -18,7 +18,7 @@
           args="pub -l foo std_msgs/Bool 'data: true'" />
   </group>
 
-  <test test-name="test_topic_subscribe_leaf"
+  <test test-name="test_shove_tree"
         pkg="ros_bt_py"
         type="test_shove_tree.py" />
 </launch>
