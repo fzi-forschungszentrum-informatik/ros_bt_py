@@ -186,31 +186,26 @@ class MemorySequence(FlowControl):
 
 def calculate_utility_sequence(children):
     """Shared Utility aggregation for Sequence and MemorySequence"""
-    bounds = UtilityBounds(has_lower_bound_success=True,
-                           lower_bound_success=0.0,
+    bounds = UtilityBounds(can_execute=True,
+                           has_lower_bound_success=True,
                            has_upper_bound_success=True,
-                           upper_bound_success=0.0,
-                           has_lower_bound_failure=False,
-                           has_upper_bound_failure=False)
+                           has_lower_bound_failure=True,
+                           has_upper_bound_failure=True)
     if children:
         # These are the direct inverse of the Fallback's boundaries - check
         # the detailed description in fallback.py if you're interested in
         # why this is the solution.
-        have_bounds = True
-        failure_bounds = [UtilityBounds(has_lower_bound_failure=False,
+        failure_bounds = [UtilityBounds(has_lower_bound_failure=True,
                                         lower_bound_failure=0,
-                                        has_upper_bound_failure=False,
+                                        has_upper_bound_failure=True,
                                         upper_bound_failure=0)
                           for _ in children]
         for index, child_bounds in enumerate((child.calculate_utility()
                                               for child in children)):
-            # We can only provide an estimate if all children have an estimate
-            # TODO(nberg): Maybe relax this?
-            have_bounds = (have_bounds and
-                           child_bounds.has_lower_bound_success and
-                           child_bounds.has_upper_bound_success and
-                           child_bounds.has_lower_bound_failure and
-                           child_bounds.has_upper_bound_failure)
+            # If any child cannot execute at all, the sequence cannot
+            # execute and won't provide a utility estimate:
+            if not child_bounds.can_execute:
+                return UtilityBounds()
 
             bounds.has_lower_bound_success &= child_bounds.has_lower_bound_success
             bounds.lower_bound_success += child_bounds.lower_bound_success
@@ -218,21 +213,24 @@ def calculate_utility_sequence(children):
             bounds.upper_bound_success += child_bounds.upper_bound_success
 
             failure_bounds[index].lower_bound_failure += child_bounds.lower_bound_failure
+            failure_bounds[index].has_lower_bound_failure &= child_bounds.has_lower_bound_failure
             failure_bounds[index].upper_bound_failure += child_bounds.upper_bound_failure
+            failure_bounds[index].has_upper_bound_failure &= child_bounds.has_upper_bound_failure
             # Range returns an empty range if the first parameter is larger
             # than the second, so no bounds checking necessary
             for i in range(index+1, len(failure_bounds)):
                 failure_bounds[i].lower_bound_failure += child_bounds.lower_bound_success
+                failure_bounds[i].has_lower_bound_failure &= child_bounds.has_lower_bound_success
                 failure_bounds[i].upper_bound_failure += child_bounds.upper_bound_success
+                failure_bounds[i].has_upper_bound_failure &= child_bounds.has_upper_bound_success
 
         # Select the minimum and maximum values to get the final bounds
         bounds.lower_bound_failure = min((x.lower_bound_failure for x in failure_bounds))
-        bounds.upper_bound_failure = max((x.upper_bound_failure for x in failure_bounds))
+        bounds.has_lower_bound_failure &= all((b.has_lower_bound_failure
+                                               for b in failure_bounds))
 
-        # Check if we actually have bounds
-        bounds.has_lower_bound_success = have_bounds
-        bounds.has_upper_bound_success = have_bounds
-        bounds.has_lower_bound_failure = have_bounds
-        bounds.has_upper_bound_failure = have_bounds
+        bounds.upper_bound_failure = max((x.upper_bound_failure for x in failure_bounds))
+        bounds.has_upper_bound_failure &= all((b.has_upper_bound_failure
+                                               for b in failure_bounds))
 
     return bounds

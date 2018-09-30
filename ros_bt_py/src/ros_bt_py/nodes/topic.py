@@ -62,6 +62,7 @@ class TopicSubscriber(Leaf):
                 # if the topic we want exists, we can do our job, so
                 # set all the bounds and leave their values at 0
                 return UtilityBounds(
+                    can_execute=True,
                     has_lower_bound_success=True,
                     has_upper_bound_success=True,
                     has_lower_bound_failure=True,

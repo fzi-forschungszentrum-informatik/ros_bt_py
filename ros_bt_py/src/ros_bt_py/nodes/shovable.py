@@ -154,6 +154,10 @@ class Shovable(Decorator):
                         self.outputs['running_remotely'] = False
                         self._state = Shovable.EXECUTE_LOCAL
                     else:
+                        if not find_best_executor_result.best_executor_namespace:
+                            self.loginfo('Unable to execute subtree anywhere!')
+                            self.cleanup()
+                            return NodeMsg.FAILED
                         self.outputs['running_remotely'] = True
                         namespace = find_best_executor_result.best_executor_namespace
 

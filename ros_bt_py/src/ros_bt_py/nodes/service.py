@@ -115,7 +115,8 @@ class Service(Leaf):
             if service_type == self.options['service_type']:
                 self.loginfo(('Found service %s with correct type, returning '
                               'filled out UtilityBounds') % resolved_service)
-                return UtilityBounds(has_lower_bound_success=True,
+                return UtilityBounds(can_execute=True,
+                                     has_lower_bound_success=True,
                                      has_upper_bound_success=True,
                                      has_lower_bound_failure=True,
                                      has_upper_bound_failure=True)

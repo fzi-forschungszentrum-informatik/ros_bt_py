@@ -51,6 +51,7 @@ class FindBestExecutorServer(object):
         if not bounds:
             self._as.set_aborted(result=None, text="")
 
+        bounds = [x for x in bounds if x[1].can_execute]
         # First sort bounds so that the lowest average bound
         # (i.e. lowest cost) bounds object is first
         bounds.sort(key=lambda x: avg_bound(x[1]))
@@ -61,12 +62,18 @@ class FindBestExecutorServer(object):
         # number of set bounds
         bounds.sort(reverse=True, key=lambda x: num_set_bounds(x[1]))
 
-        # Extract the best executor
+        result = FindBestExecutorResult()
+        # If no executor can execute the tree, send a response with an
+        # empty namespace *and* local_is_best = False
+        if not bounds:
+            self._as.set_succeeded(result)
+
+        # Otherwise, extract the best executor
         best_name, best_bounds = bounds[0]
 
         rospy.loginfo('Executor "%s" has the best bounds:\n%s',
                       best_name, str(best_bounds))
-        result = FindBestExecutorResult()
+
         if best_name == '__local':
             result.local_is_best = True
         else:

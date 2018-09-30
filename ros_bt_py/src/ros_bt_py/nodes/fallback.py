@@ -181,12 +181,14 @@ class MemoryFallback(FlowControl):
 
 def calculate_utility_fallback(children):
     """Shared Utility aggregation for Fallback and MemoryFallback"""
-    bounds = UtilityBounds(has_lower_bound_success=False,
-                           has_upper_bound_success=False,
-                           has_lower_bound_failure=True,
-                           lower_bound_failure=0.0,
-                           has_upper_bound_failure=True,
-                           upper_bound_failure=0.0)
+    # initialize bounds to 0.0, with all bounds set - they
+    # will become unset if any child does not have them set
+    bounds = UtilityBounds(
+        can_execute=True,
+        has_lower_bound_success=True,
+        has_upper_bound_success=True,
+        has_lower_bound_failure=True,
+        has_upper_bound_failure=True)
     if children:
         # To figure out the best and worst case cost for success and
         # failure, respectively, we need to figure out the cheapest and
@@ -196,9 +198,11 @@ def calculate_utility_fallback(children):
         # dealing with that first: It's the sum of all children's
         # upper/lower failure bounds.
 
-        # Success is a little trickier: Any number of children may fail
-        # before the first success. So we need to find the max and min
-        # values of all possible combinations of success and failure:
+        # Success is a little trickier: Any number of children may
+        # fail before the first success. So we need to find the max
+        # and min values of all possible variations of "the first N
+        # children fail, and the child number N+1 succeeds", where N
+        # goes from 0 to the number of children.
 
         # The nth element in this represents the case where the nth child
         # succeeds. So for two children A and B, the lower and upper bounds
@@ -207,20 +211,22 @@ def calculate_utility_fallback(children):
         # lower bounds: [A.lower_success, (A.lower_failure + B.lower_success)]
         # upper bounds: [A.upper_success, (A.upper_failure + B.upper_success)]
 
-        # initialize bounds to 0.0, with all bounds set - they
-        # will become unset if any child does not have them set
-        bounds = UtilityBounds(
-            has_lower_bound_success=True,
-            has_upper_bound_success=True,
-            has_lower_bound_failure=True,
-            has_upper_bound_failure=True)
-        success_bounds = [UtilityBounds(has_lower_bound_success=False,
+        success_bounds = [UtilityBounds(has_lower_bound_success=True,
                                         lower_bound_success=0,
-                                        has_upper_bound_success=False,
+                                        has_upper_bound_success=True,
                                         upper_bound_success=0)
                           for _ in children]
         for index, child_bounds in enumerate((child.calculate_utility()
                                               for child in children)):
+            # If any child cannot execute at all, the fallback cannot
+            # execute and won't provide a utility estimate
+            #
+            # TODO(nberg): yes, this is a simplification, because in
+            # theory, as long as it isn't the first child, the
+            # fallback could still succeed...
+            if not child_bounds.can_execute:
+                return UtilityBounds()
+
             # Update the estimates and has_bound values. logical
             # and means a single child with an unset bound causes
             # the bound to be unset for the entire Fallback.
@@ -230,15 +236,23 @@ def calculate_utility_fallback(children):
             bounds.upper_bound_failure += child_bounds.upper_bound_failure
 
             success_bounds[index].lower_bound_success += child_bounds.lower_bound_success
+            success_bounds[index].has_lower_bound_success &= child_bounds.has_lower_bound_success
             success_bounds[index].upper_bound_success += child_bounds.upper_bound_success
+            success_bounds[index].has_upper_bound_success &= child_bounds.has_upper_bound_success
             # Range returns an empty range if the first parameter is larger
             # than the second, so no bounds checking necessary
             for i in range(index+1, len(success_bounds)):
                 success_bounds[i].lower_bound_success += child_bounds.lower_bound_failure
+                success_bounds[i].has_lower_bound_success &= child_bounds.has_lower_bound_failure
                 success_bounds[i].upper_bound_success += child_bounds.upper_bound_failure
+                success_bounds[i].has_upper_bound_success &= child_bounds.has_upper_bound_failure
 
         # Select the minimum and maximum values to get the final bounds
         bounds.lower_bound_success = min((x.lower_bound_success for x in success_bounds))
-        bounds.upper_bound_success = max((x.upper_bound_success for x in success_bounds))
+        bounds.has_lower_bound_success &= all((b.has_lower_bound_success
+                                               for b in success_bounds))
 
+        bounds.upper_bound_success = max((x.upper_bound_success for x in success_bounds))
+        bounds.has_upper_bound_success &= all((b.has_upper_bound_success
+                                               for b in success_bounds))
     return bounds

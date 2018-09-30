@@ -43,7 +43,8 @@ class RosParam(Leaf):
             return UtilityBounds()
         if (resolved_param_name in params and
                 isinstance(rospy.get_param(resolved_param_name), self.options['param_type'])):
-            return UtilityBounds(has_lower_bound_success=True,
+            return UtilityBounds(can_execute=True,
+                                 has_lower_bound_success=True,
                                  has_upper_bound_success=True,
                                  has_lower_bound_failure=True,
                                  has_upper_bound_failure=True)

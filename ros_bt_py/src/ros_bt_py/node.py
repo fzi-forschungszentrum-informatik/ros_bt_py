@@ -543,13 +543,16 @@ class Node(object):
 
         :returns:
 
-        A :class:`ros_bt_py_msgs.msg.UtilityBounds` message with all
-        bounds set to 0.0 and all of the `has_bound` members set to `True`.
+        A :class:`ros_bt_py_msgs.msg.UtilityBounds` message with
+        `can_execute` set to `True`, all bounds set to 0.0 and all of
+        the `has_bound` members set to `True`.
 
         That is, any node that does not override this method is
         considered to execute at no cost at all.
+
         """
-        return UtilityBounds(has_lower_bound_success=True,
+        return UtilityBounds(can_execute=True,
+                             has_lower_bound_success=True,
                              has_upper_bound_success=True,
                              has_lower_bound_failure=True,
                              has_upper_bound_failure=True)

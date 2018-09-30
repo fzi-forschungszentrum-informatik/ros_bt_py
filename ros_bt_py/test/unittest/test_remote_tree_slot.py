@@ -60,6 +60,7 @@ class TestRemoteTreeSlot(unittest.TestCase):
         self.cheap_fail = MockUtilityLeaf(
             name='cheap_fail',
             options={
+                'can_execute': True,
                 'utility_lower_bound_success': 5.0,
                 'utility_upper_bound_success': 10.0,
                 'utility_lower_bound_failure': 1.0,
@@ -67,6 +68,7 @@ class TestRemoteTreeSlot(unittest.TestCase):
         self.cheap_success = MockUtilityLeaf(
             name='cheap_success',
             options={
+                'can_execute': True,
                 'utility_lower_bound_success': 1.0,
                 'utility_upper_bound_success': 2.0,
                 'utility_lower_bound_failure': 5.0,

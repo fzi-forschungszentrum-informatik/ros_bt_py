@@ -1,3 +1,5 @@
+bool can_execute
+
 bool has_upper_bound_success
 float64 upper_bound_success
 

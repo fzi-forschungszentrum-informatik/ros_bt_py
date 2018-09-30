@@ -161,6 +161,7 @@ class Action(Leaf):
                 # don't know much about the bounds, so set them all to
                 # zero
                 return UtilityBounds(
+                    can_execute=True,
                     has_lower_bound_success=True,
                     has_upper_bound_success=True,
                     has_lower_bound_failure=True,

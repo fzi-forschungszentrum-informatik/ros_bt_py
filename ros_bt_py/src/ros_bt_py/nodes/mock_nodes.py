@@ -73,7 +73,8 @@ class MockLeaf(Leaf):
 
 
 @define_bt_node(NodeConfig(
-    options={'utility_lower_bound_success': float,
+    options={'can_execute': bool,
+             'utility_lower_bound_success': float,
              'utility_upper_bound_success': float,
              'utility_lower_bound_failure': float,
              'utility_upper_bound_failure': float},
@@ -87,6 +88,7 @@ class MockUtilityLeaf(Leaf):
         else:
             self.outputs['calculate_utility_count'] = 1
         return UtilityBounds(
+            can_execute=self.options['can_execute'],
             has_lower_bound_success=True,
             lower_bound_success=self.options['utility_lower_bound_success'],
             has_upper_bound_success=True,

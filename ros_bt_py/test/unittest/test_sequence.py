@@ -25,6 +25,7 @@ class TestSequence(unittest.TestCase):
         self.cheap_fail = MockUtilityLeaf(
             name='cheap_fail',
             options={
+                'can_execute': True,
                 'utility_lower_bound_success': 5.0,
                 'utility_upper_bound_success': 10.0,
                 'utility_lower_bound_failure': 1.0,
@@ -32,6 +33,7 @@ class TestSequence(unittest.TestCase):
         self.cheap_success = MockUtilityLeaf(
             name='cheap_success',
             options={
+                'can_execute': True,
                 'utility_lower_bound_success': 1.0,
                 'utility_upper_bound_success': 2.0,
                 'utility_lower_bound_failure': 5.0,
@@ -100,7 +102,8 @@ class TestSequence(unittest.TestCase):
         cheap_fail_2.name = 'cheap_fail_2'
         self.sequence.add_child(cheap_fail_2)
         cheap_fail_bounds = self.cheap_fail.calculate_utility()
-        expected_bounds = UtilityBounds(has_lower_bound_success=True,
+        expected_bounds = UtilityBounds(can_execute=True,
+                                        has_lower_bound_success=True,
                                         has_upper_bound_success=True,
                                         has_lower_bound_failure=True,
                                         has_upper_bound_failure=True)
@@ -127,7 +130,8 @@ class TestSequence(unittest.TestCase):
         self.sequence.add_child(self.cheap_success)
         self.sequence.add_child(self.cheap_fail)
 
-        expected_bounds = UtilityBounds(has_lower_bound_success=True,
+        expected_bounds = UtilityBounds(can_execute=True,
+                                        has_lower_bound_success=True,
                                         has_upper_bound_success=True,
                                         has_lower_bound_failure=True,
                                         has_upper_bound_failure=True)
@@ -177,6 +181,7 @@ class TestMemorySequence(unittest.TestCase):
         self.cheap_fail = MockUtilityLeaf(
             name='cheap_fail',
             options={
+                'can_execute': True,
                 'utility_lower_bound_success': 5.0,
                 'utility_upper_bound_success': 10.0,
                 'utility_lower_bound_failure': 1.0,
@@ -184,6 +189,7 @@ class TestMemorySequence(unittest.TestCase):
         self.cheap_success = MockUtilityLeaf(
             name='cheap_success',
             options={
+                'can_execute': True,
                 'utility_lower_bound_success': 1.0,
                 'utility_upper_bound_success': 2.0,
                 'utility_lower_bound_failure': 5.0,
@@ -333,7 +339,8 @@ class TestMemorySequence(unittest.TestCase):
         cheap_fail_2.name = 'cheap_fail_2'
         self.mem_sequence.add_child(cheap_fail_2)
         cheap_fail_bounds = self.cheap_fail.calculate_utility()
-        expected_bounds = UtilityBounds(has_lower_bound_success=True,
+        expected_bounds = UtilityBounds(can_execute=True,
+                                        has_lower_bound_success=True,
                                         has_upper_bound_success=True,
                                         has_lower_bound_failure=True,
                                         has_upper_bound_failure=True)
@@ -360,7 +367,8 @@ class TestMemorySequence(unittest.TestCase):
         self.mem_sequence.add_child(self.cheap_success)
         self.mem_sequence.add_child(self.cheap_fail)
 
-        expected_bounds = UtilityBounds(has_lower_bound_success=True,
+        expected_bounds = UtilityBounds(can_execute=True,
+                                        has_lower_bound_success=True,
                                         has_upper_bound_success=True,
                                         has_lower_bound_failure=True,
                                         has_upper_bound_failure=True)
