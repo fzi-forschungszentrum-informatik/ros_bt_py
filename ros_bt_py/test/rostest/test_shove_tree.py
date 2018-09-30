@@ -10,9 +10,6 @@ from std_msgs.msg import Bool
 from ros_bt_py_msgs.srv import LoadTree, LoadTreeRequest
 from ros_bt_py_msgs.srv import ControlTreeExecution, ControlTreeExecutionRequest
 from ros_bt_py_msgs.msg import Tree, Node as NodeMsg
-from ros_bt_py_msgs.msg import NodeDataWiring, NodeDataLocation
-
-from ros_bt_py.node import Node
 
 PKG = 'ros_bt_py'
 
