@@ -75,7 +75,7 @@ nodes:
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
       - 
         key: "run_tree_action_timeout_seconds"
-        serialized_value: "2.0"
+        serialized_value: "5.0"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
     inputs: []
     outputs: 
