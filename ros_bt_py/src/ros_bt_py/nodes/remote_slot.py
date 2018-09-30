@@ -82,6 +82,11 @@ class RemoteSlot(Leaf):
             # self.loginfo('quitting early to report finished slot execution')
             return NodeMsg.SUCCEEDED
 
+        # If no tree is loaded, just succeed and let our parent tree
+        # get on with its business
+        if not self._tree_loaded:
+            return NodeMsg.SUCCEEDED
+
         proxy_state = self._service_proxy.get_state()
         if proxy_state == AsyncServiceProxy.ERROR:
             # self.loginfo('quitting early to report service error')
@@ -102,7 +107,7 @@ class RemoteSlot(Leaf):
                 # Send a TICK_PERIODICALLY request without frequency,
                 # so the slot can decide for itself
                 self._service_proxy.call_service(ControlTreeExecutionRequest(
-                    command=ControlTreeExecutionRequest.TICK_PERIODICALLY))
+                    command=ControlTreeExecutionRequest.TICK_UNTIL_RESULT))
                 self._run_command_sent = True
         # else:
         #     self.loginfo('Not sending request. command_sent: ' +

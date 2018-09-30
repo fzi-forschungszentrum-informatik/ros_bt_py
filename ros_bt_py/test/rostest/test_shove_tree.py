@@ -11,6 +11,8 @@ from ros_bt_py_msgs.srv import LoadTree, LoadTreeRequest
 from ros_bt_py_msgs.srv import ControlTreeExecution, ControlTreeExecutionRequest
 from ros_bt_py_msgs.msg import Tree, Node as NodeMsg
 
+from ros_bt_py.nodes.remote_slot import RemoteSlot
+
 PKG = 'ros_bt_py'
 
 
@@ -121,6 +123,94 @@ class TestShoveTree(unittest.TestCase):
         self.assertEqual(root_msg.state, NodeMsg.SUCCEEDED)
         self.assertTrue(get_output(shovable_node_msg, 'running_remotely'))
         self.assertEqual(get_output(subscriber_node_msg, 'message'), Bool(data=True))
+
+    def testRemoteExecutionWithRemoteSlotNode(self):
+        """Control the execution of the loaded tree with a RemoteSlot node"""
+
+        # First, create and set up the RemoteSlot node that will control the slot
+        remote_slot_node = RemoteSlot(options={
+            'slot_namespace': '/remote_slot/remote_slot/',
+            'wait_for_service_seconds': 5.0
+        })
+
+        remote_slot_node.setup()
+        self.assertEqual(remote_slot_node.state, NodeMsg.IDLE)
+
+        # No tree in the slot yet, so the node should short-circuit to
+        # succeeding
+        self.assertEqual(remote_slot_node.tick(), NodeMsg.SUCCEEDED)
+
+        # Now load the tree, as above:
+        load_res = self.load_tree_proxy(LoadTreeRequest(
+            tree=Tree(path="package://ros_bt_py/etc/trees/test_shove_tree.yaml")))
+        self.assertTrue(load_res.success, load_res.error_message)
+
+        exec_res = self.control_tree_proxy(ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.TICK_UNTIL_RESULT,
+            tick_frequency_hz=10.0))
+        self.assertTrue(exec_res.success, exec_res.error_message)
+
+        # Enough for the tree to be shoved over
+        rospy.sleep(0.5)
+
+        # Signal the slot that it's allowed to start by ticking the
+        # RemoteSlot node again (this should return RUNNING, first
+        # because the service call takes time, and second because the
+        # tree takes time to finish.
+        self.assertEqual(remote_slot_node.tick(), NodeMsg.RUNNING)
+
+        # Should be enough time for the tree to be shoved to the
+        # remote_slot namespace, execute there, and return
+        rospy.sleep(2.0)
+
+        # If we tick again now, we should get a SUCCEEDED response
+        self.assertEqual(remote_slot_node.tick(), NodeMsg.SUCCEEDED)
+
+        # Check that result is the same as when we manually controlled the slot
+        self.assertIsNotNone(self.tree_msg)
+
+        root_msg = get_root(self.tree_msg)
+        self.assertIsNotNone(root_msg)
+
+        shovable_node_msg = get_node_by_name(self.tree_msg, 'Shovable')
+        self.assertIsNotNone(shovable_node_msg)
+
+        subscriber_node_msg = get_node_by_name(self.tree_msg, 'TopicSubscriber')
+        self.assertIsNotNone(subscriber_node_msg)
+
+        self.assertEqual(root_msg.state, NodeMsg.SUCCEEDED)
+        self.assertTrue(get_output(shovable_node_msg, 'running_remotely'))
+        self.assertEqual(get_output(subscriber_node_msg, 'message'), Bool(data=True))
+
+        # shove the same twee again
+        exec_res = self.control_tree_proxy(ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.TICK_UNTIL_RESULT,
+            tick_frequency_hz=10.0))
+        self.assertTrue(exec_res.success, exec_res.error_message)
+
+        # Enough for the tree to be shoved over
+        rospy.sleep(0.5)
+
+        self.assertEqual(remote_slot_node.tick(), NodeMsg.RUNNING)
+        rospy.sleep(0.05)
+        # Should still be running
+        self.assertEqual(remote_slot_node.tick(), NodeMsg.RUNNING)
+        # This should stop the tree from executing, so it won't finish
+        self.assertEqual(remote_slot_node.untick(), NodeMsg.IDLE)
+
+        # Should be enough time for the tree to be shoved to the
+        # remote_slot namespace, execute there, and return
+        rospy.sleep(2.0)
+
+        # The tree root shold still be RUNNING, because the slot is stopped
+        self.assertIsNotNone(self.tree_msg)
+
+        root_msg = get_root(self.tree_msg)
+        self.assertIsNotNone(root_msg)
+        self.assertEqual(root_msg.state, NodeMsg.RUNNING)
+
+        # Shut down the RemoteSlot for good measure
+        self.assertEqual(remote_slot_node.shutdown(), NodeMsg.SHUTDOWN)
 
 
 def get_root(tree_msg):

@@ -136,7 +136,6 @@ class RemoteTreeSlot(object):
 
         if request.command not in [
                 ControlTreeExecutionRequest.TICK_ONCE,
-                ControlTreeExecutionRequest.TICK_PERIODICALLY,
                 ControlTreeExecutionRequest.TICK_UNTIL_RESULT,
                 ControlTreeExecutionRequest.STOP,
                 ControlTreeExecutionRequest.RESET,
@@ -154,7 +153,6 @@ class RemoteTreeSlot(object):
 
         if request.command in [
                 ControlTreeExecutionRequest.TICK_ONCE,
-                ControlTreeExecutionRequest.TICK_PERIODICALLY,
                 ControlTreeExecutionRequest.TICK_UNTIL_RESULT]:
             rospy.loginfo('started ticking loaded tree')
             self.slot_state.tree_running = True
