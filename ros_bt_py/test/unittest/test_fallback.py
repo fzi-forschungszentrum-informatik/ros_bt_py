@@ -267,7 +267,7 @@ class TestMemoryFallback(unittest.TestCase):
         # failer again, because it delivered a result of SUCCEEDED
         # last tick, and thus needs to start over
         self.assertEqual(self.failer.outputs['tick_count'], 2)
-        self.assertEqual(self.failer.outputs['untick_count'], 1)
+        self.assertEqual(self.failer.outputs['reset_count'], 1)
         self.assertEqual(self.run_then_succeed.outputs['tick_count'], 3)
         # run_then_succeed loops back to RUNNING
         self.assertEqual(self.mem_fallback.state, Node.RUNNING)

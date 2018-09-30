@@ -50,7 +50,7 @@ class Fallback(FlowControl):
         # If we've previously succeeded or failed, untick all children
         if self.state in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
             for child in self.children:
-                child.untick()
+                child.reset()
 
         # Tick children until one returns SUCCEEDED or RUNNING
         for index, child in enumerate(self.children):
@@ -139,7 +139,7 @@ class MemoryFallback(FlowControl):
         if self.state in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
             self.last_running_child = 0
             for child in self.children:
-                child.untick()
+                child.reset()
 
         # Tick children until one returns SUCCEEDED or RUNNING
         for index, child in enumerate(self.children):
