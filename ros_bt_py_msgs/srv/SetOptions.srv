@@ -1,4 +1,3 @@
-string tree_name
 string node_name
 bool rename_node
 string new_name

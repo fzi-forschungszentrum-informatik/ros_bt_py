@@ -148,6 +148,8 @@ class TestRemoteTreeSlot(unittest.TestCase):
 
         self.assertEqual(gh.state, MockGoalHandle.ACCEPTED)
         self.assertTrue(self.slot_state.tree_in_slot)
+        self.assertFalse(self.slot_state.tree_running)
+        self.assertFalse(self.slot_state.tree_finished)
 
         res = self.remote_slot.control_tree_execution_handler(ControlTreeExecutionRequest(
             command=ControlTreeExecutionRequest.TICK_PERIODICALLY,

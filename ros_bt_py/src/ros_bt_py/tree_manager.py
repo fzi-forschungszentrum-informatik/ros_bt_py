@@ -96,8 +96,6 @@ class TreeManager(object):
         if tick_frequency_hz == 0.0:
             tick_frequency_hz = 10.0
 
-        self.debug_manager.set_tree_name(name)
-        self.debug_manager.set_tick_frequency(tick_frequency_hz)
         self.debug_manager.publish_debug_info = self.publish_info
         self.debug_manager.publish_debug_settings = self.publish_debug_settings
 
@@ -413,8 +411,7 @@ class TreeManager(object):
                 return response
 
         # All nodes are added, now do the wiring
-        wire_response = self.wire_data(WireNodeDataRequest(tree_name=tree.name,
-                                                           wirings=tree.data_wirings))
+        wire_response = self.wire_data(WireNodeDataRequest(wirings=tree.data_wirings))
         if not _get_success(wire_response):
             response.success = False
             response.error_message = _get_error_message(wire_response)
@@ -855,7 +852,6 @@ class TreeManager(object):
 
         # Unwire wirings that have removed nodes as source or target
         self.unwire_data(WireNodeDataRequest(
-            tree_name=self.tree_msg.name,
             wirings=[wiring for wiring in self.tree_msg.data_wirings
                      if (wiring.source.node_name in names_to_remove or
                          wiring.target.node_name in names_to_remove)]))
@@ -884,7 +880,7 @@ class TreeManager(object):
                 success=False,
                 error_message='Unable to find node %s in tree %s' % (
                     request.node_name,
-                    request.tree_name))
+                    self.tree_msg.name))
 
         if (request.rename_node and
                 request.new_name != request.node_name and
@@ -956,7 +952,6 @@ class TreeManager(object):
         # We'll use the same request to re-wire the connections to the
         # new node (or the old one, if anything goes wrong).
         wire_request = WireNodeDataRequest(
-            tree_name=self.tree_msg.name,
             wirings=[wiring for wiring in self.tree_msg.data_wirings
                      if (wiring.source.node_name == node.name or
                          wiring.target.node_name == node.name)])
@@ -1272,9 +1267,6 @@ class TreeManager(object):
         :returns: :class:`ros_bt_py_msgs.src.WireNodeDataResponse` or `None`
         """
         response = WireNodeDataResponse(success=True)
-        # TODO(nberg): Check request.tree_name to see if the request concerns
-        # this tree or a subtree.
-
         try:
             root = self.find_root()
             if not root:
@@ -1337,9 +1329,6 @@ class TreeManager(object):
         :returns: :class:`ros_bt_py_msgs.src.WireNodeDataResponse` or `None`
         """
         response = WireNodeDataResponse(success=True)
-        # TODO(nberg): Check request.tree_name to see if the request concerns
-        # this tree or a subtree.
-
         try:
             root = self.find_root()
             if not root:

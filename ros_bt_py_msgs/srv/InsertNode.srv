@@ -1,4 +1,3 @@
-string tree_name
 # This child of the new node's parent will be moved to become a child
 # of the new node.
 string previous_child_name

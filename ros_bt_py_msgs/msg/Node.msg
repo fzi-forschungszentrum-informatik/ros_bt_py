@@ -1,14 +1,6 @@
-# If this is true, subtree_path needs to be set. If it is false,
-# package and class need to be set instead.
-bool is_subtree
-
-# Can be one of 3 things:
-# 1. a file:// URL pointing directly to a YAML file
-# 2. a package:// URL pointing to a YAML file
-# 3. a string that contains YAML representing a subtree
-string subtree_data
 # The python module the node is from
 string module
+# The python class name of the node
 string node_class
 
 # The maximum amount of children this node supports, where -1 means

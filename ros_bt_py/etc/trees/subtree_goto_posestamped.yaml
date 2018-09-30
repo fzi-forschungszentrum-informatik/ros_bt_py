@@ -3,8 +3,6 @@ path: ''
 root_name: "GotoPoseSequence"
 nodes: 
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     max_children: -1
@@ -15,8 +13,6 @@ nodes:
     outputs: []
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.passthrough_node"
     node_class: "PassthroughNode"
     max_children: 0
@@ -39,8 +35,6 @@ nodes:
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.passthrough_node"
     node_class: "PassthroughNode"
     max_children: 0
@@ -63,8 +57,6 @@ nodes:
         serialized_type: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.passthrough_node"
     node_class: "PassthroughNode"
     max_children: 0
@@ -87,8 +79,6 @@ nodes:
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.getters"
     node_class: "GetAttr"
     max_children: 1
@@ -119,8 +109,6 @@ nodes:
         serialized_type: "{\"py/type\": \"std_msgs.msg._Header.Header\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.getters"
     node_class: "GetAttr"
     max_children: 1
@@ -151,8 +139,6 @@ nodes:
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.fallback"
     node_class: "Fallback"
     max_children: -1
@@ -163,8 +149,6 @@ nodes:
     outputs: []
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     max_children: -1
@@ -175,8 +159,6 @@ nodes:
     outputs: []
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.getters"
     node_class: "GetAttr"
     max_children: 1
@@ -207,8 +189,6 @@ nodes:
         serialized_type: "{\"py/type\": \"geometry_msgs.msg._Pose.Pose\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.ros_nodes.lookup_tf"
     node_class: "LookupTF"
     max_children: 0
@@ -231,8 +211,6 @@ nodes:
         serialized_type: "{\"py/type\": \"geometry_msgs.msg._Pose.Pose\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.ros_nodes.pose_distance"
     node_class: "PoseDistance"
     max_children: 0
@@ -263,8 +241,6 @@ nodes:
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.compare"
     node_class: "ALessThanB"
     max_children: 0
@@ -283,8 +259,6 @@ nodes:
     outputs: []
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     max_children: -1
@@ -295,8 +269,6 @@ nodes:
     outputs: []
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.ros_nodes.message_from_dict"
     node_class: "MessageFromConstDict"
     max_children: 0
@@ -319,8 +291,6 @@ nodes:
         serialized_type: "{\"py/type\": \"move_base_msgs.msg._MoveBaseGoal.MoveBaseGoal\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.setters"
     node_class: "SetAttr"
     max_children: 0
@@ -355,8 +325,6 @@ nodes:
         serialized_type: "{\"py/type\": \"move_base_msgs.msg._MoveBaseGoal.MoveBaseGoal\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.action"
     node_class: "Action"
     max_children: 0

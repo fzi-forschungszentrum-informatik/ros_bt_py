@@ -3,8 +3,6 @@ path: ''
 root_name: 'passthrough'
 nodes: 
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.passthrough_node"
     node_class: "PassthroughNode"
     max_children: 0

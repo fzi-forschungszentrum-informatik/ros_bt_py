@@ -3,8 +3,6 @@ path: ''
 root_name: ''
 nodes: 
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     max_children: -1
@@ -16,8 +14,6 @@ nodes:
     outputs: []
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.topic"
     node_class: "TopicSubscriber"
     max_children: 0
@@ -40,8 +36,6 @@ nodes:
         serialized_type: "{\"py/type\": \"bt_sim_helpers.msg._Doors.Doors\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.subtree"
     node_class: "Subtree"
     max_children: 0
@@ -76,8 +70,6 @@ nodes:
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.getters"
     node_class: "GetAttr"
     max_children: 1
@@ -108,8 +100,6 @@ nodes:
         serialized_type: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.getters"
     node_class: "GetConstListItem"
     max_children: 1
@@ -140,8 +130,6 @@ nodes:
         serialized_type: "{\"py/type\": \"bt_sim_helpers.msg._Door.Door\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     max_children: 0
@@ -164,8 +152,6 @@ nodes:
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     max_children: 0
@@ -188,8 +174,6 @@ nodes:
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.getters"
     node_class: "GetAttr"
     max_children: 1

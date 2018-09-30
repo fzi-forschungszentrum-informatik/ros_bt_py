@@ -12,21 +12,14 @@ from ros_bt_py.nodes.passthrough_node import PassthroughNode
 
 class TestDebugManager(unittest.TestCase):
     def setUp(self):
-        self.manager = DebugManager(target_tick_frequency_hz=20.0)
-
-    def testInit(self):
-        self.assertEqual(self.manager.get_debug_info_msg().target_tick_time.secs, 0)
-        # Should be 0.05 seconds -> 5 * 10^7 nanoseconds
-        self.assertEqual(self.manager.get_debug_info_msg().target_tick_time.nsecs, 5e7)
-        self.assertEqual(self.manager.get_debug_info_msg().window_size, 20)
+        self.manager = DebugManager()
 
     def testReport(self):
-        self.manager = DebugManager(target_tick_frequency_hz=20.0)
         self.manager._debug_settings_msg.collect_performance_data = True
 
-        node = PassthroughNode({'passthrough_type': int})
+        node = PassthroughNode(name='foo',
+                               options={'passthrough_type': int})
         node.setup()
-        node.name = 'foo'
 
         starting_recursion_depth = len(inspect.stack())
         with self.manager.report_tick(node):
@@ -37,23 +30,14 @@ class TestDebugManager(unittest.TestCase):
         # Plus one for the context self.manager, and another one for the contextlib decorator
         self.assertEqual(self.manager.get_debug_info_msg().current_recursion_depth,
                          starting_recursion_depth + 2)
-        self.assertEqual(self.manager.get_debug_info_msg().node_tick_times[0].node_name,
-                         'foo')
-        self.assertEqual(self.manager.get_debug_info_msg().node_tick_times[0].min_tick_time.nsecs,
-                         self.manager.get_debug_info_msg().node_tick_times[0].max_tick_time.nsecs)
-
-        with self.manager.report_tick(node):
-            time.sleep(0.05)
-        self.assertGreater(self.manager.get_debug_info_msg().node_tick_times[0].max_tick_time.nsecs,
-                           self.manager.get_debug_info_msg().node_tick_times[0].min_tick_time.nsecs)
 
     def testStep(self):
         self.manager._debug_settings_msg.single_step = True
 
-        self.node = PassthroughNode({'passthrough_type': int},
+        self.node = PassthroughNode(name='foo',
+                                    options={'passthrough_type': int},
                                     debug_manager=self.manager)
         self.node.setup()
-        self.node.name = 'foo'
         self.node.inputs['in'] = 1
 
         def do_stuff():

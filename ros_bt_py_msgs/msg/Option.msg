@@ -1,4 +1,0 @@
-string key
-string value_pickle
-string value_package
-string value_human_readable

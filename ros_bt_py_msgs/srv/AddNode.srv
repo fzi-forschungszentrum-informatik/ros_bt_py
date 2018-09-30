@@ -1,4 +1,3 @@
-string tree_name
 string parent_name
 Node node
 # If this is true, rename the node to name_N if one or more

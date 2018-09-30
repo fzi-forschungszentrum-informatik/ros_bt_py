@@ -3,8 +3,6 @@ path: ''
 root_name: ''
 nodes: 
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.passthrough_node"
     node_class: "PassthroughNode"
     max_children: 0
@@ -27,8 +25,6 @@ nodes:
         serialized_type: "{\"py/type\": \"std_msgs.msg._Bool.Bool\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.topic"
     node_class: "TopicSubscriber"
     max_children: 0
@@ -51,8 +47,6 @@ nodes:
         serialized_type: "{\"py/type\": \"std_msgs.msg._Bool.Bool\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.shovable"
     node_class: "Shovable"
     max_children: 1
@@ -91,8 +85,6 @@ nodes:
         serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     max_children: -1

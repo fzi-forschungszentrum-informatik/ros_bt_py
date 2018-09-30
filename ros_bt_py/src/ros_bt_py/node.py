@@ -1174,8 +1174,7 @@ class Node(object):
         A ROS message that describes the node.
         """
         node_type = type(self)
-        return NodeMsg(is_subtree=False,
-                       module=node_type.__module__,
+        return NodeMsg(module=node_type.__module__,
                        node_class=node_type.__name__,
                        name=self.name,
                        child_names=[child.name for child in self.children],

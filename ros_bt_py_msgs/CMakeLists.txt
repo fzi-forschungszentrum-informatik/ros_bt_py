@@ -11,15 +11,13 @@ add_message_files(
      FILES
      DebugInfo.msg
      DebugSettings.msg
-     Node.msg
-     NodeData.msg
      NodeDataLocation.msg
+     NodeData.msg
      NodeDataWiring.msg
+     Node.msg
      RemoteSlotState.msg
-     TickTime.msg
      Tree.msg
      TreeDataUpdate.msg
-     TreeLocation.msg
      UtilityBounds.msg
      )
 
@@ -32,9 +30,7 @@ add_service_files(
   EvaluateUtility.srv
   GetAvailableNodes.srv
   GetAvailableSubtrees.srv
-  GetJsonpickleInstance.srv
   GetSubtree.srv
-  GetTarget.srv
   InsertNode.srv
   LoadTree.srv
   ModifyBreakpoints.srv

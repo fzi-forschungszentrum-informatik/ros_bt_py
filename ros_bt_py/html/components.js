@@ -2687,7 +2687,6 @@ class NewNode extends Component
     console.log(msg);
     this.add_node_service.callService(
       new ROSLIB.ServiceRequest({
-        tree_name: '',
         parent_name: this.selectRef.current.value || '',
         node: msg,
         allow_rename: true
@@ -2955,7 +2954,6 @@ class SelectedNode extends Component
     console.log('updating node');
     this.set_options_service.callService(
       new ROSLIB.ServiceRequest({
-        tree_name: '',
         node_name: this.props.node.name,
         rename_node: true,
         new_name: this.state.name,

@@ -1,4 +1,3 @@
-string tree_name
 NodeDataWiring[] wirings
 ---
 bool success

@@ -214,7 +214,6 @@ class TestPassthroughNode(unittest.TestCase):
 
     def testNodeFromMsg(self):
         msg = NodeMsg(
-            is_subtree=False,
             module="ros_bt_py.nodes.passthrough_node",
             node_class="PassthroughNode",
             inputs=[NodeData(key="in",
@@ -245,7 +244,6 @@ class TestPassthroughNode(unittest.TestCase):
 
     def testNodeFromMsgInvalidOptions(self):
         msg = NodeMsg(
-            is_subtree=False,
             module="ros_bt_py.nodes.passthrough_node",
             node_class="PassthroughNode",
             options=[NodeData(key='passthrough_type',
@@ -254,7 +252,6 @@ class TestPassthroughNode(unittest.TestCase):
 
     def testNodeFromMsgInvalidInput(self):
         msg = NodeMsg(
-            is_subtree=False,
             module="ros_bt_py.nodes.passthrough_node",
             node_class="PassthroughNode",
             inputs=[NodeData(key="in", serialized_value='nope')],
@@ -267,7 +264,6 @@ class TestPassthroughNode(unittest.TestCase):
 
         msg = node.to_msg()
 
-        self.assertFalse(msg.is_subtree)
         self.assertEqual(msg.module, PassthroughNode.__module__)
         self.assertEqual(msg.node_class, PassthroughNode.__name__)
         self.assertEqual(len(msg.options), len(node.options))
@@ -287,7 +283,6 @@ class TestPassthroughNode(unittest.TestCase):
     def testMsgToNodeRoundtrip(self):
         msg = NodeMsg(
             name='Test Node',
-            is_subtree=False,
             module="ros_bt_py.nodes.passthrough_node",
             node_class="PassthroughNode",
             options=[NodeData(key='passthrough_type',
