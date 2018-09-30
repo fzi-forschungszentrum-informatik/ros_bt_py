@@ -130,7 +130,7 @@ class RemoteSlot(Leaf):
             self._service_proxy.stop_call()
 
         self._service_proxy.call_service(ControlTreeExecutionRequest(
-            command=ControlTreeExecutionRequest.RESET))
+            command=ControlTreeExecutionRequest.SHUTDOWN))
         return NodeMsg.IDLE
 
     def _do_untick(self):
