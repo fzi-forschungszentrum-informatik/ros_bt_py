@@ -68,7 +68,6 @@ class Shovable(Decorator):
         self._subtree_action_start_time = None
         self._subtree_action_client = None
         self._subtree_action_client_creation_time = None
-        self._subtree_data_update_publisher = None
         # Save this so we can be sure we're actually executing the same tree we
         # evaluated the utility value for
         self._subtree_msg = None
@@ -172,10 +171,6 @@ class Shovable(Decorator):
                             self._subtree_action_client = SimpleActionClient(
                                 self._remote_namespace + '/run_tree', RunTreeAction)
 
-                            self._subtree_data_update_publisher = rospy.Publisher(
-                                self._remote_namespace + '/update_data', TreeDataUpdate,
-                                queue_size=1)
-
                             self._subtree_action_client_creation_time = rospy.Time.now()
                             self._state = Shovable.ACTION_CLIENT_INIT
                 else:
@@ -227,8 +222,6 @@ class Shovable(Decorator):
                 self.children[0].setup()
             child_result = self.children[0].tick()
 
-            if child_result != NodeMsg.RUNNING:
-                self.cleanup()
             return child_result
 
         if self._state == Shovable.EXECUTE_REMOTE:
@@ -236,8 +229,9 @@ class Shovable(Decorator):
             if seconds_since_goal > self.options['run_tree_action_timeout_seconds']:
                 self.logerr('Remote subtree execution timed out')
                 self._subtree_action_client.cancel_goal()
-                self.cleanup()
-                self._state = Shovable.IDLE
+                # Send another RunTree goal next tick. To switch to
+                # another executor, we first have to reset()
+                self._state = Shovable.START_REMOTE_EXEC_ACTION
                 return NodeMsg.FAILED
 
             action_state = self._subtree_action_client.get_state()
@@ -257,20 +251,35 @@ class Shovable(Decorator):
                     if node.name == final_tree.root_name:
                         final_state = node.state
 
-                self.cleanup()
+                # Send a new RunTree action goal on the next tick
+                self._state = Shovable.START_REMOTE_EXEC_ACTION
                 return final_state
             elif action_state in [GoalStatus.PENDING, GoalStatus.ACTIVE]:
                 return NodeMsg.RUNNING
             else:
-                self.cleanup()
+                # Send a new RunTree action goal on the next tick
+                self._state = Shovable.START_REMOTE_EXEC_ACTION
+                self._subtree_action_client.cancel_goal()
                 return NodeMsg.FAILED
 
         return NodeMsg.RUNNING
 
     def _do_untick(self):
+        """Pause execution of the decorated subtree, but preserve the executor
+
+        This means a new
+        :class:`ros_bt_py_msgs.msg.FindBestExecutorAction` will
+        **not** be sent on the next tick. Rather, the same executor
+        (either local or remote) as before is re-used.
+
+        To force a new
+        :class:`ros_bt_py_msgs.msg.FindBestExecutorAction`, use
+        :meth:`_do_reset()`
+
+        """
         # If we're in an EXECUTE state, stop the execution. otherwise,
         # just clean up
-        new_state = NodeMsg.IDLE
+        new_state = NodeMsg.PAUSED
         if self._state == Shovable.WAIT_FOR_UTILITY_RESPONSE:
             self._find_best_executor_ac.cancel_goal()
         elif self._state == Shovable.EXECUTE_LOCAL:
@@ -278,9 +287,10 @@ class Shovable(Decorator):
                 new_state = child.untick()
         elif self._state == Shovable.EXECUTE_REMOTE:
             self._subtree_action_client.cancel_goal()
+            # On the next tick, another goal is sent to the same
+            # action server as before
+            self._state = Shovable.START_REMOTE_EXEC_ACTION
 
-        # Clean up in any case
-        self.cleanup()
         return new_state
 
     def _do_reset(self):
@@ -330,10 +340,5 @@ class Shovable(Decorator):
         self._find_best_executor_start_time = None
         self._subtree_action_client = None
         self._subtree_action_client_creation_time = None
-        if self._subtree_data_update_publisher is not None:
-            self._subtree_data_update_publisher.unregister()
-            self._subtree_data_update_publisher = None
         self._subtree_msg = None
         self._state = Shovable.IDLE
-        self._children_with_external_outputs = {}
-        self._external_outputs_by_name = {}

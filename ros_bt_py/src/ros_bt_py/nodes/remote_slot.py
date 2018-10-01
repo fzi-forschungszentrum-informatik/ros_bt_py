@@ -85,6 +85,7 @@ class RemoteSlot(Leaf):
         # If no tree is loaded, just succeed and let our parent tree
         # get on with its business
         if not self._tree_loaded:
+            # self.loginfo('no tree loaded, succeeding')
             return NodeMsg.SUCCEEDED
 
         proxy_state = self._service_proxy.get_state()
