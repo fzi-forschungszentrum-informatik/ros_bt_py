@@ -412,9 +412,9 @@ class TreeManager(object):
 
         # All nodes are added, now do the wiring
         wire_response = self.wire_data(WireNodeDataRequest(wirings=tree.data_wirings))
-        if not _get_success(wire_response):
+        if not get_success(wire_response):
             response.success = False
-            response.error_message = _get_error_message(wire_response)
+            response.error_message = get_error_message(wire_response)
             return response
 
         self.tree_msg = tree
@@ -958,12 +958,12 @@ class TreeManager(object):
                          wiring.target.node_name == node.name)])
 
         unwire_resp = self.unwire_data(wire_request)
-        if not _get_success(unwire_resp):
+        if not get_success(unwire_resp):
             return SetOptionsResponse(
                 success=False,
                 error_message='Failed to unwire data for node %s: %s' % (
                     node.name,
-                    _get_error_message(unwire_resp)))
+                    get_error_message(unwire_resp)))
 
         parent = None
         if node.parent:
@@ -984,9 +984,9 @@ class TreeManager(object):
                 error_message = ('Failed to remove old instance of node %s: %s' %
                                  (node.name, str(ex)))
                 rewire_resp = self.wire_data(wire_request)
-                if not _get_success(rewire_resp):
+                if not get_success(rewire_resp):
                     error_message += '\nAlso failed to restore data wirings: %s' % (
-                        _get_error_message(rewire_resp))
+                        get_error_message(rewire_resp))
                     with self._state_lock:
                         self.tree_msg.state = Tree.ERROR
 
@@ -1002,9 +1002,9 @@ class TreeManager(object):
                 try:
                     parent.add_child(node, at_index=old_child_index)
                     rewire_resp = self.wire_data(wire_request)
-                    if not _get_success(rewire_resp):
+                    if not get_success(rewire_resp):
                         error_message += '\nAlso failed to restore data wirings: %s' % (
-                            _get_error_message(rewire_resp))
+                            get_error_message(rewire_resp))
                         with self._state_lock:
                             self.tree_msg.state = Tree.ERROR
 
@@ -1031,10 +1031,10 @@ class TreeManager(object):
                     wiring.target.node_name = new_node.name
 
         rewire_resp = self.wire_data(new_wire_request)
-        if not _get_success(rewire_resp):
+        if not get_success(rewire_resp):
             error_message = 'Failed to re-wire data to new node %s: %s' % (
                 new_node.name,
-                _get_error_message(rewire_resp))
+                get_error_message(rewire_resp))
             # Try to undo everything, starting with removing the new
             # node from the node dict
             del self.nodes[new_node.name]
@@ -1049,9 +1049,9 @@ class TreeManager(object):
 
             # Now try to re-do the wirings
             recovery_wire_response = self.wire_data(wire_request)
-            if not _get_success(recovery_wire_response):
+            if not get_success(recovery_wire_response):
                 error_message += '\nFailed to re-wire data to restored node %s: %s' % (
-                    node.name, _get_error_message(recovery_wire_response))
+                    node.name, get_error_message(recovery_wire_response))
 
                 with self._state_lock:
                     self.tree_msg.state = Tree.ERROR
@@ -1237,13 +1237,13 @@ class TreeManager(object):
             node_name=request.old_node_name,
             remove_children=True))
 
-        if not _get_success(res):
+        if not get_success(res):
             with self._state_lock:
                 self.tree_msg.state = Tree.ERROR
             self.publish_info(self.debug_manager.get_debug_info_msg())
             return ReplaceNodeResponse(
                 success=False,
-                error_message="Could not remove old node: \"%s\"" % _get_error_message(res))
+                error_message="Could not remove old node: \"%s\"" % get_error_message(res))
 
         # Move the new node to the old node's parent (if it had one)
         if old_node_parent is not None:
@@ -1479,14 +1479,14 @@ class TreeManager(object):
         return self.tree_msg
 
 
-def _get_success(response):
+def get_success(response):
     if isinstance(response, dict):
         return response['success']
 
     return response.success
 
 
-def _get_error_message(response):
+def get_error_message(response):
     if isinstance(response, dict):
         return response['error_message']
 

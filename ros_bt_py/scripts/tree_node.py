@@ -7,7 +7,7 @@ from ros_bt_py_msgs.srv import AddNode, ControlTreeExecution, ModifyBreakpoints,
      WireNodeData, GetAvailableNodes, SetExecutionMode, SetOptions, Continue, LoadTree, \
      MoveNode, ReplaceNode, GetSubtree
 from ros_bt_py_msgs.srv import ControlTreeExecutionRequest
-from ros_bt_py.tree_manager import TreeManager, _get_success, _get_error_message
+from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message
 from ros_bt_py.debug_manager import DebugManager
 
 
@@ -98,9 +98,9 @@ class TreeNode(object):
             rospy.loginfo('Shutting down Behavior Tree')
             response = self.tree_manager.control_execution(ControlTreeExecutionRequest(
                 command=ControlTreeExecutionRequest.SHUTDOWN))
-            if not _get_success(response):
+            if not get_success(response):
                 rospy.logerr('Failed to shut down Behavior Tree: %s',
-                             _get_error_message(response))
+                             get_error_message(response))
 
 
 if __name__ == '__main__':
