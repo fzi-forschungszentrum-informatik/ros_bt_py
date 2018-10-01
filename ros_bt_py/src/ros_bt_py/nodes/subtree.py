@@ -6,7 +6,7 @@ from ros_bt_py_msgs.msg import UtilityBounds, Tree, NodeDataLocation
 from ros_bt_py_msgs.srv import LoadTreeRequest
 
 from ros_bt_py.exceptions import BehaviorTreeException
-from ros_bt_py.tree_manager import TreeManager, _get_success, _get_error_message
+from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig
 
@@ -46,9 +46,9 @@ class Subtree(Leaf):
                 path=self.options['subtree_path'])),
             prefix=self.prefix)
 
-        if not _get_success(response):
+        if not get_success(response):
             self.outputs['load_success'] = False
-            self.outputs['load_error_msg'] = _get_error_message(response)
+            self.outputs['load_error_msg'] = get_error_message(response)
             return
 
         self.outputs['load_success'] = True
