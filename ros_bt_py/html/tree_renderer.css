@@ -114,6 +114,13 @@
   height: 100%;
 }
 
+.fill-screen {
+    height: 100vh;
+}
+.fill-parent {
+    height: 100%;
+}
+
 .edit_canvas {
     height: 30em;
 }
