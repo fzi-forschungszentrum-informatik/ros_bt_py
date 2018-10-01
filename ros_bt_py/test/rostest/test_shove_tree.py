@@ -182,7 +182,7 @@ class TestShoveTree(unittest.TestCase):
         self.assertTrue(get_output(shovable_node_msg, 'running_remotely'))
         self.assertEqual(get_output(subscriber_node_msg, 'message'), Bool(data=True))
 
-        # shove the same twee again
+        # shove the same tree again
         exec_res = self.control_tree_proxy(ControlTreeExecutionRequest(
             command=ControlTreeExecutionRequest.TICK_UNTIL_RESULT,
             tick_frequency_hz=10.0))
