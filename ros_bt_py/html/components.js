@@ -2705,7 +2705,6 @@ class NewNode extends Component
   buildNodeMessage()
   {
     return {
-      is_subtree: false,
       module: this.props.node.module,
       node_class: this.props.node.node_class,
       name: this.state.name,
