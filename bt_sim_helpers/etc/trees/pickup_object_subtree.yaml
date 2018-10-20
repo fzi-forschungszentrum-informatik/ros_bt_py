@@ -3,8 +3,6 @@ path: ''
 root_name: "GetThingSeq"
 nodes: 
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.passthrough_node"
     node_class: "PassthroughNode"
     max_children: 0
@@ -27,8 +25,6 @@ nodes:
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.setters"
     node_class: "SetAttr"
     max_children: 0
@@ -63,8 +59,6 @@ nodes:
         serialized_type: "{\"py/type\": \"bt_sim_helpers.srv._InteractObject.InteractObjectRequest\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.getters"
     node_class: "GetAttr"
     max_children: 1
@@ -120,8 +114,6 @@ nodes:
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     max_children: -1
@@ -132,8 +124,6 @@ nodes:
     outputs: []
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.ros_nodes.message_from_dict"
     node_class: "MessageFromConstDict"
     max_children: 0
@@ -156,8 +146,6 @@ nodes:
         serialized_type: "{\"py/type\": \"bt_sim_helpers.srv._InteractObject.InteractObjectRequest\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.setters"
     node_class: "SetAttr"
     max_children: 0
@@ -192,8 +180,6 @@ nodes:
         serialized_type: "{\"py/type\": \"bt_sim_helpers.srv._InteractObject.InteractObjectRequest\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.fallback"
     node_class: "Fallback"
     max_children: -1
@@ -204,8 +190,6 @@ nodes:
     outputs: []
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     max_children: -1
@@ -216,8 +200,6 @@ nodes:
     outputs: []
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.getters"
     node_class: "GetAttr"
     max_children: 1
@@ -254,8 +236,6 @@ nodes:
         serialized_type: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.compare"
     node_class: "CompareConstant"
     max_children: 0
@@ -278,8 +258,6 @@ nodes:
     outputs: []
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.getters"
     node_class: "GetListItem"
     max_children: 1
@@ -328,8 +306,6 @@ nodes:
         serialized_type: "{\"py/type\": \"bt_sim_helpers.msg._SimObject.SimObject\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.getters"
     node_class: "GetAttr"
     max_children: 1
@@ -366,8 +342,6 @@ nodes:
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.topic"
     node_class: "TopicSubscriber"
     max_children: 0
@@ -403,8 +377,6 @@ nodes:
         serialized_type: "{\"py/type\": \"bt_sim_helpers.msg._SimObjects.SimObjects\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.getters"
     node_class: "GetAttr"
     max_children: 1
@@ -441,8 +413,6 @@ nodes:
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     max_children: -1
@@ -454,8 +424,6 @@ nodes:
     outputs: []
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     max_children: -1
@@ -466,8 +434,6 @@ nodes:
     outputs: []
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.passthrough_node"
     node_class: "PassthroughNode"
     max_children: 0
@@ -490,8 +456,6 @@ nodes:
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.passthrough_node"
     node_class: "PassthroughNode"
     max_children: 0
@@ -514,8 +478,6 @@ nodes:
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     max_children: -1
@@ -526,8 +488,6 @@ nodes:
     outputs: []
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.getters"
     node_class: "GetAttr"
     max_children: 1
@@ -558,8 +518,6 @@ nodes:
         serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.ros_param"
     node_class: "RosParam"
     max_children: 0
@@ -586,8 +544,6 @@ nodes:
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.subtree"
     node_class: "Subtree"
     max_children: 0
@@ -622,8 +578,6 @@ nodes:
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.compare"
     node_class: "CompareConstant"
     max_children: 0
@@ -646,8 +600,6 @@ nodes:
     outputs: []
     state: "UNINITIALIZED"
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.service"
     node_class: "Service"
     max_children: 0

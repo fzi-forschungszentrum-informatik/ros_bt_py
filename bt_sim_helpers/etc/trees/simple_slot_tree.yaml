@@ -3,8 +3,6 @@ path: ''
 root_name: "OpenDoorGetThingSeq"
 nodes: 
   - 
-    is_subtree: False
-    subtree_data: ''
     module: "ros_bt_py.nodes.remote_slot"
     node_class: "RemoteSlot"
     max_children: 0
