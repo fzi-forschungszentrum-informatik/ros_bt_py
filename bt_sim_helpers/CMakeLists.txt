@@ -10,6 +10,7 @@ project(bt_sim_helpers)
 find_package(catkin REQUIRED COMPONENTS
   rospy
   geometry_msgs
+  visualization_msgs
   message_generation
 )
 
@@ -59,7 +60,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES ros_bt_py
-  CATKIN_DEPENDS rospy message_generation geometry_msgs
+  CATKIN_DEPENDS rospy message_generation geometry_msgs, visualization_msgs
 #  DEPENDS system_lib
 )
 

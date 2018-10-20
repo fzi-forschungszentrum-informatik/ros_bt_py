@@ -6,6 +6,8 @@ from tf.transformations import vector_norm
 
 from std_msgs.msg import Header
 from geometry_msgs.msg import Pose, Point, Vector3, Quaternion, PoseStamped, Transform, TransformStamped
+from visualization_msgs.msg import Marker, MarkerArray
+
 from bt_sim_helpers.msg import Door, Doors
 from bt_sim_helpers.srv import OpenDoor, OpenDoorRequest, OpenDoorResponse
 
@@ -28,6 +30,9 @@ class DoorHelper(object):
         self.doors_pub = rospy.Publisher('doors', Doors, latch=True, queue_size=1)
         self.doors_pub.publish(self.doors)
 
+        self.marker_pub = rospy.Publisher('door_markers', MarkerArray, latch=True, queue_size=1)
+        self.marker_pub.publish(MarkerArray(self.create_door_markers()))
+
         self.open_service = rospy.Service('open_door', OpenDoor, self.open_door_handler)
 
         self.buf = tf2_ros.Buffer()
@@ -42,9 +47,69 @@ class DoorHelper(object):
     def door_frame(self, door_id):
         return '{}{}'.format(self.frame_prefix, door_id)
 
+    def create_door_markers(self):
+        markers = []
+        interact_diameter = self.max_interact_distance * 2
+
+        for door in self.doors.doors:
+            box = Marker()
+            box.header.frame_id = self.door_frame(door.door_id)
+            box.header.stamp = rospy.Time.now()
+            box.ns = 'doors'
+
+            box.type = Marker.CUBE
+            box.action = Marker.ADD
+            # Make quaternion valid
+            box.pose.orientation.w = 1.0
+
+            box.scale.x = interact_diameter * 0.5
+            box.scale.y = interact_diameter * 0.5
+
+            if door.is_open:
+                box.scale.z = 0.01
+
+                box.color.r = 0.0
+                box.color.g = 1.0
+                box.color.b = 0.0
+            else:
+                box.scale.z = 0.5
+
+                box.color.r = 1.0
+                box.color.g = 0.0
+                box.color.b = 0.0
+
+            box.id = door.door_id * 2
+            box.color.a = 0.6
+            box.pose.position.z = box.scale.z * 0.5
+
+            area = Marker(
+                header=box.header,
+                ns=box.ns)
+
+            area.type = Marker.CYLINDER
+            area.action = Marker.ADD
+
+            area.scale.x = interact_diameter
+            area.scale.y = interact_diameter
+            area.scale.z = 0.01
+            area.pose.position.z = area.scale.z * -0.5
+
+            area.color.r = 0.8
+            area.color.g = 0.85
+            area.color.b = 0.81
+            area.color.a = 0.0
+
+            area.id = (door.door_id * 2) + 1
+
+            markers.append(box)
+            markers.append(area)
+
+        return markers
+
     def publish_door_tfs(self, _=None):
         for door in self.doors.doors:
             self.publish_door_tf(door)
+        self.marker_pub.publish(MarkerArray(self.create_door_markers()))
 
     def publish_door_tf(self, door):
         self.tf_broadcaster.sendTransform(
@@ -99,6 +164,8 @@ class DoorHelper(object):
         # All done, publish new transform for door
         self.doors_pub.publish(self.doors)
         self.publish_door_tf(self.doors.doors[req.door_id])
+        self.marker_pub.publish(self.create_door_markers())
+
         return OpenDoorResponse(success=True)
 
 

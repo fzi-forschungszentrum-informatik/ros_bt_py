@@ -22,6 +22,7 @@
   <build_depend>roslint</build_depend>
   <depend>actionlib_msgs</depend>
   <depend>geometry_msgs</depend>
+  <depend>visualization_msgs</depend>
 
   <build_export_depend>message_generation</build_export_depend>
 

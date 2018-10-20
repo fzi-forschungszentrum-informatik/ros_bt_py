@@ -6,6 +6,8 @@ from tf.transformations import vector_norm
 
 from std_msgs.msg import Header
 from geometry_msgs.msg import Pose, Point, Vector3, Quaternion, PoseStamped, Transform, TransformStamped
+from visualization_msgs.msg import Marker, MarkerArray
+
 from bt_sim_helpers.msg import SimObjects, SimObject
 from bt_sim_helpers.srv import InteractObject, InteractObjectRequest, InteractObjectResponse
 
@@ -28,6 +30,9 @@ class ObjectHelper(object):
         self.objects_pub = rospy.Publisher('objects', SimObjects, latch=True, queue_size=1)
         self.objects_pub.publish(self.objects)
 
+        self.marker_pub = rospy.Publisher('object_markers', MarkerArray, latch=True, queue_size=1)
+        self.marker_pub.publish(MarkerArray(self.create_object_markers()))
+
         self.interact_service = rospy.Service('interact', InteractObject, self.interact_handler)
 
         self.buf = tf2_ros.Buffer()
@@ -42,9 +47,68 @@ class ObjectHelper(object):
     def object_frame(self, obj_id):
         return '{}{}'.format(self.frame_prefix, obj_id)
 
+    def create_object_markers(self):
+        markers = []
+        interact_diameter = self.max_interact_distance * 2
+
+        for obj in self.objects.sim_objects:
+            box = Marker()
+            box.frame_locked = True
+            box.header.frame_id = self.object_frame(obj.object_id)
+            box.header.stamp = rospy.Time.now()
+            box.ns = 'sim_objects'
+
+            box.type = Marker.CYLINDER
+            box.action = Marker.ADD
+            # Make quaternion valid
+            box.pose.orientation.w = 1.0
+
+            box.scale.x = interact_diameter * 0.25
+            box.scale.y = interact_diameter * 0.25
+            box.scale.z = interact_diameter * 0.5
+
+            box.color.r = 1.0
+            box.color.g = 1.0
+            box.color.b = 0.0
+            box.color.a = 0.8
+
+            box.pose.position.z = box.scale.z * 0.5
+
+            if obj.state == SimObject.PICKED_UP:
+                box.pose.position.z += interact_diameter * 0.5
+
+            if obj.state == SimObject.DELIVERED:
+                box.color.r = 0.0
+
+            box.id = obj.object_id * 2
+
+            area = Marker(
+                header=box.header,
+                ns=box.ns,
+                id=box.id + 1,
+                type=Marker.CYLINDER,
+                action=Marker.ADD)
+
+            area.scale.x = interact_diameter
+            area.scale.y = interact_diameter
+            area.scale.z = 0.01
+            area.pose.orientation.w = 1.0
+            area.pose.position.z = area.scale.z * -0.5
+
+            area.color.r = 0.8
+            area.color.g = 0.85
+            area.color.b = 0.81
+            area.color.a = 1.0
+
+            markers.append(box)
+            markers.append(area)
+
+        return markers
+
     def publish_object_tfs(self, _=None):
         for obj in self.objects.sim_objects:
             self.publish_object_tf(obj)
+        self.marker_pub.publish(MarkerArray(self.create_object_markers()))
 
     def publish_object_tf(self, obj):
         self.tf_broadcaster.sendTransform(
