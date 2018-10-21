@@ -67,6 +67,7 @@ class FindBestExecutorServer(object):
         # empty namespace *and* local_is_best = False
         if not bounds:
             self._as.set_succeeded(result)
+            return
 
         # Otherwise, extract the best executor
         best_name, best_bounds = bounds[0]
