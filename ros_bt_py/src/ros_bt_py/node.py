@@ -1251,7 +1251,8 @@ class Decorator(Node):
         if self.children:
             return self.children[0].calculate_utility()
         else:
-            return UtilityBounds(has_lower_bound_success=True,
+            return UtilityBounds(can_execute=True,
+                                 has_lower_bound_success=True,
                                  has_upper_bound_success=True,
                                  has_lower_bound_failure=True,
                                  has_upper_bound_failure=True)
