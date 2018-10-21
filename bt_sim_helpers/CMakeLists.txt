@@ -60,7 +60,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES ros_bt_py
-  CATKIN_DEPENDS rospy message_generation geometry_msgs, visualization_msgs
+   CATKIN_DEPENDS rospy message_generation message_runtime geometry_msgs visualization_msgs
 #  DEPENDS system_lib
 )
 
