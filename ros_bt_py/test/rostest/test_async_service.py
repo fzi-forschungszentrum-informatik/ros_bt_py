@@ -72,11 +72,15 @@ class TestAsyncService(unittest.TestCase):
         # This new call should override the old one, and immediately return
         self.async_proxy.call_service(SetBoolRequest(data=False))
 
-        rospy.sleep(0.1)
-        # We cancelled the delayed service call, so we should have a response by
-        # now
-        self.assertEqual(self.async_proxy.get_state(), AsyncServiceProxy.RESPONSE_READY)
-        self.assertTrue(self.async_proxy.get_response().success)
+        for _ in range(10):
+            rospy.sleep(0.1)
+            # We cancelled the delayed service call, so we should have a response by
+            # now
+            if self.async_proxy.get_state() == AsyncServiceProxy.RESPONSE_READY:
+                self.assertTrue(self.async_proxy.get_response().success)
+                return
+
+        raise Exception('Received no response after 1 second')
 
     def testCrashingService(self):
         crash_proxy = AsyncServiceProxy('crash', SetBool)
