@@ -19,16 +19,21 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
              'shutdown_count': int},
     max_children=0))
 class MockLeaf(Leaf):
+    def __init__(self, options=None, debug_manager=None, name=None):
+        super(Leaf, self).__init__(options, debug_manager, name)
+
+        self.setup_called = False
+        self.tick_count = 0
+        self.untick_count = 0
+        self.reset_count = 0
+        self.shutdown_count = 0
+
     def _do_setup(self):
         self.setup_called = True
         self.outputs['current_index'] = 0
-        self.tick_count = 0
         self.outputs['tick_count'] = self.tick_count
-        self.untick_count = 0
         self.outputs['untick_count'] = self.untick_count
-        self.reset_count = 0
         self.outputs['reset_count'] = self.reset_count
-        self.shutdown_count = 0
         self.outputs['shutdown_count'] = self.shutdown_count
 
         if len(self.options['state_values']) != len(self.options['output_values']):
