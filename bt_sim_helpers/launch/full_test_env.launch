@@ -1,5 +1,7 @@
 <launch>
+  <!--
   <node name="$(anon asdf)" pkg="rqt_console" type="rqt_console" />
+  -->
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
   <include file="$(find roswww)/launch/roswww.launch">
     <arg name="webpath" value="html" />
@@ -16,6 +18,8 @@
   <!-- spawn a turtlebot -->
   <include file="$(find bt_sim_helpers)/launch/spawn_turtlebot_stdr.launch">
     <arg name="robot_index" value="0" />
+    <arg name="initial_pose_x" value="4.0" />
+    <arg name="initial_pose_y" value="2.5" />
   </include>
   <group ns="turtlebot0">
     <!-- start tree node in robot NS -->
@@ -50,6 +54,8 @@
   <!-- spawn second turtlebot -->
   <include file="$(find bt_sim_helpers)/launch/spawn_turtlebot_stdr.launch">
     <arg name="robot_index" value="1" />
+    <arg name="initial_pose_x" value="4.0" />
+    <arg name="initial_pose_y" value="4.5" />
   </include>
   <group ns="turtlebot1">
     <!-- start tree node in robot NS -->
