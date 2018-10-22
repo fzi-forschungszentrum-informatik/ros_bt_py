@@ -299,7 +299,7 @@ class App extends Component
   {
     super(props);
 
-    var ros_uri = 'ws://10.211.55.3:9090';
+    var ros_uri = 'ws://localhost:9090';
     this.state = {
       bt_namespace: '',
       ros_uri: ros_uri,
