@@ -188,7 +188,9 @@ class TestShoveTree(unittest.TestCase):
             tick_frequency_hz=10.0))
         self.assertTrue(exec_res.success, exec_res.error_message)
 
-        # Enough for the tree to be shoved over
+        # Wait again
+        rospy.sleep(0.5)
+
         is_running = False
         for _ in range(8):
             rospy.sleep(0.5)
@@ -196,7 +198,8 @@ class TestShoveTree(unittest.TestCase):
                 is_running = True
                 break
         if not is_running:
-            raise Exception('Slot is not running after 4 seconds')
+            raise Exception('Slot is not running after 4 seconds, but in state %s'
+                            % remote_slot_node.state)
 
         rospy.sleep(0.05)
         # Should still be running
