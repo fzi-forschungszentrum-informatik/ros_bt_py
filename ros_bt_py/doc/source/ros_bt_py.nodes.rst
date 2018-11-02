@@ -69,7 +69,7 @@ ros\_bt\_py\.nodes\.parallel module
     :show-inheritance:
 
 ros\_bt\_py\.nodes\.parallel\_if\_remote module
------------------------------------
+-----------------------------------------------
 
 .. automodule:: ros_bt_py.nodes.parallel_if_remote
     :members:

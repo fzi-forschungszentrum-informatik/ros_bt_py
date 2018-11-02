@@ -11,7 +11,10 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-
+   creating_node_classes
+   testing_node_classes
+   utility_functions
+   ros_bt_py
 
 Indices and tables
 ==================
