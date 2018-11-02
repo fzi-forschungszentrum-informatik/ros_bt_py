@@ -127,39 +127,44 @@ class DoorHelper(object):
             return OpenDoorResponse(
                 success=False,
                 error_message='Door ID {} is out of bounds'.format(req.door_id))
-        try:
-            trans = self.buf.lookup_transform(
-                req.opener_frame,
-                self.door_frame(req.door_id),
-                rospy.Time())
-        except (tf2_ros.LookupException,
-                tf2_ros.ConnectivityException,
-                tf2_ros.ExtrapolationException) as ex:
-            return OpenDoorResponse(success=False,
-                                    error_message=str(ex))
 
-        dist = vector_norm([trans.transform.translation.x,
-                            trans.transform.translation.y,
-                            trans.transform.translation.z])
-
-        if dist > self.max_interact_distance:
-            return OpenDoorResponse(
-                success=False,
-                error_message=(
-                    'opener "{}" is too far away ({:.2f}/{:.2f}) from door {}'
-                    .format(
-                        req.opener_frame,
-                        dist,
-                        self.max_interact_distance,
-                        req.door_id)))
-
-        if req.action == OpenDoorRequest.OPEN:
+        if req.action == OpenDoorRequest.FORCE_OPEN:
             self.doors.doors[req.door_id].is_open = True
-        elif req.action == OpenDoorRequest.CLOSE:
+        elif req.action == OpenDoorRequest.FORCE_CLOSE:
             self.doors.doors[req.door_id].is_open = False
         else:
-            return OpenDoorResponse(success=False,
-                                    error_message='Invalid action {}'.format(req.action))
+            try:
+                trans = self.buf.lookup_transform(
+                    req.opener_frame,
+                    self.door_frame(req.door_id),
+                    rospy.Time())
+            except (tf2_ros.LookupException,
+                    tf2_ros.ConnectivityException,
+                    tf2_ros.ExtrapolationException) as ex:
+                return OpenDoorResponse(success=False,
+                                        error_message=str(ex))
+
+            dist = vector_norm([trans.transform.translation.x,
+                                trans.transform.translation.y,
+                                trans.transform.translation.z])
+            if dist > self.max_interact_distance:
+                return OpenDoorResponse(
+                    success=False,
+                    error_message=(
+                        'opener "{}" is too far away ({:.2f}/{:.2f}) from door {}'
+                        .format(
+                            req.opener_frame,
+                            dist,
+                            self.max_interact_distance,
+                            req.door_id)))
+
+            if req.action == OpenDoorRequest.OPEN:
+                self.doors.doors[req.door_id].is_open = True
+            elif req.action == OpenDoorRequest.CLOSE:
+                self.doors.doors[req.door_id].is_open = False
+            else:
+                return OpenDoorResponse(success=False,
+                                        error_message='Invalid action {}'.format(req.action))
 
         # All done, publish new transform for door
         self.doors_pub.publish(self.doors)
