@@ -71,7 +71,8 @@ class Parallel(FlowControl):
         return NodeMsg.RUNNING
 
     def _do_shutdown(self):
-        pass
+        for child in self.children:
+            child.shutdown()
 
     def _do_reset(self):
         for child in self.children:
