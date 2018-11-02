@@ -12,7 +12,9 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 class PassthroughNode(Leaf):
     """Pass through a piece of data
 
-    Only really useful for testing
+    Useful for testing, and to mark the inputs of a BT that is meant
+    to be loaded as a subtree.
+
     """
     def _do_setup(self):
         return NodeMsg.IDLE
