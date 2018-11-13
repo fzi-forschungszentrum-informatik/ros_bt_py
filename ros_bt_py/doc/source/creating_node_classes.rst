@@ -125,8 +125,8 @@ This reads the input :code:`run_child_index` we've defined using
 :meth:`ros_bt_py.node.define_bt_node`, and uses it to index into the
 list of our node's children.
 
-With all of the :code:`_do_` methods implemented, we're ready to roll -
-here's the complete code::
+With all of the :code:`_do_` methods implemented the complete code
+looks like this::
 
   import rospy
 
@@ -170,6 +170,8 @@ here's the complete code::
       #
       # def _do_calculate_utility(self):
       #     pass
+
+So we're done and ready to roll!
 
 4. Test your node!
 ------------------
