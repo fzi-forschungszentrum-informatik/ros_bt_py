@@ -38,10 +38,18 @@ class TestTopicSubscriberLeaf(unittest.TestCase):
         self.assertEqual(self.subscriber_leaf.state, NodeMsg.RUNNING)
 
         self.publisher.publish(data=8)
-        rospy.sleep(0.1)
 
-        self.subscriber_leaf.tick()
-        # Should have received a message with the 8 we published
+        sleeps = 0
+        while True:
+            self.subscriber_leaf.tick()
+            self.assertNotEqual(self.subscriber_leaf.state, NodeMsg.FAILED)
+            if self.subscriber_leaf.state == NodeMsg.SUCCEEDED:
+                break
+            rospy.sleep(0.1)
+            sleeps += 1
+            # If we don't get a response for half a second, something has gone wrong
+            self.assertLess(sleeps, 5)
+
         self.assertEqual(self.subscriber_leaf.state, NodeMsg.SUCCEEDED)
         self.assertEqual(self.subscriber_leaf.outputs['message'].data, 8)
 
@@ -51,7 +59,17 @@ class TestTopicSubscriberLeaf(unittest.TestCase):
 
         rospy.sleep(0.1)
         self.publisher.publish(data=9)
-        rospy.sleep(0.1)
+
+        sleeps = 0
+        while True:
+            self.subscriber_leaf.tick()
+            self.assertNotEqual(self.subscriber_leaf.state, NodeMsg.FAILED)
+            if self.subscriber_leaf.state == NodeMsg.SUCCEEDED:
+                break
+            rospy.sleep(0.1)
+            sleeps += 1
+            # If we don't get a response for half a second, something has gone wrong
+            self.assertLess(sleeps, 5)
 
         self.subscriber_leaf.tick()
         # Same as before
