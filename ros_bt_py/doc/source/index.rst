@@ -14,6 +14,7 @@ Contents:
    creating_node_classes
    testing_node_classes
    utility_functions
+   shoving
    ros_bt_py
 
 Indices and tables
