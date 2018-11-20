@@ -694,6 +694,10 @@ class TreeManager(object):
                     response.success = False
                     response.error_message = str(ex)
                     response.tree_state = self.get_state()
+                except BehaviorTreeException as ex:
+                    response.success = False
+                    response.error_message = str(ex)
+                    response.tree_state = self.get_state()
 
             self.publish_info(self.debug_manager.get_debug_info_msg())
         else:
