@@ -11,6 +11,10 @@ var Fragment = React.Fragment; //'x-fragment';
 let idx = 0;
 const uuid = () => idx++;
 
+// and another one for errors
+let error_idx = 0;
+const error_id = () => error_idx++;
+
 function typesCompatible(a, b)
 {
   if (a.nodeName === b.nodeName) {
@@ -307,6 +311,7 @@ class App extends Component
         is_subtree: false,
         name: ''
       },
+      error_history: [],
       selected_edge: null,
       available_nodes: [],
       subtree_names: [],
@@ -537,6 +542,14 @@ class App extends Component
 
   onError(error_message)
   {
+    this.setState({
+      error_history: this.state.error_history.concat(
+        {
+          id: error_id(),
+          time: Date.now(),
+          text: error_message
+        })
+    });
     console.log(error_message);
   }
 
@@ -685,15 +698,24 @@ class App extends Component
                   <div className="col pl-0">
                     {selectedNodeComponent}
                   </div>
-                  <div className="col pr-0">
-                    {this.state.selected_edge &&
+                  <div className="col">
+                    <div className="row pt-0 pl-0 pr-0">
+                    {this.state.selected_edge ?
                      <BehaviorTreeEdge edge={this.state.selected_edge}
                                        key={this.state.bt_namespace}
                                        ros={this.state.ros}
                                        bt_namespace={this.state.bt_namespace}
                                        onSelectionChange={this.onEditorSelectionChange}
                                        unsetSelectedEdge={()=>this.setState({selected_edge: null})}
-                                       onError={this.onError}/>}
+                                       onError={this.onError}/> :
+                     <div className="d-flex flex-column">
+                       No Edge Selected
+                     </div>
+                    }
+                    </div>
+                    <div  className="row output_log pl-0">
+                      <ErrorHistory history={this.state.error_history}/>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -701,6 +723,28 @@ class App extends Component
           </div>
         </div>
       </div>
+    );
+  }
+}
+
+class ErrorHistory extends Component {
+  render()
+  {
+    return (
+      <ul className="w-100 list-group">
+        { this.props.history.map((errorEntry) => {
+          return (
+            <li className="list-group-item" key={errorEntry.id}>
+              <p>
+                <small className="message-date">{(new Date(errorEntry.time)).toTimeString()}</small>
+                <br />
+                <span>{errorEntry.text}</span>
+              </p>
+            </li>
+          );
+        })
+        }
+      </ul>
     );
   }
 }
