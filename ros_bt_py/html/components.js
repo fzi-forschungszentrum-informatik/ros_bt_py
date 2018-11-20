@@ -806,11 +806,11 @@ class NamespaceSelect extends Component
       }),
       function(response) {
         var namespaces = response.services.map(
+          // Chop off the topic name (but not the last slash), which leaves us with the BT
+          // namespace
           x => x.substr(0, x.lastIndexOf('/')) + '/'
         );
         this.setState({
-          // Chop off the topic name (but not the last slash), which leaves us with the BT
-          // namespace
           available_namespaces: namespaces
         });
         if (this.props.currentNamespace === '' && namespaces.length > 0)
@@ -832,7 +832,7 @@ class NamespaceSelect extends Component
         <div className="form-inline">
           <label className="ml-1">BT Namespace:
             <select className="custom-select ml-1"
-                    defaultValue={this.props.currentNamespace}
+                    value={this.props.currentNamespace}
                     onChange={this.handleNamespaceChange}>
               {
                 this.state.available_namespaces.map(
