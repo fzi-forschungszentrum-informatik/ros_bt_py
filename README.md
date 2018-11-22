@@ -58,3 +58,16 @@ $ roslaunch ros_bt_py test.launch
 will start a BT server and the rosbridge and webserver needed for the
 GUI. Afterwards, you can open
 http://localhost:8085/ros_bt_py/editor.html to use the editor.
+
+If you just want to monitor the execution of a BT, you might prefer to
+use http://localhost:8085/ros_bt_py/viewer.html instead, which gives
+you a bigger viewport. This is particularly useful for watching
+playback of a rosbag like the one on
+`bt_sim_helpers/etc/shove_sim.bag`.
+
+There's even a launchfile in `bt_sim_helpers` to quickly start
+playback of that bag:
+
+```
+roslaunch bt_sim_helpers playback_shove_test.launch
+```
