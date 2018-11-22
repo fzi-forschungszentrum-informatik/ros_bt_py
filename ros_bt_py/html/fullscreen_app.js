@@ -1,5 +1,88 @@
 var render = ReactDOM.render;
 
+class ReadOnlyNamespaceSelect extends Component
+{
+  constructor(props)
+  {
+    super(props);
+
+    this.state = {
+      available_namespaces: []
+    };
+
+    this.updateAvailableNamespaces = this.updateAvailableNamespaces.bind(this);
+    this.handleNamespaceChange = this.handleNamespaceChange.bind(this);
+  }
+
+  componentDidMount()
+  {
+    this.topicsForTypeClient = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: '/rosapi/topics_for_type',
+      serviceType: 'rosapi/TopicsForType'
+    });
+
+    this.updateAvailableNamespaces();
+  }
+
+  updateAvailableNamespaces()
+  {
+    this.topicsForTypeClient.callService(
+      // Search for all Tree topics - we expect each BT node to
+      // publish one of these, and also offer the corresponding
+      // editing and runtime control services.
+      new ROSLIB.ServiceRequest({
+        type: 'ros_bt_py_msgs/Tree'
+      }),
+      function(response) {
+        var namespaces = response.topics.map(
+          // Chop off the topic name (but not the last slash), which leaves us with the BT
+          // namespace
+          x => x.substr(0, x.lastIndexOf('/')) + '/'
+        );
+        this.setState({
+          available_namespaces: namespaces
+        });
+        if (this.props.currentNamespace === '' && namespaces.length > 0)
+        {
+          this.props.onNamespaceChange(namespaces[0]);
+        }
+      }.bind(this));
+  }
+
+  handleNamespaceChange(event)
+  {
+    this.props.onNamespaceChange(event.target.value);
+  }
+
+  render()
+  {
+    return (
+      <Fragment>
+        <div className="form-inline">
+          <label className="ml-1">BT Namespace:
+            <select className="custom-select ml-1"
+                    value={this.props.currentNamespace}
+                    onChange={this.handleNamespaceChange}>
+              {
+                this.state.available_namespaces.map(
+                  x => (<option key={x}
+                                value={x}>{x}</option>))
+              }
+            </select>
+          </label>
+        </div>
+        <button type="button"
+                className="btn btn-sm m-1"
+                onClick={this.updateAvailableNamespaces}>
+          <span aria-hidden="true" className="fas fa-sync" />
+          <span className="sr-only">Refresh Namespaces</span>
+        </button>
+      </Fragment>
+    );
+  }
+}
+
 class App extends Component
 {
   constructor(props)
@@ -338,15 +421,13 @@ class App extends Component
 
     return (
       <div className="container-fluid fill-parent d-flex flex-column">
-        <ExecutionBar key={this.state.bt_namespace}
-                      ros={this.state.ros}
-                      subtreeNames={this.state.subtree_names}
-                      currentNamespace={this.state.bt_namespace}
-                      onSelectedTreeChange={this.onSelectedTreeChange}
-                      onNamespaceChange={this.onNamespaceChange}
-                      onError={this.onError}/>
         <div className="row">
           <div className="col d-flex">
+            <ReadOnlyNamespaceSelect
+              ros={this.state.ros}
+              currentNamespace={this.state.bt_namespace}
+              onNamespaceChange={this.onNamespaceChange}
+              onError={this.onError}/>
             <SelectTree key={this.state.bt_namespace}
                         ros={this.state.ros}
                         bt_namespace={this.state.bt_namespace}
