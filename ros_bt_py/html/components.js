@@ -1294,6 +1294,7 @@ class D3BehaviorTreeEditor extends Component
         module: node.module,
         name: node.name,
         state: node.state,
+        max_children: node.max_children,
         child_names: node.child_names,
         options: node.options.map(onlyKeyAndType),
         inputs: node.inputs.map(onlyKeyAndType),
@@ -1706,6 +1707,7 @@ class D3BehaviorTreeEditor extends Component
               data: d.parent.data
             });
         }
+        // Right drop target
         g_droptargets
           .append("rect")
           .attr("class", "drop_target")
@@ -1720,6 +1722,7 @@ class D3BehaviorTreeEditor extends Component
             data: d.parent.data
           });
 
+        // Center drop target (on a node)
         g_droptargets
           .append("rect")
           .attr("class", "drop_target")
@@ -1734,6 +1737,7 @@ class D3BehaviorTreeEditor extends Component
             data: d.data
           });
 
+        // Top drop target
         g_droptargets
           .append("rect")
           .attr("class", "drop_target")
@@ -1750,10 +1754,15 @@ class D3BehaviorTreeEditor extends Component
             data: d.parent.data
           });
 
+        //Bottom drop target
         var child_names = d.data.child_names || [];
-        var max_children = d.data.max_children || -1;
+        var max_children = d.data.max_children;
+        if (max_children === undefined) {
+          max_children = -1;
+        }
+
         // If max_children is either -1 or >0, we can add a child
-        if (max_children != 0 && child_names.length == 0)
+        if (max_children != 0 || child_names.length < max_children)
         {
           g_droptargets
             .append("rect")
@@ -2399,10 +2408,30 @@ class D3BehaviorTreeEditor extends Component
         .attr("visibility", "visible")
       // Now hide those that belong to descendants of the node we're dragging
         .filter(
-          x => all_children.indexOf(x.data.name) >= 0
-            || (x.data.name === parentName
+          x => {
+            // Hide drop targets of children
+            if (all_children.indexOf(x.data.name) >= 0) {
+              return true;
+            }
+            // Hide the left/right drop targets
+            if (x.data.name === parentName
                 && (x.position == my_index
-                    || x.position == my_index + 1)))
+                    || x.position == my_index + 1)) {
+              return true;
+            }
+            // Hide the left/right drop targets for nodes that are
+            // children of a *different* parent than ours, with
+            // max_children children. (if its our own parent, moving
+            // us won't change the number of children, so we're okay)
+            var child_names = x.data.child_names || [];
+            var max_children = x.data.max_children || -1;
+            if (x.data.name !== parentName &&
+                max_children !== -1 &&
+                child_names.length === max_children) {
+              return true;
+            }
+            return false;
+          })
         .attr("visibility", "hidden");
     }
 
