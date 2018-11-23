@@ -445,9 +445,8 @@ class App extends Component
             </button>
           </div>
         </div>
-        <div className="row d-flex flex-grow-1 pb-2">
-          <D3BehaviorTreeEditor className="fill-parent"
-                                key={this.state.bt_namespace}
+        <div className="row d-flex fill-parent pb-2">
+          <D3BehaviorTreeEditor key={this.state.bt_namespace}
                                 ros={this.state.ros}
                                 bt_namespace={this.state.bt_namespace}
                                 tree_message={this.state.last_tree_msg}
