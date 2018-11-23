@@ -24,7 +24,7 @@ folder - simply execute the following commands in your shell to get
 browsable HTML documentation, including some tutorials:
 
 ```bash
-$ cd ros_bt_py/docs
+$ cd ros_bt_py/doc
 $ make html
 $ cd build
 $ python -m SimpleHTTPServer & xdg-open http://localhost:8000/html
