@@ -351,6 +351,7 @@ class App extends Component
                       ros={this.state.ros}
                       subtreeNames={this.state.subtree_names}
                       currentNamespace={this.state.bt_namespace}
+                      tree_message={this.state.last_tree_msg}
                       onSelectedTreeChange={this.onSelectedTreeChange}
                       onNamespaceChange={this.onNamespaceChange}
                       onError={this.onError}/>
