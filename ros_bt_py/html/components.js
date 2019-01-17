@@ -2494,11 +2494,13 @@ class NewNode extends Component
 
   nameChangeHandler(event)
   {
+    this.props.onNodeChanged();
     this.setState({name: event.target.value});
   }
 
   updateValue(paramType, key, new_value)
   {
+    this.props.onNodeChanged();
     var map_fun = function(x)
     {
       if (x.key === key) {
