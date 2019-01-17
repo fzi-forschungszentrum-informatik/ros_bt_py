@@ -49,7 +49,7 @@ class App extends Component
 
     this.get_nodes_service = new ROSLIB.Service({
       ros: this.state.ros,
-      name: props.bt_namespace + 'get_available_nodes',
+      name: this.state.bt_namespace + 'get_available_nodes',
       serviceType: 'ros_bt_py_msgs/GetAvailableNodes'
     });
 
