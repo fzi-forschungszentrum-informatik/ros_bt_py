@@ -304,9 +304,9 @@ class App extends Component
     ));
   }
 
-  onNodeChanged()
+  onNodeChanged(state)
   {
-    this.setState({node_changed: true});
+    this.setState({node_changed: state});
   }
 
   onSelectedEdgeChange(new_selected_edge)
@@ -361,9 +361,9 @@ class App extends Component
           node={this.state.selected_node}
           nodeInfo={this.state.selected_node_info}
           onError={this.onError}
+          onNodeChanged={this.onNodeChanged}
         />);
     }
-
 
     return (
       <div>

@@ -2438,6 +2438,7 @@ class NewNode extends Component
 
   onClickAdd()
   {
+    this.props.onNodeChanged(false);
     var msg = this.buildNodeMessage();
     console.log('trying to add node to tree:');
     console.log(msg);
@@ -2495,13 +2496,13 @@ class NewNode extends Component
 
   nameChangeHandler(event)
   {
-    this.props.onNodeChanged();
+    this.props.onNodeChanged(true);
     this.setState({name: event.target.value});
   }
 
   updateValue(paramType, key, new_value)
   {
-    this.props.onNodeChanged();
+    this.props.onNodeChanged(true);
     var map_fun = function(x)
     {
       if (x.key === key) {
@@ -2653,6 +2654,7 @@ class SelectedNode extends Component
 
   nameChangeHandler(event)
   {
+    this.props.onNodeChanged(true);
     this.setState({name: event.target.value});
   }
 
@@ -2789,11 +2791,13 @@ class SelectedNode extends Component
 
   updateValidity(newValidity)
   {
+    this.props.onNodeChanged(true);
     this.setState({isValid: newValidity || false});
   }
 
   updateValue(paramType, key, new_value)
   {
+    this.props.onNodeChanged(true);
     var map_fun = function(x)
     {
       if (x.key === key) {
