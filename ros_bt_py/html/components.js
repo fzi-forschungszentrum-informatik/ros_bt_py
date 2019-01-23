@@ -29,7 +29,7 @@ function typesCompatible(a, b)
   var to = a.kind === 'input' ? a : b;
 
   // object is compatible with anything
-  if (to.type === "{\"py/type\": \"__builtin__.object\"}") {
+  if (to.type === "{\"py/type\": \"__builtin__.object\"}" || to.type === "{\"py/type\": \"builtins.object\"}") {
     return true;
   }
 
@@ -57,6 +57,7 @@ function prettyprint_type(jsonpickled_type) {
     // Remove the "builtin" prefix jsonpickle adds
     return json_type['py/type']
       .replace('__builtin__.', '')
+      .replace('builtins.', '')
       .replace(/^basestring$/, 'string')
       .replace(/^unicode$/, 'string')
       .replace(/^str$/, 'string');
@@ -2542,7 +2543,7 @@ class NewNode extends Component
                 {
                   return {
                     key: x.key,
-                    value: getDefaultValue(optionType.value.value.replace('__builtin__.', ''))
+                    value: getDefaultValue(optionType.value.value.replace('__builtin__.', '').replace('builtins.', ''))
                   };
                 }
               }
@@ -2596,7 +2597,7 @@ class SelectedNode extends Component
         if (type === 'type')
         {
           json_value = json_value['py/type']
-            .replace('__builtin__.', '');
+            .replace('__builtin__.', '').replace('builtins.', '');
         }
         return {
           key: x.key,
@@ -2854,7 +2855,7 @@ class SelectedNode extends Component
                   // referenced option
                   return {
                     key: current_item.key,
-                    value: getDefaultValue(optionType.value.value.replace('__builtin__.', ''))
+                    value: getDefaultValue(optionType.value.value.replace('__builtin__.', '').replace('builtins.', ''))
                   };
                 }
               }
@@ -2969,7 +2970,7 @@ class EditableNode extends Component
           {
             return {
               key: x.key,
-              value: getDefaultValue(optionType.value.value.replace('__builtin__.', ''))
+              value: getDefaultValue(optionType.value.value.replace('__builtin__.', '').replace('builtins.', ''))
             };
           }
         }
