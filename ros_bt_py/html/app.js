@@ -6,7 +6,7 @@ class App extends Component
   {
     super(props);
 
-    var ros_uri = 'ws://localhost:9090';
+    var ros_uri = 'ws://' + window.location.hostname + ':9090';
     this.state = {
       bt_namespace: '',
       ros_uri: ros_uri,
@@ -30,6 +30,7 @@ class App extends Component
       // about OptionRefs isn't included in live nodes, but we need it
       // to edit options.
       selected_node_info: null,
+      node_changed: false,
       ros: new ROSLIB.Ros({
         url : ros_uri
       })
@@ -49,7 +50,7 @@ class App extends Component
 
     this.get_nodes_service = new ROSLIB.Service({
       ros: this.state.ros,
-      name: props.bt_namespace + 'get_available_nodes',
+      name: this.state.bt_namespace + 'get_available_nodes',
       serviceType: 'ros_bt_py_msgs/GetAvailableNodes'
     });
 
@@ -61,6 +62,7 @@ class App extends Component
     this.getNodes = this.getNodes.bind(this);
     this.onError = this.onError.bind(this);
     this.onNodeListSelectionChange = this.onNodeListSelectionChange.bind(this);
+    this.onNodeChanged = this.onNodeChanged.bind(this);
     this.onEditorSelectionChange = this.onEditorSelectionChange.bind(this);
     this.onSelectedEdgeChange = this.onSelectedEdgeChange.bind(this);
     this.onTreeUpdate = this.onTreeUpdate.bind(this);
@@ -265,6 +267,18 @@ class App extends Component
 
   onEditorSelectionChange(new_selected_node_name)
   {
+    if (this.state.node_changed)
+    {
+      if(window.confirm("Are you sure you wish to discard all changes to the currently edited node?"))
+      {
+        // normal behavior, discard all entered data
+        this.setState({node_changed: false});
+      } else {
+        // do not execute onEditorSelectionChange and keep editing
+        return;
+      }
+    }    
+
     if (new_selected_node_name === null)
     {
       this.setState(
@@ -288,6 +302,11 @@ class App extends Component
                 && x.node_class === new_selected_node.node_class))
       }
     ));
+  }
+
+  onNodeChanged(state)
+  {
+    this.setState({node_changed: state});
   }
 
   onSelectedEdgeChange(new_selected_edge)
@@ -323,6 +342,7 @@ class App extends Component
           }
           node={this.state.selected_node}
           parents={this.findPossibleParents()}
+          onNodeChanged={this.onNodeChanged}
         />);
     }
     else if (this.state.last_selection_source === 'editor')
@@ -341,9 +361,9 @@ class App extends Component
           node={this.state.selected_node}
           nodeInfo={this.state.selected_node_info}
           onError={this.onError}
+          onNodeChanged={this.onNodeChanged}
         />);
     }
-
 
     return (
       <div>
@@ -351,6 +371,7 @@ class App extends Component
                       ros={this.state.ros}
                       subtreeNames={this.state.subtree_names}
                       currentNamespace={this.state.bt_namespace}
+                      tree_message={this.state.last_tree_msg}
                       onSelectedTreeChange={this.onSelectedTreeChange}
                       onNamespaceChange={this.onNamespaceChange}
                       onError={this.onError}/>

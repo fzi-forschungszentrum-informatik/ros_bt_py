@@ -29,7 +29,7 @@ function typesCompatible(a, b)
   var to = a.kind === 'input' ? a : b;
 
   // object is compatible with anything
-  if (to.type === "{\"py/type\": \"__builtin__.object\"}") {
+  if (to.type === "{\"py/type\": \"__builtin__.object\"}" || to.type === "{\"py/type\": \"builtins.object\"}") {
     return true;
   }
 
@@ -57,6 +57,7 @@ function prettyprint_type(jsonpickled_type) {
     // Remove the "builtin" prefix jsonpickle adds
     return json_type['py/type']
       .replace('__builtin__.', '')
+      .replace('builtins.', '')
       .replace(/^basestring$/, 'string')
       .replace(/^unicode$/, 'string')
       .replace(/^str$/, 'string');
@@ -337,8 +338,36 @@ function ExecutionBar(props)
         ros={props.ros}
         bt_namespace={props.currentNamespace}
         onError={props.onError}/>
+      <Spacer/>
+      <LoadSaveControls
+        ros={props.ros}
+        bt_namespace={props.currentNamespace}
+        tree_message={props.tree_message}
+        onError={props.onError}/>
     </header>
   );
+}
+
+class Spacer extends Component
+{
+  constructor(props)
+  {
+    super(props);
+  }
+
+  componentDidMount()
+  {
+  }
+
+  render()
+  {
+    return (
+      <Fragment>
+        <div className="spacer">
+        </div>
+      </Fragment>
+    );
+  }
 }
 
 class NamespaceSelect extends Component
@@ -537,6 +566,89 @@ class TickControls extends Component
         <button onClick={this.controlExec.bind(this, 6)}
                 className="btn btn-primary m-1">
           Shutdown
+        </button>
+      </Fragment>
+    );
+  }
+}
+
+class LoadSaveControls extends Component
+{
+  constructor(props)
+  {
+    super(props);
+    this.fileref = React.createRef()
+    this.fileReader = new FileReader();
+  }
+
+  componentDidMount()
+  {
+    this.load_service = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'load_tree',
+      serviceType: 'ros_bt_py_msgs/LoadTree'
+    });
+
+  }
+
+  openFileDialog()
+  {
+    this.fileref.current.click();
+  }
+
+  handleFileRead(event)
+  {
+    var msg = jsyaml.load(this.fileReader.result);
+
+    this.load_service.callService(
+      new ROSLIB.ServiceRequest({
+        tree: msg
+      }),
+      function(response) {
+        if (response.success) {
+          console.log('called LoadTree service successfully');
+        }
+        else {
+          this.props.onError(response.error_message);
+        }
+      }.bind(this));
+  }
+
+  downloadURI(uri, name) {
+    var link = document.createElement("a");
+    link.download = name;
+    link.href = uri;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  loadTree(event)
+  {
+    this.fileReader.onloadend = this.handleFileRead.bind(this);
+    this.fileReader.readAsText(event.target.files[0]);
+  }
+
+  saveTree()
+  {
+    var msg = jsyaml.safeDump(this.props.tree_message);
+    this.downloadURI('data:text/plain,'+encodeURIComponent(msg), "tree.yaml");
+  }
+
+  render()
+  {
+    return (
+      <Fragment>
+        <div>
+          <input ref={this.fileref} type="file" style={{display:"none"}} onChange={this.loadTree.bind(this)}/>
+          <button onClick={this.openFileDialog.bind(this)}
+                  className="btn btn-primary m-1">
+            Load
+          </button>
+        </div>
+        <button onClick={this.saveTree.bind(this)}
+                className="btn btn-primary m-1">
+          Save
         </button>
       </Fragment>
     );
@@ -2326,6 +2438,7 @@ class NewNode extends Component
 
   onClickAdd()
   {
+    this.props.onNodeChanged(false);
     var msg = this.buildNodeMessage();
     console.log('trying to add node to tree:');
     console.log(msg);
@@ -2383,11 +2496,13 @@ class NewNode extends Component
 
   nameChangeHandler(event)
   {
+    this.props.onNodeChanged(true);
     this.setState({name: event.target.value});
   }
 
   updateValue(paramType, key, new_value)
   {
+    this.props.onNodeChanged(true);
     var map_fun = function(x)
     {
       if (x.key === key) {
@@ -2429,7 +2544,7 @@ class NewNode extends Component
                 {
                   return {
                     key: x.key,
-                    value: getDefaultValue(optionType.value.value.replace('__builtin__.', ''))
+                    value: getDefaultValue(optionType.value.value.replace('__builtin__.', '').replace('builtins.', ''))
                   };
                 }
               }
@@ -2483,7 +2598,7 @@ class SelectedNode extends Component
         if (type === 'type')
         {
           json_value = json_value['py/type']
-            .replace('__builtin__.', '');
+            .replace('__builtin__.', '').replace('builtins.', '');
         }
         return {
           key: x.key,
@@ -2539,6 +2654,7 @@ class SelectedNode extends Component
 
   nameChangeHandler(event)
   {
+    this.props.onNodeChanged(true);
     this.setState({name: event.target.value});
   }
 
@@ -2675,11 +2791,13 @@ class SelectedNode extends Component
 
   updateValidity(newValidity)
   {
+    this.props.onNodeChanged(true);
     this.setState({isValid: newValidity || false});
   }
 
   updateValue(paramType, key, new_value)
   {
+    this.props.onNodeChanged(true);
     var map_fun = function(x)
     {
       if (x.key === key) {
@@ -2741,7 +2859,7 @@ class SelectedNode extends Component
                   // referenced option
                   return {
                     key: current_item.key,
-                    value: getDefaultValue(optionType.value.value.replace('__builtin__.', ''))
+                    value: getDefaultValue(optionType.value.value.replace('__builtin__.', '').replace('builtins.', ''))
                   };
                 }
               }
@@ -2856,7 +2974,7 @@ class EditableNode extends Component
           {
             return {
               key: x.key,
-              value: getDefaultValue(optionType.value.value.replace('__builtin__.', ''))
+              value: getDefaultValue(optionType.value.value.replace('__builtin__.', '').replace('builtins.', ''))
             };
           }
         }

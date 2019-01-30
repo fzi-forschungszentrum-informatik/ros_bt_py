@@ -139,6 +139,10 @@
     background: #bebebe;
 }
 
+.spacer {
+  margin-left: auto;
+}
+
 path.data-hover {
     stroke: #148050;
     background: #148050;
