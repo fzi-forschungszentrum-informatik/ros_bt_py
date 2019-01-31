@@ -7,6 +7,21 @@ class App extends Component
     super(props);
 
     var ros_uri = 'ws://' + window.location.hostname + ':9090';
+
+    var parameters = window.location.search.substr(1);
+
+    var params = {};
+    var prmarr = parameters.split("&");
+    for ( var i = 0; i < prmarr.length; i++) {
+        var tmparr = prmarr[i].split("=");
+        params[tmparr[0]] = tmparr[1];
+    }
+
+    if (params["ros_uri"])
+    {
+      ros_uri = params["ros_uri"];
+    }
+
     this.state = {
       bt_namespace: '',
       ros_uri: ros_uri,

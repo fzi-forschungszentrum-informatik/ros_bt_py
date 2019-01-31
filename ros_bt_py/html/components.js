@@ -377,10 +377,15 @@ class NamespaceSelect extends Component
     super(props);
 
     this.state = {
-      available_namespaces: []
+      available_namespaces: [],
+      edit: false,
+      ros_uri: props.ros.socket.url
     };
 
     this.updateAvailableNamespaces = this.updateAvailableNamespaces.bind(this);
+    this.changeRosbridgeServer = this.changeRosbridgeServer.bind(this);
+    this.editRosbridgeServer = this.editRosbridgeServer.bind(this);
+    this.saveRosbridgeServer = this.saveRosbridgeServer.bind(this);
     this.handleNamespaceChange = this.handleNamespaceChange.bind(this);
   }
 
@@ -420,6 +425,41 @@ class NamespaceSelect extends Component
       }.bind(this));
   }
 
+  changeRosbridgeServer(event)
+  {
+    this.setState({ros_uri: event.target.value});
+  }
+
+  editRosbridgeServer()
+  {
+    if (this.state.edit)
+    {
+      this.setState({edit: false});
+    } else {
+      console.log("edit rosbridge server");
+      this.setState({edit: true});
+    }
+  }
+
+  saveRosbridgeServer()
+  {
+    console.log("save rosbridge server ", );
+
+    this.setState({edit: false});
+
+    var old_uri = window.location.toString();
+    var new_uri = old_uri;
+    if (window.location.search.length > 0) {
+      new_uri = old_uri.replace(window.location.search, "?ros_uri="+this.state.ros_uri)
+    } else {
+      new_uri = old_uri + "?ros_uri="+this.state.ros_uri;
+    }
+    if (old_uri != new_uri)
+    {
+      window.location.assign(new_uri);
+    }
+  }
+
   handleNamespaceChange(event)
   {
     this.props.onNamespaceChange(event.target.value);
@@ -427,6 +467,18 @@ class NamespaceSelect extends Component
 
   render()
   {
+    var edit = null;
+    if (this.state.edit) {
+      edit = (<div className="form-inline">
+                <label className="ml-1">Rosbridge Server:
+                  <input type="text" value={this.state.ros_uri} onChange={this.changeRosbridgeServer}/>
+                  <button onClick={this.saveRosbridgeServer.bind(this)}
+                          className="btn btn-primary m-1">
+                    Save
+                  </button>
+                </label>
+              </div>);
+    }
     return (
       <Fragment>
         <div className="form-inline">
@@ -448,6 +500,13 @@ class NamespaceSelect extends Component
           <span aria-hidden="true" className="fas fa-sync" />
           <span className="sr-only">Refresh Namespaces</span>
         </button>
+        <button type="button"
+                className="btn btn-sm m-1"
+                onClick={this.editRosbridgeServer}>
+          <span aria-hidden="true" className="fas fa-cog" />
+          <span className="sr-only">Edit rosbridge server</span>
+        </button>
+        {edit}
       </Fragment>
     );
   }
