@@ -501,6 +501,37 @@ class SelectTree extends Component
   }
 }
 
+class SelectEditorSkin extends Component
+{
+  constructor(props)
+  {
+    super(props);
+
+    this.onChange = this.onChange.bind(this);
+  }
+
+  onChange(event)
+  {
+    console.log("changing editor skin to " + event.target.value);
+    this.props.changeSkin(event.target.value);
+  }
+
+  render()
+  {
+    return (
+      <div>
+        <label className="form-inline m-1">Color scheme:
+          <select className="custom-select ml-1"
+                  defaultValue="darkmode"
+                  onChange={this.onChange}>
+            <option value="darkmode">Dark Mode</option>
+            <option value="light">Light Mode</option>
+          </select>
+        </label>
+      </div>
+    );
+  }
+}
 class TickControls extends Component
 {
   constructor(props)
@@ -885,10 +916,11 @@ class D3BehaviorTreeEditor extends Component
 
   render()
   {
+    var editor_classes = "reactive-svg " + this.props.skin;
     return (
       <svg id="editor_viewport"
            ref={this.viewport_ref}
-           className="reactive-svg">
+           className={editor_classes}>
         <g id="container" ref={this.svg_ref}>
           { // order is important here - SVG draws things in the order
             // they appear in the markup!

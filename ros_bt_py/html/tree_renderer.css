@@ -174,7 +174,14 @@ path.data-hover {
 }
 
 #editor_viewport {
+}
+
+.darkmode {
   background: #34393c;
+}
+
+.lightmode {
+  background: #ffffff;
 }
 
 .gripper {

@@ -33,7 +33,8 @@ class App extends Component
       node_changed: false,
       ros: new ROSLIB.Ros({
         url : ros_uri
-      })
+      }),
+      skin: 'darkmode',
     };
 
     this.tree_topic = new ROSLIB.Topic({
@@ -71,6 +72,7 @@ class App extends Component
     this.onSelectedTreeChange = this.onSelectedTreeChange.bind(this);
     this.onNamespaceChange = this.onNamespaceChange.bind(this);
     this.updateTreeMsg = this.updateTreeMsg.bind(this);
+    this.changeSkin = this.changeSkin.bind(this);
   }
 
   onTreeUpdate(msg)
@@ -97,6 +99,10 @@ class App extends Component
     }
   }
 
+  changeSkin(skin)
+  {
+    this.setState({skin:skin});
+  }
   updateTreeMsg(msg)
   {
     // Clear any timers for previously received messages (see below)
@@ -403,6 +409,8 @@ class App extends Component
                                     }>
                       Toggle Data Graph
                     </button>
+                    <Spacer />
+                    <SelectEditorSkin changeSkin={this.changeSkin}/>
                   </div>
                 </div>
                 <div className="row edit_canvas pb-2">
@@ -415,7 +423,8 @@ class App extends Component
                                           selectedNodeName={this.state.selected_node_name}
                                           onSelectedEdgeChange={this.onSelectedEdgeChange}
                                           showDataGraph={this.state.showDataGraph}
-                                          onError={this.onError}/>
+                                          onError={this.onError}
+                                          skin={this.state.skin}/>
                   </div>
                 </div>
                 <div className="row">
