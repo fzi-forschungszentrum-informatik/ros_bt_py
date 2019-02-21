@@ -688,7 +688,14 @@ class LoadSaveControls extends Component
 
   handleFileRead(event)
   {
-    var msg = jsyaml.load(this.fileReader.result);
+    var msgs = jsyaml.loadAll(this.fileReader.result);
+
+    var msg = null;
+    for (var i = 0; i < msgs.length; i++) {
+      if (msgs[i] != null) {
+        msg = msgs[i];
+      }
+    }
 
     this.load_service.callService(
       new ROSLIB.ServiceRequest({
@@ -701,6 +708,9 @@ class LoadSaveControls extends Component
         else {
           this.props.onError(response.error_message);
         }
+      }.bind(this),
+      function(failed) {
+        this.props.onError('Error loading tree, is your yaml file correct? ' + failed)
       }.bind(this));
   }
 
