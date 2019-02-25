@@ -36,6 +36,7 @@ class App extends Component
       subtree_names: [],
       selected_node: null,
       selected_node_name: null,
+      copied_node: null,
       showDataGraph: true,
       last_tree_msg: null,
       // Can be 'nodelist' or 'editor'. The value decides whether the
@@ -69,6 +70,12 @@ class App extends Component
       ros: this.state.ros,
       name: this.state.bt_namespace + 'get_available_nodes',
       serviceType: 'ros_bt_py_msgs/GetAvailableNodes'
+    });
+
+    this.add_node_service = new ROSLIB.Service({
+      ros: this.state.ros,
+      name: this.state.bt_namespace + 'add_node',
+      serviceType: 'ros_bt_py_msgs/AddNode'
     });
 
     this.lastTreeUpdate = null;
@@ -216,6 +223,12 @@ class App extends Component
         serviceType: 'ros_bt_py_msgs/GetAvailableNodes'
       });
 
+      this.add_node_service = new ROSLIB.Service({
+        ros: this.state.ros,
+        name: namespace + 'add_node',
+        serviceType: 'ros_bt_py_msgs/AddNode'
+      });
+
       this.setState({bt_namespace: namespace});
     }
   }
@@ -261,6 +274,38 @@ class App extends Component
   {
     this.tree_topic.subscribe(this.onTreeUpdate);
     this.debug_topic.subscribe(this.onDebugUpdate);
+    document.body.addEventListener("keydown",function(e){
+      if ( e.keyCode == 67 && (e.ctrlKey || e.metaKey) ) {
+        this.setState({copied_node: this.state.selected_node});
+      } else if ( e.keyCode == 86 && (e.ctrlKey || e.metaKey) ) {
+        var parent = '';
+        for (var i = 0; i < this.state.last_tree_msg.nodes.length; i++) {
+          for (var j = 0; j < this.state.last_tree_msg.nodes[i].child_names.length; j++) {
+            if(this.state.copied_node.name == this.state.last_tree_msg.nodes[i].child_names[j]) {
+              parent = this.state.last_tree_msg.nodes[i].name;
+              console.log("found parent " + parent);
+              break;
+            }
+          }
+        }
+
+        this.add_node_service.callService(
+          new ROSLIB.ServiceRequest({
+            parent_name: parent,
+            node: this.state.copied_node,
+            allow_rename: true
+          }),
+          function(response) {
+            if (response.success) {
+              console.log('Added node to tree as ' + response.actual_node_name);
+            }
+            else {
+              console.log('Failed to add node ' + this.state.name + ': '
+                          + response.error_message);
+            }
+          }.bind(this));
+      }
+    }.bind(this),false);
   }
 
   componentWillUnmount()
