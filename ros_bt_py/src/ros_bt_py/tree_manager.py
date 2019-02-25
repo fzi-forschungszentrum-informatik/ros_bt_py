@@ -1480,6 +1480,13 @@ class TreeManager(object):
         # root.get_subtree_msg(), but for now we maybe don't want that
         # overhead?
         self.tree_msg.nodes = [node.to_msg() for node in self.nodes.itervalues()]
+
+        # TODO(khermann): using root.get_subtree_msg() here anyway to get the correct public_node_data
+        # monitor overhead of this decision
+        root = self.find_root()
+        if root is not None:
+            subtree = root.get_subtree_msg()[0]
+            self.tree_msg.public_node_data = subtree.public_node_data
         return self.tree_msg
 
 

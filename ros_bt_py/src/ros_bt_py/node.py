@@ -919,6 +919,21 @@ class Node(object):
                 else:
                     connected_inputs[wiring.target.node_name] = [wiring.target.data_key]
 
+        # Make the currently unconnected outputs of all nodes publicly
+        # available
+        connected_outputs = dict()
+        for wiring in subtree.data_wirings:
+            if wiring.source.data_kind == NodeDataLocation.OUTPUT_DATA:
+                if wiring.source.node_name in connected_outputs:
+                    connected_outputs[wiring.source.node_name].append(wiring.source.data_key)
+                else:
+                    connected_outputs[wiring.source.node_name] = [wiring.source.data_key]
+            elif wiring.target.data_kind == NodeDataLocation.OUTPUT_DATA:
+                if wiring.target.node_name in connected_outputs:
+                    connected_outputs[wiring.target.node_name].append(wiring.target.data_key)
+                else:
+                    connected_outputs[wiring.target.node_name] = [wiring.target.data_key]
+
         for node in subtree.nodes:
             for node_input in node.inputs:
                 if (node.name not in connected_inputs or
@@ -928,6 +943,14 @@ class Node(object):
                         node_name=node.name,
                         data_kind=NodeDataLocation.INPUT_DATA,
                         data_key=node_input.key))
+            for node_output in node.outputs:
+                if (node.name not in connected_outputs or
+                        node_output.key not in connected_outputs[node.name]):
+                    # Input is unconnected, list it as public
+                    subtree.public_node_data.append(NodeDataLocation(
+                        node_name=node.name,
+                        data_kind=NodeDataLocation.OUTPUT_DATA,
+                        data_key=node_output.key))
         return subtree, incoming_connections, outgoing_connections
 
     def find_node(self, other_name):
