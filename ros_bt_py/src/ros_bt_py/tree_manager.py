@@ -1483,10 +1483,13 @@ class TreeManager(object):
 
         # TODO(khermann): using root.get_subtree_msg() here anyway to get the correct public_node_data
         # monitor overhead of this decision
-        root = self.find_root()
-        if root is not None:
-            subtree = root.get_subtree_msg()[0]
-            self.tree_msg.public_node_data = subtree.public_node_data
+        try:
+            root = self.find_root()
+            if root is not None:
+                subtree = root.get_subtree_msg()[0]
+                self.tree_msg.public_node_data = subtree.public_node_data
+        except TreeTopologyError as exc:
+            rospy.logwarn("Strange topology %s" % exc)
         return self.tree_msg
 
 
