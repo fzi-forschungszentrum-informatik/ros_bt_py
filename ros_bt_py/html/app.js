@@ -30,6 +30,7 @@ class App extends Component
         name: ''
       },
       error_history: [],
+      error_history_sorting_asc: false,
       selected_edge: null,
       available_nodes: [],
       subtree_names: [],
@@ -77,6 +78,8 @@ class App extends Component
     // Bind these here so this works as expected in callbacks
     this.getNodes = this.getNodes.bind(this);
     this.onError = this.onError.bind(this);
+    this.onClearErrors = this.onClearErrors.bind(this);
+    this.onChangeErrorHistorySorting = this.onChangeErrorHistorySorting.bind(this);
     this.onNodeListSelectionChange = this.onNodeListSelectionChange.bind(this);
     this.onNodeChanged = this.onNodeChanged.bind(this);
     this.onEditorSelectionChange = this.onEditorSelectionChange.bind(this);
@@ -279,6 +282,16 @@ class App extends Component
     console.log(error_message);
   }
 
+  onClearErrors()
+  {
+    this.setState({error_history:[]});
+  }
+
+  onChangeErrorHistorySorting(new_sorting)
+  {
+    this.setState({error_history_sorting_asc: new_sorting});
+  }
+
   onNodeListSelectionChange(new_selected_node)
   {
     this.setState({selected_node: new_selected_node,
@@ -462,7 +475,10 @@ class App extends Component
                     }
                     </div>
                     <div  className="row output_log pl-0">
-                      <ErrorHistory history={this.state.error_history}/>
+                      <ErrorHistory history={this.state.error_history}
+                                    sorting_asc={this.state.error_history_sorting_asc}
+                                    clearErrors={this.onClearErrors}
+                                    changeSorting={this.onChangeErrorHistorySorting}/>
                     </div>
                   </div>
                 </div>

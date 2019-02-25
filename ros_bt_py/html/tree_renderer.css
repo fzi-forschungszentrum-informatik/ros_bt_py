@@ -184,6 +184,13 @@ path.data-hover {
   background: #ffffff;
 }
 
+.clear-error {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 10;
+}
+
 .gripper {
     fill: #74777f;
 }
