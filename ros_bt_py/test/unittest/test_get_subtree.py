@@ -90,11 +90,11 @@ class TestSubtree(unittest.TestCase):
         subtree, incoming_connections, outgoing_connections = \
             self.root.find_node('inner_seq').get_subtree_msg()
         self.assertEqual(len(subtree.nodes), 4)
-        self.assertEqual(len(subtree.public_node_data), 2)
+        self.assertEqual(len(subtree.public_node_data), 14)
         self.assertEqual(len([d for d in subtree.public_node_data
                               if d.data_kind == NodeDataLocation.INPUT_DATA]), 1)
         self.assertEqual(len([d for d in subtree.public_node_data
-                              if d.data_kind == NodeDataLocation.OUTPUT_DATA]), 1)
+                              if d.data_kind == NodeDataLocation.OUTPUT_DATA]), 13)
         self.assertEqual(len(incoming_connections), 1)
         self.assertEqual(len(outgoing_connections), 1)
 
@@ -117,4 +117,4 @@ class TestSubtree(unittest.TestCase):
         self.assertEqual(len(subtree.nodes), 3)
         self.assertEqual(len(incoming_conns), 0)
         self.assertEqual(len(outgoing_conns), 0)
-        self.assertEqual(len(subtree.public_node_data), 1)
+        self.assertEqual(len(subtree.public_node_data), 2)
