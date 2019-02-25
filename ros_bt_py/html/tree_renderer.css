@@ -34,6 +34,10 @@
   fill: #eff0f4;
   max-width: 200px;
   overflow-wrap: break-word;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
 .label {
@@ -170,7 +174,21 @@ path.data-hover {
 }
 
 #editor_viewport {
+}
+
+.darkmode {
   background: #34393c;
+}
+
+.lightmode {
+  background: #ffffff;
+}
+
+.clear-error {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 10;
 }
 
 .gripper {
@@ -183,4 +201,51 @@ path.data-hover {
 
 .node-selected {
     background: #27406D;
+}
+
+#loading-icon {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  -webkit-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+  text-align: center;
+  font: 100px sans-serif;
+}
+
+@keyframes fade {
+    0% {
+      opacity: .1;
+    }
+    30% {
+      opacity: .9;
+    }
+    100% {
+      opacity: .1;
+    }
+}
+
+.wave span {
+    animation-name: fade;
+    animation-duration: 2.0s;
+    animation-iteration-count: infinite;
+    animation-fill-mode: both;
+}
+.wave span:nth-child(2) {
+    animation-delay: .2s;
+}
+.wave span:nth-child(3) {
+    animation-delay: .4s;
+}
+.wave span:nth-child(4) {
+    animation-delay: .6s;
+}
+.wave span:nth-child(5) {
+    animation-delay: .8s;
+}
+.wave span:nth-child(6) {
+    animation-delay: 1.0s;
+}
+.wave span:nth-child(7) {
+    animation-delay: 1.2s;
 }

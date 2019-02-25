@@ -300,11 +300,37 @@ class NodeList extends Component
 
 
 class ErrorHistory extends Component {
+  constructor(props)
+  {
+    super(props);
+  }
+
   render()
   {
+    var buttons = null;
+    var sorting_icon = (<span aria-hidden="true" className="fas fa-sort-up" />);
+    if (this.props.sorting_asc)
+    {
+      sorting_icon = (<span aria-hidden="true" className="fas fa-sort-down" />);
+    }
+    if (this.props.history && this.props.history.length > 0)
+    {
+      buttons = (<div className="clear-error">
+                  <button className="btn btn-primary m-1" onClick={() => this.props.changeSorting(!this.props.sorting_asc)}>
+                    {sorting_icon}
+                  </button>
+                  <button className="btn btn-primary m-1" onClick={this.props.clearErrors}>Clear errors</button>
+                 </div>);
+    }
+    var error_history = this.props.history.slice(0);
+    if (!this.props.sorting_asc)
+    {
+      error_history.reverse();
+    }
     return (
       <ul className="w-100 list-group">
-        { this.props.history.map((errorEntry) => {
+        { buttons }
+        { error_history.map((errorEntry) => {
           return (
             <li className="list-group-item" key={errorEntry.id}>
               <p>
@@ -377,10 +403,15 @@ class NamespaceSelect extends Component
     super(props);
 
     this.state = {
-      available_namespaces: []
+      available_namespaces: [],
+      edit: false,
+      ros_uri: props.ros.socket.url
     };
 
     this.updateAvailableNamespaces = this.updateAvailableNamespaces.bind(this);
+    this.changeRosbridgeServer = this.changeRosbridgeServer.bind(this);
+    this.editRosbridgeServer = this.editRosbridgeServer.bind(this);
+    this.saveRosbridgeServer = this.saveRosbridgeServer.bind(this);
     this.handleNamespaceChange = this.handleNamespaceChange.bind(this);
   }
 
@@ -420,6 +451,41 @@ class NamespaceSelect extends Component
       }.bind(this));
   }
 
+  changeRosbridgeServer(event)
+  {
+    this.setState({ros_uri: event.target.value});
+  }
+
+  editRosbridgeServer()
+  {
+    if (this.state.edit)
+    {
+      this.setState({edit: false});
+    } else {
+      console.log("edit rosbridge server");
+      this.setState({edit: true});
+    }
+  }
+
+  saveRosbridgeServer()
+  {
+    console.log("save rosbridge server ", );
+
+    this.setState({edit: false});
+
+    var old_uri = window.location.toString();
+    var new_uri = old_uri;
+    if (window.location.search.length > 0) {
+      new_uri = old_uri.replace(window.location.search, "?ros_uri="+this.state.ros_uri)
+    } else {
+      new_uri = old_uri + "?ros_uri="+this.state.ros_uri;
+    }
+    if (old_uri != new_uri)
+    {
+      window.location.assign(new_uri);
+    }
+  }
+
   handleNamespaceChange(event)
   {
     this.props.onNamespaceChange(event.target.value);
@@ -427,6 +493,18 @@ class NamespaceSelect extends Component
 
   render()
   {
+    var edit = null;
+    if (this.state.edit) {
+      edit = (<div className="form-inline">
+                <label className="ml-1">Rosbridge Server:
+                  <input type="text" value={this.state.ros_uri} onChange={this.changeRosbridgeServer}/>
+                  <button onClick={this.saveRosbridgeServer.bind(this)}
+                          className="btn btn-primary m-1">
+                    Save
+                  </button>
+                </label>
+              </div>);
+    }
     return (
       <Fragment>
         <div className="form-inline">
@@ -448,6 +526,13 @@ class NamespaceSelect extends Component
           <span aria-hidden="true" className="fas fa-sync" />
           <span className="sr-only">Refresh Namespaces</span>
         </button>
+        <button type="button"
+                className="btn btn-sm m-1"
+                onClick={this.editRosbridgeServer}>
+          <span aria-hidden="true" className="fas fa-cog" />
+          <span className="sr-only">Edit rosbridge server</span>
+        </button>
+        {edit}
       </Fragment>
     );
   }
@@ -501,6 +586,37 @@ class SelectTree extends Component
   }
 }
 
+class SelectEditorSkin extends Component
+{
+  constructor(props)
+  {
+    super(props);
+
+    this.onChange = this.onChange.bind(this);
+  }
+
+  onChange(event)
+  {
+    console.log("changing editor skin to " + event.target.value);
+    this.props.changeSkin(event.target.value);
+  }
+
+  render()
+  {
+    return (
+      <div>
+        <label className="form-inline m-1">Color scheme:
+          <select className="custom-select ml-1"
+                  defaultValue="darkmode"
+                  onChange={this.onChange}>
+            <option value="darkmode">Dark Mode</option>
+            <option value="light">Light Mode</option>
+          </select>
+        </label>
+      </div>
+    );
+  }
+}
 class TickControls extends Component
 {
   constructor(props)
@@ -598,7 +714,14 @@ class LoadSaveControls extends Component
 
   handleFileRead(event)
   {
-    var msg = jsyaml.load(this.fileReader.result);
+    var msgs = jsyaml.loadAll(this.fileReader.result);
+
+    var msg = null;
+    for (var i = 0; i < msgs.length; i++) {
+      if (msgs[i] != null) {
+        msg = msgs[i];
+      }
+    }
 
     this.load_service.callService(
       new ROSLIB.ServiceRequest({
@@ -611,6 +734,9 @@ class LoadSaveControls extends Component
         else {
           this.props.onError(response.error_message);
         }
+      }.bind(this),
+      function(failed) {
+        this.props.onError('Error loading tree, is your yaml file correct? ' + failed)
       }.bind(this));
   }
 
@@ -885,10 +1011,11 @@ class D3BehaviorTreeEditor extends Component
 
   render()
   {
+    var editor_classes = "reactive-svg " + this.props.skin;
     return (
       <svg id="editor_viewport"
            ref={this.viewport_ref}
-           className="reactive-svg">
+           className={editor_classes}>
         <g id="container" ref={this.svg_ref}>
           { // order is important here - SVG draws things in the order
             // they appear in the markup!

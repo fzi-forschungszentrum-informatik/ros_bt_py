@@ -7,6 +7,21 @@ class App extends Component
     super(props);
 
     var ros_uri = 'ws://' + window.location.hostname + ':9090';
+
+    var parameters = window.location.search.substr(1);
+
+    var params = {};
+    var prmarr = parameters.split("&");
+    for ( var i = 0; i < prmarr.length; i++) {
+        var tmparr = prmarr[i].split("=");
+        params[tmparr[0]] = tmparr[1];
+    }
+
+    if (params["ros_uri"])
+    {
+      ros_uri = params["ros_uri"];
+    }
+
     this.state = {
       bt_namespace: '',
       ros_uri: ros_uri,
@@ -15,11 +30,13 @@ class App extends Component
         name: ''
       },
       error_history: [],
+      error_history_sorting_asc: false,
       selected_edge: null,
       available_nodes: [],
       subtree_names: [],
       selected_node: null,
       selected_node_name: null,
+      copied_node: null,
       showDataGraph: true,
       last_tree_msg: null,
       // Can be 'nodelist' or 'editor'. The value decides whether the
@@ -33,7 +50,8 @@ class App extends Component
       node_changed: false,
       ros: new ROSLIB.Ros({
         url : ros_uri
-      })
+      }),
+      skin: 'darkmode',
     };
 
     this.tree_topic = new ROSLIB.Topic({
@@ -54,6 +72,12 @@ class App extends Component
       serviceType: 'ros_bt_py_msgs/GetAvailableNodes'
     });
 
+    this.add_node_service = new ROSLIB.Service({
+      ros: this.state.ros,
+      name: this.state.bt_namespace + 'add_node',
+      serviceType: 'ros_bt_py_msgs/AddNode'
+    });
+
     this.lastTreeUpdate = null;
     this.topicTimeoutID = null;
     this.newMsgDelay = 500;  // ms
@@ -61,6 +85,8 @@ class App extends Component
     // Bind these here so this works as expected in callbacks
     this.getNodes = this.getNodes.bind(this);
     this.onError = this.onError.bind(this);
+    this.onClearErrors = this.onClearErrors.bind(this);
+    this.onChangeErrorHistorySorting = this.onChangeErrorHistorySorting.bind(this);
     this.onNodeListSelectionChange = this.onNodeListSelectionChange.bind(this);
     this.onNodeChanged = this.onNodeChanged.bind(this);
     this.onEditorSelectionChange = this.onEditorSelectionChange.bind(this);
@@ -71,6 +97,7 @@ class App extends Component
     this.onSelectedTreeChange = this.onSelectedTreeChange.bind(this);
     this.onNamespaceChange = this.onNamespaceChange.bind(this);
     this.updateTreeMsg = this.updateTreeMsg.bind(this);
+    this.changeSkin = this.changeSkin.bind(this);
   }
 
   onTreeUpdate(msg)
@@ -97,6 +124,10 @@ class App extends Component
     }
   }
 
+  changeSkin(skin)
+  {
+    this.setState({skin:skin});
+  }
   updateTreeMsg(msg)
   {
     // Clear any timers for previously received messages (see below)
@@ -192,6 +223,12 @@ class App extends Component
         serviceType: 'ros_bt_py_msgs/GetAvailableNodes'
       });
 
+      this.add_node_service = new ROSLIB.Service({
+        ros: this.state.ros,
+        name: namespace + 'add_node',
+        serviceType: 'ros_bt_py_msgs/AddNode'
+      });
+
       this.setState({bt_namespace: namespace});
     }
   }
@@ -237,6 +274,38 @@ class App extends Component
   {
     this.tree_topic.subscribe(this.onTreeUpdate);
     this.debug_topic.subscribe(this.onDebugUpdate);
+    document.body.addEventListener("keydown",function(e){
+      if ( e.keyCode == 67 && (e.ctrlKey || e.metaKey) ) {
+        this.setState({copied_node: this.state.selected_node});
+      } else if ( e.keyCode == 86 && (e.ctrlKey || e.metaKey) ) {
+        var parent = '';
+        for (var i = 0; i < this.state.last_tree_msg.nodes.length; i++) {
+          for (var j = 0; j < this.state.last_tree_msg.nodes[i].child_names.length; j++) {
+            if(this.state.copied_node.name == this.state.last_tree_msg.nodes[i].child_names[j]) {
+              parent = this.state.last_tree_msg.nodes[i].name;
+              console.log("found parent " + parent);
+              break;
+            }
+          }
+        }
+
+        this.add_node_service.callService(
+          new ROSLIB.ServiceRequest({
+            parent_name: parent,
+            node: this.state.copied_node,
+            allow_rename: true
+          }),
+          function(response) {
+            if (response.success) {
+              console.log('Added node to tree as ' + response.actual_node_name);
+            }
+            else {
+              console.log('Failed to add node ' + this.state.name + ': '
+                          + response.error_message);
+            }
+          }.bind(this));
+      }
+    }.bind(this),false);
   }
 
   componentWillUnmount()
@@ -256,6 +325,16 @@ class App extends Component
         })
     });
     console.log(error_message);
+  }
+
+  onClearErrors()
+  {
+    this.setState({error_history:[]});
+  }
+
+  onChangeErrorHistorySorting(new_sorting)
+  {
+    this.setState({error_history_sorting_asc: new_sorting});
   }
 
   onNodeListSelectionChange(new_selected_node)
@@ -403,6 +482,8 @@ class App extends Component
                                     }>
                       Toggle Data Graph
                     </button>
+                    <Spacer />
+                    <SelectEditorSkin changeSkin={this.changeSkin}/>
                   </div>
                 </div>
                 <div className="row edit_canvas pb-2">
@@ -415,7 +496,8 @@ class App extends Component
                                           selectedNodeName={this.state.selected_node_name}
                                           onSelectedEdgeChange={this.onSelectedEdgeChange}
                                           showDataGraph={this.state.showDataGraph}
-                                          onError={this.onError}/>
+                                          onError={this.onError}
+                                          skin={this.state.skin}/>
                   </div>
                 </div>
                 <div className="row">
@@ -438,7 +520,10 @@ class App extends Component
                     }
                     </div>
                     <div  className="row output_log pl-0">
-                      <ErrorHistory history={this.state.error_history}/>
+                      <ErrorHistory history={this.state.error_history}
+                                    sorting_asc={this.state.error_history_sorting_asc}
+                                    clearErrors={this.onClearErrors}
+                                    changeSorting={this.onChangeErrorHistorySorting}/>
                     </div>
                   </div>
                 </div>
