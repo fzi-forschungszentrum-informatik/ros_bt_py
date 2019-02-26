@@ -11,6 +11,7 @@ add_message_files(
      FILES
      DebugInfo.msg
      DebugSettings.msg
+     Messages.msg
      NodeDataLocation.msg
      NodeData.msg
      NodeDataWiring.msg

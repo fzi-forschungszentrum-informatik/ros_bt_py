@@ -66,6 +66,12 @@ class App extends Component
       messageType: 'ros_bt_py_msgs/DebugInfo'
     });
 
+    this.messages_topic = new ROSLIB.Topic({
+      ros : this.state.ros,
+      name: this.state.bt_namespace + 'messages',
+      messageType: 'ros_bt_py_msgs/Messages'
+    });
+
     this.get_nodes_service = new ROSLIB.Service({
       ros: this.state.ros,
       name: this.state.bt_namespace + 'get_available_nodes',
@@ -93,6 +99,7 @@ class App extends Component
     this.onSelectedEdgeChange = this.onSelectedEdgeChange.bind(this);
     this.onTreeUpdate = this.onTreeUpdate.bind(this);
     this.onDebugUpdate = this.onDebugUpdate.bind(this);
+    this.onMessagesUpdate = this.onMessagesUpdate.bind(this);
     this.findPossibleParents = this.findPossibleParents.bind(this);
     this.onSelectedTreeChange = this.onSelectedTreeChange.bind(this);
     this.onNamespaceChange = this.onNamespaceChange.bind(this);
@@ -122,6 +129,30 @@ class App extends Component
         this.updateTreeMsg(selectedSubtree);
       }
     }
+  }
+
+  onMessagesUpdate(msg)
+  {
+    console.log("received list of messages");
+    this.messages = [];
+    for (var i = 0; i < msg.messages.length; i++) {
+      var components = msg.messages[i].split("/");
+      if (components.length == 2) {
+        var message = {msg:components[0] + ".msg._" + components[1] + "." + components[1]};
+        this.messages.push(message);
+      }
+    }
+    var options = {
+      shouldSort: true,
+      threshold: 0.6,
+      location: 0,
+      distance: 100,
+      maxPatternLength: 32,
+      minMatchCharLength: 1,
+      keys: [
+        "msg"      ]
+    };
+    this.messagesFuse = new Fuse(this.messages, options);
   }
 
   changeSkin(skin)
@@ -199,6 +230,7 @@ class App extends Component
       // Unsubscribe, then replace, topics
       this.tree_topic.unsubscribe(this.onTreeUpdate);
       this.debug_topic.unsubscribe(this.onDebugUpdate);
+      this.messages_topic.unsubscribe(this.onMessagesUpdate);
 
       this.tree_topic = new ROSLIB.Topic({
         ros : this.state.ros,
@@ -212,9 +244,16 @@ class App extends Component
         messageType: 'ros_bt_py_msgs/DebugInfo'
       });
 
+      this.messages_topic = new ROSLIB.Topic({
+        ros : this.state.ros,
+        name: namespace + 'messages',
+        messageType: 'ros_bt_py_msgs/Messages'
+      });
+
       // Subscribe again
       this.tree_topic.subscribe(this.onTreeUpdate);
       this.debug_topic.subscribe(this.onDebugUpdate);
+      this.messages_topic.subscribe(this.onMessagesUpdate);
 
       // Update GetAvailableNodes Service
       this.get_nodes_service = new ROSLIB.Service({
@@ -274,6 +313,7 @@ class App extends Component
   {
     this.tree_topic.subscribe(this.onTreeUpdate);
     this.debug_topic.subscribe(this.onDebugUpdate);
+    this.messages_topic.subscribe(this.onMessagesUpdate);
     document.body.addEventListener("keydown",function(e){
       if ( e.keyCode == 67 && (e.ctrlKey || e.metaKey) ) {
         this.setState({copied_node: this.state.selected_node});
@@ -312,6 +352,7 @@ class App extends Component
   {
     this.tree_topic.unsubscribe(this.onTreeUpdate);
     this.debug_topic.unsubscribe(this.onDebugUpdate);
+    this.messages_topic.unsubscribe(this.onMessagesUpdate);
   }
 
   onError(error_message)
@@ -421,6 +462,7 @@ class App extends Component
           }
           node={this.state.selected_node}
           parents={this.findPossibleParents()}
+          messagesFuse={this.messagesFuse}
           onNodeChanged={this.onNodeChanged}
         />);
     }
@@ -439,6 +481,7 @@ class App extends Component
           }
           node={this.state.selected_node}
           nodeInfo={this.state.selected_node_info}
+          messagesFuse={this.messagesFuse}
           onError={this.onError}
           onNodeChanged={this.onNodeChanged}
         />);

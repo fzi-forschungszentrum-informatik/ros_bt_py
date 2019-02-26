@@ -2547,6 +2547,7 @@ class NewNode extends Component
                            + this.props.node.name}
                       name={this.state.name}
                       nodeClass={this.props.node.node_class}
+                      messagesFuse={this.props.messagesFuse}
                       updateValidity={this.updateValidity}
                       updateValue={this.updateValue}
                       nameChangeHandler={this.nameChangeHandler}
@@ -2905,6 +2906,7 @@ class SelectedNode extends Component
                            + this.props.node.name}
                       name={this.state.name}
                       nodeClass={this.props.node.node_class}
+                      messagesFuse={this.props.messagesFuse}
                       updateValidity={this.updateValidity}
                       updateValue={this.updateValue}
                       nameChangeHandler={this.nameChangeHandler}
@@ -3033,7 +3035,45 @@ class EditableNode extends Component
   constructor(props)
   {
     super(props);
+    this.state = {messages_results:[], results_at_key: null};
   }
+
+  renderSearchResults(results, key, onNewValue)
+  {    
+    if(results.length > 0 && this.state.results_at_key === key)
+    {
+      var result_rows = results.map(x => {
+        return (
+          <div className="list-group-item search-result"
+               onClick={ () => {this.setState({messages_results:[]}); onNewValue(x.msg);}}>
+            {x.msg}
+          </div>
+        );
+      });
+
+      return (
+        <div className="mb-2 search-results" ref={node => this.node = node}>
+          <div className="list-group">
+              {result_rows}
+          </div>
+        </div>
+      );
+    } else {
+      return null;
+    }
+  }
+
+  componentDidMount()
+  {
+    document.addEventListener('click', this.handleClick);
+  }
+
+  handleClick = (event) => {
+    if(this.node && !this.node.contains(event.target))
+    {
+      this.setState({messages_results:[]});
+    }
+  };
 
   render()
   {
@@ -3124,6 +3164,7 @@ class EditableNode extends Component
   {
     var valueType = paramItem.value.type;
     var changeHandler = (event) => {};
+    var keyPressHandler = (event) => {};
 
     if (valueType === 'int')
     {
@@ -3204,6 +3245,11 @@ class EditableNode extends Component
       changeHandler = (event) =>
         {
           var newTypeName = event.target.value || '';
+          if (this.props.messagesFuse)
+          {
+            var results = this.props.messagesFuse.search(newTypeName);
+            this.setState({messages_results: results.slice(0,5), results_at_key: paramItem.key});
+          }
           if (python_builtin_types.indexOf(newTypeName) >= 0)
           {
             onNewValue('__builtin__.' + newTypeName);
@@ -3214,14 +3260,24 @@ class EditableNode extends Component
           }
         };
 
+      keyPressHandler = (event) =>
+        {
+          if(event.key === 'Enter') {
+            this.setState({messages_results: []});
+            this.setState({results_at_key: null});
+          }
+        };
+
       return (
         <div className="form-group">
           <label className="d-block">{paramItem.key}
             <input type="text"
                    className="form-control mt-2"
                    value={paramItem.value.value}
-                   onChange={changeHandler}/>
+                   onChange={changeHandler}
+                   onKeyPress={keyPressHandler} />
           </label>
+          {this.renderSearchResults(this.state.messages_results, paramItem.key, onNewValue)}
         </div>
       );
     }

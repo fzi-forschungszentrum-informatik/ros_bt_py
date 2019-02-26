@@ -203,6 +203,14 @@ path.data-hover {
     background: #27406D;
 }
 
+.search-results {
+  padding-left: 10px;
+}
+
+.search-result:hover {
+  background-color: #007bff;
+}
+
 #loading-icon {
   position: absolute;
   left: 50%;
