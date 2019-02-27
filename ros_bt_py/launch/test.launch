@@ -19,6 +19,7 @@
       ros_bt_py.nodes.passthrough_node,
       ros_bt_py.nodes.shovable,
       ros_bt_py.nodes.subtree,
+      ros_bt_py.nodes.wait,
       ros_bt_py.ros_nodes.message_from_dict,
       ros_bt_py.ros_nodes.pose_distance
       ]
