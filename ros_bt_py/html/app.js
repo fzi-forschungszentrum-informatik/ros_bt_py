@@ -84,6 +84,12 @@ class App extends Component
       serviceType: 'ros_bt_py_msgs/AddNode'
     });
 
+    this.remove_node_service = new ROSLIB.Service({
+      ros: this.state.ros,
+      name: this.state.bt_namespace + 'remove_node',
+      serviceType: 'ros_bt_py_msgs/RemoveNode'
+    });
+
     this.lastTreeUpdate = null;
     this.topicTimeoutID = null;
     this.newMsgDelay = 500;  // ms
@@ -268,6 +274,12 @@ class App extends Component
         serviceType: 'ros_bt_py_msgs/AddNode'
       });
 
+      this.remove_node_service = new ROSLIB.Service({
+        ros: this.state.ros,
+        name: namespace + 'remove_node',
+        serviceType: 'ros_bt_py_msgs/RemoveNode'
+      });
+
       this.setState({bt_namespace: namespace});
     }
   }
@@ -323,7 +335,6 @@ class App extends Component
           for (var j = 0; j < this.state.last_tree_msg.nodes[i].child_names.length; j++) {
             if(this.state.copied_node.name == this.state.last_tree_msg.nodes[i].child_names[j]) {
               parent = this.state.last_tree_msg.nodes[i].name;
-              console.log("found parent " + parent);
               break;
             }
           }
@@ -344,6 +355,34 @@ class App extends Component
                           + response.error_message);
             }
           }.bind(this));
+      }
+      if (this.state.selected_node && e.keyCode == 46) {
+        var remove_children = false;
+        var remove_nodes_text = "Do you want to remove the selected node\"" + this.state.selected_node.name +"\"";
+
+        if (e.shiftKey) {
+          remove_children = true;
+          remove_nodes_text += " and its children";
+        }
+        remove_nodes_text += "?";
+
+        if (window.confirm(remove_nodes_text))
+        {
+          this.remove_node_service.callService(
+            new ROSLIB.ServiceRequest({
+              node_name: this.state.selected_node.name,
+              remove_children: remove_children,
+            }),
+            function(response) {
+              if (response.success) {
+                console.log('Removed node from tree');
+                this.onEditorSelectionChange(null);
+              }
+              else {
+                console.log('Failed to remove node ' + response.error_message);
+              }
+            }.bind(this));
+        }  
       }
     }.bind(this),false);
   }
