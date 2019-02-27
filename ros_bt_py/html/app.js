@@ -66,6 +66,12 @@ class App extends Component
       messageType: 'ros_bt_py_msgs/DebugInfo'
     });
 
+    this.messages_topic = new ROSLIB.Topic({
+      ros : this.state.ros,
+      name: this.state.bt_namespace + 'messages',
+      messageType: 'ros_bt_py_msgs/Messages'
+    });
+
     this.get_nodes_service = new ROSLIB.Service({
       ros: this.state.ros,
       name: this.state.bt_namespace + 'get_available_nodes',
@@ -76,6 +82,12 @@ class App extends Component
       ros: this.state.ros,
       name: this.state.bt_namespace + 'add_node',
       serviceType: 'ros_bt_py_msgs/AddNode'
+    });
+
+    this.remove_node_service = new ROSLIB.Service({
+      ros: this.state.ros,
+      name: this.state.bt_namespace + 'remove_node',
+      serviceType: 'ros_bt_py_msgs/RemoveNode'
     });
 
     this.lastTreeUpdate = null;
@@ -93,6 +105,7 @@ class App extends Component
     this.onSelectedEdgeChange = this.onSelectedEdgeChange.bind(this);
     this.onTreeUpdate = this.onTreeUpdate.bind(this);
     this.onDebugUpdate = this.onDebugUpdate.bind(this);
+    this.onMessagesUpdate = this.onMessagesUpdate.bind(this);
     this.findPossibleParents = this.findPossibleParents.bind(this);
     this.onSelectedTreeChange = this.onSelectedTreeChange.bind(this);
     this.onNamespaceChange = this.onNamespaceChange.bind(this);
@@ -122,6 +135,30 @@ class App extends Component
         this.updateTreeMsg(selectedSubtree);
       }
     }
+  }
+
+  onMessagesUpdate(msg)
+  {
+    console.log("received list of messages");
+    this.messages = [];
+    for (var i = 0; i < msg.messages.length; i++) {
+      var components = msg.messages[i].split("/");
+      if (components.length == 2) {
+        var message = {msg:components[0] + ".msg._" + components[1] + "." + components[1]};
+        this.messages.push(message);
+      }
+    }
+    var options = {
+      shouldSort: true,
+      threshold: 0.6,
+      location: 0,
+      distance: 100,
+      maxPatternLength: 32,
+      minMatchCharLength: 1,
+      keys: [
+        "msg"      ]
+    };
+    this.messagesFuse = new Fuse(this.messages, options);
   }
 
   changeSkin(skin)
@@ -199,6 +236,7 @@ class App extends Component
       // Unsubscribe, then replace, topics
       this.tree_topic.unsubscribe(this.onTreeUpdate);
       this.debug_topic.unsubscribe(this.onDebugUpdate);
+      this.messages_topic.unsubscribe(this.onMessagesUpdate);
 
       this.tree_topic = new ROSLIB.Topic({
         ros : this.state.ros,
@@ -212,9 +250,16 @@ class App extends Component
         messageType: 'ros_bt_py_msgs/DebugInfo'
       });
 
+      this.messages_topic = new ROSLIB.Topic({
+        ros : this.state.ros,
+        name: namespace + 'messages',
+        messageType: 'ros_bt_py_msgs/Messages'
+      });
+
       // Subscribe again
       this.tree_topic.subscribe(this.onTreeUpdate);
       this.debug_topic.subscribe(this.onDebugUpdate);
+      this.messages_topic.subscribe(this.onMessagesUpdate);
 
       // Update GetAvailableNodes Service
       this.get_nodes_service = new ROSLIB.Service({
@@ -227,6 +272,12 @@ class App extends Component
         ros: this.state.ros,
         name: namespace + 'add_node',
         serviceType: 'ros_bt_py_msgs/AddNode'
+      });
+
+      this.remove_node_service = new ROSLIB.Service({
+        ros: this.state.ros,
+        name: namespace + 'remove_node',
+        serviceType: 'ros_bt_py_msgs/RemoveNode'
       });
 
       this.setState({bt_namespace: namespace});
@@ -274,6 +325,7 @@ class App extends Component
   {
     this.tree_topic.subscribe(this.onTreeUpdate);
     this.debug_topic.subscribe(this.onDebugUpdate);
+    this.messages_topic.subscribe(this.onMessagesUpdate);
     document.body.addEventListener("keydown",function(e){
       if ( e.keyCode == 67 && (e.ctrlKey || e.metaKey) ) {
         this.setState({copied_node: this.state.selected_node});
@@ -283,7 +335,6 @@ class App extends Component
           for (var j = 0; j < this.state.last_tree_msg.nodes[i].child_names.length; j++) {
             if(this.state.copied_node.name == this.state.last_tree_msg.nodes[i].child_names[j]) {
               parent = this.state.last_tree_msg.nodes[i].name;
-              console.log("found parent " + parent);
               break;
             }
           }
@@ -305,6 +356,34 @@ class App extends Component
             }
           }.bind(this));
       }
+      if (this.state.selected_node && e.keyCode == 46) {
+        var remove_children = false;
+        var remove_nodes_text = "Do you want to remove the selected node\"" + this.state.selected_node.name +"\"";
+
+        if (e.shiftKey) {
+          remove_children = true;
+          remove_nodes_text += " and its children";
+        }
+        remove_nodes_text += "?";
+
+        if (window.confirm(remove_nodes_text))
+        {
+          this.remove_node_service.callService(
+            new ROSLIB.ServiceRequest({
+              node_name: this.state.selected_node.name,
+              remove_children: remove_children,
+            }),
+            function(response) {
+              if (response.success) {
+                console.log('Removed node from tree');
+                this.onEditorSelectionChange(null);
+              }
+              else {
+                console.log('Failed to remove node ' + response.error_message);
+              }
+            }.bind(this));
+        }  
+      }
     }.bind(this),false);
   }
 
@@ -312,6 +391,7 @@ class App extends Component
   {
     this.tree_topic.unsubscribe(this.onTreeUpdate);
     this.debug_topic.unsubscribe(this.onDebugUpdate);
+    this.messages_topic.unsubscribe(this.onMessagesUpdate);
   }
 
   onError(error_message)
@@ -421,6 +501,7 @@ class App extends Component
           }
           node={this.state.selected_node}
           parents={this.findPossibleParents()}
+          messagesFuse={this.messagesFuse}
           onNodeChanged={this.onNodeChanged}
         />);
     }
@@ -439,6 +520,7 @@ class App extends Component
           }
           node={this.state.selected_node}
           nodeInfo={this.state.selected_node_info}
+          messagesFuse={this.messagesFuse}
           onError={this.onError}
           onNodeChanged={this.onNodeChanged}
         />);

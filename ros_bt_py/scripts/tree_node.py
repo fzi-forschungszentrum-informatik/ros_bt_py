@@ -1,6 +1,10 @@
 #! /usr/bin/env python2.7
+import os
 
+import rospkg
 import rospy
+
+from ros_bt_py_msgs.msg import Messages
 
 from ros_bt_py_msgs.msg import Tree, DebugInfo, DebugSettings
 from ros_bt_py_msgs.srv import AddNode, ControlTreeExecution, ModifyBreakpoints, RemoveNode, \
@@ -92,6 +96,29 @@ class TreeNode(object):
         self.load_tree_service = rospy.Service('~load_tree',
                                                LoadTree,
                                                self.tree_manager.load_tree)
+
+        self.message_list_pub = rospy.Publisher('~messages', Messages, latch=True, queue_size=1)
+        self.publish_message_list()
+
+    def publish_message_list(self):
+        rospack = rospkg.RosPack()
+
+        messages = []
+        packages = rospack.list()
+
+        for package in packages:
+            path = rospack.get_path(package) + "/msg"
+            resources = []
+            if os.path.isdir(path):
+                resources = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+            result = [x[:-len(".msg")] for x in resources]
+            result.sort()
+            for msg_type in result:
+                messages.append(package+"/"+msg_type)
+
+        msg = Messages()
+        msg.messages = messages
+        self.message_list_pub.publish(msg)
 
     def shutdown(self):
         if self.tree_manager.get_state() not in [Tree.IDLE, Tree.EDITABLE, Tree.ERROR]:
