@@ -20,6 +20,9 @@
       ros_bt_py.nodes.shovable,
       ros_bt_py.nodes.subtree,
       ros_bt_py.nodes.wait,
+      ros_bt_py.nodes.format,
+      ros_bt_py.nodes.log,
+      ros_bt_py.nodes.constant,
       ros_bt_py.ros_nodes.message_from_dict,
       ros_bt_py.ros_nodes.pose_distance
       ]
