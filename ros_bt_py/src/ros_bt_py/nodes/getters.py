@@ -4,6 +4,7 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 
 from ros_bt_py.node import Decorator, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
+from ros_bt_py.helpers import rgetattr
 
 
 @define_bt_node(NodeConfig(
@@ -203,8 +204,8 @@ class GetAttr(Decorator):
 
         if self.inputs.is_updated('object'):
             try:
-                self.outputs['attr'] = getattr(self.inputs['object'],
-                                               self.options['attr_name'])
+                self.outputs['attr'] = rgetattr(self.inputs['object'],
+                                                self.options['attr_name'])
                 return NodeMsg.SUCCEEDED
             except AttributeError:
                 self.logerr('Object %s does not have attribute %s'
