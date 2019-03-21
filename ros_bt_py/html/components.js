@@ -705,6 +705,12 @@ class LoadSaveControls extends Component
       serviceType: 'ros_bt_py_msgs/LoadTree'
     });
 
+    this.clear_service = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'clear',
+      serviceType: 'ros_bt_py_msgs/ClearTree'
+    });
+
   }
 
   openFileDialog()
@@ -749,6 +755,26 @@ class LoadSaveControls extends Component
     document.body.removeChild(link);
   }
 
+  newTree()
+  {
+    if (window.confirm("Do you want to create a new tree? Warning: This will discard the tree that is loaded at the moment."))
+    {
+      this.clear_service.callService(
+        new ROSLIB.ServiceRequest({}),
+        function(response) {
+          if (response.success) {
+            console.log('called ClearTree service successfully');
+          }
+          else {
+            this.props.onError(response.error_message);
+          }
+        }.bind(this),
+        function(failed) {
+          this.props.onError('Error clearing tree ' + failed)
+        }.bind(this));
+    }
+  }
+
   loadTree(event)
   {
     this.fileReader.onloadend = this.handleFileRead.bind(this);
@@ -765,6 +791,10 @@ class LoadSaveControls extends Component
   {
     return (
       <Fragment>
+        <button onClick={this.newTree.bind(this)}
+                className="btn btn-primary m-1">
+          New
+        </button>
         <div>
           <input ref={this.fileref} type="file" style={{display:"none"}} onChange={this.loadTree.bind(this)}/>
           <button onClick={this.openFileDialog.bind(this)}
