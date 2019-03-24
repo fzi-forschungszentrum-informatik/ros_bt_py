@@ -426,7 +426,7 @@ class App extends Component
 
   onEditorSelectionChange(new_selected_node_name)
   {
-    if (this.state.node_changed)
+    if (this.state.node_changed && new_selected_node_name != this.state.selected_node_name)
     {
       if(window.confirm("Are you sure you wish to discard all changes to the currently edited node?"))
       {
@@ -449,8 +449,19 @@ class App extends Component
       return;
     }
 
-    var new_selected_node = this.state.last_tree_msg.nodes.find(
-      x => x.name === new_selected_node_name);;
+    var new_selected_node = this.state.last_tree_msg.nodes.find(x => x.name === new_selected_node_name);
+
+    if (!new_selected_node)
+    {
+      this.setState(
+        {
+          selected_node: null,
+          selected_node_name: null,
+          last_selection_source: 'editor',
+        });
+      return;
+    }
+
     this.setState((prevState, props) => (
       {
         selected_node: new_selected_node,
@@ -520,9 +531,11 @@ class App extends Component
           }
           node={this.state.selected_node}
           nodeInfo={this.state.selected_node_info}
+          availableNodes={this.state.available_nodes}
           messagesFuse={this.messagesFuse}
           onError={this.onError}
           onNodeChanged={this.onNodeChanged}
+          onEditorSelectionChange={this.onEditorSelectionChange}
         />);
     }
 

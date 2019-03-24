@@ -2770,29 +2770,37 @@ class SelectedNode extends Component
     if (props.node) {
       this.state = {
         name: props.node.name,
+        node_class: props.node.node_class,
+        module: props.node.module,
         isValid: true,
         options: props.node.options.map(getValues),
         inputs: props.node.inputs.map(getValues),
-        outputs: props.node.outputs.map(getValues)
+        outputs: props.node.outputs.map(getValues),
+        isMorphed: false
       };
     }
     else
     {
       this.state = {
         name: '',
+        node_class: '',
+        module: '',
         isValid: false,
         options: [],
         inputs: [],
-        outputs: []
+        outputs: [],
+        isMorphed: false
       };
     }
 
     this.nameChangeHandler = this.nameChangeHandler.bind(this);
+    this.nodeClassChangeHandler = this.nodeClassChangeHandler.bind(this);
     this.updateValidity = this.updateValidity.bind(this);
     this.updateValue = this.updateValue.bind(this);
     this.onClickDelete = this.onClickDelete.bind(this);
     this.onClickDeleteWithChildren = this.onClickDeleteWithChildren.bind(this);
     this.onClickUpdate = this.onClickUpdate.bind(this);
+    this.updateNode = this.updateNode.bind(this);
   }
 
   componentDidMount()
@@ -2808,12 +2816,87 @@ class SelectedNode extends Component
       name: this.props.bt_namespace + 'remove_node',
       serviceType: 'ros_bt_py_msgs/RemoveNode'
     });
+
+    this.morph_node_service = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'morph_node',
+      serviceType: 'ros_bt_py_msgs/MorphNode'
+    });
   }
 
   nameChangeHandler(event)
   {
     this.props.onNodeChanged(true);
     this.setState({name: event.target.value});
+  }
+
+  nodeClassChangeHandler(event)
+  {
+    var flowControlNode = this.props.availableNodes.filter(function(item){
+      return item.max_children == -1 && item.module+item.node_class == event.target.value;
+    });
+
+    if (flowControlNode && flowControlNode.length == 1) {
+      flowControlNode = flowControlNode[0];
+
+      this.setState({node_class: flowControlNode.node_class,
+                     module: flowControlNode.module,
+                     options: this.getDefaultValues(flowControlNode.options),
+                     inputs: this.getDefaultValues(flowControlNode.inputs,
+                                                   flowControlNode.options),
+                     outputs: this.getDefaultValues(flowControlNode.outputs,
+                                                    flowControlNode.options),
+                     isMorphed: true});
+    }
+  }
+
+  buildNodeMessage()
+  {
+    return {
+      module: this.state.module,
+      node_class: this.state.node_class,
+      name: this.props.node.name,
+      options: this.state.options.map(x => {
+        var option = {
+          key: x.key,
+          serialized_value: ''
+        };
+        if (x.value.type === 'type') {
+          if (python_builtin_types.indexOf(x.value.value) >= 0)
+          {
+            x.value.value = '__builtin__.' + x.value.value;
+            //x.value.value = 'builtins.' + x.value.value;
+          }
+          option.serialized_value = JSON.stringify({
+            "py/type": x.value.value
+          });
+        }
+        else if (x.value.type.startsWith('__'))
+        {
+          x.value.value["py/object"] = x.value.type.substring('__'.length);
+          option.serialized_value = JSON.stringify(x.value.value);
+        }
+        else
+        {
+          option.serialized_value = JSON.stringify(x.value.value);
+        }
+        return option;
+      }),
+      child_names: []
+    };
+  }
+
+  getDefaultValues(paramList, options)
+  {
+    options = options || [];
+
+    return paramList.map(x => {
+      return {
+        key: x.key,
+        value: getDefaultValue(
+          prettyprint_type(x.serialized_value), options),
+      };
+    });
   }
 
   onClickDelete(event)
@@ -2831,6 +2914,7 @@ class SelectedNode extends Component
       function(response) {
         if (response.success) {
           console.log('Removed node!');
+          this.props.onEditorSelectionChange(null);
         }
         else {
           this.props.onError('Failed to remove node '
@@ -2857,6 +2941,7 @@ class SelectedNode extends Component
       function(response) {
         if (response.success) {
           console.log('Removed node!');
+          this.props.onEditorSelectionChange(null);
         }
         else {
           this.props.onError('Failed to remove node '
@@ -2867,6 +2952,33 @@ class SelectedNode extends Component
   }
 
   onClickUpdate(event)
+  {
+    if (this.state.isMorphed)
+    {
+      console.log("morphing node");
+      var msg = this.buildNodeMessage();
+      this.morph_node_service.callService(
+        new ROSLIB.ServiceRequest({
+          node_name: this.props.node.name,
+          new_node: msg,
+        }),
+        function(response) {
+          if (response.success) {
+            console.log('Morphed node in tree');
+            this.setState({isMorphed: false});
+            this.updateNode();
+          }
+          else {
+            console.log('Failed to morph node ' + this.state.name + ': '
+                        + response.error_message);
+          }
+        }.bind(this));
+    } else {
+      this.updateNode();
+    }
+  }
+
+  updateNode()
   {
     console.log('updating node');
     this.set_options_service.callService(
@@ -2903,6 +3015,8 @@ class SelectedNode extends Component
       function(response) {
         if (response.success) {
           console.log('Updated node!');
+          this.props.onNodeChanged(false);
+          this.props.onEditorSelectionChange(this.state.name); // FIXME: is there a more elegant way for the "update" case?
         }
         else {
           this.props.onError('Failed to update node '
@@ -2935,11 +3049,14 @@ class SelectedNode extends Component
                            + this.props.node.node_class
                            + this.props.node.name}
                       name={this.state.name}
-                      nodeClass={this.props.node.node_class}
+                      nodeClass={this.state.node_class}
+                      module={this.state.module}
+                      availableNodes={this.props.availableNodes}
                       messagesFuse={this.props.messagesFuse}
                       updateValidity={this.updateValidity}
                       updateValue={this.updateValue}
                       nameChangeHandler={this.nameChangeHandler}
+                      nodeClassChangeHandler={this.nodeClassChangeHandler}
                       options={this.state.options}
                       inputs={this.state.inputs}
                       outputs={this.state.outputs}
@@ -3116,13 +3233,42 @@ class EditableNode extends Component
       }
       return 1;
     };
+
+    var node_class_name = this.props.nodeClass;
+    if (this.props.availableNodes != null) {
+      // get the flow control nodes
+      var flowControlNodes = this.props.availableNodes.filter(function(item){
+        return item.max_children == -1;
+      });
+
+      var module = this.props.module;
+      var node_class = this.props.nodeClass;
+
+      var currentFlowControlType = flowControlNodes.filter(function(item){
+        return item.module == module && item.node_class == node_class;
+      });
+
+      if (currentFlowControlType.length > 0)
+      {
+        node_class_name = (<select className="custom-select"
+                  value={this.props.module+this.props.nodeClass}
+                  onChange={this.props.nodeClassChangeHandler}>
+              {
+                flowControlNodes.map(
+                  x => (<option key={x.module+x.node_class}
+                                value={x.module+x.node_class}>{x.node_class} ({x.module})</option>))
+              }
+          </select>);
+      }
+    }
+
     return(
       <div className="d-flex flex-column">
         <input className="form-control-lg mb-2"
                type="text"
                value={this.props.name}
                onChange={this.props.nameChangeHandler}/>
-        <h4 className="text-muted">{this.props.nodeClass}</h4>
+        <h4 className="text-muted">{node_class_name}</h4>
         {this.renderParamInputs(this.props.options.sort(compareKeys), 'options')}
         {this.renderParamDisplays(this.props.inputs.sort(compareKeys), 'inputs')}
         {this.renderParamDisplays(this.props.outputs.sort(compareKeys), 'outputs')}

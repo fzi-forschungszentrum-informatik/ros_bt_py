@@ -26,6 +26,7 @@ add_message_files(
 add_service_files(
   FILES
   AddNode.srv
+  ClearTree.srv
   Continue.srv
   ControlTreeExecution.srv
   EvaluateUtility.srv
@@ -35,6 +36,7 @@ add_service_files(
   InsertNode.srv
   LoadTree.srv
   ModifyBreakpoints.srv
+  MorphNode.srv
   MoveNode.srv
   RemoveNode.srv
   ReplaceNode.srv

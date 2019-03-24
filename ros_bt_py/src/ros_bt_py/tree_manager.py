@@ -10,6 +10,8 @@ import rospy
 import rospkg
 
 from ros_bt_py_msgs.srv import LoadTreeResponse
+from ros_bt_py_msgs.srv import ClearTreeResponse
+from ros_bt_py_msgs.srv import MorphNodeResponse
 from ros_bt_py_msgs.srv import MoveNodeRequest, RemoveNodeRequest, ReplaceNodeRequest, WireNodeDataRequest
 from ros_bt_py_msgs.srv import MoveNodeResponse, ReplaceNodeResponse
 from ros_bt_py_msgs.srv import WireNodeDataResponse, AddNodeResponse, RemoveNodeResponse
@@ -276,14 +278,18 @@ class TreeManager(object):
     ####################
 
     @is_edit_service
-    def clear(self, _):  # second parameter is needed to fit the edit_service interface!
+    def clear(self, request):
+        response = ClearTreeResponse()
+        response.success = True
         root = self.find_root()
         if not root:
             # No root, no problems
-            return
+            return response
         if not (root.state == NodeMsg.UNINITIALIZED or root.state == NodeMsg.SHUTDOWN):
             rospy.logerr('Please shut down the tree before clearing it')
-            return
+            response.success = False
+            response.error_message = 'Please shut down the tree before clearing it'
+            return response
 
         self.nodes = {}
         with self._state_lock:
@@ -292,6 +298,8 @@ class TreeManager(object):
                                  tick_frequency_hz=self.tree_msg.tick_frequency_hz)
 
         self.publish_info(self.debug_manager.get_debug_info_msg())
+
+        return response
 
     @is_edit_service
     def load_tree(self, request, prefix=None):
@@ -868,6 +876,60 @@ class TreeManager(object):
                 wiring.target.node_name not in names_to_remove)]
         self.tree_msg.public_node_data = [data for data in self.tree_msg.public_node_data
                                           if data.node_name not in names_to_remove]
+
+        response.success = True
+        self.publish_info(self.debug_manager.get_debug_info_msg())
+        return response
+
+    @is_edit_service
+    def morph_node(self, request):
+        """Morphs the flow control node identified by `request.node_name` into the new node provided in `request.new_node`.
+        """
+        response = MorphNodeResponse()
+
+        if request.node_name not in self.nodes:
+            response.success = False
+            response.error_message = 'No node with name %s in tree %s' % (
+                request.node_name, self.tree_msg.name)
+            return response
+
+        # Shutdown node - this should also shutdown all children, but you
+        # never know, so check later.
+        self.nodes[request.node_name].shutdown()
+        # names_to_remove = [request.node_name]
+
+        # save the children of the old node
+
+        try:
+            node_instance = Node.from_msg(request.new_node)
+        except TypeError as exc:
+            rospy.logerr(BehaviorTreeException(str(exc)))
+            response.success = False
+            response.error_message = "Could not create node instance from message"
+            return response
+
+        # TODO(khermann): evaluate if other node types are to be supported
+        if node_instance.node_config.max_children is not None:
+            response.success = False
+            response.error_message = "Node morphing only supported for FlowControl nodes at the moment."
+
+        node_instance.children = self.nodes[request.node_name].children
+        self.nodes[request.node_name] = node_instance
+
+        # FIXME: do we need to do re-wiring here?
+        # Unwire wirings that have removed nodes as source or target
+        # self.unwire_data(WireNodeDataRequest(
+        #     wirings=[wiring for wiring in self.tree_msg.data_wirings
+        #              if (wiring.source.node_name in names_to_remove or
+        #                  wiring.target.node_name in names_to_remove)]))
+
+        # # Keep tree_msg up-to-date
+        # self.tree_msg.data_wirings = [
+        #     wiring for wiring in self.tree_msg.data_wirings
+        #     if (wiring.source.node_name not in names_to_remove and
+        #         wiring.target.node_name not in names_to_remove)]
+        # self.tree_msg.public_node_data = [data for data in self.tree_msg.public_node_data
+        #                                   if data.node_name not in names_to_remove]
 
         response.success = True
         self.publish_info(self.debug_manager.get_debug_info_msg())
