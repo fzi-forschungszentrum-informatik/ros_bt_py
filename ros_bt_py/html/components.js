@@ -3052,6 +3052,7 @@ class SelectedNode extends Component
                       nodeClass={this.state.node_class}
                       module={this.state.module}
                       availableNodes={this.props.availableNodes}
+                      changeCopyMode={this.props.changeCopyMode}
                       messagesFuse={this.props.messagesFuse}
                       updateValidity={this.updateValidity}
                       updateValue={this.updateValue}
@@ -3183,6 +3184,8 @@ class EditableNode extends Component
   {
     super(props);
     this.state = {messages_results:[], results_at_key: null};
+
+    this.onFocus = this.onFocus.bind(this);
   }
 
   renderSearchResults(results, key, onNewValue)
@@ -3221,6 +3224,11 @@ class EditableNode extends Component
       this.setState({messages_results:[]});
     }
   };
+
+  onFocus(event)
+  {
+    this.props.changeCopyMode(false);
+  }
 
   render()
   {
@@ -3267,6 +3275,7 @@ class EditableNode extends Component
         <input className="form-control-lg mb-2"
                type="text"
                value={this.props.name}
+               onFocus={this.onFocus}
                onChange={this.props.nameChangeHandler}/>
         <h4 className="text-muted">{node_class_name}</h4>
         {this.renderParamInputs(this.props.options.sort(compareKeys), 'options')}
@@ -3389,6 +3398,7 @@ class EditableNode extends Component
                    step="any"
                    className="form-control"
                    onChange={changeHandler}
+                   onFocus={this.onFocus}
                    placeholder="float"
                    value={paramItem.value.value}>
             </input>
@@ -3410,6 +3420,7 @@ class EditableNode extends Component
             <input type="text"
                    className="form-control mt-2"
                    value={paramItem.value.value}
+                   onFocus={this.onFocus}
                    onChange={changeHandler}/>
           </label>
         </div>
@@ -3451,6 +3462,7 @@ class EditableNode extends Component
                    className="form-control mt-2"
                    value={paramItem.value.value}
                    onChange={changeHandler}
+                   onFocus={this.onFocus}
                    onKeyPress={keyPressHandler} />
           </label>
           {this.renderSearchResults(this.state.messages_results, paramItem.key, onNewValue)}
@@ -3472,6 +3484,7 @@ class EditableNode extends Component
                  id={checkID}
                  className="custom-control-input"
                  checked={paramItem.value.value}
+                 onFocus={this.onFocus}
                  onChange={changeHandler} />
           <label className="custom-control-label d-block"
                  htmlFor={checkID}>
@@ -3512,6 +3525,7 @@ class EditableNode extends Component
           <label className="d-block">{paramItem.key}
             <JSONInput initialValue={JSON.stringify(paramItem.value.value)}
                        onValidityChange={onValidityChange}
+                       onFocus={this.onFocus}
                        onNewValue={onNewValue}/>
           </label>
         </div>

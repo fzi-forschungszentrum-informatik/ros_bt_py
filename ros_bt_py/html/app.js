@@ -52,6 +52,7 @@ class App extends Component
         url : ros_uri
       }),
       skin: 'darkmode',
+      copy_node: false,
     };
 
     this.tree_topic = new ROSLIB.Topic({
@@ -111,6 +112,7 @@ class App extends Component
     this.onNamespaceChange = this.onNamespaceChange.bind(this);
     this.updateTreeMsg = this.updateTreeMsg.bind(this);
     this.changeSkin = this.changeSkin.bind(this);
+    this.changeCopyMode = this.changeCopyMode.bind(this);
   }
 
   onTreeUpdate(msg)
@@ -164,6 +166,18 @@ class App extends Component
   changeSkin(skin)
   {
     this.setState({skin:skin});
+  }
+
+  changeCopyMode(mode)
+  {
+    if (mode)
+    {
+      // node copy/paste
+      this.setState({copy_node: true});
+    } else {
+      // "normal" copy/paste for text
+      this.setState({copy_node: false});
+    }
   }
   updateTreeMsg(msg)
   {
@@ -327,9 +341,9 @@ class App extends Component
     this.debug_topic.subscribe(this.onDebugUpdate);
     this.messages_topic.subscribe(this.onMessagesUpdate);
     document.body.addEventListener("keydown",function(e){
-      if ( e.keyCode == 67 && (e.ctrlKey || e.metaKey) ) {
+      if ( this.state.copy_node && e.keyCode == 67 && (e.ctrlKey || e.metaKey) ) {
         this.setState({copied_node: this.state.selected_node});
-      } else if ( e.keyCode == 86 && (e.ctrlKey || e.metaKey) ) {
+      } else if ( this.state.copy_node && e.keyCode == 86 && (e.ctrlKey || e.metaKey) ) {
         var parent = '';
         for (var i = 0; i < this.state.last_tree_msg.nodes.length; i++) {
           for (var j = 0; j < this.state.last_tree_msg.nodes[i].child_names.length; j++) {
@@ -356,7 +370,7 @@ class App extends Component
             }
           }.bind(this));
       }
-      if (this.state.selected_node && e.keyCode == 46) {
+      if (this.state.copy_node && this.state.selected_node && e.keyCode == 46) {
         var remove_children = false;
         var remove_nodes_text = "Do you want to remove the selected node\"" + this.state.selected_node.name +"\"";
 
@@ -464,6 +478,7 @@ class App extends Component
 
     this.setState((prevState, props) => (
       {
+        copy_node: true,
         selected_node: new_selected_node,
         selected_node_name: new_selected_node_name,
         last_selection_source: 'editor',
@@ -514,6 +529,7 @@ class App extends Component
           parents={this.findPossibleParents()}
           messagesFuse={this.messagesFuse}
           onNodeChanged={this.onNodeChanged}
+          changeCopyMode={this.changeCopyMode}
         />);
     }
     else if (this.state.last_selection_source === 'editor')
@@ -535,6 +551,7 @@ class App extends Component
           messagesFuse={this.messagesFuse}
           onError={this.onError}
           onNodeChanged={this.onNodeChanged}
+          changeCopyMode={this.changeCopyMode}
           onEditorSelectionChange={this.onEditorSelectionChange}
         />);
     }
