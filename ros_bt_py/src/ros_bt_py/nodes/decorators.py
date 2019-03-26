@@ -51,6 +51,44 @@ class IgnoreFailure(Decorator):
     # def _do_calculate_utility(self):
     #     pass
 
+@define_bt_node(NodeConfig(
+    options={},
+    inputs={},
+    outputs={},
+    max_children=1))
+class IgnoreSuccess(Decorator):
+    """Return FAILURE regardless of whether the child actually failed
+
+    RUNNING is forwarded
+
+    """
+    def _do_setup(self):
+        for child in self.children:
+            child.setup()
+
+    def _do_tick(self):
+        for child in self.children:
+            result = child.tick()
+            if result == NodeMsg.SUCCEEDED:
+                return NodeMsg.FAILED
+            return result
+
+        # Fails if we have no children
+        return NodeMsg.FAILED
+
+    def _do_shutdown(self):
+        for child in self.children:
+            return child.shutdown()
+
+    def _do_reset(self):
+        for child in self.children:
+            return child.reset()
+        return NodeMsg.IDLE
+
+    def _do_untick(self):
+        for child in self.children:
+            return child.untick()
+        return NodeMsg.IDLE
 
 @define_bt_node(NodeConfig(
     options={},

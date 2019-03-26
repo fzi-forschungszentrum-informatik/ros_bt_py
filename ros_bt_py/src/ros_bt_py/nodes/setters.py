@@ -62,3 +62,32 @@ class SetAttr(Leaf):
 
     def _do_untick(self):
         return NodeMsg.IDLE
+
+
+@define_bt_node(NodeConfig(
+    options={'attr_name': str,
+             'attr_type': type},
+    inputs={'object': dict,
+            'attr_value': OptionRef('attr_type')},
+    outputs={'new_object': dict},
+    max_children=0))
+class SetDictItem(Leaf):
+    """Set the attribute named `attr` in `object`"""
+    def _do_setup(self):
+        pass
+
+    def _do_tick(self):
+        if self.inputs.is_updated('object') or self.inputs.is_updated('attr_value'):
+            obj = deepcopy(self.inputs['object'])
+            obj[self.options['attr_name']] = self.inputs['attr_value']
+            self.outputs['new_object'] = obj
+        return NodeMsg.SUCCEEDED
+
+    def _do_shutdown(self):
+        pass
+
+    def _do_reset(self):
+        return NodeMsg.IDLE
+
+    def _do_untick(self):
+        return NodeMsg.IDLE
