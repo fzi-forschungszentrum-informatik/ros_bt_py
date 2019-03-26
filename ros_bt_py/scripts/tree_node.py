@@ -9,7 +9,7 @@ from ros_bt_py_msgs.msg import Messages
 from ros_bt_py_msgs.msg import Tree, DebugInfo, DebugSettings
 from ros_bt_py_msgs.srv import AddNode, ControlTreeExecution, ModifyBreakpoints, RemoveNode, \
      WireNodeData, GetAvailableNodes, SetExecutionMode, SetOptions, Continue, LoadTree, \
-     MoveNode, ReplaceNode, GetSubtree
+     MoveNode, ReplaceNode, GetSubtree, ClearTree, MorphNode
 from ros_bt_py_msgs.srv import ControlTreeExecutionRequest
 from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message
 from ros_bt_py.debug_manager import DebugManager
@@ -51,6 +51,9 @@ class TreeNode(object):
         self.remove_node_service = rospy.Service('~remove_node',
                                                  RemoveNode,
                                                  self.tree_manager.remove_node)
+        self.morph_node_service = rospy.Service('~morph_node',
+                                                MorphNode,
+                                                self.tree_manager.morph_node)
         self.wire_data_service = rospy.Service('~wire_data',
                                                WireNodeData,
                                                self.tree_manager.wire_data)
@@ -96,6 +99,10 @@ class TreeNode(object):
         self.load_tree_service = rospy.Service('~load_tree',
                                                LoadTree,
                                                self.tree_manager.load_tree)
+
+        self.clear_service = rospy.Service('~clear',
+                                           ClearTree,
+                                           self.tree_manager.clear)
 
         self.message_list_pub = rospy.Publisher('~messages', Messages, latch=True, queue_size=1)
         self.publish_message_list()
