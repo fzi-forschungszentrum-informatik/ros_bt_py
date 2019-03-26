@@ -4,6 +4,7 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
+from ros_bt_py.helpers import rsetattr
 
 
 @define_bt_node(NodeConfig(
@@ -49,7 +50,7 @@ class SetAttr(Leaf):
     def _do_tick(self):
         if self.inputs.is_updated('object') or self.inputs.is_updated('attr_value'):
             obj = deepcopy(self.inputs['object'])
-            setattr(obj, self.options['attr_name'], self.inputs['attr_value'])
+            rsetattr(obj, self.options['attr_name'], self.inputs['attr_value'])
             self.outputs['new_object'] = obj
         return NodeMsg.SUCCEEDED
 
