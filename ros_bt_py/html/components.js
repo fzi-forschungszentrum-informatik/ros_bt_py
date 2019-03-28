@@ -2065,8 +2065,7 @@ class D3BehaviorTreeEditor extends Component
       // Right edge -> scroll left
       panNeeded = true;
       // 1 if mouse is at the right edge, 0 if it is dragPanBoundary pixels away
-      var rightEdgeCloseness = (this.dragPanBoundary - (width - mouseCoords[0]))
-          / this.dragPanBoundary;
+      var rightEdgeCloseness = (this.dragPanBoundary - (width - mouseCoords[0])) / this.dragPanBoundary;
       this.panDirection[0] = -1.0 * this.panPerFrame * rightEdgeCloseness;
     }
     if (mouseCoords[1] < this.dragPanBoundary) {
@@ -2079,8 +2078,7 @@ class D3BehaviorTreeEditor extends Component
       // Down -> scroll up
       panNeeded = true;
       // 1 if mouse is at the bottom edge, 0 if it is dragPanBoundary pixels away
-      var botEdgeCloseness = (this.dragPanBoundary - (height - mouseCoords[1]))
-          / this.dragPanBoundary;
+      var botEdgeCloseness = (this.dragPanBoundary - (height - mouseCoords[1])) / this.dragPanBoundary;
       this.panDirection[1] = -1.0 * this.panPerFrame * botEdgeCloseness;
     }
 
