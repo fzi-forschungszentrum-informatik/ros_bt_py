@@ -2570,11 +2570,14 @@ class NewNode extends Component
             }
           </select>
         </label>
-        <EditableNode key={this.props.node.module
+        <EditableNode ros={this.props.ros}
+                      bt_namespace={this.props.bt_namespace}
+                      key={this.props.node.module
                            + this.props.node.node_class
                            + this.props.node.name}
                       name={this.state.name}
                       nodeClass={this.props.node.node_class}
+                      changeCopyMode={this.props.changeCopyMode}
                       messagesFuse={this.props.messagesFuse}
                       updateValidity={this.updateValidity}
                       updateValue={this.updateValue}
@@ -2582,6 +2585,7 @@ class NewNode extends Component
                       options={this.state.options}
                       inputs={this.state.inputs}
                       outputs={this.state.outputs}
+                      option_wirings={this.props.node.option_wirings}
         />
       </div>
     );
@@ -3043,7 +3047,9 @@ class SelectedNode extends Component
             Delete Node + Children
           </button>
         </div>
-        <EditableNode key={this.props.node.module
+        <EditableNode ros={this.props.ros}
+                      bt_namespace={this.props.bt_namespace}
+                      key={this.props.node.module
                            + this.props.node.node_class
                            + this.props.node.name}
                       name={this.state.name}
@@ -3059,6 +3065,7 @@ class SelectedNode extends Component
                       options={this.state.options}
                       inputs={this.state.inputs}
                       outputs={this.state.outputs}
+                      option_wirings={this.props.node.option_wirings}
         />
       </div>
     );
@@ -3184,6 +3191,16 @@ class EditableNode extends Component
     this.state = {messages_results:[], results_at_key: null};
 
     this.onFocus = this.onFocus.bind(this);
+
+    this.jsonRef = React.createRef();
+
+    this.handleOptionWirings = this.handleOptionWirings.bind(this);
+
+    this.get_message_fields_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.bt_namespace + 'get_message_fields',
+      serviceType: 'ros_bt_py_msgs/GetMessageFields'
+    });
   }
 
   renderSearchResults(results, key, onNewValue)
@@ -3283,64 +3300,53 @@ class EditableNode extends Component
     );
   }
 
-  updateValue(paramType, key, new_value)
+  handleOptionWirings(paramType, key, new_value)
   {
-    var map_fun = function(x)
+    if (this.props.option_wirings)
     {
-      if (x.key === key) {
-        return {
-          key: key,
-          value: {
-            type: x.value.type,
-            value: new_value
-          }
-        };
-      }
-      else
-      {
-        return x;
-      }
-    };
-
-    if (paramType.toLowerCase() === 'options')
-    {
-      var ref_keys = this.props.options
-          .filter(x => prettyprint_type(x.serialized_value).startsWith('OptionRef('))
-          .map(x => [x.key, prettyprint_type(x.serialized_value).substring(
-            'OptionRef('.length, prettyprint_type(x.serialized_value).length - 1)])
-          .filter(x => x[1] === key);
-
-      var new_options = this.props.options.map(map_fun);
-      // update the options in our state that are references to
-      // the changed key - this will discard any values entered
-      // already, but they'd be incompatible anyway
-
-      var resolved_options = new_options.map(x => {
-        var refData = ref_keys.find(ref => ref[0] === x.key);
-        if (refData)
+      this.props.option_wirings.forEach(function(option_wiring) {
+        if (option_wiring.source === key)
         {
-          var optionType = new_options.find(opt => opt.key === refData[1]);
-          if (optionType)
+          var referenced_option = this.props.options.filter(function(item){
+            return item.key == option_wiring.source;
+          });
+
+          if (referenced_option && referenced_option.length > 0)
           {
-            return {
-              key: x.key,
-              value: getDefaultValue(optionType.value.value.replace('__builtin__.', '').replace('builtins.', ''))
-            };
+            var message_type = new_value;
+            var msg_string = ".msg._";
+            var first_index = message_type.indexOf(msg_string);
+            var package_name = message_type.substr(0,first_index);
+            var second_index = message_type.indexOf(".", first_index+msg_string.length);
+
+            var message_name = message_type.substr(second_index+1);
+
+            message_type = package_name+"/"+message_name;
+
+            this.get_message_fields_service.callService(
+              new ROSLIB.ServiceRequest({
+                message_type: message_type
+              }),
+              function(response) {
+                if (response.success) {
+                  var obj = JSON.parse(response.fields);
+                  this.props.updateValue('options', option_wiring.target, obj);
+                }
+              }.bind(this));
           }
         }
-        return x;
-      });
+      }.bind(this));
+    }
+  }
 
-      this.props.setOptions(resolved_options);
-    }
-    else if (paramType.toLowerCase() === 'inputs')
+  updateValue(paramType, key, new_value)
+  {
+    if (paramType.toLowerCase() === 'options')
     {
-      this.props.setInputs(this.props.inputs.map(map_fun));
+      this.handleOptionWirings(paramType, key, new_value);
     }
-    else if (paramType.toLowerCase() === 'outputs')
-    {
-      this.props.setOutputs(this.props.outputs.map(map_fun));
-    }
+
+    this.props.updateValue(paramType, key, new_value);
   }
 
   inputForValue(paramItem, onValidityChange, onNewValue)
@@ -3511,17 +3517,25 @@ class EditableNode extends Component
     // {
 
     // }
-    // else if (valueType === 'dict')
-    // {
-
-    // }
-    else  // if (valueType === 'object')
+    else if (valueType === 'dict')
     {
-      // textarea with JSON.stringify(value), parse back when changed
       return (
         <div className="form-group">
           <label className="d-block">{paramItem.key}
-            <JSONInput initialValue={JSON.stringify(paramItem.value.value)}
+            <JSONInput json={paramItem.value.value}
+                       onValidityChange={onValidityChange}
+                       onFocus={this.onFocus}
+                       onNewValue={onNewValue}/>
+          </label>
+        </div>
+      );
+    }
+    else  // if (valueType === 'object')
+    {
+      return (
+        <div className="form-group">
+          <label className="d-block">{paramItem.key}
+            <JSONInput json={paramItem.value.value}
                        onValidityChange={onValidityChange}
                        onFocus={this.onFocus}
                        onNewValue={onNewValue}/>
@@ -3606,7 +3620,7 @@ class EditableNode extends Component
               this.inputForValue(
                 x,
                 this.props.updateValidity,
-                (newVal) => this.props.updateValue(name, x.key, newVal))
+                (newVal) => this.updateValue(name, x.key, newVal))
             }
         </div>
       );
@@ -3740,7 +3754,7 @@ class JSONInput extends Component
     var is_valid = false;
 
     try {
-      JSON.parse(props.initialValue);
+      JSON.parse(JSON.stringify(props.json));
       is_valid = true;
     }
     catch (e)
@@ -3749,45 +3763,60 @@ class JSONInput extends Component
     }
 
     this.state = {
-      value: props.initialValue,
-      is_valid: is_valid
+      is_valid: is_valid,
+      json: props.json,
     };
 
-    this.changeHandler = this.changeHandler.bind(this);
+    this.editor = null;
+    this.editorRef = null;
   }
 
-  changeHandler(event)
+  componentDidMount()
   {
-    try
-    {
-      console.log('parsed:');
-      console.log(JSON.parse(event.target.value));
+    this.editor = new JSONEditor(this.editorRef, {
+      mode: "code",
+      onChange : this.handleChange,
+    });
+    this.editor.set(this.state.json);
+    this.editor.aceEditor.setOptions({maxLines: 100});
+    this.editor.aceEditor.resize();
+  }
+
+  componentWillUnmount() {
+    this.editor.destroy();
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    if (JSON.stringify(this.props.json) != JSON.stringify(prevProps.json)) {
+      this.editor.update(this.props.json);
+      this.setState({
+        json : this.props.json,
+      });
     }
-    catch (e)
-    {
-    }
-    this.setState({value: event.target.value});
-    try
-    {
-      this.props.onNewValue(JSON.parse(event.target.value));
-      this.setState({is_valid: true});
+  }
+
+  handleChange = () => {
+    try {
+      var json = this.editor.get();
+      this.setState({
+        json : JSON.stringify(json),
+        is_valid: true,
+      });
+      this.props.onNewValue(json);
       this.props.onValidityChange(true);
-    }
-    catch(e)
-    {
-      // Do nothing
+    } catch (e) {
       this.setState({is_valid: false});
       this.props.onValidityChange(false);
     }
-  }
+  };
 
   render()
   {
     return (
-      <input type="textarea"
-             className={'form-control mt-2 ' + (this.state.is_valid ? '' : 'is-invalid')}
-             value={this.state.value}
-             onChange={this.changeHandler}/>
+      <div id="editor"
+           ref={(ref) => { this.editorRef = ref; }}
+           onFocus={this.props.onFocus}
+      />
     );
   }
 }

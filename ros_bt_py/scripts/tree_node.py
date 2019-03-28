@@ -1,8 +1,11 @@
 #! /usr/bin/env python2.7
 import os
+import jsonpickle
+import yaml
 
 import rospkg
 import rospy
+import roslib
 
 from ros_bt_py_msgs.msg import Messages
 
@@ -10,7 +13,7 @@ from ros_bt_py_msgs.msg import Tree, DebugInfo, DebugSettings
 from ros_bt_py_msgs.srv import AddNode, ControlTreeExecution, ModifyBreakpoints, RemoveNode, \
      WireNodeData, GetAvailableNodes, SetExecutionMode, SetOptions, Continue, LoadTree, \
      MoveNode, ReplaceNode, GetSubtree, ClearTree, MorphNode
-from ros_bt_py_msgs.srv import ControlTreeExecutionRequest
+from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, GetMessageFields, GetMessageFieldsResponse
 from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message
 from ros_bt_py.debug_manager import DebugManager
 
@@ -104,6 +107,10 @@ class TreeNode(object):
                                            ClearTree,
                                            self.tree_manager.clear)
 
+        self.get_message_fields_service = rospy.Service('~get_message_fields',
+                                                        GetMessageFields,
+                                                        self.get_message_fields)
+
         self.message_list_pub = rospy.Publisher('~messages', Messages, latch=True, queue_size=1)
         self.publish_message_list()
 
@@ -126,6 +133,18 @@ class TreeNode(object):
         msg = Messages()
         msg.messages = messages
         self.message_list_pub.publish(msg)
+
+    def get_message_fields(self, request):
+        response = GetMessageFieldsResponse()
+        try:
+            message_class = roslib.message.get_message_class(request.message_type)
+            message_yaml = yaml.load(str(message_class()))
+            response.fields = jsonpickle.encode(message_yaml)
+            response.success = True
+        except Exception as e:
+            response.success = False
+            response.error_message = "Could not get message fields for {}: {}".format(request.message_type, e)
+        return response
 
     def shutdown(self):
         if self.tree_manager.get_state() not in [Tree.IDLE, Tree.EDITABLE, Tree.ERROR]:

@@ -16,6 +16,9 @@ string[] child_names
 NodeData[] options
 NodeData[] inputs
 NodeData[] outputs
+
+NodeOptionWiring[] option_wirings
+
 # Should be one of the constants below
 string state
 

@@ -211,6 +211,17 @@ path.data-hover {
   background-color: #007bff;
 }
 
+div.jsoneditor,
+div.jsoneditor-menu {
+  border-color: #4b4b4b;
+}
+div.jsoneditor-menu {
+  background-color: #4b4b4b;
+}
+.ace-jsoneditor, textarea.jsoneditor-text {
+  min-height: 35px;
+}
+
 #loading-icon {
   position: absolute;
   left: 50%;
