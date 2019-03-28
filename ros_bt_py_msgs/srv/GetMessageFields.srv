@@ -1,0 +1,5 @@
+string message_type
+---
+string fields
+bool success
+string error_message

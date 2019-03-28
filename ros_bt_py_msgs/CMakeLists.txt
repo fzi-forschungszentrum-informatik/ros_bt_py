@@ -15,6 +15,7 @@ add_message_files(
      NodeDataLocation.msg
      NodeData.msg
      NodeDataWiring.msg
+     NodeOptionWiring.msg
      Node.msg
      RemoteSlotState.msg
      Tree.msg
@@ -32,6 +33,7 @@ add_service_files(
   EvaluateUtility.srv
   GetAvailableNodes.srv
   GetAvailableSubtrees.srv
+  GetMessageFields.srv
   GetSubtree.srv
   InsertNode.srv
   LoadTree.srv

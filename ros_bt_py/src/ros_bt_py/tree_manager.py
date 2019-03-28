@@ -24,7 +24,7 @@ from ros_bt_py_msgs.srv import SetOptionsResponse
 from ros_bt_py_msgs.srv import ModifyBreakpointsResponse
 from ros_bt_py_msgs.msg import Tree
 from ros_bt_py_msgs.msg import Node as NodeMsg
-from ros_bt_py_msgs.msg import NodeData
+from ros_bt_py_msgs.msg import NodeData, NodeOptionWiring
 
 from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, TreeTopologyError
 from ros_bt_py.node import Node, load_node_module, increment_name
@@ -1486,7 +1486,11 @@ class TreeManager(object):
                     name=class_name,
                     options=to_node_data(node_class._node_config.options),
                     inputs=to_node_data(node_class._node_config.inputs),
-                    outputs=to_node_data(node_class._node_config.outputs)
+                    outputs=to_node_data(node_class._node_config.outputs),
+                    option_wirings=[NodeOptionWiring(
+                           source=data['source'],
+                           target=data['target'])
+                               for data in node_class._node_config.option_wirings]
                     ))
 
         response.success = True
