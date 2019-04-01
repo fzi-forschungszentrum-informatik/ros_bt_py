@@ -281,15 +281,18 @@ class TreeManager(object):
     def clear(self, request):
         response = ClearTreeResponse()
         response.success = True
-        root = self.find_root()
-        if not root:
-            # No root, no problems
-            return response
-        if not (root.state == NodeMsg.UNINITIALIZED or root.state == NodeMsg.SHUTDOWN):
-            rospy.logerr('Please shut down the tree before clearing it')
-            response.success = False
-            response.error_message = 'Please shut down the tree before clearing it'
-            return response
+        try:
+            root = self.find_root()
+            if not root:
+                # No root, no problems
+                return response
+            if not (root.state == NodeMsg.UNINITIALIZED or root.state == NodeMsg.SHUTDOWN):
+                rospy.logerr('Please shut down the tree before clearing it')
+                response.success = False
+                response.error_message = 'Please shut down the tree before clearing it'
+                return response
+        except TreeTopologyError as e:
+            rospy.logwarn('Could not find root %s' % e)
 
         self.nodes = {}
         with self._state_lock:
