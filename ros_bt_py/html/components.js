@@ -1895,7 +1895,7 @@ class D3BehaviorTreeEditor extends Component
       })
       .attr("dy", d => Math.round(0.5 * d.gripperSize))
       .merge(labels);
-    labels.text(d => d.key);
+    labels.text(d => d.key + " (type: " + prettyprint_type(d.type) + ")");
   }
 
   IOGroupDefaultMouseoverHandler(d, index, group)
@@ -3556,7 +3556,7 @@ class EditableNode extends Component
       // Number input with integer increments
       return (
         <Fragment>
-          <h5>{paramItem.key}</h5>
+          <h5>{paramItem.key} <span className="text-muted">(type: {valueType})</span></h5>
           <span>{paramItem.value.value}</span>
         </Fragment>
       );
@@ -3565,7 +3565,7 @@ class EditableNode extends Component
     {
       return (
         <Fragment>
-          <h5>{paramItem.key}</h5>
+          <h5>{paramItem.key} <span className="text-muted">(type: {valueType})</span></h5>
           <pre>{paramItem.value.value}</pre>
         </Fragment>
       );
@@ -3574,7 +3574,7 @@ class EditableNode extends Component
     {
       return (
         <Fragment>
-          <h5>{paramItem.key}</h5>
+          <h5>{paramItem.key} <span className="text-muted">(type: {valueType})</span></h5>
           <pre>{paramItem.value.value ? 'True' : 'False'}</pre>
         </Fragment>
       );
@@ -3583,7 +3583,7 @@ class EditableNode extends Component
     {
       return (
         <Fragment>
-          <h5>{paramItem.key}</h5>
+          <h5>{paramItem.key} <span className="text-muted">(type: {valueType})</span></h5>
           <pre className="text-muted">{paramItem.value.value}</pre>
         </Fragment>
       );
@@ -3603,7 +3603,7 @@ class EditableNode extends Component
       console.log('item with non-basic type: ', paramItem);
       return (
         <Fragment>
-          <h5>{paramItem.key}</h5>
+          <h5>{paramItem.key} <span className="text-muted">(type: {valueType})</span></h5>
           <pre>{JSON.stringify(paramItem.value.value, null, 2)}</pre>
         </Fragment>
       );
