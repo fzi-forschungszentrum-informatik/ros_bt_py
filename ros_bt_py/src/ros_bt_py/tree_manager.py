@@ -1114,7 +1114,7 @@ class TreeManager(object):
             if parent is not None:
                 try:
                     parent.remove_child(new_node.name)
-                    parent.add_child(node)
+                    parent.add_child(node, at_index=old_child_index)
                 except (KeyError, BehaviorTreeException) as ex:
                     error_message += '\nError restoring old node: %s' % str(ex)
 
