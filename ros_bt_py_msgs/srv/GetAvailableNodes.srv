@@ -2,6 +2,6 @@
 # fall back to a list of packages provided by a ROS parameter.
 string[] node_modules
 ---
-Node[] available_nodes
+DocumentedNode[] available_nodes
 bool success
 string error_message

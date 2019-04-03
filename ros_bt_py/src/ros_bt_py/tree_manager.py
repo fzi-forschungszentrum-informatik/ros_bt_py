@@ -4,6 +4,7 @@ from threading import Thread, Lock, RLock
 import time
 import jsonpickle
 import yaml
+import inspect
 
 import genpy
 import rospy
@@ -24,6 +25,7 @@ from ros_bt_py_msgs.srv import SetOptionsResponse
 from ros_bt_py_msgs.srv import ModifyBreakpointsResponse
 from ros_bt_py_msgs.msg import Tree
 from ros_bt_py_msgs.msg import Node as NodeMsg
+from ros_bt_py_msgs.msg import DocumentedNode
 from ros_bt_py_msgs.msg import NodeData, NodeOptionWiring
 
 from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, TreeTopologyError
@@ -1482,7 +1484,10 @@ class TreeManager(object):
             for (class_name, node_class) in nodes.iteritems():
                 max_children = node_class._node_config.max_children
                 max_children = -1 if max_children is None else max_children
-                response.available_nodes.append(NodeMsg(
+                doc = inspect.getdoc(node_class)
+                if doc is None:
+                    doc = ""
+                response.available_nodes.append(DocumentedNode(
                     module=module,
                     node_class=class_name,
                     max_children=max_children,
@@ -1493,7 +1498,8 @@ class TreeManager(object):
                     option_wirings=[NodeOptionWiring(
                            source=data['source'],
                            target=data['target'])
-                               for data in node_class._node_config.option_wirings]
+                               for data in node_class._node_config.option_wirings],
+                    doc=str(doc)
                     ))
 
         response.success = True

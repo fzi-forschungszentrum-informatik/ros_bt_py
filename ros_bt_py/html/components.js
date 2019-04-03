@@ -163,6 +163,12 @@ function selectIOGripper(vertex_selection, data)
 
 
 class NodeListItem extends Component {
+  constructor(props)
+  {
+    super(props);
+    this.getShortDoc = this.getShortDoc.bind(this);
+  }
+
   renderIOTable(nodedata_list, title) {
     // If there are no items in the list, don't generate any DOM
     // elements.
@@ -194,11 +200,21 @@ class NodeListItem extends Component {
     this.props.onSelectionChange(this.props.node);
   }
 
+  getShortDoc() {
+    if (!this.props.node.doc || this.props.node.doc == null || this.props.node.doc.length == 0)
+    {
+      return "No documentation provided";
+    } else {
+      var index = this.props.node.doc.indexOf("**Behavior Tree I/O keys**");
+      return this.props.node.doc.substring(0, index).trim();
+    }
+  }
+
   render() {
     return (
       <div className="border rounded p-2 mb-2"
            onClick={this.onClick.bind(this)}>
-        <h4 className="node_class">{this.props.node.node_class}</h4>
+        <h4 className="node_class">{this.props.node.node_class} <i title={this.getShortDoc()} class="fas fa-question-circle"></i></h4>
         <h5 className="node_module text-muted">{this.props.node.module}</h5>
         <div>{
           'max_children: ' + (this.props.node.max_children >= 0 ? this.props.node.max_children : '∞')}</div>

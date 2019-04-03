@@ -16,6 +16,9 @@ class OptionRef(object):
     def __ne__(self, other):
         return not self == other
 
+    def __name__(self):
+        return 'OptionRef(option_key=%r)' % self.option_key
+
 
 class NodeConfig(object):
     def __init__(self, options, inputs, outputs, max_children, option_wirings=[]):
