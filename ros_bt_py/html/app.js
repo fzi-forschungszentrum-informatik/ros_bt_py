@@ -144,10 +144,20 @@ class App extends Component
     console.log("received list of messages");
     this.messages = [];
     for (var i = 0; i < msg.messages.length; i++) {
-      var components = msg.messages[i].split("/");
+      var components = msg.messages[i].msg.split("/");
       if (components.length == 2) {
-        var message = {msg:components[0] + ".msg._" + components[1] + "." + components[1]};
-        this.messages.push(message);
+        if (msg.messages[i].service)
+        {
+          this.messages.push({msg:components[0] + ".srv._" + components[1] + "." + components[1],
+                              service: true});
+          this.messages.push({msg:components[0] + ".srv._" + components[1] + "." + components[1] + "Request",
+                              service: true});
+          this.messages.push({msg:components[0] + ".srv._" + components[1] + "." + components[1] + "Response",
+                              service: true});
+        } else {
+          this.messages.push({msg:components[0] + ".msg._" + components[1] + "." + components[1],
+                              service: false});
+        }
       }
     }
     var options = {
@@ -158,7 +168,7 @@ class App extends Component
       maxPatternLength: 32,
       minMatchCharLength: 1,
       keys: [
-        "msg"      ]
+        "msg"]
     };
     this.messagesFuse = new Fuse(this.messages, options);
   }

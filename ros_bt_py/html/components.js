@@ -166,11 +166,17 @@ function getMessageType(str)
   var message_type = str;
   var msg_string = ".msg._";
   var first_index = message_type.indexOf(msg_string);
+  var service = false;
+  if (first_index == -1)
+  {
+    first_index = message_type.indexOf(".srv._");
+    service = true;
+  }
   var package_name = message_type.substr(0,first_index);
   var second_index = message_type.indexOf(".", first_index+msg_string.length);
   var message_name = message_type.substr(second_index+1);
   message_type = package_name+"/"+message_name;
-  return message_type;
+  return {message_type: message_type, service: service};
 }
 
 class NodeListItem extends Component {
@@ -3215,19 +3221,25 @@ class EditableNode extends Component
   constructor(props)
   {
     super(props);
-    this.state = {messages_results:[], results_at_key: null};
+    this.state = {messages_results:[], results_at_key: null, selected_message: null};
 
     this.onFocus = this.onFocus.bind(this);
 
     this.jsonRef = React.createRef();
 
     this.handleOptionWirings = this.handleOptionWirings.bind(this);
+    this.selectMessageResult = this.selectMessageResult.bind(this);
 
     this.get_message_fields_service = new ROSLIB.Service({
       ros: props.ros,
       name: props.bt_namespace + 'get_message_fields',
       serviceType: 'ros_bt_py_msgs/GetMessageFields'
     });
+  }
+
+  selectMessageResult(result)
+  {
+    this.setState({messages_results:[], selected_message: result});
   }
 
   renderSearchResults(results, key, onNewValue)
@@ -3237,7 +3249,7 @@ class EditableNode extends Component
       var result_rows = results.map(x => {
         return (
           <div className="list-group-item search-result"
-               onClick={ () => {this.setState({messages_results:[]}); onNewValue(x.msg);}}>
+               onClick={ () => { this.selectMessageResult(x); onNewValue(x.msg);}}>
             {x.msg}
           </div>
         );
@@ -3340,9 +3352,11 @@ class EditableNode extends Component
 
           if (referenced_option && referenced_option.length > 0)
           {
+            var message = getMessageType(new_value);
             this.get_message_fields_service.callService(
               new ROSLIB.ServiceRequest({
-                message_type: getMessageType(new_value)
+                message_type: message.message_type,
+                service: message.service
               }),
               function(response) {
                 if (response.success) {
@@ -3827,9 +3841,11 @@ class JSONInput extends Component
     this.setState({message_type:message_type});
     if (this.props.ros)
     {
+      var message = getMessageType(message_type);
       this.get_message_fields_service.callService(
         new ROSLIB.ServiceRequest({
-          message_type: getMessageType(message_type)
+          message_type: message.message_type,
+          service: message.service
         }),
         function(response) {
           if (response.success) {
@@ -3843,6 +3859,7 @@ class JSONInput extends Component
             });
             this.editor.update(new_value);
             console.log("updated message type and representation");
+            this.handleChange();
           }
         }.bind(this));
     }

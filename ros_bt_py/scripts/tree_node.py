@@ -1,13 +1,12 @@
 #! /usr/bin/env python2.7
 import os
 import jsonpickle
-import yaml
 
 import rospkg
 import rospy
 import roslib
 
-from ros_bt_py_msgs.msg import Messages
+from ros_bt_py_msgs.msg import Message, Messages
 
 from ros_bt_py_msgs.msg import Tree, DebugInfo, DebugSettings
 from ros_bt_py_msgs.srv import AddNode, ControlTreeExecution, ModifyBreakpoints, RemoveNode, \
@@ -128,7 +127,15 @@ class TreeNode(object):
             result = [x[:-len(".msg")] for x in resources]
             result.sort()
             for msg_type in result:
-                messages.append(package+"/"+msg_type)
+                messages.append(Message(msg=package+"/"+msg_type, service=False))
+            path = rospack.get_path(package) + "/srv"
+            resources = []
+            if os.path.isdir(path):
+                resources = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+            result = [x[:-len(".srv")] for x in resources]
+            result.sort()
+            for srv_type in result:
+                messages.append(Message(msg=package+"/"+srv_type, service=True))
 
         msg = Messages()
         msg.messages = messages
@@ -137,7 +144,11 @@ class TreeNode(object):
     def get_message_fields(self, request):
         response = GetMessageFieldsResponse()
         try:
-            message_class = roslib.message.get_message_class(request.message_type)
+            message_class = None
+            if request.service:
+                message_class = roslib.message.get_service_class(request.message_type)
+            else:
+                message_class = roslib.message.get_message_class(request.message_type)
             for field in str(message_class()).split("\n"):
                 response.field_names.append(field.split(":")[0])
             response.fields = jsonpickle.encode(message_class())

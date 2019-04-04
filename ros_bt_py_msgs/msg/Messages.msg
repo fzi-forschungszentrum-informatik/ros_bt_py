@@ -1,1 +1,1 @@
-string[] messages
+Message[] messages

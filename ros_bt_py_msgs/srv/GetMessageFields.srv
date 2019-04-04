@@ -1,4 +1,5 @@
 string message_type
+bool service
 ---
 string fields
 string[] field_names
