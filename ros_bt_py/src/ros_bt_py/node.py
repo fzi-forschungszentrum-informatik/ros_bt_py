@@ -823,20 +823,26 @@ class Node(object):
             node_instance = node_class(name=msg.name, options=options_dict)
         else:
             node_instance = node_class(options=options_dict)
-        # Set inputs
+        # Set inputs, ignore missing inputs (this can happen if a subtree changes between runs)
         try:
             for input_msg in msg.inputs:
-                node_instance.inputs[input_msg.key] = jsonpickle.decode(
-                    input_msg.serialized_value)
+                try:
+                    node_instance.inputs[input_msg.key] = jsonpickle.decode(
+                        input_msg.serialized_value)
+                except KeyError, e:
+                    rospy.logwarn("Could not set a non existing input %s", str(e))
         except ValueError, e:
             raise BehaviorTreeException('Failed to instantiate node from message: %s' %
                                         str(e))
 
-        # Set outputs
+        # Set outputs, ignore missing outputs (this can happen if a subtree changes between runs)
         try:
             for output_msg in msg.outputs:
-                node_instance.outputs[output_msg.key] = jsonpickle.decode(
-                    output_msg.serialized_value)
+                try:
+                    node_instance.outputs[output_msg.key] = jsonpickle.decode(
+                        output_msg.serialized_value)
+                except KeyError, e:
+                    rospy.logwarn("Could not set a non existing output %s", str(e))
         except ValueError, e:
             raise BehaviorTreeException('Failed to instantiate node from message: %s' %
                                         str(e))

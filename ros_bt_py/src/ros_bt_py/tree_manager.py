@@ -424,11 +424,18 @@ class TreeManager(object):
                 return response
 
         # All nodes are added, now do the wiring
-        wire_response = self.wire_data(WireNodeDataRequest(wirings=tree.data_wirings))
+        wire_response = self.wire_data(WireNodeDataRequest(wirings=tree.data_wirings, ignore_failure=True))
         if not get_success(wire_response):
             response.success = False
             response.error_message = get_error_message(wire_response)
             return response
+
+        updated_wirings = []
+        for wiring in tree.data_wirings:
+            if wiring in self.tree_msg.data_wirings:
+                updated_wirings.append(wiring)
+
+        tree.data_wirings = updated_wirings
 
         self.tree_msg = tree
         if self.tree_msg.tick_frequency_hz == 0.0:
@@ -1359,9 +1366,10 @@ class TreeManager(object):
                 target_node.wire_data(wiring)
                 successful_wirings.append(wiring)
             except (KeyError, BehaviorTreeException) as ex:
-                response.success = False
-                response.error_message = 'Failed to execute wiring "%s": %s' % (wiring, str(ex))
-                break
+                if not request.ignore_failure:
+                    response.success = False
+                    response.error_message = 'Failed to execute wiring "%s": %s' % (wiring, str(ex))
+                    break
 
         if not response.success:
             # Undo the successful wirings
@@ -1384,7 +1392,7 @@ class TreeManager(object):
         if response.success:
             # We made it here, so all the Wirings should be valid. Time to save
             # them.
-            self.tree_msg.data_wirings.extend(request.wirings)
+            self.tree_msg.data_wirings.extend(successful_wirings)
 
             self.publish_info(self.debug_manager.get_debug_info_msg())
         return response
