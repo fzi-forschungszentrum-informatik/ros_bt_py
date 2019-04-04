@@ -2629,7 +2629,7 @@ class NewNode extends Component
           console.log('Added node to tree as ' + response.actual_node_name);
         }
         else {
-          console.log('Failed to add node ' + this.state.name + ': '
+          this.props.onError('Failed to add node ' + this.state.name + ': '
                       + response.error_message);
         }
       }.bind(this));
@@ -2987,7 +2987,7 @@ class SelectedNode extends Component
             this.updateNode();
           }
           else {
-            console.log('Failed to morph node ' + this.state.name + ': '
+            this.props.onError('Failed to morph node ' + this.state.name + ': '
                         + response.error_message);
           }
         }.bind(this));

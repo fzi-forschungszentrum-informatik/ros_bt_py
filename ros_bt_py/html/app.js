@@ -528,6 +528,7 @@ class App extends Component
           node={this.state.selected_node}
           parents={this.findPossibleParents()}
           messagesFuse={this.messagesFuse}
+          onError={this.onError}
           onNodeChanged={this.onNodeChanged}
           changeCopyMode={this.changeCopyMode}
         />);
