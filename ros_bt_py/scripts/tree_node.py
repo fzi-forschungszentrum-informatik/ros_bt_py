@@ -6,6 +6,8 @@ import rospkg
 import rospy
 import roslib
 
+from catkin.find_in_workspaces import find_in_workspaces
+
 from ros_bt_py_msgs.msg import Message, Messages
 
 from ros_bt_py_msgs.msg import Tree, DebugInfo, DebugSettings
@@ -113,6 +115,21 @@ class TreeNode(object):
         self.message_list_pub = rospy.Publisher('~messages', Messages, latch=True, queue_size=1)
         self.publish_message_list()
 
+    def _get_package_paths(self, pkgname, rospack):
+        _catkin_workspace_to_source_spaces = {}
+        _catkin_source_path_to_packages = {}
+        paths = []
+        path = rospack.get_path(pkgname)
+        paths.append(path)
+        results = find_in_workspaces(search_dirs=['share'],
+                                     project=pkgname,
+                                     first_match_only=True,
+                                     workspace_to_source_spaces=_catkin_workspace_to_source_spaces,
+                                     source_path_to_packages=_catkin_source_path_to_packages)
+        if results and results[0] != path:
+            paths.append(results[0])
+        return paths
+
     def publish_message_list(self):
         rospack = rospkg.RosPack()
 
@@ -120,22 +137,25 @@ class TreeNode(object):
         packages = rospack.list()
 
         for package in packages:
-            path = rospack.get_path(package) + "/msg"
-            resources = []
-            if os.path.isdir(path):
-                resources = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-            result = [x[:-len(".msg")] for x in resources]
-            result.sort()
-            for msg_type in result:
-                messages.append(Message(msg=package+"/"+msg_type, service=False))
-            path = rospack.get_path(package) + "/srv"
-            resources = []
-            if os.path.isdir(path):
-                resources = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-            result = [x[:-len(".srv")] for x in resources]
-            result.sort()
-            for srv_type in result:
-                messages.append(Message(msg=package+"/"+srv_type, service=True))
+            for package_path in self._get_package_paths(package, rospack):
+                # path = rospack.get_path(package) + "/msg"
+                path = package_path + "/msg"
+                resources = []
+                if os.path.isdir(path):
+                    resources = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+                result = [x[:-len(".msg")] for x in resources]
+                result.sort()
+                for msg_type in result:
+                    messages.append(Message(msg=package+"/"+msg_type, service=False))
+                # path = rospack.get_path(package) + "/srv"
+                path = package_path + "/srv"
+                resources = []
+                if os.path.isdir(path):
+                    resources = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+                result = [x[:-len(".srv")] for x in resources]
+                result.sort()
+                for srv_type in result:
+                    messages.append(Message(msg=package+"/"+srv_type, service=True))
 
         msg = Messages()
         msg.messages = messages
