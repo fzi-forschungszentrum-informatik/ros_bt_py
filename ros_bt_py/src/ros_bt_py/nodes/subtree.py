@@ -1,6 +1,3 @@
-import jsonpickle
-from threading import Lock
-
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import UtilityBounds, Tree, NodeDataLocation
 from ros_bt_py_msgs.srv import LoadTreeRequest
@@ -12,11 +9,13 @@ from ros_bt_py.node_config import NodeConfig
 
 
 @define_bt_node(NodeConfig(
-    options={'subtree_path': str},
+    options={'subtree_path': str,
+             'use_io_nodes': bool},
     inputs={},
     outputs={'load_success': bool,
              'load_error_msg': str},
-    max_children=0))
+    max_children=0,
+    optional_options=['use_io_nodes']))
 class Subtree(Leaf):
     """Loads a subtree from the location pointed to by `subtree_uri`
 
@@ -57,7 +56,26 @@ class Subtree(Leaf):
         # include the public inputs and outputs
         subtree_inputs = {}
         subtree_outputs = {}
-        for node_data in self.manager.to_msg().public_node_data:
+
+        # If io nodes are used restrict the subtrees inputs and outputs to io nodes
+        io_inputs = []
+        io_outputs = []
+        subtree_msg = self.manager.to_msg()
+        if options.get('use_io_nodes'):
+            for node in subtree_msg.nodes:
+                if node.module == "ros_bt_py.nodes.io":
+                    if (node.node_class == "IOInput" or node.node_class == "IOInputOption"):
+                        io_inputs.append(node.name)
+                    elif (node.node_class == "IOOutput" or node.node_class == "IOOutputOption"):
+                        io_outputs.append(node.name)
+            modified_public_node_data = []
+            for node_data in subtree_msg.public_node_data:
+                if (node_data.data_kind == "inputs" and node_data.node_name in io_inputs):
+                    modified_public_node_data.append(node_data)
+                elif (node_data.data_kind == "outputs" and node_data.node_name in io_outputs):
+                    modified_public_node_data.append(node_data)
+            subtree_msg.public_node_data = modified_public_node_data
+        for node_data in subtree_msg.public_node_data:
             # Remove the prefix from the node name to make for nicer
             # input/output names (and also not break wirings)
             node_name = node_data.node_name
@@ -65,11 +83,17 @@ class Subtree(Leaf):
                 node_name = node_name[len(self.prefix):]
 
             if node_data.data_kind == NodeDataLocation.INPUT_DATA:
-                subtree_inputs['%s.%s' % (node_name, node_data.data_key)] = \
-                    self.manager.nodes[node_data.node_name].inputs.get_type(node_data.data_key)
+                if options.get('use_io_nodes') and node_data.node_name not in io_inputs:
+                    pass
+                else:
+                    subtree_inputs['%s.%s' % (node_name, node_data.data_key)] = \
+                        self.manager.nodes[node_data.node_name].inputs.get_type(node_data.data_key)
             elif node_data.data_kind == NodeDataLocation.OUTPUT_DATA:
-                subtree_outputs['%s.%s' % (node_name, node_data.data_key)] = \
-                    self.manager.nodes[node_data.node_name].outputs.get_type(node_data.data_key)
+                if options.get('use_io_nodes') and node_data.node_name not in io_outputs:
+                    pass
+                else:
+                    subtree_outputs['%s.%s' % (node_name, node_data.data_key)] = \
+                        self.manager.nodes[node_data.node_name].outputs.get_type(node_data.data_key)
             elif node_data.data_kind == NodeDataLocation.OPTION_DATA:
                 raise BehaviorTreeException('Option values cannot be public!')
 
@@ -96,15 +120,21 @@ class Subtree(Leaf):
                 node_name = node_name[len(self.prefix):]
 
             if node_data.data_kind == NodeDataLocation.INPUT_DATA:
-                self.inputs.subscribe(
-                    key='%s.%s' % (node_name, node_data.data_key),
-                    callback=self.manager.nodes[node_data.node_name].inputs.get_callback(
-                        node_data.data_key))
+                if options.get('use_io_nodes') and node_data.node_name not in io_inputs:
+                    self.logwarn("removed an unconnected input (%s) from the subtree" % node_name)
+                else:
+                    self.inputs.subscribe(
+                        key='%s.%s' % (node_name, node_data.data_key),
+                        callback=self.manager.nodes[node_data.node_name].inputs.get_callback(
+                            node_data.data_key))
             elif node_data.data_kind == NodeDataLocation.OUTPUT_DATA:
-                self.manager.nodes[node_data.node_name].outputs.subscribe(
-                    key=node_data.data_key,
-                    callback=self.outputs.get_callback(
-                        '%s.%s' % (node_name, node_data.data_key)))
+                if options.get('use_io_nodes') and node_data.node_name not in io_outputs:
+                    pass
+                else:
+                    self.manager.nodes[node_data.node_name].outputs.subscribe(
+                        key=node_data.data_key,
+                        callback=self.outputs.get_callback(
+                            '%s.%s' % (node_name, node_data.data_key)))
 
     def _do_setup(self):
         self.root = self.manager.find_root()

@@ -11,7 +11,8 @@ from ros_bt_py.nodes.subtree import Subtree
 class TestSubtree(unittest.TestCase):
     def setUp(self):
         self.subtree_options = {
-            'subtree_path': 'package://ros_bt_py/etc/trees/test.yaml'
+            'subtree_path': 'package://ros_bt_py/etc/trees/test.yaml',
+            'use_io_nodes': False
             }
 
     def testSubtreeLoad(self):

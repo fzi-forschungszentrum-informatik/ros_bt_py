@@ -1329,3 +1329,17 @@ class FlowControl(Node):
     of rules for when to tick which of their children.
     """
     pass
+
+
+@define_bt_node(NodeConfig(
+    options={},
+    inputs={},
+    outputs={},
+    max_children=0))
+class IO(Node):
+    """Base class for IO nodes in the tree.
+
+    IO nodes have no children. Subclasses can define inputs, outputs
+    and options, but never change `max_children`.
+    """
+    pass
