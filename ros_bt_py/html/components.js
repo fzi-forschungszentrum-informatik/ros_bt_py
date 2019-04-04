@@ -161,6 +161,17 @@ function selectIOGripper(vertex_selection, data)
     .filter(d => d.key === data.data_key);
 }
 
+function getMessageType(str)
+{
+  var message_type = str;
+  var msg_string = ".msg._";
+  var first_index = message_type.indexOf(msg_string);
+  var package_name = message_type.substr(0,first_index);
+  var second_index = message_type.indexOf(".", first_index+msg_string.length);
+  var message_name = message_type.substr(second_index+1);
+  message_type = package_name+"/"+message_name;
+  return message_type;
+}
 
 class NodeListItem extends Component {
   constructor(props)
@@ -3329,19 +3340,9 @@ class EditableNode extends Component
 
           if (referenced_option && referenced_option.length > 0)
           {
-            var message_type = new_value;
-            var msg_string = ".msg._";
-            var first_index = message_type.indexOf(msg_string);
-            var package_name = message_type.substr(0,first_index);
-            var second_index = message_type.indexOf(".", first_index+msg_string.length);
-
-            var message_name = message_type.substr(second_index+1);
-
-            message_type = package_name+"/"+message_name;
-
             this.get_message_fields_service.callService(
               new ROSLIB.ServiceRequest({
-                message_type: message_type
+                message_type: getMessageType(new_value)
               }),
               function(response) {
                 if (response.success) {
@@ -3539,6 +3540,10 @@ class EditableNode extends Component
         <div className="form-group">
           <label className="d-block">{paramItem.key}
             <JSONInput json={paramItem.value.value}
+                       message_type={paramItem.value.type}
+                       ros={this.props.ros}
+                       bt_namespace={this.props.bt_namespace}
+                       output="dict"
                        onValidityChange={onValidityChange}
                        onFocus={this.onFocus}
                        onNewValue={onNewValue}/>
@@ -3552,6 +3557,10 @@ class EditableNode extends Component
         <div className="form-group">
           <label className="d-block">{paramItem.key}
             <JSONInput json={paramItem.value.value}
+                       message_type={paramItem.value.type}
+                       ros={this.props.ros}
+                       bt_namespace={this.props.bt_namespace}
+                       output="pickled"
                        onValidityChange={onValidityChange}
                        onFocus={this.onFocus}
                        onNewValue={onNewValue}/>
@@ -3781,10 +3790,20 @@ class JSONInput extends Component
     this.state = {
       is_valid: is_valid,
       json: props.json,
+      message_type: props.message_type,
+      field_names: []
     };
 
     this.editor = null;
     this.editorRef = null;
+
+    this.get_message_fields_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.bt_namespace + 'get_message_fields',
+      serviceType: 'ros_bt_py_msgs/GetMessageFields'
+    });
+
+    this.updateMessageType = this.updateMessageType.bind(this);
   }
 
   componentDidMount()
@@ -3796,6 +3815,37 @@ class JSONInput extends Component
     this.editor.set(this.state.json);
     this.editor.aceEditor.setOptions({maxLines: 100});
     this.editor.aceEditor.resize();
+
+    if (this.state.message_type != null)
+    {
+      this.updateMessageType(this.state.message_type, this.state.json);
+    }
+  }
+
+  updateMessageType(message_type, json)
+  {
+    this.setState({message_type:message_type});
+    if (this.props.ros)
+    {
+      this.get_message_fields_service.callService(
+        new ROSLIB.ServiceRequest({
+          message_type: getMessageType(message_type)
+        }),
+        function(response) {
+          if (response.success) {
+            var new_value = {};
+            for (var i = 0; i < response.field_names.length; i++) {
+              new_value[response.field_names[i]] = json["py/state"][i];
+            }
+            this.setState({
+              json : new_value,
+              field_names: response.field_names
+            });
+            this.editor.update(new_value);
+            console.log("updated message type and representation");
+          }
+        }.bind(this));
+    }
   }
 
   componentWillUnmount() {
@@ -3804,10 +3854,22 @@ class JSONInput extends Component
 
   componentDidUpdate(prevProps, prevState) {
     if (JSON.stringify(this.props.json) != JSON.stringify(prevProps.json)) {
-      this.editor.update(this.props.json);
-      this.setState({
-        json : this.props.json,
-      });
+      if (this.props.json && this.props.json.hasOwnProperty("py/state"))
+      {
+        if (this.props.json.hasOwnProperty("py/object") && this.props.json["py/object"] != this.state.message_type)
+        {
+          this.updateMessageType(this.props.json["py/object"], this.props.json);
+        } else {
+          var new_value = {};
+          for (var i = 0; i < this.state.field_names.length; i++) {
+            new_value[this.state.field_names[i]] = this.props.json["py/state"][i];
+          }
+          this.editor.update(new_value);
+          this.setState({
+            json : new_value,
+          });
+        }
+      }
     }
   }
 
@@ -3818,7 +3880,17 @@ class JSONInput extends Component
         json : JSON.stringify(json),
         is_valid: true,
       });
-      this.props.onNewValue(json);
+      if (this.props.output == "pickled")
+      {
+        var reconstructed = {"py/object":this.props.message_type,"py/state":[]};
+        for (var prop in json) {
+          reconstructed["py/state"].push(json[prop]);
+        }
+        this.props.onNewValue(reconstructed);
+      } else {
+        this.props.onNewValue(json);
+      }
+      
       this.props.onValidityChange(true);
     } catch (e) {
       this.setState({is_valid: false});

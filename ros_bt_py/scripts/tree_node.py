@@ -138,8 +138,9 @@ class TreeNode(object):
         response = GetMessageFieldsResponse()
         try:
             message_class = roslib.message.get_message_class(request.message_type)
-            message_yaml = yaml.load(str(message_class()))
-            response.fields = jsonpickle.encode(message_yaml)
+            for field in str(message_class()).split("\n"):
+                response.field_names.append(field.split(":")[0])
+            response.fields = jsonpickle.encode(message_class())
             response.success = True
         except Exception as e:
             response.success = False
