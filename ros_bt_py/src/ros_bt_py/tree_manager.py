@@ -973,7 +973,7 @@ class TreeManager(object):
 
         node = self.nodes[request.node_name]
         unknown_options = []
-        incompatible_options = []
+        preliminary_incompatible_options = []
         try:
             deserialized_options = dict((option.key, jsonpickle.decode(option.serialized_value))
                                         for option in request.options)
@@ -991,11 +991,40 @@ class TreeManager(object):
 
             required_type = node.options.get_type(key)
             if not node.options.compatible(key, value):
-                incompatible_options.append((key, required_type.__name__))
+                preliminary_incompatible_options.append((key, required_type.__name__))
 
         error_strings = []
         if unknown_options:
             error_strings.append('Unknown option keys: %s' % str(unknown_options))
+
+        incompatible_options = []
+        if preliminary_incompatible_options:
+            # traditionally we would fail here, but re-check if the type of an option with a known option-wiring changed
+            # this could mean that the previously incompatible option is actually compatible with the new type!
+            for key, required_type_name in preliminary_incompatible_options:
+                incompatible = True
+                for option_wiring in node.node_config.option_wirings:
+                    if key == option_wiring['target']:
+                        other_type = deserialized_options[option_wiring['source']]
+                        our_type = type(deserialized_options[option_wiring['target']])
+                        if other_type == our_type:
+                            incompatible = False
+                        elif inspect.isclass(other_type) and genpy.message.Message in other_type.__mro__:
+                            try:
+                                genpy.message.fill_message_args(
+                                    other_type(), [deserialized_options[option_wiring['target']]], keys={})
+                                incompatible = False
+                            except genpy.message.MessageException as e:
+                                raise TypeError('ROSMessageException %s' % e)
+                        else:
+                            # check if the types are str or unicode and treat them the same
+                            if isinstance(deserialized_options[option_wiring['target']], str) and other_type == unicode:
+                                incompatible = False
+                            if isinstance(deserialized_options[option_wiring['target']], unicode) and other_type == str:
+                                incompatible = False
+                if incompatible:
+                    incompatible_options.append((key, required_type_name))
+
         if incompatible_options:
             error_strings.append('Incompatible option keys:\n' + '\n'.join(
                 ['Key %s has type %s, should be %s' % (
