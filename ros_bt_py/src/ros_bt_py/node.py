@@ -221,12 +221,19 @@ class Node(object):
                                  target_map=self.options,
                                  values=options)
 
-        # Warn about unset options
+        # Warn about unset options, ignore missing optional_options
         unset_option_keys = [key for key in self.options
                              if options is None or key not in options]
         if unset_option_keys:
-            raise ValueError('Missing options: %s'
-                             % str(unset_option_keys))
+            optional_keys = []
+            for key in unset_option_keys:
+                if key in self.node_config.optional_options:
+                    optional_keys.append(key)
+            if unset_option_keys == optional_keys:
+                rospy.logwarn("missing optional keys: %s", optional_keys)
+            else:
+                raise ValueError('Missing options: %s'
+                                 % str(unset_option_keys))
 
         # Warn about extra options
         if options is not None:
