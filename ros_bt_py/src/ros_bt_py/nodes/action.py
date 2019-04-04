@@ -22,14 +22,16 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
              'result_type': type,
              'action_name': str,
              'wait_for_action_server_seconds': float,
-             'timeout_seconds': float},
+             'timeout_seconds': float,
+             'fail_if_not_available': bool},
     inputs={
         'goal': OptionRef('goal_type')},
     outputs={
         'feedback': OptionRef('feedback_type'),
         'goal_status': int,
         'result': OptionRef('result_type')},
-    max_children=0))
+    max_children=0,
+    optional_options=['fail_if_not_available']))
 class Action(Leaf):
     """Connects to a ROS action and sends the supplied goal.
 
@@ -46,15 +48,19 @@ class Action(Leaf):
         self._lock = Lock()
         self._feedback = None
         self._active_goal = None
+        self._action_available = True
 
         self._ac = SimpleActionClient(self.options['action_name'],
                                       self.options['action_type'])
         if not self._ac.wait_for_server(rospy.Duration.from_sec(
                 self.options['wait_for_action_server_seconds'])):
-            raise BehaviorTreeException(
-                'Action server %s not available after waiting %f seconds!' % (
-                    self.options['action_name'],
-                    self.options['wait_for_action_server_seconds']))
+            if 'fail_if_not_available' in self.options and self.options['fail_if_not_available']:
+                self._action_available = False
+            else:
+                raise BehaviorTreeException(
+                    'Action server %s not available after waiting %f seconds!' % (
+                        self.options['action_name'],
+                        self.options['wait_for_action_server_seconds']))
 
         self._last_goal_time = None
         self.outputs['feedback'] = None
@@ -69,6 +75,8 @@ class Action(Leaf):
             self._feedback = feedback
 
     def _do_tick(self):
+        if not self._action_available:
+            return NodeMsg.FAILED
         if self._active_goal is not None and self.inputs['goal'] != self._active_goal:
             # Goal message has changed since last tick, abort old goal
             # and return RUNNING
