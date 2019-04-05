@@ -4,6 +4,7 @@ from threading import Thread, Lock, RLock
 import time
 import jsonpickle
 import yaml
+import inspect
 
 import genpy
 import rospy
@@ -24,6 +25,7 @@ from ros_bt_py_msgs.srv import SetOptionsResponse
 from ros_bt_py_msgs.srv import ModifyBreakpointsResponse
 from ros_bt_py_msgs.msg import Tree
 from ros_bt_py_msgs.msg import Node as NodeMsg
+from ros_bt_py_msgs.msg import DocumentedNode
 from ros_bt_py_msgs.msg import NodeData, NodeOptionWiring
 
 from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, TreeTopologyError
@@ -281,15 +283,18 @@ class TreeManager(object):
     def clear(self, request):
         response = ClearTreeResponse()
         response.success = True
-        root = self.find_root()
-        if not root:
-            # No root, no problems
-            return response
-        if not (root.state == NodeMsg.UNINITIALIZED or root.state == NodeMsg.SHUTDOWN):
-            rospy.logerr('Please shut down the tree before clearing it')
-            response.success = False
-            response.error_message = 'Please shut down the tree before clearing it'
-            return response
+        try:
+            root = self.find_root()
+            if not root:
+                # No root, no problems
+                return response
+            if not (root.state == NodeMsg.UNINITIALIZED or root.state == NodeMsg.SHUTDOWN):
+                rospy.logerr('Please shut down the tree before clearing it')
+                response.success = False
+                response.error_message = 'Please shut down the tree before clearing it'
+                return response
+        except TreeTopologyError as e:
+            rospy.logwarn('Could not find root %s' % e)
 
         self.nodes = {}
         with self._state_lock:
@@ -419,11 +424,18 @@ class TreeManager(object):
                 return response
 
         # All nodes are added, now do the wiring
-        wire_response = self.wire_data(WireNodeDataRequest(wirings=tree.data_wirings))
+        wire_response = self.wire_data(WireNodeDataRequest(wirings=tree.data_wirings, ignore_failure=True))
         if not get_success(wire_response):
             response.success = False
             response.error_message = get_error_message(wire_response)
             return response
+
+        updated_wirings = []
+        for wiring in tree.data_wirings:
+            if wiring in self.tree_msg.data_wirings:
+                updated_wirings.append(wiring)
+
+        tree.data_wirings = updated_wirings
 
         self.tree_msg = tree
         if self.tree_msg.tick_frequency_hz == 0.0:
@@ -961,7 +973,7 @@ class TreeManager(object):
 
         node = self.nodes[request.node_name]
         unknown_options = []
-        incompatible_options = []
+        preliminary_incompatible_options = []
         try:
             deserialized_options = dict((option.key, jsonpickle.decode(option.serialized_value))
                                         for option in request.options)
@@ -979,11 +991,40 @@ class TreeManager(object):
 
             required_type = node.options.get_type(key)
             if not node.options.compatible(key, value):
-                incompatible_options.append((key, required_type.__name__))
+                preliminary_incompatible_options.append((key, required_type.__name__))
 
         error_strings = []
         if unknown_options:
             error_strings.append('Unknown option keys: %s' % str(unknown_options))
+
+        incompatible_options = []
+        if preliminary_incompatible_options:
+            # traditionally we would fail here, but re-check if the type of an option with a known option-wiring changed
+            # this could mean that the previously incompatible option is actually compatible with the new type!
+            for key, required_type_name in preliminary_incompatible_options:
+                incompatible = True
+                for option_wiring in node.node_config.option_wirings:
+                    if key == option_wiring['target']:
+                        other_type = deserialized_options[option_wiring['source']]
+                        our_type = type(deserialized_options[option_wiring['target']])
+                        if other_type == our_type:
+                            incompatible = False
+                        elif inspect.isclass(other_type) and genpy.message.Message in other_type.__mro__:
+                            try:
+                                genpy.message.fill_message_args(
+                                    other_type(), [deserialized_options[option_wiring['target']]], keys={})
+                                incompatible = False
+                            except genpy.message.MessageException as e:
+                                raise TypeError('ROSMessageException %s' % e)
+                        else:
+                            # check if the types are str or unicode and treat them the same
+                            if isinstance(deserialized_options[option_wiring['target']], str) and other_type == unicode:
+                                incompatible = False
+                            if isinstance(deserialized_options[option_wiring['target']], unicode) and other_type == str:
+                                incompatible = False
+                if incompatible:
+                    incompatible_options.append((key, required_type_name))
+
         if incompatible_options:
             error_strings.append('Incompatible option keys:\n' + '\n'.join(
                 ['Key %s has type %s, should be %s' % (
@@ -1109,7 +1150,7 @@ class TreeManager(object):
             if parent is not None:
                 try:
                     parent.remove_child(new_node.name)
-                    parent.add_child(node)
+                    parent.add_child(node, at_index=old_child_index)
                 except (KeyError, BehaviorTreeException) as ex:
                     error_message += '\nError restoring old node: %s' % str(ex)
 
@@ -1354,9 +1395,10 @@ class TreeManager(object):
                 target_node.wire_data(wiring)
                 successful_wirings.append(wiring)
             except (KeyError, BehaviorTreeException) as ex:
-                response.success = False
-                response.error_message = 'Failed to execute wiring "%s": %s' % (wiring, str(ex))
-                break
+                if not request.ignore_failure:
+                    response.success = False
+                    response.error_message = 'Failed to execute wiring "%s": %s' % (wiring, str(ex))
+                    break
 
         if not response.success:
             # Undo the successful wirings
@@ -1379,7 +1421,7 @@ class TreeManager(object):
         if response.success:
             # We made it here, so all the Wirings should be valid. Time to save
             # them.
-            self.tree_msg.data_wirings.extend(request.wirings)
+            self.tree_msg.data_wirings.extend(successful_wirings)
 
             self.publish_info(self.debug_manager.get_debug_info_msg())
         return response
@@ -1479,7 +1521,10 @@ class TreeManager(object):
             for (class_name, node_class) in nodes.iteritems():
                 max_children = node_class._node_config.max_children
                 max_children = -1 if max_children is None else max_children
-                response.available_nodes.append(NodeMsg(
+                doc = inspect.getdoc(node_class)
+                if doc is None:
+                    doc = ""
+                response.available_nodes.append(DocumentedNode(
                     module=module,
                     node_class=class_name,
                     max_children=max_children,
@@ -1490,7 +1535,8 @@ class TreeManager(object):
                     option_wirings=[NodeOptionWiring(
                            source=data['source'],
                            target=data['target'])
-                               for data in node_class._node_config.option_wirings]
+                               for data in node_class._node_config.option_wirings],
+                    doc=str(doc)
                     ))
 
         response.success = True

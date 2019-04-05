@@ -221,12 +221,19 @@ class Node(object):
                                  target_map=self.options,
                                  values=options)
 
-        # Warn about unset options
+        # Warn about unset options, ignore missing optional_options
         unset_option_keys = [key for key in self.options
                              if options is None or key not in options]
         if unset_option_keys:
-            raise ValueError('Missing options: %s'
-                             % str(unset_option_keys))
+            optional_keys = []
+            for key in unset_option_keys:
+                if key in self.node_config.optional_options:
+                    optional_keys.append(key)
+            if unset_option_keys == optional_keys:
+                rospy.logwarn("missing optional keys: %s", optional_keys)
+            else:
+                raise ValueError('Missing options: %s'
+                                 % str(unset_option_keys))
 
         # Warn about extra options
         if options is not None:
@@ -299,8 +306,8 @@ class Node(object):
             if not self.inputs.is_updated(input_name):
                 self.logwarn('Running tick() with stale data!')
             if self.inputs[input_name] is None:
-                raise ValueError('Trying to tick a node with an unset input (%s)!' %
-                                 input_name)
+                raise ValueError('Trying to tick a node (%s) with an unset input (%s)!' %
+                                 (self.name, input_name))
         self.inputs.handle_subscriptions()
 
     def _handle_outputs(self):
@@ -336,9 +343,14 @@ class Node(object):
                 if not self.options.is_updated(option_name):
                     unset_options.append(option_name)
             if unset_options:
-                msg = 'Trying to tick node with unset options: %s' % str(unset_options)
-                self.logerr(msg)
-                raise BehaviorTreeException(msg)
+                optional_options = []
+                for option in unset_options:
+                    if option in self.node_config.optional_options:
+                        optional_options.append(option)
+                if unset_options != optional_options:
+                    msg = 'Trying to tick node with unset options: %s' % str(unset_options)
+                    self.logerr(msg)
+                    raise BehaviorTreeException(msg)
             self.options.handle_subscriptions()
 
             # Outputs are updated in the tick. To catch that, we need to reset here.
@@ -816,20 +828,26 @@ class Node(object):
             node_instance = node_class(name=msg.name, options=options_dict)
         else:
             node_instance = node_class(options=options_dict)
-        # Set inputs
+        # Set inputs, ignore missing inputs (this can happen if a subtree changes between runs)
         try:
             for input_msg in msg.inputs:
-                node_instance.inputs[input_msg.key] = jsonpickle.decode(
-                    input_msg.serialized_value)
+                try:
+                    node_instance.inputs[input_msg.key] = jsonpickle.decode(
+                        input_msg.serialized_value)
+                except KeyError, e:
+                    rospy.logwarn("Could not set a non existing input %s", str(e))
         except ValueError, e:
             raise BehaviorTreeException('Failed to instantiate node from message: %s' %
                                         str(e))
 
-        # Set outputs
+        # Set outputs, ignore missing outputs (this can happen if a subtree changes between runs)
         try:
             for output_msg in msg.outputs:
-                node_instance.outputs[output_msg.key] = jsonpickle.decode(
-                    output_msg.serialized_value)
+                try:
+                    node_instance.outputs[output_msg.key] = jsonpickle.decode(
+                        output_msg.serialized_value)
+                except KeyError, e:
+                    rospy.logwarn("Could not set a non existing output %s", str(e))
         except ValueError, e:
             raise BehaviorTreeException('Failed to instantiate node from message: %s' %
                                         str(e))
@@ -1314,5 +1332,19 @@ class FlowControl(Node):
     Flow control nodes (mostly Sequence, Fallback and their derivatives)
     can have an unlimited number of children and each have a unique set
     of rules for when to tick which of their children.
+    """
+    pass
+
+
+@define_bt_node(NodeConfig(
+    options={},
+    inputs={},
+    outputs={},
+    max_children=0))
+class IO(Node):
+    """Base class for IO nodes in the tree.
+
+    IO nodes have no children. Subclasses can define inputs, outputs
+    and options, but never change `max_children`.
     """
     pass

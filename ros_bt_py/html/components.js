@@ -161,8 +161,31 @@ function selectIOGripper(vertex_selection, data)
     .filter(d => d.key === data.data_key);
 }
 
+function getMessageType(str)
+{
+  var message_type = str;
+  var msg_string = ".msg._";
+  var first_index = message_type.indexOf(msg_string);
+  var service = false;
+  if (first_index == -1)
+  {
+    first_index = message_type.indexOf(".srv._");
+    service = true;
+  }
+  var package_name = message_type.substr(0,first_index);
+  var second_index = message_type.indexOf(".", first_index+msg_string.length);
+  var message_name = message_type.substr(second_index+1);
+  message_type = package_name+"/"+message_name;
+  return {message_type: message_type, service: service};
+}
 
 class NodeListItem extends Component {
+  constructor(props)
+  {
+    super(props);
+    this.getShortDoc = this.getShortDoc.bind(this);
+  }
+
   renderIOTable(nodedata_list, title) {
     // If there are no items in the list, don't generate any DOM
     // elements.
@@ -194,11 +217,21 @@ class NodeListItem extends Component {
     this.props.onSelectionChange(this.props.node);
   }
 
+  getShortDoc() {
+    if (!this.props.node.doc || this.props.node.doc == null || this.props.node.doc.length == 0)
+    {
+      return "No documentation provided";
+    } else {
+      var index = this.props.node.doc.indexOf("**Behavior Tree I/O keys**");
+      return this.props.node.doc.substring(0, index).trim();
+    }
+  }
+
   render() {
     return (
       <div className="border rounded p-2 mb-2"
            onClick={this.onClick.bind(this)}>
-        <h4 className="node_class">{this.props.node.node_class}</h4>
+        <h4 className="node_class">{this.props.node.node_class} <i title={this.getShortDoc()} class="fas fa-question-circle"></i></h4>
         <h5 className="node_module text-muted">{this.props.node.module}</h5>
         <div>{
           'max_children: ' + (this.props.node.max_children >= 0 ? this.props.node.max_children : '∞')}</div>
@@ -1895,7 +1928,7 @@ class D3BehaviorTreeEditor extends Component
       })
       .attr("dy", d => Math.round(0.5 * d.gripperSize))
       .merge(labels);
-    labels.text(d => d.key);
+    labels.text(d => d.key + " (type: " + prettyprint_type(d.type) + ")");
   }
 
   IOGroupDefaultMouseoverHandler(d, index, group)
@@ -2613,7 +2646,7 @@ class NewNode extends Component
           console.log('Added node to tree as ' + response.actual_node_name);
         }
         else {
-          console.log('Failed to add node ' + this.state.name + ': '
+          this.props.onError('Failed to add node ' + this.state.name + ': '
                       + response.error_message);
         }
       }.bind(this));
@@ -2971,7 +3004,7 @@ class SelectedNode extends Component
             this.updateNode();
           }
           else {
-            console.log('Failed to morph node ' + this.state.name + ': '
+            this.props.onError('Failed to morph node ' + this.state.name + ': '
                         + response.error_message);
           }
         }.bind(this));
@@ -3188,19 +3221,25 @@ class EditableNode extends Component
   constructor(props)
   {
     super(props);
-    this.state = {messages_results:[], results_at_key: null};
+    this.state = {messages_results:[], results_at_key: null, selected_message: null};
 
     this.onFocus = this.onFocus.bind(this);
 
     this.jsonRef = React.createRef();
 
     this.handleOptionWirings = this.handleOptionWirings.bind(this);
+    this.selectMessageResult = this.selectMessageResult.bind(this);
 
     this.get_message_fields_service = new ROSLIB.Service({
       ros: props.ros,
       name: props.bt_namespace + 'get_message_fields',
       serviceType: 'ros_bt_py_msgs/GetMessageFields'
     });
+  }
+
+  selectMessageResult(result)
+  {
+    this.setState({messages_results:[], selected_message: result});
   }
 
   renderSearchResults(results, key, onNewValue)
@@ -3210,7 +3249,7 @@ class EditableNode extends Component
       var result_rows = results.map(x => {
         return (
           <div className="list-group-item search-result"
-               onClick={ () => {this.setState({messages_results:[]}); onNewValue(x.msg);}}>
+               onClick={ () => { this.selectMessageResult(x); onNewValue(x.msg);}}>
             {x.msg}
           </div>
         );
@@ -3313,19 +3352,11 @@ class EditableNode extends Component
 
           if (referenced_option && referenced_option.length > 0)
           {
-            var message_type = new_value;
-            var msg_string = ".msg._";
-            var first_index = message_type.indexOf(msg_string);
-            var package_name = message_type.substr(0,first_index);
-            var second_index = message_type.indexOf(".", first_index+msg_string.length);
-
-            var message_name = message_type.substr(second_index+1);
-
-            message_type = package_name+"/"+message_name;
-
+            var message = getMessageType(new_value);
             this.get_message_fields_service.callService(
               new ROSLIB.ServiceRequest({
-                message_type: message_type
+                message_type: message.message_type,
+                service: message.service
               }),
               function(response) {
                 if (response.success) {
@@ -3523,6 +3554,10 @@ class EditableNode extends Component
         <div className="form-group">
           <label className="d-block">{paramItem.key}
             <JSONInput json={paramItem.value.value}
+                       message_type={paramItem.value.type}
+                       ros={this.props.ros}
+                       bt_namespace={this.props.bt_namespace}
+                       output="dict"
                        onValidityChange={onValidityChange}
                        onFocus={this.onFocus}
                        onNewValue={onNewValue}/>
@@ -3536,6 +3571,10 @@ class EditableNode extends Component
         <div className="form-group">
           <label className="d-block">{paramItem.key}
             <JSONInput json={paramItem.value.value}
+                       message_type={paramItem.value.type}
+                       ros={this.props.ros}
+                       bt_namespace={this.props.bt_namespace}
+                       output="pickled"
                        onValidityChange={onValidityChange}
                        onFocus={this.onFocus}
                        onNewValue={onNewValue}/>
@@ -3556,7 +3595,7 @@ class EditableNode extends Component
       // Number input with integer increments
       return (
         <Fragment>
-          <h5>{paramItem.key}</h5>
+          <h5>{paramItem.key} <span className="text-muted">(type: {valueType})</span></h5>
           <span>{paramItem.value.value}</span>
         </Fragment>
       );
@@ -3565,7 +3604,7 @@ class EditableNode extends Component
     {
       return (
         <Fragment>
-          <h5>{paramItem.key}</h5>
+          <h5>{paramItem.key} <span className="text-muted">(type: {valueType})</span></h5>
           <pre>{paramItem.value.value}</pre>
         </Fragment>
       );
@@ -3574,7 +3613,7 @@ class EditableNode extends Component
     {
       return (
         <Fragment>
-          <h5>{paramItem.key}</h5>
+          <h5>{paramItem.key} <span className="text-muted">(type: {valueType})</span></h5>
           <pre>{paramItem.value.value ? 'True' : 'False'}</pre>
         </Fragment>
       );
@@ -3583,7 +3622,7 @@ class EditableNode extends Component
     {
       return (
         <Fragment>
-          <h5>{paramItem.key}</h5>
+          <h5>{paramItem.key} <span className="text-muted">(type: {valueType})</span></h5>
           <pre className="text-muted">{paramItem.value.value}</pre>
         </Fragment>
       );
@@ -3603,7 +3642,7 @@ class EditableNode extends Component
       console.log('item with non-basic type: ', paramItem);
       return (
         <Fragment>
-          <h5>{paramItem.key}</h5>
+          <h5>{paramItem.key} <span className="text-muted">(type: {valueType})</span></h5>
           <pre>{JSON.stringify(paramItem.value.value, null, 2)}</pre>
         </Fragment>
       );
@@ -3765,10 +3804,20 @@ class JSONInput extends Component
     this.state = {
       is_valid: is_valid,
       json: props.json,
+      message_type: props.message_type,
+      field_names: []
     };
 
     this.editor = null;
     this.editorRef = null;
+
+    this.get_message_fields_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.bt_namespace + 'get_message_fields',
+      serviceType: 'ros_bt_py_msgs/GetMessageFields'
+    });
+
+    this.updateMessageType = this.updateMessageType.bind(this);
   }
 
   componentDidMount()
@@ -3780,6 +3829,40 @@ class JSONInput extends Component
     this.editor.set(this.state.json);
     this.editor.aceEditor.setOptions({maxLines: 100});
     this.editor.aceEditor.resize();
+
+    if (this.state.message_type != null)
+    {
+      this.updateMessageType(this.state.message_type, this.state.json);
+    }
+  }
+
+  updateMessageType(message_type, json)
+  {
+    this.setState({message_type:message_type});
+    if (this.props.ros)
+    {
+      var message = getMessageType(message_type);
+      this.get_message_fields_service.callService(
+        new ROSLIB.ServiceRequest({
+          message_type: message.message_type,
+          service: message.service
+        }),
+        function(response) {
+          if (response.success) {
+            var new_value = {};
+            for (var i = 0; i < response.field_names.length; i++) {
+              new_value[response.field_names[i]] = json["py/state"][i];
+            }
+            this.setState({
+              json : new_value,
+              field_names: response.field_names
+            });
+            this.editor.update(new_value);
+            console.log("updated message type and representation");
+            this.handleChange();
+          }
+        }.bind(this));
+    }
   }
 
   componentWillUnmount() {
@@ -3788,10 +3871,22 @@ class JSONInput extends Component
 
   componentDidUpdate(prevProps, prevState) {
     if (JSON.stringify(this.props.json) != JSON.stringify(prevProps.json)) {
-      this.editor.update(this.props.json);
-      this.setState({
-        json : this.props.json,
-      });
+      if (this.props.json && this.props.json.hasOwnProperty("py/state"))
+      {
+        if (this.props.json.hasOwnProperty("py/object") && this.props.json["py/object"] != this.state.message_type)
+        {
+          this.updateMessageType(this.props.json["py/object"], this.props.json);
+        } else {
+          var new_value = {};
+          for (var i = 0; i < this.state.field_names.length; i++) {
+            new_value[this.state.field_names[i]] = this.props.json["py/state"][i];
+          }
+          this.editor.update(new_value);
+          this.setState({
+            json : new_value,
+          });
+        }
+      }
     }
   }
 
@@ -3802,7 +3897,17 @@ class JSONInput extends Component
         json : JSON.stringify(json),
         is_valid: true,
       });
-      this.props.onNewValue(json);
+      if (this.props.output == "pickled")
+      {
+        var reconstructed = {"py/object":this.props.message_type,"py/state":[]};
+        for (var prop in json) {
+          reconstructed["py/state"].push(json[prop]);
+        }
+        this.props.onNewValue(reconstructed);
+      } else {
+        this.props.onNewValue(json);
+      }
+      
       this.props.onValidityChange(true);
     } catch (e) {
       this.setState({is_valid: false});

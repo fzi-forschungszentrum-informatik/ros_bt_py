@@ -16,10 +16,12 @@ from ros_bt_py.ros_helpers import AsyncServiceProxy
              'response_type': type,
              'service_name': str,
              'wait_for_service_seconds': float,
-             'wait_for_response_seconds': float},
+             'wait_for_response_seconds': float,
+             'fail_if_not_available': bool},
     inputs={'request': OptionRef('request_type')},
     outputs={'response': OptionRef('response_type')},
-    max_children=0))
+    max_children=0,
+    optional_options=['fail_if_not_available']))
 class Service(Leaf):
     """Calls a ROS service with the provided Request data.
 
@@ -36,9 +38,16 @@ class Service(Leaf):
     data.
     """
     def _do_setup(self):
+        self._service_available = True
         # throws if service is not available
-        rospy.wait_for_service(self.options['service_name'],
-                               self.options['wait_for_service_seconds'])
+        try:
+            rospy.wait_for_service(self.options['service_name'],
+                                   self.options['wait_for_service_seconds'])
+        except rospy.ROSException as e:
+            if 'fail_if_not_available' in self.options and self.options['fail_if_not_available']:
+                self._service_available = False
+            else:
+                raise e
 
         self._service_proxy = AsyncServiceProxy(self.options['service_name'],
                                                 self.options['service_type'])
@@ -59,6 +68,8 @@ class Service(Leaf):
         return NodeMsg.IDLE
 
     def _do_tick(self):
+        if not self._service_available:
+            return NodeMsg.FAILED
         # If theres' no service call in-flight, and we have already reported
         # the result (see below), start a new call and save the request
         if self._reported_result or \
