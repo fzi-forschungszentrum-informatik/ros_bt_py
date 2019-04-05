@@ -176,7 +176,7 @@ class TreeNode(object):
             else:
                 message_class = roslib.message.get_message_class(request.message_type)
             for field in str(message_class()).split("\n"):
-                response.field_names.append(field.split(":")[0])
+                response.field_names.append(field.split(":")[0].strip())
             response.fields = jsonpickle.encode(message_class())
             response.success = True
         except Exception as e:
