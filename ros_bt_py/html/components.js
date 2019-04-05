@@ -3805,7 +3805,8 @@ class JSONInput extends Component
       is_valid: is_valid,
       json: props.json,
       message_type: props.message_type,
-      field_names: []
+      field_names: [],
+      pyobject: null
     };
 
     this.editor = null;
@@ -3836,32 +3837,75 @@ class JSONInput extends Component
     }
   }
 
+  getJSONfromPyObject(pyobject, field_names)
+  {
+    var json = {};
+    if (pyobject.hasOwnProperty("py/state"))
+    {
+      var counter = 0;
+      for (var i = 0; i < pyobject["py/state"].length; i++) {
+        var value = pyobject["py/state"][i];
+        if (typeof value === 'object' && !Array.isArray(value))
+        {
+          json[field_names[counter]] = this.getJSONfromPyObject(value, field_names.slice(counter+1));
+          counter += Object.keys(json[field_names[counter]]).length;
+        } else {
+          json[field_names[counter]] = value;
+          counter += 1;
+        }
+      }
+    }
+    return json;
+  }
+
+  getPyObjectFromJSON(pyobject, json)
+  {
+    var keys = Object.keys(json);
+    if (pyobject.hasOwnProperty("py/state"))
+    {
+      for (var i = 0; i < pyobject["py/state"].length; i++) {
+        var value = pyobject["py/state"][i];
+        if (typeof value === 'object' && !Array.isArray(value))
+        {
+          pyobject["py/state"][i] = this.getPyObjectFromJSON(pyobject["py/state"][i], json[keys[i]]);
+        } else {
+          pyobject["py/state"][i] = json[keys[i]];
+        }
+      }
+    }
+    return pyobject;
+  }
+
   updateMessageType(message_type, json)
   {
     this.setState({message_type:message_type});
     if (this.props.ros)
     {
       var message = getMessageType(message_type);
-      this.get_message_fields_service.callService(
-        new ROSLIB.ServiceRequest({
-          message_type: message.message_type,
-          service: message.service
-        }),
-        function(response) {
-          if (response.success) {
-            var new_value = {};
-            for (var i = 0; i < response.field_names.length; i++) {
-              new_value[response.field_names[i]] = json["py/state"][i];
+      if (message.message_type == "/dict")
+      {
+        console.log("message is a dict, no request possible");
+      } else {
+        this.get_message_fields_service.callService(
+          new ROSLIB.ServiceRequest({
+            message_type: message.message_type,
+            service: message.service
+          }),
+          function(response) {
+            if (response.success) {
+              this.setState({pyobject: response.fields});
+              var new_value = this.getJSONfromPyObject(JSON.parse(response.fields), response.field_names);
+
+              this.setState({
+                json : new_value,
+                field_names: response.field_names
+              });
+              this.editor.update(new_value);
+              console.log("updated message type and representation");
+              this.handleChange();
             }
-            this.setState({
-              json : new_value,
-              field_names: response.field_names
-            });
-            this.editor.update(new_value);
-            console.log("updated message type and representation");
-            this.handleChange();
-          }
-        }.bind(this));
+          }.bind(this));
+      }
     }
   }
 
@@ -3876,15 +3920,6 @@ class JSONInput extends Component
         if (this.props.json.hasOwnProperty("py/object") && this.props.json["py/object"] != this.state.message_type)
         {
           this.updateMessageType(this.props.json["py/object"], this.props.json);
-        } else {
-          var new_value = {};
-          for (var i = 0; i < this.state.field_names.length; i++) {
-            new_value[this.state.field_names[i]] = this.props.json["py/state"][i];
-          }
-          this.editor.update(new_value);
-          this.setState({
-            json : new_value,
-          });
         }
       }
     }
@@ -3899,10 +3934,7 @@ class JSONInput extends Component
       });
       if (this.props.output == "pickled")
       {
-        var reconstructed = {"py/object":this.props.message_type,"py/state":[]};
-        for (var prop in json) {
-          reconstructed["py/state"].push(json[prop]);
-        }
+        var reconstructed = this.getPyObjectFromJSON(JSON.parse(this.state.pyobject), json);
         this.props.onNewValue(reconstructed);
       } else {
         this.props.onNewValue(json);
