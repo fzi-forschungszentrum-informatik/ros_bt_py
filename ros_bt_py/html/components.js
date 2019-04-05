@@ -3847,15 +3847,16 @@ class JSONInput extends Component
         var value = pyobject["py/state"][i];
         if (typeof value === 'object' && !Array.isArray(value))
         {
-          json[field_names[counter]] = this.getJSONfromPyObject(value, field_names.slice(counter+1));
-          counter += Object.keys(json[field_names[counter]]).length;
+          var response = this.getJSONfromPyObject(value, field_names.slice(counter+1));
+          json[field_names[counter]] = response.json;
+          counter += response.counter + 1;
         } else {
           json[field_names[counter]] = value;
           counter += 1;
         }
       }
     }
-    return json;
+    return {json:json, counter:counter};
   }
 
   getPyObjectFromJSON(pyobject, json)
@@ -3894,7 +3895,7 @@ class JSONInput extends Component
           function(response) {
             if (response.success) {
               this.setState({pyobject: response.fields});
-              var new_value = this.getJSONfromPyObject(JSON.parse(response.fields), response.field_names);
+              var new_value = this.getJSONfromPyObject(JSON.parse(response.fields), response.field_names).json;
 
               this.setState({
                 json : new_value,
