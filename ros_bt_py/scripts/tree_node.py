@@ -136,9 +136,9 @@ class TreeNode(object):
         messages = []
         packages = rospack.list()
 
+        actions = []
         for package in packages:
             for package_path in self._get_package_paths(package, rospack):
-                # path = rospack.get_path(package) + "/msg"
                 path = package_path + "/msg"
                 resources = []
                 if os.path.isdir(path):
@@ -146,8 +146,14 @@ class TreeNode(object):
                 result = [x[:-len(".msg")] for x in resources]
                 result.sort()
                 for msg_type in result:
-                    messages.append(Message(msg=package+"/"+msg_type, service=False))
-                # path = rospack.get_path(package) + "/srv"
+                    if msg_type[-6:] == "Action":
+                        actions.append(msg_type)
+                    append_msg = True
+                    for action in actions:
+                        if msg_type == action+"Feedback" or msg_type == action+"Goal" or msg_type == action+"Result":
+                            append_msg = False
+                    if append_msg:
+                        messages.append(Message(msg=package+"/"+msg_type, service=False))
                 path = package_path + "/srv"
                 resources = []
                 if os.path.isdir(path):
@@ -170,7 +176,7 @@ class TreeNode(object):
             else:
                 message_class = roslib.message.get_message_class(request.message_type)
             for field in str(message_class()).split("\n"):
-                response.field_names.append(field.split(":")[0])
+                response.field_names.append(field.split(":")[0].strip())
             response.fields = jsonpickle.encode(message_class())
             response.success = True
         except Exception as e:

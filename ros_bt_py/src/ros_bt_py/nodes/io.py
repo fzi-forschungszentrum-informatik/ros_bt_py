@@ -3,6 +3,7 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py.node import IO, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
+from rosbridge_library.internal.message_conversion import populate_instance, extract_values
 # FIXME: right now input/output are exact copies of each other, move this code to a common implementation
 
 
@@ -42,10 +43,14 @@ class IOInputOption(IO):
             if self.inputs['in'] and self.inputs.is_updated('in'):
                 self.outputs['out'] = self.inputs['in']
             else:
-                self.outputs['out'] = self.options['default']
+                values = extract_values(self.options['default'])
+                message = self.options['io_type']()
+                populate_instance(values, message)
+                self.outputs['out'] = message
             return NodeMsg.SUCCEEDED
         except Exception as e:
             self.logerr("Input Exception: %s" % e)
+            return NodeMsg.FAILED
 
     def _do_untick(self):
         return NodeMsg.IDLE
@@ -145,10 +150,14 @@ class IOOutputOption(IO):
             if self.inputs['in'] and self.inputs.is_updated('in'):
                 self.outputs['out'] = self.inputs['in']
             else:
-                self.outputs['out'] = self.options['default']
+                values = extract_values(self.options['default'])
+                message = self.options['io_type']()
+                populate_instance(values, message)
+                self.outputs['out'] = message
             return NodeMsg.SUCCEEDED
         except Exception as e:
             self.logerr("Output Exception: %s" % e)
+            return NodeMsg.FAILED
 
     def _do_untick(self):
         return NodeMsg.IDLE

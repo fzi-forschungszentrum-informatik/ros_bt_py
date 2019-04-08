@@ -36,6 +36,7 @@
   <exec_depend>python-jsonpickle</exec_depend>
   <exec_depend>roswww</exec_depend>
   <exec_depend>rosbridge_suite</exec_depend>
+  <exec_depend>catkin</exec_depend>
 
   <test_depend>std_msgs</test_depend>
   <test_depend>std_srvs</test_depend>
