@@ -1,27 +1,4 @@
-image: shadowrobot/build-tools:trusty-indigo
-stages:
-  - build
-
-sr-build-tools-build:
-  stage: build
-  tags:
-    - docker
-  script:
-    - export toolset_branch="master"
-    - export server_type="gitlab_ci"
-    - export used_modules="check_cache,code_coverage,software_tests,code_style_check,complete_deb_check"
-    - export unit_tests_result_dir="unit_tests"
-    - export coverage_tests_result_dir="code_coverage"
-    - export lint_result_dir="lint_results"
-    - export deb_dir="debs"
-    - export docker_image_name="shadowrobot/build-tools:trusty-indigo"
-    - export remote_shell_script="https://raw.githubusercontent.com/T045T/sr-build-tools/$toolset_branch/bin/sr-run-ci-build.sh"
-    - curl -s "$( echo "$remote_shell_script" | sed 's/#/%23/g' )" | bash /dev/stdin "$toolset_branch" $server_type $used_modules $relative_job_path
-    - "xmllint --xpath //coverage/@line-rate code_coverage/ros_bt_py/coverage.python.xml | grep -o  \"[0-9.]*\" | python -c \"print('Coverage: {:.2f}%'.format(float(input()) * 100.0))\""
-  artifacts:
-    paths:
-      - unit_tests/
-      - code_coverage/
-      - lint_results/
-      - debs/
-  coverage: '/Coverage: ([0-9.]+)/'
+include:
+  - project: 'continuous_integration/ci_scripts'
+    ref: master
+    file: '/gitlab-ci-yml/catkin_pipeline.yml'
