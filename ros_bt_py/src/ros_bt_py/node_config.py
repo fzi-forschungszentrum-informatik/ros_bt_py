@@ -54,13 +54,14 @@ class NodeConfig(object):
         self.optional_options = optional_options
 
     def __repr__(self):
-        return 'NodeConfig(inputs=%r, outputs=%r, options=%r, max_children=%r, option_wirings=%r, optional_options=%s)' % (
-            self.inputs,
-            self.outputs,
-            self.options,
-            self.max_children,
-            self.option_wirings,
-            self.optional_options)
+        return \
+            'NodeConfig(inputs=%r, outputs=%r, options=%r, max_children=%r, option_wirings=%r, optional_options=%s)' % (
+                self.inputs,
+                self.outputs,
+                self.options,
+                self.max_children,
+                self.option_wirings,
+                self.optional_options)
 
     def __eq__(self, other):
         return (self.inputs == other.inputs and

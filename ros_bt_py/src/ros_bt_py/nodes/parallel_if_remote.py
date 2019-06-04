@@ -7,6 +7,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 
 from ros_bt_py.nodes.shovable import Shovable
 
+
 @define_bt_node(NodeConfig(
     options={},
     inputs={},
@@ -68,4 +69,3 @@ class ParallelIfRemote(FlowControl):
     #
     # def _do_calculate_utility(self):
     #     pass
-

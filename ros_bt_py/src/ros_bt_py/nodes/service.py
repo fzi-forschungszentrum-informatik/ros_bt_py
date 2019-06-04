@@ -73,12 +73,12 @@ class Service(Leaf):
         # If theres' no service call in-flight, and we have already reported
         # the result (see below), start a new call and save the request
         if self._reported_result or \
-          self._service_proxy.get_state() == AsyncServiceProxy.IDLE or \
-          self._service_proxy.get_state() == AsyncServiceProxy.ABORTED:
-            self._last_service_call_time = rospy.Time.now()
-            self._last_request = self.inputs['request']
-            self._reported_result = False
-            self._service_proxy.call_service(self._last_request)
+            self._service_proxy.get_state() == AsyncServiceProxy.IDLE or \
+                self._service_proxy.get_state() == AsyncServiceProxy.ABORTED:
+                    self._last_service_call_time = rospy.Time.now()
+                    self._last_request = self.inputs['request']
+                    self._reported_result = False
+                    self._service_proxy.call_service(self._last_request)
 
         if self._service_proxy.get_state() == AsyncServiceProxy.RUNNING:
             # If the call takes longer than the specified timeout, abort the
