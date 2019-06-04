@@ -3542,12 +3542,23 @@ class EditableNode extends Component
         </div>
       );
     }
-    // TODO(nberg): implement these two
-
-    // else if (valueType === 'list')
-    // {
-
-    // }
+    else if (valueType === 'list')
+    {
+      return (
+        <div className="form-group">
+          <label className="d-block">{paramItem.key}&nbsp;
+            <JSONInput json={paramItem.value.value}
+                       message_type={paramItem.value.type}
+                       ros={this.props.ros}
+                       bt_namespace={this.props.bt_namespace}
+                       output="list"
+                       onValidityChange={onValidityChange}
+                       onFocus={this.onFocus}
+                       onNewValue={onNewValue}/>
+          </label>
+        </div>
+      );
+    }
     else if (valueType === 'dict')
     {
       return (
