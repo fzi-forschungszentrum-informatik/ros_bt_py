@@ -61,7 +61,7 @@ class Action(Leaf):
         self._minimum_wait_duration = rospy.Duration.from_sec(0.01)
 
         rospy.logwarn("waiting for action server...")
-        initial_wait_seconds = 0.250
+        initial_wait_seconds = 1.0
         if wait_seconds < initial_wait_seconds:
             initial_wait_seconds = wait_seconds
         initial_wait_duration = rospy.Duration.from_sec(initial_wait_seconds)
