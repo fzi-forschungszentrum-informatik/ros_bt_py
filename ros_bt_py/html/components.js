@@ -386,6 +386,7 @@ function ExecutionBar(props)
     <header id="header" className="d-flex flex-column flex-md-row align-items-center control-bar">
       <NamespaceSelect
         ros={props.ros}
+        connected={props.connected}
         currentNamespace={props.currentNamespace}
         onNamespaceChange={props.onNamespaceChange}
         onError={props.onError}/>
@@ -538,8 +539,15 @@ class NamespaceSelect extends Component
                 </label>
               </div>);
     }
+    var connected_class = "fas fa-wifi connected";
+    var connected_title = "Connected";
+    if (!this.props.connected) {
+      connected_class = "fas fa-wifi disconnected";
+      connected_title = "Disconnected";
+    }
     return (
       <Fragment>
+        <span aria-hidden="true" title={connected_title} className={connected_class} />
         <div className="form-inline">
           <label className="ml-1">BT Namespace:
             <select className="custom-select ml-1"

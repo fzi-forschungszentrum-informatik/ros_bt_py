@@ -268,3 +268,13 @@ div.jsoneditor-menu {
 .wave span:nth-child(7) {
     animation-delay: 1.2s;
 }
+
+.connected {
+  padding: 0.25rem;
+  color: #0caa19;
+}
+
+.disconnected {
+  padding: 0.25rem;
+  color: #ff0000;
+}
