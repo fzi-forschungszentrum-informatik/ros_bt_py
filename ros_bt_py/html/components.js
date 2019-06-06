@@ -71,6 +71,14 @@ function prettyprint_type(jsonpickled_type) {
     return 'OptionRef(' + json_type['option_key'] + ')';
   }
 
+  if (json_type['py/reduce'] !== undefined &&
+      json_type['py/reduce'][0] !== undefined &&
+      json_type['py/reduce'][0]['py/type'] !== undefined &&
+      json_type['py/reduce'][0]['py/type'] === 'collections.OrderedDict')
+  {
+    return json_type['py/reduce'][0]['py/type'];
+  }
+
   return 'Unknown type object: ' + jsonpickled_type;
 }
 
@@ -131,6 +139,12 @@ function getDefaultValue(typeName, options)
         value: 'Ref to "' + optionTypeName + '"'
       };
     }
+  }
+  else if (typeName === 'collections.OrderedDict')
+  {
+    return {type: 'collections.OrderedDict',
+            value: {"py/reduce": [{"py/type": "collections.OrderedDict"}, {"py/tuple": [[]]}, null, null, null]}
+    };
   }
   else
   {
@@ -3584,6 +3598,24 @@ class EditableNode extends Component
         </div>
       );
     }
+    else if (valueType === 'collections.OrderedDict')
+    {
+      return (
+        <div className="form-group">
+          <label className="d-block">{paramItem.key}
+            <JSONInput json={paramItem.value.value}
+                       message_type={paramItem.value.type}
+                       ros={this.props.ros}
+                       bt_namespace={this.props.bt_namespace}
+                       output="dict"
+                       onValidityChange={onValidityChange}
+                       onFocus={this.onFocus}
+                       onNewValue={onNewValue}/>
+          </label>
+        </div>
+      );
+    }
+
     else  // if (valueType === 'object')
     {
       return (
