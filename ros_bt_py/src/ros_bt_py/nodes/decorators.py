@@ -194,6 +194,63 @@ class Retry(Decorator):
 
 
 @define_bt_node(NodeConfig(
+    options={'num_repeats': int},
+    inputs={},
+    outputs={},
+    max_children=1))
+class Repeat(Decorator):
+    """Repeat the child `num_repeat` times
+
+    Repeat, here, means counting the number of times the child SUCCEEDED,
+    if the number of repeats is not yet reached, the child will be resetted.
+    Returns RUNNING while the number of repeats is not yet reached,
+    returns FAILED when the child fails.
+
+    """
+    def _do_setup(self):
+        self._repeat_count = 0
+        for child in self.children:
+            child.setup()
+
+    def _do_tick(self):
+        for child in self.children:
+            result = child.tick()
+            if result == NodeMsg.FAILED:
+                return NodeMsg.FAILED
+            elif result == NodeMsg.SUCCEEDED:
+                if self._repeat_count < self.options['num_repeats']:
+                    self._repeat_count += 1
+                    child.reset()
+                    return NodeMsg.RUNNING
+                else:
+                    return NodeMsg.SUCCEEDED
+            return result
+
+        # Succeed if we have no children
+        return NodeMsg.SUCCEEDED
+
+    def _do_shutdown(self):
+        for child in self.children:
+            return child.shutdown()
+
+    def _do_reset(self):
+        self._repeat_count = 0
+        for child in self.children:
+            return child.reset()
+        return NodeMsg.IDLE
+
+    def _do_untick(self):
+        for child in self.children:
+            return child.untick()
+        return NodeMsg.IDLE
+
+    # Decorator's default utility calculation works here
+    #
+    # def _do_calculate_utility(self):
+    #     pass
+
+
+@define_bt_node(NodeConfig(
     options={},
     inputs={},
     outputs={},
