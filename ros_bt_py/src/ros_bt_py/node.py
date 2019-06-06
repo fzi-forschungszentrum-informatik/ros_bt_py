@@ -696,16 +696,17 @@ class Node(object):
                 target_map[key] = values[key]
 
     def __repr__(self):
-        return '%s(options=%r, name=%r), parent_name:%r, state:%r, inputs:%r, outputs:%r, children:%r, option_wirings:%r' % (
-            type(self).__name__,
-            {key: self.options[key] for key in self.options},
-            self.name,
-            self.parent.name if self.parent else '',
-            self.state,
-            self.inputs,
-            self.outputs,
-            self.children,
-            self.option_wirings)
+        return \
+            '%s(options=%r, name=%r), parent_name:%r, state:%r, inputs:%r, outputs:%r, children:%r, option_wirings:%r' \
+            % (type(self).__name__,
+               {key: self.options[key] for key in self.options},
+               self.name,
+               self.parent.name if self.parent else '',
+               self.state,
+               self.inputs,
+               self.outputs,
+               self.children,
+               self.option_wirings)
 
     def __eq__(self, other):
         return (self.name == other.name and

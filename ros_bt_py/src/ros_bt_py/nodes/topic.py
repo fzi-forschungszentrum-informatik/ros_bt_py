@@ -69,6 +69,7 @@ class TopicSubscriber(Leaf):
                     has_upper_bound_failure=True)
         return UtilityBounds()
 
+
 @define_bt_node(NodeConfig(
     options={'topic_type': type,
              'topic_name': str},
@@ -130,6 +131,7 @@ class TopicOnlineSubscriber(Leaf):
                     has_lower_bound_failure=True,
                     has_upper_bound_failure=True)
         return UtilityBounds()
+
 
 @define_bt_node(NodeConfig(
     options={'topic_type': type,

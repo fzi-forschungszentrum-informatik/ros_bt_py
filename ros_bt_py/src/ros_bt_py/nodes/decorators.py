@@ -51,6 +51,7 @@ class IgnoreFailure(Decorator):
     # def _do_calculate_utility(self):
     #     pass
 
+
 @define_bt_node(NodeConfig(
     options={},
     inputs={},
@@ -89,6 +90,7 @@ class IgnoreSuccess(Decorator):
         for child in self.children:
             return child.untick()
         return NodeMsg.IDLE
+
 
 @define_bt_node(NodeConfig(
     options={},

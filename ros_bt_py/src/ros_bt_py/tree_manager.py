@@ -5,6 +5,7 @@ import time
 import jsonpickle
 import yaml
 import inspect
+import traceback
 
 import genpy
 import rospy
@@ -177,9 +178,14 @@ class TreeManager(object):
             self.tick()
         except Exception as ex:
             # TODO(nberg): don't catch the ROSException that is raised on shutdown
-            rospy.logerr('Encountered error while ticking tree: %s', ex)
+            rospy.logerr('Encountered error while ticking tree: %s, %s',
+                         ex,
+                         traceback.format_exc())
             with self._state_lock:
-                self._last_error = ex
+                self._last_error = '{}, {}'.format(
+                    ex,
+                    traceback.format_exc())
+
                 self.tree_msg.state = Tree.ERROR
 
     def tick(self, once=None):

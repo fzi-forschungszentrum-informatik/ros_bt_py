@@ -22,6 +22,10 @@ class App extends Component
       ros_uri = params["ros_uri"];
     }
 
+    var ros = new ROSLIB.Ros({
+      url : ros_uri
+    });
+
     this.state = {
       bt_namespace: '',
       ros_uri: ros_uri,
@@ -48,12 +52,24 @@ class App extends Component
       // to edit options.
       selected_node_info: null,
       node_changed: false,
-      ros: new ROSLIB.Ros({
-        url : ros_uri
-      }),
+      ros: ros,
       skin: 'darkmode',
       copy_node: false,
+      connected: false,
     };
+
+    ros.on("connection", function(e) {
+      console.log("Connected to websocket");
+      this.setState({connected: true});
+    }.bind(this));
+
+    ros.on("close", function(e) {
+      this.setState({connected: false});
+      console.log("Connection to websocket closed, reconnecting in 5s");
+      setTimeout(function() {
+        ros.connect(ros_uri);
+      }, 5000);
+    }.bind(this));
 
     this.tree_topic = new ROSLIB.Topic({
       ros : this.state.ros,
@@ -571,6 +587,7 @@ class App extends Component
       <div>
         <ExecutionBar key={this.state.bt_namespace}
                       ros={this.state.ros}
+                      connected={this.state.connected}
                       subtreeNames={this.state.subtree_names}
                       currentNamespace={this.state.bt_namespace}
                       tree_message={this.state.last_tree_msg}

@@ -48,19 +48,34 @@ class Action(Leaf):
         self._lock = Lock()
         self._feedback = None
         self._active_goal = None
-        self._action_available = True
+        self._action_available = False
+        self._shutdown = False
 
         self._ac = SimpleActionClient(self.options['action_name'],
                                       self.options['action_type'])
-        if not self._ac.wait_for_server(rospy.Duration.from_sec(
-                self.options['wait_for_action_server_seconds'])):
-            if 'fail_if_not_available' in self.options and self.options['fail_if_not_available']:
-                self._action_available = False
-            else:
-                raise BehaviorTreeException(
-                    'Action server %s not available after waiting %f seconds!' % (
-                        self.options['action_name'],
-                        self.options['wait_for_action_server_seconds']))
+        # to be able to shutdown the action client during wait_for_server
+        # split the wait_for_action_server_seconds in small chunks at around the tick freq (0.01s)
+        wait_seconds = self.options['wait_for_action_server_seconds']
+
+        self._maximum_wait_time = rospy.Time.now() + rospy.Duration.from_sec(wait_seconds)
+        self._minimum_wait_duration = rospy.Duration.from_sec(0.01)
+
+        rospy.logwarn("waiting for action server...")
+        initial_wait_seconds = 1.0
+        if wait_seconds < initial_wait_seconds:
+            initial_wait_seconds = wait_seconds
+        initial_wait_duration = rospy.Duration.from_sec(initial_wait_seconds)
+        if self._ac.wait_for_server(initial_wait_duration):
+            self._action_available = True
+        else:
+            if rospy.Time.now() >= self._maximum_wait_time:
+                if 'fail_if_not_available' in self.options and self.options['fail_if_not_available']:
+                    self._action_available = False
+                else:
+                    raise BehaviorTreeException(
+                        'Action server %s not available after waiting %f seconds!' % (
+                            self.options['action_name'],
+                            self.options['wait_for_action_server_seconds']))
 
         self._last_goal_time = None
         self.outputs['feedback'] = None
@@ -76,7 +91,20 @@ class Action(Leaf):
 
     def _do_tick(self):
         if not self._action_available:
-            return NodeMsg.FAILED
+            if rospy.Time.now() < self._maximum_wait_time:
+                if self._ac.wait_for_server(self._minimum_wait_duration):
+                    self._action_available = True
+                else:
+                    return NodeMsg.RUNNING
+            else:
+                if 'fail_if_not_available' in self.options and self.options['fail_if_not_available']:
+                    return NodeMsg.FAILED
+                else:
+                    raise BehaviorTreeException(
+                            'Action server %s not available after waiting %f seconds!' % (
+                            self.options['action_name'],
+                            self.options['wait_for_action_server_seconds']))
+
         if self._active_goal is not None and self.inputs['goal'] != self._active_goal:
             # Goal message has changed since last tick, abort old goal
             # and return RUNNING
@@ -157,6 +185,7 @@ class Action(Leaf):
     def _do_shutdown(self):
         # nothing to do beyond what's done in reset
         self._do_reset()
+        self._action_available = False
 
     def _do_calculate_utility(self):
         resolved_topic = rospy.resolve_name(self.options['action_name'] + '/status')
