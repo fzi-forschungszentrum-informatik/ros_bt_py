@@ -63,6 +63,7 @@ install(PROGRAMS
   scripts/load_tree.py
   scripts/find_best_executor_node.py
   scripts/remote_tree_slot_node.py
+  scripts/print_editor_url.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   )
 
