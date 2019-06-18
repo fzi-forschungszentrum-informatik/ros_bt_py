@@ -161,7 +161,8 @@ class TopicPublisher(Leaf):
 
     def _do_shutdown(self):
         # Unregister the publisher
-        self._publisher.unregister()
+        if self._publisher is not None:
+            self._publisher.unregister()
         self._publisher = None
 
     def _do_reset(self):
