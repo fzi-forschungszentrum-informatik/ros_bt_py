@@ -407,7 +407,8 @@ function ExecutionBar(props)
       <DebugControls
         ros={props.ros}
         bt_namespace={props.currentNamespace}
-        onError={props.onError}/>
+        onError={props.onError}
+        onPublishingSubtreesChange={props.onPublishingSubtreesChange}/>
       <TickControls
         ros={props.ros}
         bt_namespace={props.currentNamespace}
@@ -621,11 +622,16 @@ class SelectTree extends Component
 
   render()
   {
+    var selected = "main";
+    if (this.props.selected_tree.is_subtree && this.props.selected_tree.name !== "")
+    {
+      selected = this.props.selected_tree.name;
+    }
     return (
       <div>
         <label className="form-inline m-1">Tree:
           <select className="custom-select ml-1"
-                  defaultValue="main"
+                  value={this.props.subtreeNames.indexOf(selected)}
                   onChange={this.onChange}>
             <option value="-1">Main Tree</option>
             <optgroup label="Subtrees">
@@ -698,6 +704,7 @@ class TickControls extends Component
         // STOP = 4
         // RESET = 5
         // SHUTDOWN = 6
+        // SETUP_AND_SHUTDOWN = 7
         command: command
       }),
       function(response) {
@@ -957,6 +964,7 @@ class DebugControls extends Component
   handlePubSubtreesChange(event)
   {
     var enable = event.target.checked;
+    this.props.onPublishingSubtreesChange(enable);
     this.set_execution_mode_service.callService(
       new ROSLIB.ServiceRequest({
         single_step: this.state.debugging,
@@ -1320,7 +1328,8 @@ class D3BehaviorTreeEditor extends Component
         .on("click", this.nodeClickHandler.bind(this))
         .on("mousedown", function(d, index, group) {
           that.nodeMousedownHandler(d, this);
-        });
+        })
+        .on("dblclick", this.nodeDoubleClickHandler.bind(this));
 
     var div = fo
         .append("xhtml:body")
@@ -2501,6 +2510,29 @@ class D3BehaviorTreeEditor extends Component
   nodeClickHandler(d, index, group)
   {
     this.props.onSelectionChange(d.data.name);
+    d3.event.preventDefault();
+    d3.event.stopPropagation();
+  }
+
+  nodeDoubleClickHandler(d, index, group)
+  {
+    if (d.data.module === "ros_bt_py.nodes.subtree" && d.data.node_class === "Subtree")
+    {
+      var selected_subtree = this.props.subtreeNames.filter((subtree) => subtree.startsWith(d.data.name+"."));
+      if (selected_subtree.length == 1)
+      {
+        this.props.onSelectedTreeChange(
+          /*is_subtree=*/ true,
+          /*name=*/ selected_subtree[0]);
+      } else {
+        if (this.props.publishing_subtrees)
+        {
+          this.props.onError("Selected subtree does not exist, this should not happen.");
+        } else {
+          this.props.onError("Cannot show a Subtree that is not published. Please enable \"Publish Subtrees\"!")
+        }
+      }
+    }
     d3.event.preventDefault();
     d3.event.stopPropagation();
   }
