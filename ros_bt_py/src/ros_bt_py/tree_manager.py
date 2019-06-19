@@ -919,7 +919,7 @@ class TreeManager(object):
         # save the children of the old node
 
         try:
-            node_instance = Node.from_msg(request.new_node)
+            node_instance = Node.from_msg(request.new_node, self.debug_manager)
         except TypeError as exc:
             rospy.logerr(BehaviorTreeException(str(exc)))
             response.success = False
@@ -1569,20 +1569,19 @@ class TreeManager(object):
     #########################
 
     def instantiate_node_from_msg(self, node_msg, allow_rename):
-        try:
-            node_instance = Node.from_msg(node_msg)
-        except TypeError as exc:
-            raise BehaviorTreeException(str(exc))
-
-        if node_instance.name in self.nodes:
+        # Find out if name should be changed before instantiating node
+        if node_msg.name in self.nodes:
             if allow_rename:
-                node_instance.name = self.make_name_unique(node_instance.name)
+                node_msg.name = self.make_name_unique(node_msg.name)
             else:
                 raise BehaviorTreeException('Node with name "%s" exists already'
                                             % node_instance.name)
-
-        # Set DebugManager
-        node_instance.debug_manager = self.debug_manager
+        try:
+             # Set DebugManager directly so nodes can already use it in their constructor if needed
+            node_instance = Node.from_msg(node_msg, self.debug_manager)
+        except TypeError as exc:
+            rospy.logwarn("TypeError %s" % str(exc))
+            raise BehaviorTreeException(str(exc))
 
         self.nodes[node_instance.name] = node_instance
 

@@ -774,7 +774,7 @@ class Node(object):
         rospy.logfatal('%s (%s): %s', self.name, type(self).__name__, message)
 
     @classmethod
-    def from_msg(cls, msg):
+    def from_msg(cls, msg, debug_manager=None):
         """Construct a Node from the given ROS message.
 
         This will try to import the requested node class, instantiate it
@@ -826,9 +826,9 @@ class Node(object):
         # Instantiate node - this shouldn't do anything yet, since we don't
         # call setup()
         if msg.name:
-            node_instance = node_class(name=msg.name, options=options_dict)
+            node_instance = node_class(name=msg.name, options=options_dict, debug_manager=debug_manager)
         else:
-            node_instance = node_class(options=options_dict)
+            node_instance = node_class(options=options_dict, debug_manager=debug_manager)
         # Set inputs, ignore missing inputs (this can happen if a subtree changes between runs)
         try:
             for input_msg in msg.inputs:
