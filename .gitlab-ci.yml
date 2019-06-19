@@ -2,3 +2,8 @@ include:
   - project: 'continuous_integration/ci_scripts'
     ref: master
     file: '/gitlab-ci-yml/catkin_pipeline.yml'
+
+report_coverage:
+  script:
+    - pip install pycobertura
+    - pycobertura show ${CI_PROJECT_DIR}/code_coverage/ros_bt_py/coverage.python.xml
