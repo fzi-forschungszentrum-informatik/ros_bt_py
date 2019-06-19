@@ -7,9 +7,6 @@ include:
     file: '/gitlab-ci-yml/include/catkin_check.yml'
   - project: 'continuous_integration/ci_scripts'
     ref: master
-    file: '/gitlab-ci-yml/include/catkin_test.yml'
-  - project: 'continuous_integration/ci_scripts'
-    ref: master
     file: '/gitlab-ci-yml/include/catkin_upload.yml'
   - project: 'continuous_integration/ci_scripts'
     ref: master
@@ -19,7 +16,6 @@ stages:
   - check
   - build
   - test
-  - report_test_coverage
   - upload
 
 before_script:
@@ -37,9 +33,41 @@ variables:
 
   BUILD_INDIGO: "false"
 
-
-report_coverage:
-  stage: report_test_coverage
+.run_tests:
+  tags:
+    - docker
+  stage: test
   script:
+    - apt-get -y update
+    - source /opt/ros/${ROS_DISTRIBUTION}/setup.bash
+    - git clone ${CI_SCRIPTS_REPO} ${HOME}/ci_scripts
+    - cp ${HOME}/ci_scripts/catkin_build_scripts/10-fzi-sources.list /etc/ros/rosdep/sources.list.d/
+    - ${HOME}/ci_scripts/catkin_build_scripts/prepare_workspace.sh ${CI_PROJECT_DIR} ${CI_PROJECT_NAME} ${CATKIN_ROOT} ${ROSDISTRO_INDEX_URL}
+    - rosdep install --from-path ${CATKIN_ROOT}/src -y --ignore-src
+    - export CATKIN_TEST_COVERAGE=1
+    - rm -rf /usr/lib/python2.7/dist-packages/OpenSSL
+    - rm -rf /usr/lib/python2.7/dist-packages/pyOpenSSL-*
+    - pip install pyopenssl
+    - pip install coverage gcovr
+    - apt-get install libxml2-utils tree
+    - cd ${CATKIN_ROOT}
+    - catkin_make
+    - source devel/setup.bash
+    - cxx_flags="$(cmake --system-information | sed -n 's/CMAKE_CXX_FLAGS == "\(.*\)"/\1/p') --coverage -fprofile-arcs -ftest-coverage"
+    - catkin_make run_tests -DCMAKE_CXX_FLAGS="${cxx_flags}"
+    - cp -r ${CATKIN_ROOT}/build/test_results ${CI_PROJECT_DIR}/test_results
+    - ${HOME}/ci_scripts/catkin_build_scripts/coverage.sh ${CATKIN_ROOT} ${CI_PROJECT_DIR}/code_coverage
+    - ${HOME}/ci_scripts/catkin_build_scripts/check_tests.sh ${CATKIN_ROOT}/build/test_results/
     - pip install pycobertura
     - pycobertura show ${CI_PROJECT_DIR}/code_coverage/ros_bt_py/coverage.python.xml
+  artifacts:
+    when: always
+    paths:
+      - test_results/
+      - code_coverage/
+
+run_tests_xenial:
+  image: ids-git.fzi.de:5555/continuous_integration/ci_docker_images/ubuntu_16.04_ros
+  variables:
+    ROS_DISTRIBUTION: kinetic # This will be overwritten once ROS is sourced
+  extends: .run_tests
