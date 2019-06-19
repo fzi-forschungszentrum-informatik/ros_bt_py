@@ -1,12 +1,45 @@
 include:
   - project: 'continuous_integration/ci_scripts'
     ref: master
-    file: '/gitlab-ci-yml/catkin_pipeline.yml'
+    file: '/gitlab-ci-yml/include/catkin_build.yml'
+  - project: 'continuous_integration/ci_scripts'
+    ref: master
+    file: '/gitlab-ci-yml/include/catkin_check.yml'
+  - project: 'continuous_integration/ci_scripts'
+    ref: master
+    file: '/gitlab-ci-yml/include/catkin_test.yml'
+  - project: 'continuous_integration/ci_scripts'
+    ref: master
+    file: '/gitlab-ci-yml/include/catkin_upload.yml'
+  - project: 'continuous_integration/ci_scripts'
+    ref: master
+    file: '/gitlab-ci-yml/include/cpp_check.yml'
+
+stages:
+  - check
+  - build
+  - test
+  - report_test_coverage
+  - upload
+
+before_script:
+  - source /opt/ros/${ROS_DISTRIBUTION}/setup.bash
+
+variables:
+  # This is used to actually get the ci_scripts submodule
+  GIT_STRATEGY: clone
+  ROSDISTRO_INDEX_URL: http://ids-ubuntu-testing.fzi.de:8000/rosdistro/index-v4.yaml
+  CI_SCRIPTS_REPO: https://gitlab-ci-token:${CI_JOB_TOKEN}@ids-git.fzi.de/continuous_integration/ci_scripts
+
+  ROS_DISTRIBUTION: kinetic # This will be overwritten once ROS is sourced
+
+  CATKIN_ROOT: ${HOME}/catkin_workspace
+
+  BUILD_INDIGO: "false"
+
 
 report_coverage:
-  stage: test
+  stage: report_test_coverage
   script:
     - pip install pycobertura
     - pycobertura show ${CI_PROJECT_DIR}/code_coverage/ros_bt_py/coverage.python.xml
-  dependencies:
-    - test:run_tests_xenial
