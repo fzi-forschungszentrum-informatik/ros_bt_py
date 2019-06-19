@@ -4,6 +4,9 @@ include:
     file: '/gitlab-ci-yml/catkin_pipeline.yml'
 
 report_coverage:
+  stage: test
   script:
     - pip install pycobertura
     - pycobertura show ${CI_PROJECT_DIR}/code_coverage/ros_bt_py/coverage.python.xml
+  dependencies:
+    - test:run_tests_xenial
