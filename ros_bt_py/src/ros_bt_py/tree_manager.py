@@ -77,6 +77,7 @@ class TreeManager(object):
                  publish_tree_callback=None,
                  publish_debug_info_callback=None,
                  publish_debug_settings_callback=None):
+        self.name = name
         self.publish_tree = publish_tree_callback
         if self.publish_tree is None:
             rospy.loginfo('No callback for publishing tree data provided.')
@@ -472,6 +473,11 @@ class TreeManager(object):
             single_step=request.single_step,
             collect_performance_data=request.collect_performance_data,
             publish_subtrees=request.publish_subtrees)
+        if request.publish_subtrees:
+            self.control_execution(ControlTreeExecutionRequest(command=ControlTreeExecutionRequest.SETUP_AND_SHUTDOWN))
+        else:
+            self.debug_manager.clear_subtrees()
+            self.publish_info(self.debug_manager.get_debug_info_msg())
         return SetExecutionModeResponse()
 
     def debug_step(self, _):
@@ -527,6 +533,34 @@ class TreeManager(object):
         if tree_state == Tree.ERROR and request.command != ControlTreeExecutionRequest.SHUTDOWN:
             response.error_message = 'Tree is in error state, the only allowed action is SHUTDOWN'
             return response
+
+        if request.command == ControlTreeExecutionRequest.SETUP_AND_SHUTDOWN:
+            if self._tick_thread.is_alive() or tree_state == Tree.TICKING:
+                response.success = False
+                response.error_message = ('Tried to setup tree while it is running, aborting')
+                response.tree_state = tree_state
+                rospy.logwarn(response.error_message)
+            else:
+                self.debug_manager.clear_subtrees()
+                try:
+                    root = self.find_root()
+                    if root:
+                        with self._state_lock:
+                            self._setting_up = True
+                        root.setup()
+                        with self._state_lock:
+                            self._setting_up = False
+                except TreeTopologyError as ex:
+                    response.success = False
+                    response.error_message = str(ex)
+                    response.tree_state = self.get_state()
+                except BehaviorTreeException as ex:
+                    response.success = False
+                    response.error_message = str(ex)
+                    response.tree_state = self.get_state()
+                response.tree_state = tree_state
+                # shutdown the tree after the setup and shutdown request
+                request.command = ControlTreeExecutionRequest.SHUTDOWN
 
         if (request.command == ControlTreeExecutionRequest.STOP or
                 request.command == ControlTreeExecutionRequest.SHUTDOWN):
@@ -919,7 +953,7 @@ class TreeManager(object):
         # save the children of the old node
 
         try:
-            node_instance = Node.from_msg(request.new_node)
+            node_instance = Node.from_msg(request.new_node, self.debug_manager)
         except TypeError as exc:
             rospy.logerr(BehaviorTreeException(str(exc)))
             response.success = False

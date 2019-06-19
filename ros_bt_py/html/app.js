@@ -56,6 +56,7 @@ class App extends Component
       skin: 'darkmode',
       copy_node: false,
       connected: false,
+      publishing_subtrees: false
     };
 
     ros.on("connection", function(e) {
@@ -107,6 +108,12 @@ class App extends Component
       serviceType: 'ros_bt_py_msgs/RemoveNode'
     });
 
+    this.set_execution_mode_service = new ROSLIB.Service({
+      ros: this.state.ros,
+      name: this.state.bt_namespace + 'debug/set_execution_mode',
+      serviceType: 'ros_bt_py_msgs/SetExecutionMode'
+    });
+
     this.lastTreeUpdate = null;
     this.topicTimeoutID = null;
     this.newMsgDelay = 500;  // ms
@@ -129,10 +136,40 @@ class App extends Component
     this.updateTreeMsg = this.updateTreeMsg.bind(this);
     this.changeSkin = this.changeSkin.bind(this);
     this.changeCopyMode = this.changeCopyMode.bind(this);
+    this.onPublishingSubtreesChange = this.onPublishingSubtreesChange.bind(this);
   }
 
   onTreeUpdate(msg)
   {
+    if (this.state.publishing_subtrees && this.last_received_tree_msg && this.last_received_tree_msg.nodes)
+    {
+      var setup_and_shutdown = false;
+      if (this.last_received_tree_msg.nodes.length != msg.nodes.length)
+      {
+        setup_and_shutdown = true;
+      } else {
+        for (var i = 0; i < msg.nodes.length; i++)
+        {
+          if (msg.nodes[i].module != this.last_received_tree_msg.nodes[i].module
+              || msg.nodes[i].node_class != this.last_received_tree_msg.nodes[i].node_class
+              || msg.nodes[i].name != this.last_received_tree_msg.nodes[i].name)
+          {
+            setup_and_shutdown = true;
+          }
+        }
+      }
+      if (setup_and_shutdown)
+      {
+        this.set_execution_mode_service.callService(
+          new ROSLIB.ServiceRequest({
+            single_step: false,
+            publish_subtrees: true,
+            collect_performance_data: false
+          }),
+          function(response) {
+          }.bind(this));
+      }
+    }
     this.last_received_tree_msg = msg;
     if (!this.state.selected_tree.is_subtree)
     {
@@ -151,6 +188,8 @@ class App extends Component
       if (selectedSubtree)
       {
         this.updateTreeMsg(selectedSubtree);
+      } else {
+        this.onSelectedTreeChange(false, '');
       }
     }
   }
@@ -205,6 +244,12 @@ class App extends Component
       this.setState({copy_node: false});
     }
   }
+
+  onPublishingSubtreesChange(enable)
+  {
+    this.setState({publishing_subtrees: enable});
+  }
+
   updateTreeMsg(msg)
   {
     // Clear any timers for previously received messages (see below)
@@ -318,6 +363,12 @@ class App extends Component
         ros: this.state.ros,
         name: namespace + 'remove_node',
         serviceType: 'ros_bt_py_msgs/RemoveNode'
+      });
+
+      this.set_execution_mode_service = new ROSLIB.Service({
+        ros: this.state.ros,
+        name: namespace + 'debug/set_execution_mode',
+        serviceType: 'ros_bt_py_msgs/SetExecutionMode'
       });
 
       this.setState({bt_namespace: namespace});
@@ -593,7 +644,8 @@ class App extends Component
                       tree_message={this.state.last_tree_msg}
                       onSelectedTreeChange={this.onSelectedTreeChange}
                       onNamespaceChange={this.onNamespaceChange}
-                      onError={this.onError}/>
+                      onError={this.onError}
+                      onPublishingSubtreesChange={this.onPublishingSubtreesChange}/>
 
         <div className="container-fluid">
           <div className="row row-height">
@@ -611,6 +663,7 @@ class App extends Component
                                 ros={this.state.ros}
                                 bt_namespace={this.state.bt_namespace}
                                 subtreeNames={this.state.subtree_names}
+                                selected_tree={this.state.selected_tree}
                                 onSelectedTreeChange={this.onSelectedTreeChange}
                                 onError={this.onError}/>
                     <button className="btn btn-primary m-1"
@@ -632,10 +685,13 @@ class App extends Component
                                           ros={this.state.ros}
                                           bt_namespace={this.state.bt_namespace}
                                           tree_message={this.state.last_tree_msg}
+                                          subtreeNames={this.state.subtree_names}
+                                          publishing_subtrees={this.state.publishing_subtrees}
                                           onSelectionChange={this.onEditorSelectionChange}
                                           selectedNodeName={this.state.selected_node_name}
                                           onSelectedEdgeChange={this.onSelectedEdgeChange}
                                           showDataGraph={this.state.showDataGraph}
+                                          onSelectedTreeChange={this.onSelectedTreeChange}
                                           onError={this.onError}
                                           skin={this.state.skin}/>
                   </div>

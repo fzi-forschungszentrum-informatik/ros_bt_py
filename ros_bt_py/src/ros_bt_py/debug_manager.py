@@ -159,7 +159,7 @@ class DebugManager(object):
 
     def clear_subtrees(self):
         with self._lock:
-            self.subtree_dict.clear()
+            self.subtrees.clear()
             self._debug_info_msg.subtree_states = []
 
     def get_publish_subtrees(self):
