@@ -1,3 +1,5 @@
+[![pipeline status](/../badges/master/pipeline.svg)](/) [![coverage](/../badges/master/coverage.svg)](/)
+
 # Welcome to ros_bt_py!
 
 This is a [Behavior

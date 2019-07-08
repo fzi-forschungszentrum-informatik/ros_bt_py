@@ -1,37 +1,3 @@
 <launch>
-  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
-  <arg name="port" value="8085" />
-  <include file="$(find roswww)/launch/roswww.launch">
-    <arg name="webpath" value="html" />
-    <arg name="port" value="$(arg port)" />
-  </include>
-  <node name="tree_node" pkg="ros_bt_py" type="tree_node.py" output="log"
-        respawn="true">
-    <rosparam param="node_modules">
-      [
-      ros_bt_py.nodes.sequence,
-      ros_bt_py.nodes.fallback,
-      ros_bt_py.nodes.decorators,
-      ros_bt_py.nodes.mock_nodes,
-      ros_bt_py.nodes.action,
-      ros_bt_py.nodes.service,
-      ros_bt_py.nodes.topic,
-      ros_bt_py.nodes.compare,
-      ros_bt_py.nodes.getters,
-      ros_bt_py.nodes.setters,
-      ros_bt_py.nodes.passthrough_node,
-      ros_bt_py.nodes.shovable,
-      ros_bt_py.nodes.subtree,
-      ros_bt_py.nodes.wait,
-      ros_bt_py.nodes.format,
-      ros_bt_py.nodes.log,
-      ros_bt_py.nodes.constant,
-      ros_bt_py.ros_nodes.message_from_dict,
-      ros_bt_py.ros_nodes.pose_distance
-      ]
-    </rosparam>
-  </node>
-  <node name="print_editor_url" pkg="ros_bt_py" type="print_editor_url.py" output="screen">
-    <param name="port" value="$(arg port)" />
-  </node>
+  <include file="$(find ros_bt_py)/launch/ros_bt_py.launch" />
 </launch>
