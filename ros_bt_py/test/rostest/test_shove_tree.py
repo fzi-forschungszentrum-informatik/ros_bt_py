@@ -129,7 +129,7 @@ class TestShoveTree(unittest.TestCase):
 
         # First, create and set up the RemoteSlot node that will control the slot
         remote_slot_node = RemoteSlot(options={
-            'slot_namespace': '/remote_slot/remote_slot/',
+            'slot_namespace': '/remote_slot/remote_slot',
             'wait_for_service_seconds': 5.0
         })
 

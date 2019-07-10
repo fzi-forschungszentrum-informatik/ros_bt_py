@@ -1,6 +1,13 @@
 <launch>
   <!-- port of the editor web interface -->
   <arg name="port" value="8085" />
+
+  <!-- additional node_modules from other packages that are loaded into the editor
+       this must be a list of modules, for example:
+  
+       <arg name="additional_node_modules" default="future_advanced_nodes.learning, future_advanced_nodes.doing," />
+  -->
+  <arg name="additional_node_modules" default="" />
   
   <!-- rosbridge that provides the websocket connection for the web interface -->
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
@@ -16,7 +23,7 @@
   <node name="tree_node" pkg="ros_bt_py" type="tree_node.py" output="log"
         respawn="true">
     <!-- a list of modules that are availble in the editor web interface -->
-    <rosparam param="node_modules">
+    <rosparam param="node_modules" subst_value="True">
       [
       ros_bt_py.nodes.sequence,
       ros_bt_py.nodes.fallback,
@@ -31,6 +38,7 @@
       ros_bt_py.nodes.passthrough_node,
       ros_bt_py.nodes.shovable,
       ros_bt_py.nodes.subtree,
+      ros_bt_py.nodes.io,
       ros_bt_py.nodes.wait,
       ros_bt_py.nodes.format,
       ros_bt_py.nodes.log,
@@ -38,7 +46,8 @@
       ros_bt_py.nodes.file,
       ros_bt_py.nodes.random_number,
       ros_bt_py.ros_nodes.message_from_dict,
-      ros_bt_py.ros_nodes.pose_distance
+      ros_bt_py.ros_nodes.pose_distance,
+      $(arg additional_node_modules)
       ]
     </rosparam>
   </node>
