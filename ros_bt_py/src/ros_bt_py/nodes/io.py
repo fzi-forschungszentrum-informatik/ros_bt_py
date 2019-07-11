@@ -4,6 +4,7 @@ from ros_bt_py.node import IO, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
 from rosbridge_library.internal.message_conversion import populate_instance, extract_values
+from rosbridge_library.internal.message_conversion import InvalidMessageException
 # FIXME: right now input/output are exact copies of each other, move this code to a common implementation
 
 
@@ -43,10 +44,14 @@ class IOInputOption(IO):
             if self.inputs['in'] and self.inputs.is_updated('in'):
                 self.outputs['out'] = self.inputs['in']
             else:
-                values = extract_values(self.options['default'])
-                message = self.options['io_type']()
-                populate_instance(values, message)
-                self.outputs['out'] = message
+                try:
+                    values = extract_values(self.options['default'])
+                    message = self.options['io_type']()
+                    populate_instance(values, message)
+                    self.outputs['out'] = message
+                except InvalidMessageException:
+                    # this means it is a "primitive" type such as int
+                    self.outputs['out'] = self.options['default']
             return NodeMsg.SUCCEEDED
         except Exception as e:
             self.logerr("Input Exception: %s" % e)
@@ -150,10 +155,14 @@ class IOOutputOption(IO):
             if self.inputs['in'] and self.inputs.is_updated('in'):
                 self.outputs['out'] = self.inputs['in']
             else:
-                values = extract_values(self.options['default'])
-                message = self.options['io_type']()
-                populate_instance(values, message)
-                self.outputs['out'] = message
+                try:
+                    values = extract_values(self.options['default'])
+                    message = self.options['io_type']()
+                    populate_instance(values, message)
+                    self.outputs['out'] = message
+                except InvalidMessageException:
+                    # this means it is a "primitive" type such as int
+                    self.outputs['out'] = self.options['default']
             return NodeMsg.SUCCEEDED
         except Exception as e:
             self.logerr("Output Exception: %s" % e)
