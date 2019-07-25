@@ -237,7 +237,12 @@ class NodeListItem extends Component {
       return "No documentation provided";
     } else {
       var index = this.props.node.doc.indexOf("**Behavior Tree I/O keys**");
-      return this.props.node.doc.substring(0, index).trim();
+      if (index < 0)
+      {
+        return this.props.node.doc;
+      } else {
+        return this.props.node.doc.substring(0, index).trim();
+      }
     }
   }
 
