@@ -45,6 +45,12 @@ One dependency, `jsonpickle` might not be registered in rosdep yet. Please
 install it manually, either from the package sources of your distro
 (i.e. apt) or via pip.
 
+**Warning**
+PyYaml 5.x breaks interoperability with saved trees, make sure you have PyYaml <= 3.13 installed!
+```
+pip install 'pyyaml<=3.13'
+```
+
 After installing the dependencies, simply run `catkin_make` and you're
 good to go! The command
 
