@@ -8,6 +8,9 @@
        <arg name="additional_node_modules" default="future_advanced_nodes.learning, future_advanced_nodes.doing," />
   -->
   <arg name="additional_node_modules" default="" />
+
+  <!-- -->
+  <arg name="show_traceback_on_exception" default="false" />
   
   <!-- rosbridge that provides the websocket connection for the web interface -->
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
@@ -19,7 +22,7 @@
     <arg name="cached" value="false" />
   </include>
 
-  <!-- behavior tree backende, responsible for executing of the tree -->
+  <!-- behavior tree backend, responsible for executing the tree -->
   <node name="tree_node" pkg="ros_bt_py" type="tree_node.py" output="log"
         respawn="true">
     <!-- a list of modules that are availble in the editor web interface -->
@@ -51,6 +54,7 @@
       $(arg additional_node_modules)
       ]
     </rosparam>
+    <param name="show_traceback_on_exception" value="$(arg show_traceback_on_exception)" />
   </node>
 
   <!-- helper node that prints the url of the editor web interface for convenience -->
