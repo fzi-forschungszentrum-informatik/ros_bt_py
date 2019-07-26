@@ -33,6 +33,8 @@ class TreeNode(object):
             raise TypeError('node_modules must be a list, but is a %s' %
                             type(node_module_names.__name__))
 
+        show_traceback_on_exception = rospy.get_param('~show_traceback_on_exception', default=False)
+
         self.tree_pub = rospy.Publisher('~tree', Tree, latch=True, queue_size=1)
         self.debug_info_pub = rospy.Publisher('~debug/debug_info', DebugInfo, latch=True, queue_size=1)
         self.debug_settings_pub = rospy.Publisher(
@@ -47,7 +49,8 @@ class TreeNode(object):
             debug_manager=self.debug_manager,
             publish_tree_callback=self.tree_pub.publish,
             publish_debug_info_callback=self.debug_info_pub.publish,
-            publish_debug_settings_callback=self.debug_settings_pub.publish)
+            publish_debug_settings_callback=self.debug_settings_pub.publish,
+            show_traceback_on_exception=show_traceback_on_exception)
 
         self.add_node_service = rospy.Service('~add_node',
                                               AddNode,

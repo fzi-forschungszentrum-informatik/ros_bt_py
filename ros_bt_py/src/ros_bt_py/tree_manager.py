@@ -76,7 +76,8 @@ class TreeManager(object):
                  tick_frequency_hz=10.0,
                  publish_tree_callback=None,
                  publish_debug_info_callback=None,
-                 publish_debug_settings_callback=None):
+                 publish_debug_settings_callback=None,
+                 show_traceback_on_exception=False):
         self.name = name
         self.publish_tree = publish_tree_callback
         if self.publish_tree is None:
@@ -95,6 +96,8 @@ class TreeManager(object):
             rospy.loginfo('Tree manager instantiated without explicit debug manager '
                           '- building our own with default parameters')
             self.debug_manager = DebugManager()
+
+        self.show_traceback_on_exception = show_traceback_on_exception
 
         if name is None:
             name = ''
@@ -183,9 +186,12 @@ class TreeManager(object):
                          ex,
                          traceback.format_exc())
             with self._state_lock:
-                self._last_error = '{}, {}'.format(
-                    ex,
-                    traceback.format_exc())
+                if self.show_traceback_on_exception:
+                    self._last_error = '{}, {}'.format(
+                        ex,
+                        traceback.format_exc())
+                else:
+                    self._last_error = '{}'.format(ex)
 
                 self.tree_msg.state = Tree.ERROR
 
