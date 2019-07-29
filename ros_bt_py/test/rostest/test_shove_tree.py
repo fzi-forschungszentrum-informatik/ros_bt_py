@@ -192,13 +192,13 @@ class TestShoveTree(unittest.TestCase):
         rospy.sleep(0.5)
 
         is_running = False
-        for _ in range(16):
+        for _ in range(32):
             rospy.sleep(0.5)
             if remote_slot_node.tick() == NodeMsg.RUNNING:
                 is_running = True
                 break
         if not is_running:
-            raise Exception('Slot is not running after 4 seconds, but in state %s'
+            raise Exception('Slot is not running after 16 seconds, but in state %s'
                             % remote_slot_node.state)
 
         rospy.sleep(0.05)
