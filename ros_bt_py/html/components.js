@@ -2669,6 +2669,7 @@ class NewNode extends Component
                            + this.props.node.name}
                       name={this.state.name}
                       nodeClass={this.props.node.node_class}
+                      module={this.props.node.module}
                       changeCopyMode={this.props.changeCopyMode}
                       messagesFuse={this.props.messagesFuse}
                       updateValidity={this.updateValidity}
@@ -3921,7 +3922,7 @@ class JSONInput extends Component
 
     if (this.state.message_type != null)
     {
-      this.updateMessageType(this.state.message_type, this.state.json);
+      this.updateMessageType(this.state.message_type, this.state.json, true);
     }
   }
 
@@ -3965,9 +3966,16 @@ class JSONInput extends Component
     return pyobject;
   }
 
-  updateMessageType(message_type, json)
+  updateMessageType(message_type, json, just_mounted)
   {
-    this.setState({message_type:message_type});
+    var type_changed = true;
+    if (this.state.message_type === message_type)
+    {
+      type_changed = false;
+    } else {
+      this.setState({message_type:message_type});
+      type_changed = true;
+    }
     if (this.props.ros)
     {
       var message = getMessageType(message_type);
@@ -3983,7 +3991,13 @@ class JSONInput extends Component
           function(response) {
             if (response.success) {
               this.setState({pyobject: response.fields});
-              var new_value = this.getJSONfromPyObject(JSON.parse(response.fields), response.field_names).json;
+
+              var new_value;
+              if (type_changed) {
+                new_value = this.getJSONfromPyObject(JSON.parse(response.fields), response.field_names).json;
+              } else {
+                new_value = this.getJSONfromPyObject(json, response.field_names).json;
+              }
 
               this.setState({
                 json : new_value,
@@ -3991,7 +4005,9 @@ class JSONInput extends Component
               });
               this.editor.update(new_value);
               console.log("updated message type and representation");
-              this.handleChange();
+              if (!just_mounted) {
+                this.handleChange();
+              }
             }
           }.bind(this));
       }
@@ -4008,7 +4024,7 @@ class JSONInput extends Component
       {
         if (this.props.json.hasOwnProperty("py/object") && this.props.json["py/object"] != this.state.message_type)
         {
-          this.updateMessageType(this.props.json["py/object"], this.props.json);
+          this.updateMessageType(this.props.json["py/object"], this.props.json, false);
         }
       }
     }
