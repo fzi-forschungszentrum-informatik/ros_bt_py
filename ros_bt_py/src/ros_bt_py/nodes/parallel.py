@@ -76,7 +76,7 @@ class Parallel(FlowControl):
 
     def _do_reset(self):
         for child in self.children:
-            child.reset()()
+            child.reset()
         return NodeMsg.IDLE
 
     def _do_untick(self):
