@@ -304,6 +304,103 @@ class Repeat(Decorator):
     inputs={},
     outputs={},
     max_children=1))
+class RepeatAlways(Decorator):
+    """Repeats the child an infinite number of times,
+
+    returns RUNNING if there is a child, regardless of the childs returned state,
+
+    returns SUCCEEDED if there is no child.
+
+    """
+    def _do_setup(self):
+        for child in self.children:
+            child.setup()
+
+    def _do_tick(self):
+        for child in self.children:
+            result = child.tick()
+            if result != NodeMsg.RUNNING:
+                child.reset()
+            return NodeMsg.RUNNING
+
+        # Succeed if we have no children
+        return NodeMsg.SUCCEEDED
+
+    def _do_shutdown(self):
+        for child in self.children:
+            return child.shutdown()
+
+    def _do_reset(self):
+        for child in self.children:
+            return child.reset()
+        return NodeMsg.IDLE
+
+    def _do_untick(self):
+        for child in self.children:
+            return child.untick()
+        return NodeMsg.IDLE
+
+    # Decorator's default utility calculation works here
+    #
+    # def _do_calculate_utility(self):
+    #     pass
+
+
+@define_bt_node(NodeConfig(
+    options={},
+    inputs={},
+    outputs={},
+    max_children=1))
+class RepeatUntilFail(Decorator):
+    """Repeats the child an infinite number of times until it returns FAILED.
+
+    returns RUNNING if the child is RUNNING or has returned SUCCEEDED,
+    returns FAILED if the child returned FAILED
+
+    returns SUCCEEDED if there is no child.
+
+    """
+    def _do_setup(self):
+        for child in self.children:
+            child.setup()
+
+    def _do_tick(self):
+        for child in self.children:
+            result = child.tick()
+            if result == NodeMsg.FAILED:
+                return NodeMsg.FAILED
+            elif result == NodeMsg.SUCCEEDED:
+                child.reset()
+            return NodeMsg.RUNNING
+
+        # Succeed if we have no children
+        return NodeMsg.SUCCEEDED
+
+    def _do_shutdown(self):
+        for child in self.children:
+            return child.shutdown()
+
+    def _do_reset(self):
+        for child in self.children:
+            return child.reset()
+        return NodeMsg.IDLE
+
+    def _do_untick(self):
+        for child in self.children:
+            return child.untick()
+        return NodeMsg.IDLE
+
+    # Decorator's default utility calculation works here
+    #
+    # def _do_calculate_utility(self):
+    #     pass
+
+
+@define_bt_node(NodeConfig(
+    options={},
+    inputs={},
+    outputs={},
+    max_children=1))
 class Optional(Decorator):
     """Wraps a child that may not be able to execute
 
