@@ -96,7 +96,7 @@ class TestShoveTree(unittest.TestCase):
         self.assertTrue(exec_res.success, exec_res.error_message)
 
         # Enough for the tree to be shoved over
-        rospy.sleep(0.5)
+        rospy.sleep(2.0)
 
         # Signal the slot that it's allowed to start
         slot_exec_res = self.control_slot_proxy(ControlTreeExecutionRequest(
@@ -106,7 +106,7 @@ class TestShoveTree(unittest.TestCase):
 
         # Should be enough time for the tree to be shoved to the
         # remote_slot namespace, execute there, and return
-        rospy.sleep(2.0)
+        rospy.sleep(4.0)
 
         # Should be a given, since the tree message is updated even just at load
         self.assertIsNotNone(self.tree_msg)
@@ -151,7 +151,7 @@ class TestShoveTree(unittest.TestCase):
         self.assertTrue(exec_res.success, exec_res.error_message)
 
         # Enough for the tree to be shoved over
-        rospy.sleep(0.5)
+        rospy.sleep(2.0)
 
         # Signal the slot that it's allowed to start by ticking the
         # RemoteSlot node again (this should return RUNNING, first
@@ -161,7 +161,7 @@ class TestShoveTree(unittest.TestCase):
 
         # Should be enough time for the tree to be shoved to the
         # remote_slot namespace, execute there, and return
-        rospy.sleep(2.0)
+        rospy.sleep(4.0)
 
         # If we tick again now, we should get a SUCCEEDED response
         self.assertEqual(remote_slot_node.tick(), NodeMsg.SUCCEEDED)
@@ -192,13 +192,13 @@ class TestShoveTree(unittest.TestCase):
         rospy.sleep(0.5)
 
         is_running = False
-        for _ in range(8):
+        for _ in range(32):
             rospy.sleep(0.5)
             if remote_slot_node.tick() == NodeMsg.RUNNING:
                 is_running = True
                 break
         if not is_running:
-            raise Exception('Slot is not running after 4 seconds, but in state %s'
+            raise Exception('Slot is not running after 16 seconds, but in state %s'
                             % remote_slot_node.state)
 
         rospy.sleep(0.05)

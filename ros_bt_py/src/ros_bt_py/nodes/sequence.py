@@ -36,7 +36,7 @@ class Sequence(FlowControl):
     *Special case:*
 
     If a Sequence has no children, its :meth:`tick` method will always
-    return FAILED.
+    return SUCCEEDED.
 
     """
     def _do_setup(self):
@@ -46,7 +46,7 @@ class Sequence(FlowControl):
     def _do_tick(self):
         if not self.children:
             self.logwarn('Ticking without children. Is this really what you want?')
-            return NodeMsg.FAILED
+            return NodeMsg.SUCCEEDED
 
         # If we've previously succeeded or failed, untick all children
         if self.state in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
@@ -125,7 +125,7 @@ class MemorySequence(FlowControl):
     *Special case:*
 
     If a Sequence has no children, its :meth:`tick` method will always
-    return FAILED.
+    return SUCCEEDED.
 
     """
     def _do_setup(self):
@@ -136,7 +136,7 @@ class MemorySequence(FlowControl):
     def _do_tick(self):
         if not self.children:
             self.logwarn('Ticking without children. Is this really what you want?')
-            return NodeMsg.FAILED
+            return NodeMsg.SUCCEEDED
 
         # If we've previously succeeded or failed, reset
         # last_running_child and untick all children

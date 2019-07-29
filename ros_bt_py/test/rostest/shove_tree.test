@@ -20,5 +20,6 @@
 
   <test test-name="test_shove_tree"
         pkg="ros_bt_py"
-        type="test_shove_tree.py" />
+        type="test_shove_tree.py"
+        time-limit="100.0" />
 </launch>
