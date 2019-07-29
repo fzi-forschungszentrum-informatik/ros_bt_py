@@ -44,10 +44,10 @@ class TestSequence(unittest.TestCase):
     def tearDown(self):
         self.sequence.shutdown()
 
-    def testEmptyTickFails(self):
+    def testEmptyTickSucceeds(self):
         self.sequence.setup()
         self.sequence.tick()
-        self.assertEqual(self.sequence.state, Node.FAILED)
+        self.assertEqual(self.sequence.state, Node.SUCCEEDED)
 
     def testTickSuccess(self):
         self.sequence.add_child(self.succeeder)
@@ -200,10 +200,10 @@ class TestMemorySequence(unittest.TestCase):
     def tearDown(self):
         self.mem_sequence.shutdown()
 
-    def testEmptyTickFails(self):
+    def testEmptyTickSucceeds(self):
         self.mem_sequence.setup()
         self.mem_sequence.tick()
-        self.assertEqual(self.mem_sequence.state, Node.FAILED)
+        self.assertEqual(self.mem_sequence.state, Node.SUCCEEDED)
 
     def testTickSuccess(self):
         self.mem_sequence.add_child(self.succeeder)
