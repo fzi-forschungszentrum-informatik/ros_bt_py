@@ -65,8 +65,18 @@ class Parallel(FlowControl):
             if child.state == NodeMsg.FAILED:
                 failures += 1
         if successes >= self.options['needed_successes']:
+            # untick all running children
+            for child in self.children:
+                if child.state not in [NodeMsg.SUCCEEDED,
+                                       NodeMsg.FAILED]:
+                    child.untick()
             return NodeMsg.SUCCEEDED
         elif failures > len(self.children) - self.options['needed_successes']:
+            # untick all running children
+            for child in self.children:
+                if child.state not in [NodeMsg.SUCCEEDED,
+                                       NodeMsg.FAILED]:
+                    child.untick()
             return NodeMsg.FAILED
         return NodeMsg.RUNNING
 
