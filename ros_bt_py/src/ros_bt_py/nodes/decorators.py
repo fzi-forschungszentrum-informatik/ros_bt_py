@@ -140,6 +140,55 @@ class UntilSuccess(Decorator):
 
 
 @define_bt_node(NodeConfig(
+    options={},
+    inputs={},
+    outputs={},
+    max_children=1))
+class Inverter(Decorator):
+    """Inverts the result of the child.
+    Return SUCCEEDED if the child returned FAILED,
+    return FAILED if the child returned SUCCEEDED.
+
+    RUNNING is forwarded
+
+    """
+    def _do_setup(self):
+        for child in self.children:
+            child.setup()
+
+    def _do_tick(self):
+        for child in self.children:
+            result = child.tick()
+            if result == NodeMsg.FAILED:
+                return NodeMsg.SUCCEEDED
+            elif result == NodeMsg.SUCCEEDED:
+                return NodeMsg.FAILED
+            return result
+
+        # Succeed if we have no children
+        return NodeMsg.SUCCEEDED
+
+    def _do_shutdown(self):
+        for child in self.children:
+            return child.shutdown()
+
+    def _do_reset(self):
+        for child in self.children:
+            return child.reset()
+        return NodeMsg.IDLE
+
+    def _do_untick(self):
+        for child in self.children:
+            return child.untick()
+        return NodeMsg.IDLE
+
+    # Decorator's default utility calculation works here
+    #
+    # def _do_calculate_utility(self):
+    #     pass
+
+
+@define_bt_node(NodeConfig(
     options={'num_retries': int},
     inputs={},
     outputs={},
