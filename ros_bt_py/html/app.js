@@ -510,6 +510,17 @@ class App extends Component
 
   onNodeListSelectionChange(new_selected_node)
   {
+    if (this.state.node_changed)
+    {
+      if(window.confirm("Are you sure you wish to discard all changes to the currently edited node?"))
+      {
+        // normal behavior, discard all entered data
+        this.setState({node_changed: false});
+      } else {
+        // do not execute onNodeListSelectionChange and keep editing
+        return;
+      }
+    }
     this.setState({selected_node: new_selected_node,
                    selected_node_name: null,
                    last_selection_source: 'nodelist'});
@@ -517,7 +528,7 @@ class App extends Component
 
   onEditorSelectionChange(new_selected_node_name)
   {
-    if (this.state.node_changed && new_selected_node_name != this.state.selected_node_name)
+    if (this.state.node_changed && (new_selected_node_name === null || new_selected_node_name != this.state.selected_node_name))
     {
       if(window.confirm("Are you sure you wish to discard all changes to the currently edited node?"))
       {
