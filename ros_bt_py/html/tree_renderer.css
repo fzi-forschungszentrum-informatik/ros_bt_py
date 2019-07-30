@@ -58,6 +58,20 @@
   color: #eff0f4;
 }
 
+.node_class {
+}
+
+.node_module {
+}
+
+.maxw0 {
+  max-width: 0;
+}
+
+.minw0 {
+  min-width: 0;
+}
+
 .btnode tbody {
   color: #CECFD2;
 }
