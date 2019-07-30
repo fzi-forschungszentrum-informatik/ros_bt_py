@@ -193,11 +193,28 @@ function getMessageType(str)
   return {message_type: message_type, service: service};
 }
 
+function getShortDoc(doc) {
+  if (!doc || doc == null || doc.length == 0)
+  {
+    return "No documentation provided";
+  } else {
+    var index = doc.indexOf("**Behavior Tree I/O keys**");
+    if (index < 0)
+    {
+      return doc;
+    } else {
+      return doc.substring(0, index).trim();
+    }
+  }
+}
+
 class NodeListItem extends Component {
   constructor(props)
   {
     super(props);
-    this.getShortDoc = this.getShortDoc.bind(this);
+    this.state = {
+      collapsed: this.props.collapsed,
+    };
   }
 
   renderIOTable(nodedata_list, title) {
@@ -210,8 +227,8 @@ class NodeListItem extends Component {
     var rows = nodedata_list.map(data => {
       return (
         <tr key={title+data.key}>
-          <td className="io_key">{data.key}</td>
-          <td className="io_type text-muted pl-2">
+          <td title={data.key} className="io_key text-truncate maxw0">{data.key}</td>
+          <td title={prettyprint_type(data.serialized_value)}className="io_type text-truncate maxw0 text-muted pl-2">
             {prettyprint_type(data.serialized_value)}
           </td>
         </tr>);
@@ -220,7 +237,7 @@ class NodeListItem extends Component {
     return (
       <div className="io_values list-group-item">
         <h5>{title}</h5>
-        <table><tbody>
+        <table className="table"><tbody>
             {rows}
         </tbody></table>
       </div>
@@ -231,34 +248,55 @@ class NodeListItem extends Component {
     this.props.onSelectionChange(this.props.node);
   }
 
-  getShortDoc() {
-    if (!this.props.node.doc || this.props.node.doc == null || this.props.node.doc.length == 0)
-    {
-      return "No documentation provided";
-    } else {
-      var index = this.props.node.doc.indexOf("**Behavior Tree I/O keys**");
-      if (index < 0)
-      {
-        return this.props.node.doc;
-      } else {
-        return this.props.node.doc.substring(0, index).trim();
-      }
-    }
+  toggleCollapsed(event) {
+    this.setState({collapsed: !this.state.collapsed});
+    event.stopPropagation();
   }
 
   render() {
-    return (
-      <div className="border rounded p-2 mb-2"
-           onClick={this.onClick.bind(this)}>
-        <h4 className="node_class">{this.props.node.node_class} <i title={this.getShortDoc()} class="fas fa-question-circle"></i></h4>
-        <h5 className="node_module text-muted">{this.props.node.module}</h5>
-        <div>{
-          'max_children: ' + (this.props.node.max_children >= 0 ? this.props.node.max_children : '∞')}</div>
+    var collapsible_icon = "fas fa-angle-up";
+    if (this.state.collapsed)
+    {
+      collapsible_icon = "fas fa-angle-down";
+    }
+    var io_table = null;
+    if (!this.state.collapsed)
+    {
+      io_table = (
         <div className="list-group">
           { this.renderIOTable(this.props.node.options, 'Options') }
           { this.renderIOTable(this.props.node.inputs, 'Inputs') }
           { this.renderIOTable(this.props.node.outputs, 'Outputs') }
         </div>
+      );
+    }
+    var node_type = null;
+    if (this.props.node.max_children < 0)
+    {
+      node_type = "Flow control";
+    } else if (this.props.node.max_children > 0)
+    {
+      node_type = "Decorator";
+    } else {
+      node_type = "Leaf";
+    }
+
+    return (
+      <div className="border rounded p-2 mb-2"
+           onClick={this.onClick.bind(this)}>
+        <div className="d-flex justify-content-between">
+          <div className="d-flex minw0">
+            <h4 title={this.props.node.node_class} className="node_class text-truncate">{this.props.node.node_class}</h4>
+            <i title={getShortDoc(this.props.node.doc)} class="fas fa-question-circle pl-2 pr-2"></i>
+          </div>
+          <div className="d-flex minw0">
+            <i onClick={this.toggleCollapsed.bind(this)} class={collapsible_icon}></i>
+          </div>
+        </div>
+        <h5 title={this.props.node.module} className="node_module text-truncate text-muted">{this.props.node.module}</h5>
+        <div>{
+          node_type + ' (max_children: ' + (this.props.node.max_children >= 0 ? this.props.node.max_children : '∞') + ')'}</div>
+        {io_table}
       </div>
     );
   };
@@ -322,6 +360,7 @@ class NodeList extends Component
         .map( (node) => {
           return (<NodeListItem node={node}
                            key={node.module + node.node_class}
+                           collapsed={true}
                            onSelectionChange={this.props.onSelectionChange}/>);
     });
     return(
@@ -2670,6 +2709,7 @@ class NewNode extends Component
                       name={this.state.name}
                       nodeClass={this.props.node.node_class}
                       module={this.props.node.module}
+                      doc={this.props.node.doc}
                       changeCopyMode={this.props.changeCopyMode}
                       messagesFuse={this.props.messagesFuse}
                       updateValidity={this.updateValidity}
@@ -3384,6 +3424,12 @@ class EditableNode extends Component
       }
     }
 
+    var doc_icon = null;
+    if (this.props.doc)
+    {
+      doc_icon = (<i title={getShortDoc(this.props.doc)} class="fas fa-question-circle pl-2 pr-2"></i>);
+    }
+
     return(
       <div className="d-flex flex-column">
         <input className="form-control-lg mb-2"
@@ -3391,7 +3437,10 @@ class EditableNode extends Component
                value={this.props.name}
                onFocus={this.onFocus}
                onChange={this.props.nameChangeHandler}/>
-        <h4 className="text-muted">{node_class_name}</h4>
+        <div className="d-flex minw0">
+          <h4 className="text-muted">{node_class_name}</h4>
+          {doc_icon}
+        </div>
         {this.renderParamInputs(this.props.options.sort(compareKeys), 'options')}
         {this.renderParamDisplays(this.props.inputs.sort(compareKeys), 'inputs')}
         {this.renderParamDisplays(this.props.outputs.sort(compareKeys), 'outputs')}
