@@ -360,6 +360,7 @@ class NodeList extends Component
         .map( (node) => {
           return (<NodeListItem node={node}
                            key={node.module + node.node_class}
+                           collapsed={true}
                            onSelectionChange={this.props.onSelectionChange}/>);
     });
     return(
