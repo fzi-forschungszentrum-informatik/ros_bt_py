@@ -51,6 +51,19 @@ PyYaml 5.x breaks interoperability with saved trees, make sure you have PyYaml <
 pip install 'pyyaml<=3.13'
 ```
 
+**Warning**
+If `pip install tornado` returns anything higher than tornado-5.1.1 you need to uninstall the conflicting tornado package,
+otherwise you might run into a nasty bug due to rosbridge silently closing websocket connections, making the web editor unusable.
+On Ubuntu 16.04 do this by (assuming it is installed in /usr/local and need to be removed with sudo):
+
+```bash
+sudo apt remove ros-kinetic-rosbridge-suite
+sudo -i
+pip uninstall tornado
+exit
+sudo apt install ros-kinetic-rosbridge-suite
+```
+
 After installing the dependencies, simply run `catkin_make` and you're
 good to go! The command
 
