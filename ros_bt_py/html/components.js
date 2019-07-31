@@ -1196,6 +1196,16 @@ class D3BehaviorTreeEditor extends Component
           <g className="drop_targets"
              visibility="hidden" />
         </g>
+          <text x="10"
+                y="20"
+                fill="#FFFFFF"
+                text-anchor="left"
+                alignment-baseline="top"
+                className="cursor-pointer svg-button"
+                onClick={this.resetView}>
+            Reset View
+          </text>
+
       </svg>
     );
   }
