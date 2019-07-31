@@ -80,6 +80,10 @@
   cursor: pointer;
 }
 
+.svg-button:hover {
+  fill: #bebebe;
+}
+
 .btnode tbody {
   color: #CECFD2;
 }
