@@ -72,6 +72,18 @@
   min-width: 0;
 }
 
+.maxh50 {
+  max-height: 50%;
+}
+
+.cursor-pointer{
+  cursor: pointer;
+}
+
+.svg-button:hover {
+  fill: #bebebe;
+}
+
 .btnode tbody {
   color: #CECFD2;
 }
@@ -140,7 +152,6 @@
 }
 
 .edit_canvas {
-    height: 30em;
 }
 
 .top-bar {

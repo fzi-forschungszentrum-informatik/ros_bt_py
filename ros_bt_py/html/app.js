@@ -667,7 +667,7 @@ class App extends Component
                         onSelectionChange={this.onNodeListSelectionChange}/>
             </div>
             <div className="col-9 scroll-col" id="main_pane">
-              <div className="container-fluid">
+              <div className="container-fluid d-flex h-100 flex-column">
                 <div className="row">
                   <div className="col d-flex">
                     <SelectTree key={this.state.bt_namespace}
@@ -690,7 +690,7 @@ class App extends Component
                     <SelectEditorSkin changeSkin={this.changeSkin}/>
                   </div>
                 </div>
-                <div className="row edit_canvas pb-2">
+                <div className="row edit_canvas h-100 pb-2">
                   <div className="col p-0">
                     <D3BehaviorTreeEditor key={this.state.bt_namespace}
                                           ros={this.state.ros}
@@ -707,7 +707,7 @@ class App extends Component
                                           skin={this.state.skin}/>
                   </div>
                 </div>
-                <div className="row">
+                <div className="row maxh50">
                   <div className="col pl-0">
                     {selectedNodeComponent}
                   </div>
