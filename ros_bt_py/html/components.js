@@ -2700,6 +2700,28 @@ class NewNode extends Component
       };
     }
 
+    // reparse unset_optionrefs
+    this.state.options = this.state.options.map(x => {
+      if (x.value.type === "unset_optionref")
+      {
+        var optionTypeName = x.value.value.substring('Ref to \"'.length, x.value.value.length - 1);
+        var optionType = this.state.options.find(x => {
+          return x.key === optionTypeName;
+        });
+        if (optionType && optionType.value)
+        {
+          return {
+            key: x.key,
+            value: getDefaultValue(optionType.value.value),
+          }
+        }
+      }
+      return {
+        key: x.key,
+        value: x.value,
+      }
+    });
+
     this.add_node_service = new ROSLIB.Service({
       ros: props.ros,
       name: props.bt_namespace + 'add_node',
