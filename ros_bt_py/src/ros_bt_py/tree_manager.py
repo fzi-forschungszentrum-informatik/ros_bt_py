@@ -972,6 +972,7 @@ class TreeManager(object):
             response.error_message = "Node morphing only supported for FlowControl nodes at the moment."
 
         node_instance.children = self.nodes[request.node_name].children
+        node_instance.parent = self.nodes[request.node_name].parent
         self.nodes[request.node_name] = node_instance
 
         # FIXME: do we need to do re-wiring here?
@@ -1218,7 +1219,7 @@ class TreeManager(object):
             # new list that won't be affected by calling
             # remove_child()!
             for child_name in [child.name for child in node.children]:
-                rospy.logerr('Moving child %s' % child_name)
+                rospy.loginfo('Moving child %s' % child_name)
                 new_node.add_child(node.remove_child(child_name))
         except BehaviorTreeException as exc:
             with self._state_lock:
