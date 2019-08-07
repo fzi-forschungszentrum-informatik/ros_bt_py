@@ -80,6 +80,10 @@
   cursor: pointer;
 }
 
+.cursor-grabbing {
+  cursor: grabbing;
+}
+
 .svg-button:hover {
   fill: #bebebe;
 }

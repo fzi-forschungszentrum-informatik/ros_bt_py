@@ -16,8 +16,8 @@ from ros_bt_py_msgs.srv import ClearTreeResponse
 from ros_bt_py_msgs.srv import MorphNodeResponse
 from ros_bt_py_msgs.srv import MoveNodeRequest, RemoveNodeRequest, ReplaceNodeRequest, WireNodeDataRequest
 from ros_bt_py_msgs.srv import MoveNodeResponse, ReplaceNodeResponse
-from ros_bt_py_msgs.srv import WireNodeDataResponse, AddNodeResponse, RemoveNodeResponse
-from ros_bt_py_msgs.srv import ContinueResponse
+from ros_bt_py_msgs.srv import WireNodeDataResponse, AddNodeResponse, AddNodeAtIndexResponse, RemoveNodeResponse
+from ros_bt_py_msgs.srv import ContinueResponse, AddNodeAtIndexRequest
 from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, ControlTreeExecutionResponse
 from ros_bt_py_msgs.srv import GetAvailableNodesResponse
 from ros_bt_py_msgs.srv import GetSubtreeResponse
@@ -780,8 +780,29 @@ class TreeManager(object):
         :param ros_bt_py_msgs.srv.AddNodeRequest request:
           A request describing the node to add.
         """
-        response = AddNodeResponse()
+        internal_request = AddNodeAtIndexRequest(
+            parent_name = request.parent_name,
+            node = request.node,
+            allow_rename = request.allow_rename,
+            new_child_index = -1,
+        )
+        internal_response = self.add_node_at_index(request=internal_request)
 
+        response = AddNodeResponse(
+            success = internal_response.success,
+            error_message = internal_response.error_message,
+            actual_node_name = internal_response.actual_node_name
+        )
+        return response
+
+    @is_edit_service
+    def add_node_at_index(self, request):
+        """Add the node in this request to the tree.
+
+        :param ros_bt_py_msgs.srv.AddNodeAtIndexRequest request:
+            A request describing the node to add.
+        """
+        response = AddNodeAtIndexResponse()
         try:
             instance = self.instantiate_node_from_msg(request.node, request.allow_rename)
             response.success = True
@@ -802,7 +823,9 @@ class TreeManager(object):
                                                    remove_children=False))
                 return response
             else:
-                self.nodes[request.parent_name].add_child(instance)
+                self.nodes[request.parent_name].add_child(
+                    child=instance,
+                    at_index=request.new_child_index)
 
         # Add children from msg to node
         missing_children = []

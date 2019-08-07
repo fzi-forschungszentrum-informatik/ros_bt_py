@@ -29,6 +29,7 @@ add_message_files(
 add_service_files(
   FILES
   AddNode.srv
+  AddNodeAtIndex.srv
   ClearTree.srv
   Continue.srv
   ControlTreeExecution.srv

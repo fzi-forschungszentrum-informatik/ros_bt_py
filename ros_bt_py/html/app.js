@@ -42,6 +42,7 @@ class App extends Component
       selected_node_name: null,
       copied_node: null,
       showDataGraph: true,
+      dragging_node_list_item: null,
       last_tree_msg: null,
       // Can be 'nodelist' or 'editor'. The value decides whether the
       // "Add node" or "change node options" widget is shown.
@@ -124,6 +125,8 @@ class App extends Component
     this.onClearErrors = this.onClearErrors.bind(this);
     this.onChangeErrorHistorySorting = this.onChangeErrorHistorySorting.bind(this);
     this.onNodeListSelectionChange = this.onNodeListSelectionChange.bind(this);
+    this.onNodeListDragging = this.onNodeListDragging.bind(this);
+    this.check_dragging = this.check_dragging.bind(this);
     this.onNodeChanged = this.onNodeChanged.bind(this);
     this.onEditorSelectionChange = this.onEditorSelectionChange.bind(this);
     this.onSelectedEdgeChange = this.onSelectedEdgeChange.bind(this);
@@ -526,6 +529,18 @@ class App extends Component
                    last_selection_source: 'nodelist'});
   }
 
+  onNodeListDragging(dragging)
+  {
+    this.setState({dragging_node_list_item: dragging});
+  }
+
+  check_dragging()
+  {
+    if (this.state.dragging_node_list_item)
+    {
+      this.setState({dragging_node_list_item: null});
+    }
+  }
   onEditorSelectionChange(new_selected_node_name)
   {
     if (this.state.node_changed && (new_selected_node_name === null || new_selected_node_name != this.state.selected_node_name))
@@ -645,8 +660,14 @@ class App extends Component
         />);
     }
 
+    var dragging_cursor = '';
+    if(this.state.dragging_node_list_item)
+    {
+      dragging_cursor = 'cursor-grabbing'
+    }
+
     return (
-      <div>
+      <div onMouseUp={this.check_dragging} className={dragging_cursor}>
         <ExecutionBar key={this.state.bt_namespace}
                       ros={this.state.ros}
                       connected={this.state.connected}
@@ -663,8 +684,10 @@ class App extends Component
             <div className="col scroll-col" id="nodelist_container">
               <NodeList key={this.state.bt_namespace}
                         availableNodes={this.state.available_nodes}
+                        dragging_node_list_item={this.state.dragging_node_list_item}
                         getNodes={this.getNodes}
-                        onSelectionChange={this.onNodeListSelectionChange}/>
+                        onSelectionChange={this.onNodeListSelectionChange}
+                        onNodeListDragging={this.onNodeListDragging}/>
             </div>
             <div className="col-9 scroll-col" id="main_pane">
               <div className="container-fluid d-flex h-100 flex-column">
@@ -698,11 +721,13 @@ class App extends Component
                                           tree_message={this.state.last_tree_msg}
                                           subtreeNames={this.state.subtree_names}
                                           publishing_subtrees={this.state.publishing_subtrees}
+                                          dragging_node_list_item={this.state.dragging_node_list_item}
                                           onSelectionChange={this.onEditorSelectionChange}
                                           selectedNodeName={this.state.selected_node_name}
                                           onSelectedEdgeChange={this.onSelectedEdgeChange}
                                           showDataGraph={this.state.showDataGraph}
                                           onSelectedTreeChange={this.onSelectedTreeChange}
+                                          onNodeListDragging={this.onNodeListDragging}
                                           onError={this.onError}
                                           skin={this.state.skin}/>
                   </div>
