@@ -176,6 +176,13 @@
   margin-left: auto;
 }
 
+rect.selection {
+  stroke          : gray;
+  stroke-dasharray: 4px;
+  stroke-opacity  : 0.5;
+  fill            : transparent;
+}
+
 path.data-hover {
     stroke: #148050;
     background: #148050;

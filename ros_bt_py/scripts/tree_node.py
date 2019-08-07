@@ -1,22 +1,20 @@
 #! /usr/bin/env python2.7
-import os
-import jsonpickle
-
-import rospkg
 import rospy
-import roslib
 
-from catkin.find_in_workspaces import find_in_workspaces
-
-from ros_bt_py_msgs.msg import Message, Messages
+from ros_bt_py_msgs.msg import Messages, Packages
 
 from ros_bt_py_msgs.msg import Tree, DebugInfo, DebugSettings
 from ros_bt_py_msgs.srv import AddNode, AddNodeAtIndex, ControlTreeExecution, ModifyBreakpoints, RemoveNode, \
      WireNodeData, GetAvailableNodes, SetExecutionMode, SetOptions, Continue, LoadTree, \
-     MoveNode, ReplaceNode, GetSubtree, ClearTree, MorphNode
-from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, GetMessageFields, GetMessageFieldsResponse
+     MoveNode, ReplaceNode, GetSubtree, ClearTree, MorphNode, GenerateSubtree, SaveTree
+from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, GetMessageFields, GetPackageStructure
 from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message
 from ros_bt_py.debug_manager import DebugManager
+from ros_bt_py.package_manager import PackageManager
+
+
+# FIXME !!!! !!!!! !!!!! move the "ListOfPackages" message type to ros_bt_py !!!!
+from ros_ta_msgs.msg import ListOfPackages
 
 
 class TreeNode(object):
@@ -86,6 +84,10 @@ class TreeNode(object):
                                                  GetSubtree,
                                                  self.tree_manager.get_subtree)
 
+        self.generate_subtree_service = rospy.Service('~generate_subtree',
+                                                      GenerateSubtree,
+                                                      self.tree_manager.generate_subtree)
+
         self.set_execution_mode_service = rospy.Service('~debug/set_execution_mode',
                                                         SetExecutionMode,
                                                         self.tree_manager.set_execution_mode)
@@ -114,81 +116,23 @@ class TreeNode(object):
                                            ClearTree,
                                            self.tree_manager.clear)
 
+        self.message_list_pub = rospy.Publisher('~messages', Messages, latch=True, queue_size=1)
+        self.packages_list_pub = rospy.Publisher('~packages', Packages, latch=True, queue_size=1)
+
+        self.package_manager = PackageManager(publish_message_list_callback=self.message_list_pub,
+                                              publish_packages_list_callback=self.packages_list_pub)
+
         self.get_message_fields_service = rospy.Service('~get_message_fields',
                                                         GetMessageFields,
-                                                        self.get_message_fields)
+                                                        self.package_manager.get_message_fields)
 
-        self.message_list_pub = rospy.Publisher('~messages', Messages, latch=True, queue_size=1)
-        self.publish_message_list()
+        self.get_package_structure_service = rospy.Service('~get_package_structure',
+                                                            GetPackageStructure,
+                                                            self.package_manager.get_package_structure)
 
-    def _get_package_paths(self, pkgname, rospack):
-        _catkin_workspace_to_source_spaces = {}
-        _catkin_source_path_to_packages = {}
-        paths = []
-        path = rospack.get_path(pkgname)
-        paths.append(path)
-        results = find_in_workspaces(search_dirs=['share'],
-                                     project=pkgname,
-                                     first_match_only=True,
-                                     workspace_to_source_spaces=_catkin_workspace_to_source_spaces,
-                                     source_path_to_packages=_catkin_source_path_to_packages)
-        if results and results[0] != path:
-            paths.append(results[0])
-        return paths
-
-    def publish_message_list(self):
-        rospack = rospkg.RosPack()
-
-        messages = []
-        packages = rospack.list()
-
-        actions = []
-        for package in packages:
-            for package_path in self._get_package_paths(package, rospack):
-                path = package_path + "/msg"
-                resources = []
-                if os.path.isdir(path):
-                    resources = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-                result = [x[:-len(".msg")] for x in resources]
-                result.sort()
-                for msg_type in result:
-                    if msg_type[-6:] == "Action":
-                        actions.append(msg_type)
-                    append_msg = True
-                    for action in actions:
-                        if msg_type == action+"Feedback" or msg_type == action+"Goal" or msg_type == action+"Result":
-                            append_msg = False
-                    if append_msg:
-                        messages.append(Message(msg=package+"/"+msg_type, service=False))
-                path = package_path + "/srv"
-                resources = []
-                if os.path.isdir(path):
-                    resources = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
-                result = [x[:-len(".srv")] for x in resources]
-                result.sort()
-                for srv_type in result:
-                    messages.append(Message(msg=package+"/"+srv_type, service=True))
-
-        msg = Messages()
-        msg.messages = messages
-        self.message_list_pub.publish(msg)
-
-    def get_message_fields(self, request):
-        response = GetMessageFieldsResponse()
-        try:
-            message_class = None
-            if request.service:
-                message_class = roslib.message.get_service_class(request.message_type)
-            else:
-                message_class = roslib.message.get_message_class(request.message_type)
-            for field in str(message_class()).split("\n"):
-                response.field_names.append(field.split(":")[0].strip())
-            response.fields = jsonpickle.encode(message_class())
-            response.success = True
-        except Exception as e:
-            response.success = False
-            response.error_message = "Could not get message fields for {}: {}".format(request.message_type, e)
-        return response
+        self.save_tree_service = rospy.Service('~save_tree',
+                                               SaveTree,
+                                               self.package_manager.save_tree)
 
     def shutdown(self):
         if self.tree_manager.get_state() not in [Tree.IDLE, Tree.EDITABLE, Tree.ERROR]:

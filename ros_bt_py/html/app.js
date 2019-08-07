@@ -28,6 +28,7 @@ class App extends Component
 
     this.state = {
       bt_namespace: '',
+      cm_namespace: 'capability_manager/',
       ros_uri: ros_uri,
       selected_tree: {
         is_subtree: false,
@@ -38,8 +39,8 @@ class App extends Component
       selected_edge: null,
       available_nodes: [],
       subtree_names: [],
-      selected_node: null,
-      selected_node_name: null,
+      selected_node: null, // FIXME
+      selected_node_names: [],
       copied_node: null,
       showDataGraph: true,
       dragging_node_list_item: null,
@@ -57,7 +58,8 @@ class App extends Component
       skin: 'darkmode',
       copy_node: false,
       connected: false,
-      publishing_subtrees: false
+      publishing_subtrees: false,
+      last_selected_package: '',
     };
 
     ros.on("connection", function(e) {
@@ -115,6 +117,19 @@ class App extends Component
       serviceType: 'ros_bt_py_msgs/SetExecutionMode'
     });
 
+    // topics needed for capability functionality
+    this.packages_topic = new ROSLIB.Topic({
+      ros : this.state.ros,
+      name : this.state.bt_namespace + 'packages',
+      messageType : 'ros_bt_py_msgs/Packages'
+    });
+
+    this.capabilities_topic = new ROSLIB.Topic({
+      ros : this.state.ros,
+      name : this.state.cm_namespace + 'capabilities',
+      messageType : 'ros_ta_msgs/Capabilities'
+    });
+
     this.lastTreeUpdate = null;
     this.topicTimeoutID = null;
     this.newMsgDelay = 500;  // ms
@@ -129,6 +144,8 @@ class App extends Component
     this.check_dragging = this.check_dragging.bind(this);
     this.onNodeChanged = this.onNodeChanged.bind(this);
     this.onEditorSelectionChange = this.onEditorSelectionChange.bind(this);
+    this.onMultipleSelectionChange = this.onMultipleSelectionChange.bind(this);
+    this.onCapabilityPackageChange = this.onCapabilityPackageChange.bind(this);
     this.onSelectedEdgeChange = this.onSelectedEdgeChange.bind(this);
     this.onTreeUpdate = this.onTreeUpdate.bind(this);
     this.onDebugUpdate = this.onDebugUpdate.bind(this);
@@ -140,6 +157,8 @@ class App extends Component
     this.changeSkin = this.changeSkin.bind(this);
     this.changeCopyMode = this.changeCopyMode.bind(this);
     this.onPublishingSubtreesChange = this.onPublishingSubtreesChange.bind(this);
+    this.onPackagesUpdate = this.onPackagesUpdate.bind(this);
+    this.onCapabilitiesUpdate = this.onCapabilitiesUpdate.bind(this);
   }
 
   onTreeUpdate(msg)
@@ -229,6 +248,51 @@ class App extends Component
         "msg"]
     };
     this.messagesFuse = new Fuse(this.messages, options);
+  }
+
+  onPackagesUpdate(msg)
+  {
+    console.log("received list of packages");
+    this.last_received_packages_msg = msg;
+    this.packages = msg.packages;
+
+    var options = {
+      shouldSort: true,
+      threshold: 0.6,
+      location: 0,
+      distance: 100,
+      maxPatternLength: 32,
+      minMatchCharLength: 1,
+      keys: [
+        "package",
+        "path"
+      ]
+    };
+    this.packagesFuse = new Fuse(this.packages, options);
+  }
+
+  onCapabilitiesUpdate(msg)
+  {
+    console.log("received list of capabilities");
+    this.last_received_capabilities_msg = msg;
+    this.capabilities = [];
+    for (var i = 0; i < msg.capabilities.length; i++) {
+      var cap = {name:msg.capabilities[i].name, description:msg.capabilities[i].description, capability:msg.capabilities[i]};
+      this.capabilities.push(cap);
+    }
+    var options = {
+      shouldSort: true,
+      threshold: 0.6,
+      location: 0,
+      distance: 100,
+      maxPatternLength: 32,
+      minMatchCharLength: 1,
+      keys: [
+        "name",
+        "description"
+      ]
+    };
+    this.capabilitiesFuse = new Fuse(this.capabilities, options);
   }
 
   changeSkin(skin)
@@ -321,10 +385,14 @@ class App extends Component
     console.log('Namespace changed to: ', namespace);
     if (namespace !== this.state.bt_namespace)
     {
+      this.setState({cm_namespace: namespace.replace('tree_node/', '') + 'capability_manager/'});
+
       // Unsubscribe, then replace, topics
       this.tree_topic.unsubscribe(this.onTreeUpdate);
       this.debug_topic.unsubscribe(this.onDebugUpdate);
       this.messages_topic.unsubscribe(this.onMessagesUpdate);
+      this.packages_topic.unsubscribe(this.onPackagesUpdate);
+      this.capabilities_topic.unsubscribe(this.onCapabilitiesUpdate);
 
       this.tree_topic = new ROSLIB.Topic({
         ros : this.state.ros,
@@ -344,10 +412,24 @@ class App extends Component
         messageType: 'ros_bt_py_msgs/Messages'
       });
 
+      this.packages_topic = new ROSLIB.Topic({
+        ros : this.state.ros,
+        name : namespace + 'packages',
+        messageType : 'ros_bt_py_msgs/Packages'
+      });
+
+      this.capabilities_topic = new ROSLIB.Topic({
+        ros : this.state.ros,
+        name : this.state.cm_namespace + 'capabilities',
+        messageType : 'ros_ta_msgs/Capabilities'
+      });
+
       // Subscribe again
       this.tree_topic.subscribe(this.onTreeUpdate);
       this.debug_topic.subscribe(this.onDebugUpdate);
       this.messages_topic.subscribe(this.onMessagesUpdate);
+      this.packages_topic.subscribe(this.onPackagesUpdate);
+      this.capabilities_topic.subscribe(this.onCapabilitiesUpdate);
 
       // Update GetAvailableNodes Service
       this.get_nodes_service = new ROSLIB.Service({
@@ -420,10 +502,23 @@ class App extends Component
     this.tree_topic.subscribe(this.onTreeUpdate);
     this.debug_topic.subscribe(this.onDebugUpdate);
     this.messages_topic.subscribe(this.onMessagesUpdate);
+    this.packages_topic.subscribe(this.onPackagesUpdate);
+    this.capabilities_topic.subscribe(this.onCapabilitiesUpdate);
+
     document.body.addEventListener("keydown",function(e){
-      if ( this.state.copy_node && e.keyCode == 67 && (e.ctrlKey || e.metaKey) ) {
+      if ( this.state.copy_node && e.keyCode == 67 && (e.ctrlKey || e.metaKey) ) { // 67 = KeyC
+        if (this.state.selected_node_names.length > 1)
+        {
+          console.log("COPY/PASTE FOR MULTIPLE SELECTION NOT IMPLEMENTED YET");
+          return;
+        }
         this.setState({copied_node: this.state.selected_node});
-      } else if ( this.state.copy_node && e.keyCode == 86 && (e.ctrlKey || e.metaKey) ) {
+      } else if ( this.state.copy_node && e.keyCode == 86 && (e.ctrlKey || e.metaKey) ) { // 86 = KeyV
+        if (this.state.selected_node_names.length > 1)
+        {
+          console.log("COPY/PASTE FOR MULTIPLE SELECTION NOT IMPLEMENTED YET");
+          return;
+        }
         var parent = '';
         for (var i = 0; i < this.state.last_tree_msg.nodes.length; i++) {
           for (var j = 0; j < this.state.last_tree_msg.nodes[i].child_names.length; j++) {
@@ -450,7 +545,12 @@ class App extends Component
             }
           }.bind(this));
       }
-      if (this.state.copy_node && this.state.selected_node && e.keyCode == 46) {
+      if (this.state.copy_node && this.state.selected_node && e.keyCode == 46) { // 46 = Delete
+        if (this.state.selected_node_names.length > 1)
+        {
+          console.log("DELETE FOR MULTIPLE SELECTION NOT IMPLEMENTED YET");
+          return;
+        }
         var remove_children = false;
         var remove_nodes_text = "Do you want to remove the selected node\"" + this.state.selected_node.name +"\"";
 
@@ -486,6 +586,8 @@ class App extends Component
     this.tree_topic.unsubscribe(this.onTreeUpdate);
     this.debug_topic.unsubscribe(this.onDebugUpdate);
     this.messages_topic.unsubscribe(this.onMessagesUpdate);
+    this.packages_topic.unsubscribe(this.onPackagesUpdate);
+    this.capabilities_topic.unsubscribe(this.onCapabilitiesUpdate);
   }
 
   onError(error_message)
@@ -525,7 +627,7 @@ class App extends Component
       }
     }
     this.setState({selected_node: new_selected_node,
-                   selected_node_name: null,
+                   selected_node_names: [],
                    last_selection_source: 'nodelist'});
   }
 
@@ -541,6 +643,27 @@ class App extends Component
       this.setState({dragging_node_list_item: null});
     }
   }
+
+  onMultipleSelectionChange(new_selected_node_names)
+  {
+    if (new_selected_node_names !== null)
+    {
+      this.setState(
+        {
+          selected_node: null,
+          selected_node_names: new_selected_node_names,
+          last_selection_source: 'multiple',
+        });
+      return;
+    }
+  }
+
+  onCapabilityPackageChange(new_selected_package_name)
+  {
+    this.setState({last_selected_package: new_selected_package_name});
+    return;
+  }
+
   onEditorSelectionChange(new_selected_node_name)
   {
     if (this.state.node_changed && (new_selected_node_name === null || new_selected_node_name != this.state.selected_node_name))
@@ -560,7 +683,7 @@ class App extends Component
       this.setState(
         {
           selected_node: null,
-          selected_node_name: null,
+          selected_node_names: [],
           last_selection_source: 'editor',
         });
       return;
@@ -573,7 +696,7 @@ class App extends Component
       this.setState(
         {
           selected_node: null,
-          selected_node_name: null,
+          selected_node_names: [],
           last_selection_source: 'editor',
         });
       return;
@@ -583,7 +706,7 @@ class App extends Component
       {
         copy_node: true,
         selected_node: new_selected_node,
-        selected_node_name: new_selected_node_name,
+        selected_node_names: [new_selected_node_name],
         last_selection_source: 'editor',
         selected_node_info: prevState.available_nodes.find(
           x => (x.module === new_selected_node.module
@@ -606,7 +729,26 @@ class App extends Component
   {
     var selectedNodeComponent = null;
 
-    if (this.state.selected_node === null)
+    if (this.state.last_selection_source === 'multiple' && this.state.selected_node_names.length > 0)
+    {
+      selectedNodeComponent = (
+        <MultipleSelection
+          ros={this.state.ros}
+          bt_namespace={this.state.bt_namespace}
+          cm_namespace={this.state.cm_namespace}
+          packages={this.packages}
+          last_selected_package={this.state.last_selected_package}
+          selectedNodeNames={this.state.selected_node_names}
+          tree_message={this.state.last_tree_msg}
+          packagesFuse={this.packagesFuse}
+          capabilitiesFuse={this.capabilitiesFuse}
+          onError={this.onError}
+          onSelectionChange={this.onEditorSelectionChange}
+          onMultipleSelectionChange={this.onMultipleSelectionChange}
+          onSelectedEdgeChange={this.onSelectedEdgeChange}
+          onCapabilityPackageChange={this.onCapabilityPackageChange}
+        />);
+    } else if (this.state.selected_node === null)
     {
       selectedNodeComponent = (
         <div className="d-flex flex-column">
@@ -631,6 +773,7 @@ class App extends Component
           node={this.state.selected_node}
           parents={this.findPossibleParents()}
           messagesFuse={this.messagesFuse}
+          capabilitiesFuse={this.capabilitiesFuse}
           onError={this.onError}
           onNodeChanged={this.onNodeChanged}
           changeCopyMode={this.changeCopyMode}
@@ -653,6 +796,7 @@ class App extends Component
           nodeInfo={this.state.selected_node_info}
           availableNodes={this.state.available_nodes}
           messagesFuse={this.messagesFuse}
+          capabilitiesFuse={this.capabilitiesFuse}
           onError={this.onError}
           onNodeChanged={this.onNodeChanged}
           changeCopyMode={this.changeCopyMode}
@@ -723,7 +867,8 @@ class App extends Component
                                           publishing_subtrees={this.state.publishing_subtrees}
                                           dragging_node_list_item={this.state.dragging_node_list_item}
                                           onSelectionChange={this.onEditorSelectionChange}
-                                          selectedNodeName={this.state.selected_node_name}
+                                          onMultipleSelectionChange={this.onMultipleSelectionChange} // FIXME: DO NOT COMMIT
+                                          selectedNodeNames={this.state.selected_node_names}         // FIXME: DO NOT COMMIT
                                           onSelectedEdgeChange={this.onSelectedEdgeChange}
                                           showDataGraph={this.state.showDataGraph}
                                           onSelectedTreeChange={this.onSelectedTreeChange}

@@ -19,6 +19,8 @@ add_message_files(
      NodeDataWiring.msg
      NodeOptionWiring.msg
      Node.msg
+     Package.msg
+     Packages.msg
      RemoteSlotState.msg
      Tree.msg
      TreeDataUpdate.msg
@@ -34,9 +36,11 @@ add_service_files(
   Continue.srv
   ControlTreeExecution.srv
   EvaluateUtility.srv
+  GenerateSubtree.srv
   GetAvailableNodes.srv
   GetAvailableSubtrees.srv
   GetMessageFields.srv
+  GetPackageStructure.srv
   GetSubtree.srv
   InsertNode.srv
   LoadTree.srv
@@ -45,6 +49,7 @@ add_service_files(
   MoveNode.srv
   RemoveNode.srv
   ReplaceNode.srv
+  SaveTree.srv
   SetExecutionMode.srv
   SetOptions.srv
   WireNodeData.srv
