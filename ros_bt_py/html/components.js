@@ -248,6 +248,16 @@ class NodeListItem extends Component {
     this.props.onSelectionChange(this.props.node);
   }
 
+  onMouseDown(e, node) {
+    this.props.onDragging(this.props.node);
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  onMouseUp(e, node) {
+    this.props.onDragging(null);
+  }
+
   toggleCollapsed(event) {
     this.setState({collapsed: !this.state.collapsed});
     event.stopPropagation();
@@ -281,9 +291,16 @@ class NodeListItem extends Component {
       node_type = "Leaf";
     }
 
+    var border = "border rounded p-2 mb-2";
+    if (this.props.highlighted)
+    {
+      border = "border rounded border-primary p-2 mb-2";
+    }
     return (
-      <div className="border rounded p-2 mb-2"
-           onClick={this.onClick.bind(this)}>
+      <div className={border}
+           onClick={this.onClick.bind(this)}
+           onMouseDown={this.onMouseDown.bind(this)}
+           onMouseUp={this.onMouseUp.bind(this)}>
         <div className="d-flex justify-content-between">
           <div className="d-flex minw0">
             <h4 title={this.props.node.node_class} className="node_class text-truncate">{this.props.node.node_class}</h4>
@@ -364,10 +381,20 @@ class NodeList extends Component
         .sort(byName)
 //        .sort(moduleThenName)
         .map( (node) => {
+          var highlighted = false;
+          if (this.props.dragging_node_list_item
+              && this.props.dragging_node_list_item.module === node.module
+              && this.props.dragging_node_list_item.node_class === node.node_class)
+          {
+            highlighted = true;
+          }
           return (<NodeListItem node={node}
                            key={node.module + node.node_class}
                            collapsed={true}
-                           onSelectionChange={this.props.onSelectionChange}/>);
+                           highlighted={highlighted}
+                           onSelectionChange={this.props.onSelectionChange}
+                           onDragging={this.props.onNodeListDragging}
+                           />);
     });
 
     var collapsible_icon = "fas fa-angle-up";
@@ -1132,6 +1159,12 @@ class D3BehaviorTreeEditor extends Component
       serviceType: 'ros_bt_py_msgs/ReplaceNode'
     });
 
+    this.add_node_at_index_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.bt_namespace + 'add_node_at_index',
+      serviceType: 'ros_bt_py_msgs/AddNodeAtIndex'
+    });
+
     this.svg_ref = createRef();
     this.viewport_ref = createRef();
 
@@ -1150,6 +1183,47 @@ class D3BehaviorTreeEditor extends Component
 
     this.zoomObject = d3.zoom();
     var container = d3.select(this.svg_ref.current);
+
+    // SVG MOUSEUP FOR NODE DRAG/DROP
+    var svg_viewport = d3.select(this.svg_ref.current);
+    svg_viewport.on("mouseup", () => {
+      if (this.props.dragging_node_list_item)
+      {
+        var new_node = new NewNode({node : this.props.dragging_node_list_item});
+        var msg = new_node.buildNodeMessage();
+
+        this.props.onNodeListDragging(null);
+
+        var parent_name = '';
+        var position = -1;
+        if(this.nodeDropTarget && this.nodeDropTarget.data)
+        {
+          if (this.nodeDropTarget.data.name === "__forest_root")
+          {
+            this.nodeDropTarget.data.name = "";
+          } else {
+            position = this.nodeDropTarget.position;
+          }
+          parent_name = this.nodeDropTarget.data.name;
+        }
+        this.add_node_at_index_service.callService(
+          new ROSLIB.ServiceRequest({
+            parent_name: parent_name,
+            node: msg,
+            allow_rename: true,
+            new_child_index: position
+          }),
+          function(response) {
+            if (response.success) {
+              console.log('Added node to tree as ' + response.actual_node_name);
+            }
+            else {
+              this.props.onError('Failed to add node ' + msg.name + ': '
+                          + response.error_message);
+            }
+          }.bind(this));
+      }
+    })
 
     viewport
       .call(this.zoomObject.scaleExtent([0.3, 1.0]).on("zoom", function () {
@@ -1250,6 +1324,59 @@ class D3BehaviorTreeEditor extends Component
           d3.select(this).classed("node-selected", false);
         });
 
+    }
+
+    if (this.props.dragging_node_list_item)
+    {
+      // show drop targets
+      var svg = d3.select(this.svg_ref.current);
+      var g_droptargets = svg.select("g.drop_targets");
+
+      var number_of_droptargets = g_droptargets.selectAll(".drop_target").size();
+
+      if (number_of_droptargets === 0)
+      {
+        g_droptargets.selectAll(".drop_target_root")
+          .attr("visibility", "visible");
+          this.resetView();
+      } else {
+        g_droptargets.selectAll(".drop_target_root")
+        .attr("visibility", "hidden");
+      }
+      g_droptargets.attr("visibility", "visible");
+      g_droptargets.selectAll(".drop_target")
+        // First ensure all drop targets are visible
+        .attr("visibility", "visible")
+        // Now hide those that belong to descendants of the node we're dragging
+        .filter(
+          x => {
+            // Hide the left/right drop targets for nodes with
+            // max_children children.
+            var child_names = x.data.child_names || [];
+            var max_children = x.data.max_children || -1;
+            if (max_children !== -1 &&
+                child_names.length === max_children) {
+              return true;
+            }
+
+            // disable replacing
+            if (x.replace)
+            {
+              return true;
+            }
+            return false;
+          })
+        .attr("visibility", "hidden");
+    } else {
+      // hide drop targets
+      var svg = d3.select(this.svg_ref.current);
+      var g_droptargets = svg.select("g.drop_targets");
+      g_droptargets.attr("visibility", "hidden");
+      g_droptargets.selectAll(".drop_target")
+        .attr("visibility", "hidden");
+
+      g_droptargets.selectAll(".drop_target_root")
+        .attr("visibility", "hidden");
     }
   }
 
@@ -1771,6 +1898,35 @@ class D3BehaviorTreeEditor extends Component
           {
             that.dropTargetDefaultMouseoutHandler(this, d);
           });
+
+    // add a special droptarget to enable nodelist drag and drop
+    // into an empty editor view
+    var viewport = d3.select(this.viewport_ref.current);
+    var drop_target_root_width = 150;
+    g_droptargets.selectAll(".drop_target_root").remove();
+    g_droptargets
+      .append("rect")
+      .attr("class", "drop_target_root")
+      .attr("width", drop_target_root_width)
+      .attr("height", drop_target_root_width)
+      .attr("transform",
+            "translate(" + (-drop_target_root_width * 0.5) + ","
+                  + (0) + ")")
+      .attr("opacity", 0.2)
+      .attr("visibility", "hidden")
+      .datum({
+        position: -1,
+        replace: true,  // replace this node
+        data: null
+      })
+      .on("mouseover", function(d, index, group)
+        {
+          that.dropTargetDefaultMouseoverHandler(this, d);
+        })
+      .on("mouseout", function(d, index, group)
+        {
+          that.dropTargetDefaultMouseoutHandler(this, d);
+        });
   }
 
   drawDataGraph(g_data, data, wirings)
