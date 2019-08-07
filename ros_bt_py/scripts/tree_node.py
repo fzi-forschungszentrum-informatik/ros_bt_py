@@ -11,7 +11,7 @@ from catkin.find_in_workspaces import find_in_workspaces
 from ros_bt_py_msgs.msg import Message, Messages
 
 from ros_bt_py_msgs.msg import Tree, DebugInfo, DebugSettings
-from ros_bt_py_msgs.srv import AddNode, ControlTreeExecution, ModifyBreakpoints, RemoveNode, \
+from ros_bt_py_msgs.srv import AddNode, AddNodeAtIndex, ControlTreeExecution, ModifyBreakpoints, RemoveNode, \
      WireNodeData, GetAvailableNodes, SetExecutionMode, SetOptions, Continue, LoadTree, \
      MoveNode, ReplaceNode, GetSubtree, ClearTree, MorphNode
 from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, GetMessageFields, GetMessageFieldsResponse
@@ -55,6 +55,9 @@ class TreeNode(object):
         self.add_node_service = rospy.Service('~add_node',
                                               AddNode,
                                               self.tree_manager.add_node)
+        self.add_node_at_index_service = rospy.Service('~add_node_at_index',
+                                                       AddNodeAtIndex,
+                                                       self.tree_manager.add_node_at_index)
         self.remove_node_service = rospy.Service('~remove_node',
                                                  RemoveNode,
                                                  self.tree_manager.remove_node)
