@@ -831,6 +831,7 @@ class App extends Component
                        packagesFuse={this.packagesFuse}
                        onError={this.onError}
                        mode={this.state.show_file_modal}
+                       tree_message={this.state.last_tree_msg}
                        onChangeFileModal={this.onChangeFileModal}/>
         </ReactModal>
         <ExecutionBar key={this.state.bt_namespace}

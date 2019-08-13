@@ -3333,6 +3333,12 @@ class FileBrowser extends Component{
       name: this.props.bt_namespace + 'load_tree',
       serviceType: 'ros_bt_py_msgs/LoadTree'
     });
+
+    this.save_service = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'save_tree',
+      serviceType: 'ros_bt_py_msgs/SaveTree'
+    });
   }
 
   searchPackageName(event)
@@ -3524,25 +3530,10 @@ class FileBrowser extends Component{
       console.log("path: ", path);
       console.log("extended_path: ", extended_path);
 
-      package_structure = (
-        <div>
-          <button className="btn btn-primary w-30"
-                  onClick={ () => {
-                    if (tree.parent === 0)
-                    {
-                      this.setState({
-                        package_structure: null,
-                        package: "",
-                        selected_package: null,
-                        file_path: null,
-                      })
-                    } else {
-                      this.setState({selected_directory: tree.parent,
-                      file_path: null,});
-                    }
-                  }}>
-            <i class="fas fa-arrow-left"></i> Back
-          </button>
+      var open_save_button = null;
+      if (this.props.mode === "load")
+      {
+        open_save_button = (
           <button className="btn btn-primary w-30 ml-1"
                   disabled={!this.state.file_path}
                   onClick={ () => {
@@ -3573,6 +3564,63 @@ class FileBrowser extends Component{
                   }}>
             <i class="far fa-folder-open"></i> Open
           </button>
+        );
+      } else if (this.props.mode === "save") {
+        open_save_button = (
+          <button className="btn btn-primary w-30 ml-1"
+                  disabled={!this.state.file_path}
+                  onClick={ () => {
+                    console.log("saving... ", this.state.file_path);
+
+                    this.save_service.callService(
+                      new ROSLIB.ServiceRequest({
+                        filename: this.state.file_path,
+                        package: this.state.package,
+                        tree: this.props.tree_message,
+                      }),
+                      function(response) {
+                        if (response.success) {
+                          console.log('called SaveTree service successfully');
+                          this.props.onChangeFileModal(null);
+                        }
+                        else {
+                          this.props.onError(response.error_message);
+                        }
+                      }.bind(this),
+                      // FIXME: error message in file modal!
+                      function(failed) {
+                        this.props.onError('Error saving tree, is your yaml file correct? ' + failed)
+                      }.bind(this));
+                  }}>
+            <i class="far fa-save"></i> Save
+          </button>
+        );
+      }
+
+      package_structure = (
+        <div>
+          <button className="btn btn-primary w-30"
+                  onClick={ () => {
+                    if (tree.parent === 0)
+                    {
+                      this.setState({
+                        package_structure: null,
+                        package: "",
+                        selected_package: null,
+                        file_path: null,
+                        selected_file: "",
+                      })
+                    } else {
+                      this.setState({
+                        selected_directory: tree.parent,
+                        file_path: null,
+                        selected_file: "",
+                      });
+                    }
+                  }}>
+            <i class="fas fa-arrow-left"></i> Back
+          </button>
+          {open_save_button}
           <select className="ml-1"
                   value={this.state.file_type_filter}
                   onChange={ event => {
@@ -3584,6 +3632,17 @@ class FileBrowser extends Component{
           <div>
             <label>File: 
               <input type="text"
+                     onChange={ event => {
+                      console.log("new file name: ", event.target.value);
+                      var file_path = path.concat( event.target.value);
+                      var relative_path = file_path.join("/");
+                      console.log("file path:", relative_path);
+                      this.setState({
+                        file_path: relative_path,
+                        selected_file: event.target.value,
+                      });                      
+                     }}
+                     disabled={this.props.mode !== "save"}
                      value={this.state.selected_file}/>
             </label>
           </div>

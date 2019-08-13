@@ -4,6 +4,7 @@ import os
 import roslib
 import rospkg
 import rospy
+import genpy
 
 import catkin
 from catkin.find_in_workspaces import find_in_workspaces # we need catkin in exec_depend!
@@ -284,12 +285,28 @@ class PackageManager(object):
                 response.success = False
                 response.error_message = 'Package path "{}" does not exist'.format(package_path)
             else:
-                for path, subdirs, files in os.walk(package_path):
-                    subdirs[:] = [d for d in subdirs if not d.startswith('.')]
-                    for name in files:
-                        absolute_path = os.path.join(path, name)
-                        rospy.logerr("file: {}".format(absolute_path))
-                    rospy.logwarn("subdirs {}".format(subdirs))
+                save_path = os.path.join(package_path, request.filename)
+                rospy.loginfo("save path %s" % save_path)
+                save_path = save_path.rstrip(os.sep) # split trailing /
+                path, filename = os.path.split(save_path)
+
+                rospy.loginfo("path: %s, filename: %s" % (path, filename))
+                try: 
+                    os.makedirs(path)
+                except OSError:
+                    if not os.path.isdir(path):
+                        rospy.logerr("could not create path")
+                        response.success = False
+                        # TODO: error message
+                        return response
+                
+                with open(save_path, 'w') as save_file:
+                    msg = genpy.message.strify_message(request.tree)
+                    save_file.write(msg)
+                
+                response.success = True
+                return response
+
                 # capabilities_folder = os.path.join(path, "capabilities")
                 # if not os.path.isdir(capabilities_folder):
                 #     rospy.logerr("creating capabilities folder")
