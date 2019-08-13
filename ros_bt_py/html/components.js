@@ -3429,6 +3429,32 @@ class FileBrowser extends Component{
       return 1;
     };
 
+    var comparePackageContent = function(a, b) {
+      var t1 = a.type.toLowerCase();
+      var t2 = b.type.toLowerCase();
+
+      var n1 = a.name.toLowerCase();
+      var n2 = b.name.toLowerCase();
+
+      if (t1 < t2)
+      {
+        return -1;
+      }
+      if (t1 > t2)
+      {
+        return 1;
+      }
+      if (n1 < n2)
+      {
+        return -1;
+      }
+      if (n1 > n2)
+      {
+        return 1;
+      }
+      return 0;
+    };
+
     var package_results = [];
     if (this.props.packagesFuse)
     {
@@ -3470,18 +3496,31 @@ class FileBrowser extends Component{
 
       var par = tree.parent;
       var path = [];
+      var extended_path = [];
       if (par !== 0)
       {
         console.log("tree item_id", tree.item_id);
         path.push(tree.name);
+        extended_path.push({
+          name: tree.name,
+          item_id: tree.item_id,
+        });
       }
       while(par && par !== 0)
       {
         var node = this.search(par, this.state.package_structure);
         par = node.parent;
-        path.unshift(node.name);
+        if (par !== 0)
+        {
+          path.unshift(node.name);
+          extended_path.unshift({
+            name: node.name,
+            item_id: node.item_id,
+          });
+        }
       }
       console.log("path: ", path);
+      console.log("extended_path: ", extended_path);
 
       package_structure = (
         <div>
@@ -3507,7 +3546,7 @@ class FileBrowser extends Component{
                   onClick={ () => {
                     console.log("loading... ", this.state.file_path);
                     var msg = {
-                      path: "package://"+this.state.file_path
+                      path: "package://"+this.state.package+"/"+this.state.file_path
                     };
 
                     console.log("message: ", msg);
@@ -3538,12 +3577,28 @@ class FileBrowser extends Component{
                      value={this.state.selected_file}/>
             </label>
           </div>
-          <p>root name: {this.state.package_structure.name}</p>
-          <p>{path.map( element => {
-            return (
-              <span>{element}</span>);
-          })}</p>
-          <p>{tree.children.map(child => {
+          <p>root name: </p>
+          <p>
+            <span className="filebrowser-bar border border-primary rounded p-1 m-1"
+                  onClick={ () => {
+                    this.setState({
+                      selected_directory: 1, // directory 1 is top level
+                      file_path: null,
+                    });
+                  }}>
+              {this.state.package_structure.name}
+            </span>
+            {extended_path.map( element => {
+              return (
+                <span className="filebrowser-bar border border-secondary rounded p-1 m-1"
+                      onClick={ () => {
+                        this.setState({
+                          selected_directory: element.item_id,
+                          file_path: null,
+                        });
+                }}>{element.name}</span>);
+            })}</p>
+          <p>{tree.children.sort(comparePackageContent).map(child => {
             var icon = (<i class="far fa-file"></i>);
             if (child.type === "directory")
             {

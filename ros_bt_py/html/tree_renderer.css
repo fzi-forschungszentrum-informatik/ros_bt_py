@@ -314,3 +314,8 @@ div.jsoneditor-menu {
   padding: 0.25rem;
   color: #ff0000;
 }
+
+.filebrowser-bar:hover {
+  background-color: #007bff;
+  color: #ffffff;
+}
