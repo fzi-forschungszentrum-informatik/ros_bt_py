@@ -3472,16 +3472,14 @@ class FileBrowser extends Component{
       var path = [];
       if (par !== 0)
       {
+        console.log("tree item_id", tree.item_id);
         path.push(tree.name);
       }
       while(par && par !== 0)
       {
         var node = this.search(par, this.state.package_structure);
         par = node.parent;
-        if (par !== 0)
-        {
-          path.unshift(node.name);
-        }
+        path.unshift(node.name);
       }
       console.log("path: ", path);
 
@@ -3509,7 +3507,7 @@ class FileBrowser extends Component{
                   onClick={ () => {
                     console.log("loading... ", this.state.file_path);
                     var msg = {
-                      path: "package://"+this.state.package+"/"+this.state.file_path
+                      path: "package://"+this.state.file_path
                     };
 
                     console.log("message: ", msg);
