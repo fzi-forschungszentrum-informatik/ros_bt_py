@@ -1,4 +1,5 @@
 string package
+bool show_hidden
 ---
 bool success
 string error_message

@@ -520,7 +520,8 @@ function ExecutionBar(props)
         ros={props.ros}
         bt_namespace={props.currentNamespace}
         tree_message={props.tree_message}
-        onError={props.onError}/>
+        onError={props.onError}
+        onChangeFileModal={props.onChangeFileModal}/>
     </header>
   );
 }
@@ -875,6 +876,11 @@ class LoadSaveControls extends Component
       serviceType: 'ros_bt_py_msgs/ClearTree'
     });
 
+    this.save_tree_service = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'save_tree',
+      serviceType: 'ros_bt_py_msgs/SaveTree'
+    });   
   }
 
   openFileDialog()
@@ -951,10 +957,74 @@ class LoadSaveControls extends Component
     this.downloadURI('data:text/plain,'+encodeURIComponent(msg), "tree.yaml");
   }
 
+  loadFromPackage(event)
+  {
+    console.log("loading from package");
+    // this should present some form of "file explorer ui with all pkgs in catkin source space"
+
+    this.props.onChangeFileModal('load');
+  }
+
+  saveToPackage(event)
+  {
+    console.log("save to package");
+    // this should present some form of "file explorer ui with all pkgs in catkin source space"
+
+    this.props.onChangeFileModal('save');
+
+    //     # Filename can contain a relative path starting from the package root
+    // string filename
+    // string package
+    // Tree tree
+    // bool allow_overwrite
+    // bool allow_rename
+    // ---
+    // bool success
+    // string error_message
+    // string file_path
+
+    // {
+    //   module: this.props.node.module,
+    //   node_class: this.props.node.node_class,
+    //   name: this.state.name,
+    //   options: this.state.options.map(x => {
+    //     var option = {
+    //       key: x.key,
+    //       serialized_value: ''
+    //     };
+
+    // this.save_tree_service.callService(
+    //   new ROSLIB.ServiceRequest({
+    //     filename: 'test.yaml',
+    //     package: 'ros_bt_py_learning',
+    //     tree: {},
+    //     allow_rename: true,
+    //     allow_overwrite: false,
+    //   }),
+    //   function(response) {
+    //     if (response.success) {
+    //       console.log('Saved tree at: ' + response.file_path);
+    //     }
+    //     else {
+    //       this.props.onError('Failed to save tree ' + '' + ': '
+    //                   + response.error_message);
+    //     }
+    //   }.bind(this));
+
+  }
+
   render()
   {
     return (
       <Fragment>
+        <button onClick={this.loadFromPackage.bind(this)}
+                className="btn btn-primary m-1">
+          Load from pkg
+        </button>
+        <button onClick={this.saveToPackage.bind(this)}
+                className="btn btn-primary m-1">
+          Save to pkg
+        </button>
         <button onClick={this.newTree.bind(this)}
                 className="btn btn-primary m-1">
           New
@@ -3228,6 +3298,310 @@ class NewNode extends Component
   }
 }
 
+
+class FileBrowser extends Component{
+  constructor(props)
+  {
+    super(props);
+
+    this.state = {
+      package: "",//this.props.last_selected_package,
+      selected_package: null,
+      package_results:[],
+      show_hidden: false,
+      package_structure: null,
+      selected_directory: null,
+      selected_file: "",
+      file_path: null};
+
+    this.searchPackageName = this.searchPackageName.bind(this);
+    this.selectPackageSearchResult = this.selectPackageSearchResult.bind(this);
+  }
+
+  componentDidMount()
+  {
+    this.get_package_structure_service = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'get_package_structure',
+      serviceType: 'ros_bt_py_msgs/GetPackageStructure'
+    });
+
+    this.load_service = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'load_tree',
+      serviceType: 'ros_bt_py_msgs/LoadTree'
+    });
+  }
+
+  searchPackageName(event)
+  {
+    if (this.props.packagesFuse)
+    {
+      var results = this.props.packagesFuse.search(event.target.value);
+      this.setState({package_results: results.slice(0,5)});
+    }
+    this.setState({package: event.target.value});
+    this.setState({selected_package: null});
+  }
+
+  selectPackageSearchResult(result)
+  {
+    this.setState({package: result});
+    this.setState({package_results: []});
+    this.setState({selected_package: result});
+    //this.props.onSelectedPackageChange(result);
+
+    // get package structure
+    this.get_package_structure_service.callService(
+      new ROSLIB.ServiceRequest({
+        package: result,
+        show_hidden: this.state.show_hidden,
+      }),
+      function(response) {
+        if (response.success) {
+          console.log("got package structure: ", response.package_structure);
+
+          // TODO: reset
+          this.setState({
+            package_structure:  JSON.parse(response.package_structure),
+            selected_directory: 0,
+          });
+        }
+        else {
+          console.log("error getting package structure: ", response.error_message);
+        }
+      }.bind(this));
+  }
+
+  renderPackageSearchResults(results)
+  {
+    if(results.length > 0)
+    {
+      var result_rows = results.map(x => {
+        return (
+          <div className="list-group-item search-result align-items-start" onClick={() => this.selectPackageSearchResult(x.package)}>
+            <div className="d-flex w-100 justify-content-between">
+              <span>{x.package}</span>
+              <i class="far fa-file-code" title={x.path}></i>
+            </div>
+          </div>
+        );
+      });
+
+      return (
+        <div className="mb-2 search-results" ref={node => this.node = node}>
+          <div className="list-group">
+              {result_rows}
+          </div>
+        </div>
+      );
+    } else {
+      return null;
+    }
+  }
+
+  // FIXME: make this code nice 
+  search (item_id, parent) {
+    const stack = [ parent ];
+    while (stack.length) {
+      const node = stack.pop();
+      if (node.item_id === item_id)
+      {
+        return node
+      }
+      if (node.type === "directory")
+      {
+        stack.push(...node.children);
+      }
+    }
+    return stack.pop() || null
+  }
+
+  render ()
+  {
+    var comparePackageNames = function(a, b) {
+      if (a.package === b.package) {
+        return 0;
+      }
+      if (a.package < b.package) {
+        return -1;
+      }
+      return 1;
+    };
+
+    var package_results = [];
+    if (this.props.packagesFuse)
+    {
+      if (this.state.package_results.length === 0)
+      {
+        if (this.state.package === "")
+        {
+          package_results = this.props.packagesFuse.list.sort(comparePackageNames);
+        }
+      } else {
+        package_results = this.state.package_results;
+      }
+    }
+
+    var package_structure = null;
+    if (this.state.package_structure)
+    {
+      // save a "level?"
+      // for now just print the root and its elements
+
+      // this.state.selected_directory contains the level, is set to 0 (aka no element) by default
+      var selected_directory = 0;
+      // TODO: this is a bit of a hack
+      if (this.state.selected_directory === 0)
+      {
+        console.log("this is a bit of a hack");
+        // none selected, discard whole package structure
+        this.setState({selected_directory: this.state.package_structure.item_id});
+        selected_directory = this.state.package_structure.item_id;
+      } else {
+        selected_directory = this.state.selected_directory;
+      }
+
+      console.log("selected directory: ", selected_directory);
+
+      var tree = this.search(selected_directory, this.state.package_structure);
+
+      console.log("parent:", tree.parent);
+
+      var par = tree.parent;
+      var path = [];
+      if (par !== 0)
+      {
+        path.push(tree.name);
+      }
+      while(par && par !== 0)
+      {
+        var node = this.search(par, this.state.package_structure);
+        par = node.parent;
+        if (par !== 0)
+        {
+          path.unshift(node.name);
+        }
+      }
+      console.log("path: ", path);
+
+      package_structure = (
+        <div>
+          <button className="btn btn-primary w-30"
+                  onClick={ () => {
+                    if (tree.parent === 0)
+                    {
+                      this.setState({
+                        package_structure: null,
+                        package: "",
+                        selected_package: null,
+                        file_path: null,
+                      })
+                    } else {
+                      this.setState({selected_directory: tree.parent,
+                      file_path: null,});
+                    }
+                  }}>
+            <i class="fas fa-arrow-left"></i> Back
+          </button>
+          <button className="btn btn-primary w-30"
+                  disabled={!this.state.file_path}
+                  onClick={ () => {
+                    console.log("loading... ", this.state.file_path);
+                    var msg = {
+                      path: "package://"+this.state.package+"/"+this.state.file_path
+                    };
+
+                    console.log("message: ", msg);
+
+                    this.load_service.callService(
+                      new ROSLIB.ServiceRequest({
+                        tree: msg
+                      }),
+                      function(response) {
+                        if (response.success) {
+                          console.log('called LoadTree service successfully');
+                          this.props.onChangeFileModal(null);
+                        }
+                        else {
+                          this.props.onError(response.error_message);
+                        }
+                      }.bind(this),
+                      // FIXME: error message in file modal!
+                      function(failed) {
+                        this.props.onError('Error loading tree, is your yaml file correct? ' + failed)
+                      }.bind(this));
+                  }}>
+            <i class="far fa-folder-open"></i> Open
+          </button>
+          <div>
+            <label>File: 
+              <input type="text"
+                     value={this.state.selected_file}/>
+            </label>
+          </div>
+          <p>root name: {this.state.package_structure.name}</p>
+          <p>{path.map( element => {
+            return (
+              <span>{element}</span>);
+          })}</p>
+          <p>{tree.children.map(child => {
+            var icon = (<i class="far fa-file"></i>);
+            if (child.type === "directory")
+            {
+              icon = (<i class="far fa-folder"></i>);
+            }
+            return (
+              <p onClick={ () => {
+                  if (child.type === "file")
+                  {
+                    console.log("selected a file", child);
+                    var file_path = path.concat(child.name);
+                    var relative_path = file_path.join("/");
+                    console.log("file path:", relative_path);
+                    this.setState({
+                      file_path: relative_path,
+                      selected_file: child.name,
+                    });
+                    
+                  } else {
+                    if (child.type === "directory")
+                    {
+                      console.log("selected a directory");
+                      this.setState({
+                        selected_directory: child.item_id,
+                        file_path: null,
+                        selected_file: "",
+                      });
+                    }
+                  }
+                }
+              }>{icon} {child.name} (id: {child.item_id}, parent: {child.parent})</p>
+            );
+          })}</p>
+        </div>
+      );
+    }
+
+    console.log("mode? ", this.props.mode);
+
+    return (
+      <div>
+        <h1>FileBrowser (mode: {this.props.mode})</h1>
+        <div className="d-flex flex-column">
+          <h5>Package Search:</h5>
+          <input className="form-control-lg mb-2"
+                 type="text"
+                 value={this.state.package}
+                 onChange={this.searchPackageName}/>
+          {this.renderPackageSearchResults(package_results)}
+        </div>
+        {package_structure}
+      </div>
+    );
+  }
+}
+
 class MultipleSelection extends Component
 {
   constructor(props)
@@ -3267,6 +3641,12 @@ class MultipleSelection extends Component
       ros: props.ros,
       name: props.bt_namespace + 'add_node',
       serviceType: 'ros_bt_py_msgs/AddNode'
+    });
+
+    this.add_node_at_index_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.bt_namespace + 'add_node_at_index',
+      serviceType: 'ros_bt_py_msgs/AddNodeAtIndex'
     });
 
     this.move_node_service = new ROSLIB.Service({

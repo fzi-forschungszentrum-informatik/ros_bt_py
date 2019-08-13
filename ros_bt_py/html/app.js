@@ -1,4 +1,5 @@
 var render = ReactDOM.render;
+ReactModal.setAppElement("#react-container");
 
 class App extends Component
 {
@@ -60,6 +61,7 @@ class App extends Component
       connected: false,
       publishing_subtrees: false,
       last_selected_package: '',
+      show_file_modal: null,
     };
 
     ros.on("connection", function(e) {
@@ -141,6 +143,7 @@ class App extends Component
     this.onChangeErrorHistorySorting = this.onChangeErrorHistorySorting.bind(this);
     this.onNodeListSelectionChange = this.onNodeListSelectionChange.bind(this);
     this.onNodeListDragging = this.onNodeListDragging.bind(this);
+    this.onChangeFileModal = this.onChangeFileModal.bind(this);
     this.check_dragging = this.check_dragging.bind(this);
     this.onNodeChanged = this.onNodeChanged.bind(this);
     this.onEditorSelectionChange = this.onEditorSelectionChange.bind(this);
@@ -506,6 +509,10 @@ class App extends Component
     this.capabilities_topic.subscribe(this.onCapabilitiesUpdate);
 
     document.body.addEventListener("keydown",function(e){
+      if ( this.state.show_file_modal && e.keyCode == 27) // 27 = ESC
+      {
+        this.setState({show_file_modal: null});
+      }
       if ( this.state.copy_node && e.keyCode == 67 && (e.ctrlKey || e.metaKey) ) { // 67 = KeyC
         if (this.state.selected_node_names.length > 1)
         {
@@ -634,6 +641,11 @@ class App extends Component
   onNodeListDragging(dragging)
   {
     this.setState({dragging_node_list_item: dragging});
+  }
+
+  onChangeFileModal(mode)
+  {
+    this.setState({show_file_modal: mode});
   }
 
   check_dragging()
@@ -812,6 +824,15 @@ class App extends Component
 
     return (
       <div onMouseUp={this.check_dragging} className={dragging_cursor}>
+        <ReactModal key={this.state.bt_namespace}
+                    isOpen={this.state.show_file_modal !== null}>
+          <FileBrowser ros={this.state.ros}
+                       bt_namespace={this.state.bt_namespace}
+                       packagesFuse={this.packagesFuse}
+                       onError={this.onError}
+                       mode={this.state.show_file_modal}
+                       onChangeFileModal={this.onChangeFileModal}/>
+        </ReactModal>
         <ExecutionBar key={this.state.bt_namespace}
                       ros={this.state.ros}
                       connected={this.state.connected}
@@ -821,7 +842,8 @@ class App extends Component
                       onSelectedTreeChange={this.onSelectedTreeChange}
                       onNamespaceChange={this.onNamespaceChange}
                       onError={this.onError}
-                      onPublishingSubtreesChange={this.onPublishingSubtreesChange}/>
+                      onPublishingSubtreesChange={this.onPublishingSubtreesChange}
+                      onChangeFileModal={this.onChangeFileModal}/>
 
         <div className="container-fluid">
           <div className="row row-height">

@@ -11,9 +11,6 @@ from ros_bt_py_msgs.msg import Message, Messages, Package, Packages
 from ros_bt_py_msgs.srv import GetMessageFields, GetMessageFieldsResponse, SaveTreeResponse
 from ros_bt_py_msgs.srv import GetPackageStructureResponse
 
-# FIXME !!!! !!!!! !!!!! move the "ListOfPackages" message type to ros_bt_py !!!!
-from ros_ta_msgs.msg import ListOfPackages
-
 
 class PackageManager(object):
     """Provides functionality to interact with ROS messages and catkin packages
@@ -24,6 +21,7 @@ class PackageManager(object):
         # using rospkg is nice because it provides path resolution and honors CATKIN_IGNORE file
         # so we do not have to do this manually
         self.rp = rospkg.RosPack()
+        self.item_id = 0
 
         self.message_list_pub = publish_message_list_callback
         if self.message_list_pub is None:
@@ -139,42 +137,113 @@ class PackageManager(object):
                     break
 
         self.packages_list_pub.publish(list_of_packages)
+
+    def _root(self, name=None, children=[]):
+        return {
+            "type": "root",
+            "name": name,
+            "children": children,
+        }
+
+    def _workspace(self, name=None, children=[], absolute_path=None):
+        return {
+            "type": "workspace",
+            "name": name,
+            "children": children,
+            "absolute_path": absolute_path,
+        }
+
+    def _package(self, name=None, children=[]):
+        return {
+            "type": "package",
+            "name": name,
+            "children": children,
+        }
+
+    def get_workspace_tree(self):
+        """Returns a tree that contains all catkin workspaces with a source space and their packages
+        """
+
+        # get a list of all packages
+        self.rospack = rospkg.RosPack()
+        packages = self.rospack.list()
+
+        self.list_of_packages = []
+
+        for package in packages:
+            # add all paths to the package path to be able to load installed capabilities
+            package_path = self.rospack.get_path(package)
+            package_msg = {}
+            package_msg["name"] = package
+            package_msg["path"] = package_path
+            self.list_of_packages.append(package_msg)
+
+        # get source_paths, which allows us to restrict the package list only to packages within the source space
+        # this is needed because we should only ever add files to packages in the source space
+
+        workspace_tree = self._root()
+        for ws in catkin.workspace.get_workspaces():
+            source_paths = catkin.workspace.get_source_paths(ws)
+            rospy.logwarn(source_paths)
+            if len(source_paths) == 0:
+                continue
+            elif len(source_paths) > 1:
+                rospy.logwarn("multiple source paths, only adding the first")
+
+            # only consider the first source_path
+            source_path = source_paths[0]
+
+            workspace = self._workspace(absolute_path=source_path)
+
+            # filter the packages to only include packages in the source space (because we can edit those)
+            for source_path in source_paths:
+                for package in self.list_of_packages:
+                    if package["path"].startswith(source_path):
+                        workspace["children"].append(self._package(name=package["name"]))
+
+            workspace_tree["children"].append(workspace)
+
+        return workspace_tree
+
+    def get_id(self):
+        self.item_id += 1
+        return self.item_id
     
-    def get_directory_structure(self, rootdir):
+    def reset_id(self):
+        self.item_id = 0
+
+    def path_to_dict(self, path, show_hidden=False, parent=0):
+        """Turns a path into a dictionary
         """
-        Creates a nested dictionary that represents the folder structure of rootdir
-        """
-        dir = {}
-        rootdir = rootdir.rstrip(os.sep)
-        start = rootdir.rfind(os.sep) + 1
-        for path, dirs, files in os.walk(rootdir):
-            folders = path[start:].split(os.sep)
-            subdir = dict.fromkeys(files)
-            parent = reduce(dict.get, folders[:-1], dir)
-            parent[folders[-1]] = subdir
-        return dir
+        d = {'name': os.path.basename(path)}
+        d['item_id'] = self.get_id()
+        d['parent'] = parent
+        if os.path.isdir(path):
+            d['type'] = "directory"
+            d['children'] = [self.path_to_dict(os.path.join(path, f), show_hidden=show_hidden, parent=d['item_id']) \
+                for f in os.listdir(path) if (show_hidden or not f.startswith("."))]
+        else:
+            d['type'] = "file"
+        return d
 
     def get_package_structure(self, request):
-        """Returns a listing of all files and subdirectories of a ROS package as a jsonpickled string
+        """Returns a listing of files and subdirectories of a ROS package as a jsonpickled string
+
+        Hides hidden files by default, unless show_hidden is set to true.
         """
         response = GetPackageStructureResponse()
         try:
-            rospy.logwarn(request.package)
             package_path = self.rp.get_path(request.package)
             if not os.path.isdir(package_path):
                 response.success = False
                 response.error_message = 'Package path "{}" does not exist'.format(package_path)
             else:
-                package_structure = self.get_directory_structure(package_path)
 
+                self.reset_id()
+                package_structure = self.path_to_dict(path=package_path, show_hidden=request.show_hidden)
+                
                 response.success = True
                 response.package_structure = jsonpickle.encode(package_structure)
-                
-                # for path, subdirs, files in os.walk(package_path):
-                #     for name in files:
-                #         absolute_path = os.path.join(path, name)
-                #         rospy.logerr("file: {}".format(absolute_path))
-                #     rospy.logwarn("subdirs {}".format(subdirs))
 
         except rospkg.common.ResourceNotFound:
             response.success = False
@@ -216,6 +285,7 @@ class PackageManager(object):
                 response.error_message = 'Package path "{}" does not exist'.format(package_path)
             else:
                 for path, subdirs, files in os.walk(package_path):
+                    subdirs[:] = [d for d in subdirs if not d.startswith('.')]
                     for name in files:
                         absolute_path = os.path.join(path, name)
                         rospy.logerr("file: {}".format(absolute_path))
