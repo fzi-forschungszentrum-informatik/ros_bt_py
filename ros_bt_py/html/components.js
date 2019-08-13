@@ -3312,7 +3312,9 @@ class FileBrowser extends Component{
       package_structure: null,
       selected_directory: null,
       selected_file: "",
-      file_path: null};
+      file_path: null,
+      file_type_filter: ".yaml",
+    };
 
     this.searchPackageName = this.searchPackageName.bind(this);
     this.selectPackageSearchResult = this.selectPackageSearchResult.bind(this);
@@ -3541,7 +3543,7 @@ class FileBrowser extends Component{
                   }}>
             <i class="fas fa-arrow-left"></i> Back
           </button>
-          <button className="btn btn-primary w-30"
+          <button className="btn btn-primary w-30 ml-1"
                   disabled={!this.state.file_path}
                   onClick={ () => {
                     console.log("loading... ", this.state.file_path);
@@ -3571,13 +3573,20 @@ class FileBrowser extends Component{
                   }}>
             <i class="far fa-folder-open"></i> Open
           </button>
+          <select className="ml-1"
+                  value={this.state.file_type_filter}
+                  onChange={ event => {
+                    this.setState({file_type_filter: event.target.value})
+                  }}>
+            <option value="all">all files</option>
+            <option value=".yaml">.yaml files</option>
+          </select>
           <div>
             <label>File: 
               <input type="text"
                      value={this.state.selected_file}/>
             </label>
           </div>
-          <p>root name: </p>
           <p>
             <span className="filebrowser-bar border border-primary rounded p-1 m-1"
                   onClick={ () => {
@@ -3603,6 +3612,13 @@ class FileBrowser extends Component{
             if (child.type === "directory")
             {
               icon = (<i class="far fa-folder"></i>);
+            }
+            if (child.type === "file" && this.state.file_type_filter !== "all")
+            {
+              if (!child.name.endsWith(this.state.file_type_filter))
+              {
+                return null
+              }
             }
             return (
               <p onClick={ () => {
