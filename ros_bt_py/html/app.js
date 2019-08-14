@@ -148,7 +148,7 @@ class App extends Component
     this.onNodeChanged = this.onNodeChanged.bind(this);
     this.onEditorSelectionChange = this.onEditorSelectionChange.bind(this);
     this.onMultipleSelectionChange = this.onMultipleSelectionChange.bind(this);
-    this.onCapabilityPackageChange = this.onCapabilityPackageChange.bind(this);
+    this.onSelectedPackageChange = this.onSelectedPackageChange.bind(this);
     this.onSelectedEdgeChange = this.onSelectedEdgeChange.bind(this);
     this.onTreeUpdate = this.onTreeUpdate.bind(this);
     this.onDebugUpdate = this.onDebugUpdate.bind(this);
@@ -670,7 +670,7 @@ class App extends Component
     }
   }
 
-  onCapabilityPackageChange(new_selected_package_name)
+  onSelectedPackageChange(new_selected_package_name)
   {
     this.setState({last_selected_package: new_selected_package_name});
     return;
@@ -758,7 +758,7 @@ class App extends Component
           onSelectionChange={this.onEditorSelectionChange}
           onMultipleSelectionChange={this.onMultipleSelectionChange}
           onSelectedEdgeChange={this.onSelectedEdgeChange}
-          onCapabilityPackageChange={this.onCapabilityPackageChange}
+          onCapabilityPackageChange={this.onSelectedPackageChange}
         />);
     } else if (this.state.selected_node === null)
     {
@@ -832,7 +832,9 @@ class App extends Component
                        onError={this.onError}
                        mode={this.state.show_file_modal}
                        tree_message={this.state.last_tree_msg}
-                       onChangeFileModal={this.onChangeFileModal}/>
+                       last_selected_package={this.state.last_selected_package}
+                       onChangeFileModal={this.onChangeFileModal}
+                       onSelectedPackageChange={this.onSelectedPackageChange}/>
         </ReactModal>
         <ExecutionBar key={this.state.bt_namespace}
                       ros={this.state.ros}
