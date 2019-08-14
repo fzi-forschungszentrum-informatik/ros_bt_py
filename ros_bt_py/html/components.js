@@ -959,86 +959,40 @@ class LoadSaveControls extends Component
 
   loadFromPackage(event)
   {
-    console.log("loading from package");
-    // this should present some form of "file explorer ui with all pkgs in catkin source space"
-
     this.props.onChangeFileModal('load');
   }
 
   saveToPackage(event)
   {
-    console.log("save to package");
-    // this should present some form of "file explorer ui with all pkgs in catkin source space"
-
     this.props.onChangeFileModal('save');
-
-    //     # Filename can contain a relative path starting from the package root
-    // string filename
-    // string package
-    // Tree tree
-    // bool allow_overwrite
-    // bool allow_rename
-    // ---
-    // bool success
-    // string error_message
-    // string file_path
-
-    // {
-    //   module: this.props.node.module,
-    //   node_class: this.props.node.node_class,
-    //   name: this.state.name,
-    //   options: this.state.options.map(x => {
-    //     var option = {
-    //       key: x.key,
-    //       serialized_value: ''
-    //     };
-
-    // this.save_tree_service.callService(
-    //   new ROSLIB.ServiceRequest({
-    //     filename: 'test.yaml',
-    //     package: 'ros_bt_py_learning',
-    //     tree: {},
-    //     allow_rename: true,
-    //     allow_overwrite: false,
-    //   }),
-    //   function(response) {
-    //     if (response.success) {
-    //       console.log('Saved tree at: ' + response.file_path);
-    //     }
-    //     else {
-    //       this.props.onError('Failed to save tree ' + '' + ': '
-    //                   + response.error_message);
-    //     }
-    //   }.bind(this));
-
   }
 
   render()
   {
     return (
       <Fragment>
-        <button onClick={this.loadFromPackage.bind(this)}
-                className="btn btn-primary m-1">
-          Load from pkg
-        </button>
-        <button onClick={this.saveToPackage.bind(this)}
-                className="btn btn-primary m-1">
-          Save to pkg
-        </button>
         <button onClick={this.newTree.bind(this)}
                 className="btn btn-primary m-1">
           New
+        </button>
+        <button onClick={this.loadFromPackage.bind(this)}
+                className="btn btn-primary m-1">
+          Load
+        </button>
+        <button onClick={this.saveToPackage.bind(this)}
+                className="btn btn-primary m-1">
+          Save
         </button>
         <div>
           <input ref={this.fileref} type="file" style={{display:"none"}} onChange={this.loadTree.bind(this)}/>
           <button onClick={this.openFileDialog.bind(this)}
                   className="btn btn-primary m-1">
-            Load
+            Upload
           </button>
         </div>
         <button onClick={this.saveTree.bind(this)}
                 className="btn btn-primary m-1">
-          Save
+          Download
         </button>
       </Fragment>
     );
@@ -3314,6 +3268,7 @@ class FileBrowser extends Component{
       selected_file: "",
       file_path: null,
       file_type_filter: ".yaml",
+      highlighted: null,
     };
 
     this.searchPackageName = this.searchPackageName.bind(this);
@@ -3567,14 +3522,25 @@ class FileBrowser extends Component{
         );
       } else if (this.props.mode === "save") {
         open_save_button = (
-          <button className="btn btn-primary w-30 ml-1"
+          <button className="btn btn-primary w-30 m-1"
                   disabled={!this.state.file_path}
                   onClick={ () => {
                     console.log("saving... ", this.state.file_path);
 
+                    var save_file_path = this.state.file_path;
+
+                    if (this.state.file_type_filter !== "all")
+                    {
+                      // check if the file_path ends with the extension in file_type_filter
+                      if (!save_file_path.endsWith(this.state.file_type_filter))
+                      {
+                        save_file_path += this.state.file_type_filter;
+                      }
+                    }
+
                     this.save_service.callService(
                       new ROSLIB.ServiceRequest({
-                        filename: this.state.file_path,
+                        filename: save_file_path,
                         package: this.state.package,
                         tree: this.props.tree_message,
                       }),
@@ -3599,7 +3565,7 @@ class FileBrowser extends Component{
 
       package_structure = (
         <div>
-          <button className="btn btn-primary w-30"
+          <button className="btn btn-primary w-30 m-1"
                   onClick={ () => {
                     if (tree.parent === 0)
                     {
@@ -3609,19 +3575,21 @@ class FileBrowser extends Component{
                         selected_package: null,
                         file_path: null,
                         selected_file: "",
+                        highlighted: null,
                       })
                     } else {
                       this.setState({
                         selected_directory: tree.parent,
                         file_path: null,
                         selected_file: "",
+                        highlighted: null,
                       });
                     }
                   }}>
             <i class="fas fa-arrow-left"></i> Back
           </button>
           {open_save_button}
-          <select className="ml-1"
+          <select className="m-1"
                   value={this.state.file_type_filter}
                   onChange={ event => {
                     this.setState({file_type_filter: event.target.value})
@@ -3630,8 +3598,10 @@ class FileBrowser extends Component{
             <option value=".yaml">.yaml files</option>
           </select>
           <div>
-            <label>File: 
-              <input type="text"
+            <label>Name:
+              <input className="ml-1"
+                     type="text"
+                     ref={input => input && input.focus()}
                      onChange={ event => {
                       console.log("new file name: ", event.target.value);
                       var file_path = path.concat( event.target.value);
@@ -3652,6 +3622,8 @@ class FileBrowser extends Component{
                     this.setState({
                       selected_directory: 1, // directory 1 is top level
                       file_path: null,
+                      selected_file: "",
+                      highlighted: null,
                     });
                   }}>
               {this.state.package_structure.name}
@@ -3663,6 +3635,8 @@ class FileBrowser extends Component{
                         this.setState({
                           selected_directory: element.item_id,
                           file_path: null,
+                          selected_file: "",
+                          highlighted: null,
                         });
                 }}>{element.name}</span>);
             })}</p>
@@ -3680,7 +3654,9 @@ class FileBrowser extends Component{
               }
             }
             return (
-              <p onClick={ () => {
+              <p className="cursor-pointer"
+                 key={child.item_id}
+                 onClick={ () => {
                   if (child.type === "file")
                   {
                     console.log("selected a file", child);
@@ -3690,6 +3666,7 @@ class FileBrowser extends Component{
                     this.setState({
                       file_path: relative_path,
                       selected_file: child.name,
+                      highlighted: child.item_id,
                     });
                     
                   } else {
@@ -3704,7 +3681,11 @@ class FileBrowser extends Component{
                     }
                   }
                 }
-              }>{icon} {child.name} (id: {child.item_id}, parent: {child.parent})</p>
+              }><span className={
+                  this.state.highlighted === child.item_id && 'border border-primary'
+                }>
+                  {icon} {child.name}
+                </span></p>
             );
           })}</p>
         </div>
@@ -3713,15 +3694,26 @@ class FileBrowser extends Component{
 
     console.log("mode? ", this.props.mode);
 
+    var title = null;
+    if (this.props.mode === "save")
+    {
+      title = "Save tree to package";
+    } else if (this.props.mode === "load")
+    {
+      title = "Load tree from package";
+    }
+
     return (
       <div>
-        <h1>FileBrowser (mode: {this.props.mode})</h1>
+        <h2>{title}</h2>
         <div className="d-flex flex-column">
-          <h5>Package Search:</h5>
-          <input className="form-control-lg mb-2"
-                 type="text"
-                 value={this.state.package}
-                 onChange={this.searchPackageName}/>
+          <label className="m-1">Package:
+            <input className="m-2"
+                   type="text"
+                   autoFocus
+                   value={this.state.package}
+                   onChange={this.searchPackageName}/>
+          </label>
           {this.renderPackageSearchResults(package_results)}
         </div>
         {package_structure}
