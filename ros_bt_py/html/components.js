@@ -3526,6 +3526,7 @@ class FileBrowser extends Component{
       }
 
       var open_save_button = null;
+      var write_mode_select = null;
       if (this.props.mode === "load")
       {
         open_save_button = (
@@ -3559,6 +3560,16 @@ class FileBrowser extends Component{
           </button>
         );
       } else if (this.props.mode === "save") {
+        write_mode_select = (
+          <select className="m-1"
+                  value={this.state.write_mode}
+                  onChange={ event => {
+                    this.setState({write_mode: event.target.value})
+                  }}>
+            <option value="overwrite">overwrite file</option>
+            <option value="rename">rename file</option>
+          </select>
+        )
         open_save_button = (
           <button className="btn btn-primary w-30 m-1"
                   disabled={!this.state.file_path}
@@ -3649,14 +3660,7 @@ class FileBrowser extends Component{
             <option value="all">all files</option>
             <option value=".yaml">.yaml files</option>
           </select>
-          <select className="m-1"
-                  value={this.state.write_mode}
-                  onChange={ event => {
-                    this.setState({write_mode: event.target.value})
-                  }}>
-            <option value="overwrite">overwrite file</option>
-            <option value="rename">rename file</option>
-          </select>
+          {write_mode_select}
           <div>
             <label>Name:
               <input className="ml-1"
