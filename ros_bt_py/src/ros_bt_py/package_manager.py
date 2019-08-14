@@ -12,6 +12,7 @@ from ros_bt_py_msgs.msg import Message, Messages, Package, Packages
 from ros_bt_py_msgs.srv import GetMessageFields, GetMessageFieldsResponse, SaveTreeResponse
 from ros_bt_py_msgs.srv import GetPackageStructureResponse
 
+from ros_bt_py.node import increment_name
 
 class PackageManager(object):
     """Provides functionality to interact with ROS messages and catkin packages
@@ -252,17 +253,11 @@ class PackageManager(object):
 
         return response
 
-
-# # Filename can contain a relative path starting from the package root
-# string filename
-# Package package
-# Tree tree
-# bool allow_overwrite
-# bool allow_rename
-# ---
-# bool success
-# string error_message
-
+    def make_filepath_unique(self, filepath):
+        name, extension = os.path.splitext(filepath)
+        while os.path.exists(name+extension):
+            name = increment_name(name)
+        return name+extension
 
     def save_tree(self, request):
         """Saves a tree message in the given package
@@ -291,71 +286,41 @@ class PackageManager(object):
                     response.success = False
                     response.error_message = 'Path outside package path'
                     return response
-                rospy.loginfo("save path %s" % save_path)
                 save_path = save_path.rstrip(os.sep) # split trailing /
                 path, filename = os.path.split(save_path)
 
-                rospy.loginfo("path: %s, filename: %s" % (path, filename))
                 try: 
                     os.makedirs(path)
                 except OSError:
                     if not os.path.isdir(path):
-                        rospy.logerr("could not create path")
                         response.success = False
-                        # TODO: error message
+                        response.error_message = "Could not create path"
                         return response
-                
+
+                if os.path.isdir(save_path):
+                    response.success = False
+                    response.error_message = "File path already exists as directory"
+                    return response
+
+                if os.path.isfile(save_path):
+                    if request.allow_rename:
+                        save_path = self.make_filepath_unique(save_path)
+                        if os.path.isfile(save_path):
+                            response.success = False
+                            response.error_message = "Rename failed"
+                            return response
+                    else:
+                        if not request.allow_overwrite:
+                            response.success = False
+                            response.error_message = "Overwrite not allowed"
+                            return response
+
                 with open(save_path, 'w') as save_file:
                     msg = genpy.message.strify_message(request.tree)
                     save_file.write(msg)
                 
                 response.success = True
                 return response
-
-                # capabilities_folder = os.path.join(path, "capabilities")
-                # if not os.path.isdir(capabilities_folder):
-                #     rospy.logerr("creating capabilities folder")
-                #     os.mkdir(capabilities_folder)
-                # if not os.path.isdir(capabilities_folder):
-                #     response.success = False
-                #     response.error_message = "Could not create capabilities folder"
-                # else:
-                #     capability_folder = os.path.join(capabilities_folder, request.capability.name)
-                #     if os.path.isdir(capability_folder):
-                #         counter = 0
-                #         new_folder = capability_folder
-                #         while os.path.isdir(new_folder):
-                #             new_folder = capability_folder + "_" + str(counter)
-                #             counter += 1
-                #         capability_folder = new_folder
-                #     rospy.logerr("capability_folder %s", capability_folder)
-                #     capability_folder_name = capability_folder.replace(capabilities_folder, '')
-                #     rospy.logerr("capability folder name %s", capability_folder_name)
-                #     os.mkdir(capability_folder)
-                #     if not os.path.isdir(capability_folder):
-                #         response.success = False
-                #         response.error_message = "Could not create folder for capability"
-                #     else:
-                #         rospy.logerr("writing capability.yaml and coordinator.yaml")
-                #         capability_file_path = os.path.join(capability_folder, "capability.yaml")
-                #         capability_coordinator_path = os.path.join(capability_folder, "coordinator.yaml")
-                #         with open(capability_file_path, 'w') as capability_file:
-                #             msg = genpy.message.strify_message(request.capability)
-                #             capability_file.write(msg)
-                #         with open(capability_coordinator_path, 'w') as coordinator_file:
-                #             if request.coordinator.name == '':
-                #                 request.coordinator.name = request.capability.name
-                #             msg = genpy.message.strify_message(request.coordinator)
-                #             coordinator_file.write(msg)
-                #         # add the newly created capability to the capability manager
-                #         if request.capability.path != "" and ":" not in request.capability.path:
-                #             package_path = "package://" + request.package + "/capabilities/" + \
-                #                            capability_folder_name + "/" + request.capability.path
-                #             rospy.logwarn("relative path! %s", package_path)
-
-                #             request.capability.path = package_path
-                #         self.parse_capability_object(request.capability)
-                #         self.verify_capabilities()
 
         except rospkg.common.ResourceNotFound:
             response.success = False
