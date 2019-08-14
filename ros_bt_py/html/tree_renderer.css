@@ -240,6 +240,10 @@ path.data-hover {
   background-color: #007bff;
 }
 
+.search-result-highlighted {
+  background-color: #007bff;
+}
+
 div.jsoneditor,
 div.jsoneditor-menu {
   border-color: #4b4b4b;
@@ -306,4 +310,9 @@ div.jsoneditor-menu {
 .disconnected {
   padding: 0.25rem;
   color: #ff0000;
+}
+
+.filebrowser-bar:hover {
+  background-color: #007bff;
+  color: #ffffff;
 }
