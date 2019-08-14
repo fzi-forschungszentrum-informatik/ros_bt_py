@@ -766,6 +766,9 @@ class TreeManager(object):
                     response.tree_state = self.get_state()
 
             self.publish_info(self.debug_manager.get_debug_info_msg())
+        elif request.command == ControlTreeExecutionRequest.DO_NOTHING:
+            rospy.loginfo("Doing nothing in this request")
+            response.success = True
         else:
             response.error_message = 'Received unknown command %d' % request.command
             rospy.logerr(response.error_message)
