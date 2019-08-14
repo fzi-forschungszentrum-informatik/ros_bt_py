@@ -3259,7 +3259,7 @@ class FileBrowser extends Component{
     super(props);
 
     this.state = {
-      package: "",//this.props.last_selected_package,
+      package: "",
       selected_package: null,
       package_results:[],
       show_hidden: false,
@@ -3296,6 +3296,11 @@ class FileBrowser extends Component{
       name: this.props.bt_namespace + 'save_tree',
       serviceType: 'ros_bt_py_msgs/SaveTree'
     });
+
+    if (this.props.last_selected_package !== "")
+    {
+      this.selectPackageSearchResult(this.props.last_selected_package);
+    }
   }
 
   searchPackageName(event)
@@ -3369,6 +3374,7 @@ class FileBrowser extends Component{
             package_structure:  JSON.parse(response.package_structure),
             selected_directory: 0,
           });
+          this.props.onSelectedPackageChange(result);
         }
         else {
           console.log("error getting package structure: ", response.error_message);
@@ -3478,9 +3484,6 @@ class FileBrowser extends Component{
     var package_structure = null;
     if (this.state.package_structure)
     {
-      // save a "level?"
-      // for now just print the root and its elements
-
       // this.state.selected_directory contains the level, is set to 0 (aka no element) by default
       var selected_directory = 0;
       // TODO: this is a bit of a hack
@@ -3731,6 +3734,24 @@ class FileBrowser extends Component{
       title = "Load tree from package";
     }
 
+    var package_name_element = null;
+    if (this.state.package_structure)
+    {
+      package_name_element = (
+        <span>{this.state.package}</span>
+      );
+    } else {
+      package_name_element = (
+        <input className="m-2"
+                   type="text"
+                   ref={input => input && input.focus()}
+                   value={this.state.package}
+                   disabled={this.state.package_structure}
+                   onChange={this.searchPackageName}
+                   onKeyDown={this.keyPressHandler}/>
+      );
+    }
+
     return (
       <div>
         <button className="btn btn-primary w-30 m-1"
@@ -3741,13 +3762,7 @@ class FileBrowser extends Component{
         </button>
         <h2>{title}</h2>
         <div className="d-flex flex-column">
-          <label className="m-1">Package:
-            <input className="m-2"
-                   type="text"
-                   ref={input => input && input.focus()}
-                   value={this.state.package}
-                   onChange={this.searchPackageName}
-                   onKeyDown={this.keyPressHandler}/>
+          <label className="m-1">Package: {package_name_element}
           </label>
           {this.renderPackageSearchResults(package_results)}
         </div>
