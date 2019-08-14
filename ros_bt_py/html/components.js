@@ -3270,6 +3270,7 @@ class FileBrowser extends Component{
       file_type_filter: ".yaml",
       highlighted: null,
       highlighted_package: null,
+      write_mode: "overwrite",
     };
 
     this.searchPackageName = this.searchPackageName.bind(this);
@@ -3576,11 +3577,25 @@ class FileBrowser extends Component{
                     var debug_file_path = "package://"+this.state.package+"/"+save_file_path;
                     console.log("saving... ", debug_file_path);
 
+                    var overwrite = false;
+                    var rename = false;
+                    if (this.state.write_mode === "overwrite")
+                    {
+                      overwrite = true;
+                      rename = false;
+                    } else if (this.state.write_mode === "rename")
+                    {
+                      overwrite = false;
+                      rename = true;
+                    }
+
                     this.save_service.callService(
                       new ROSLIB.ServiceRequest({
                         filename: save_file_path,
                         package: this.state.package,
                         tree: this.props.tree_message,
+                        allow_overwrite: overwrite,
+                        allow_rename: rename,
                       }),
                       function(response) {
                         if (response.success) {
@@ -3634,6 +3649,14 @@ class FileBrowser extends Component{
                   }}>
             <option value="all">all files</option>
             <option value=".yaml">.yaml files</option>
+          </select>
+          <select className="m-1"
+                  value={this.state.write_mode}
+                  onChange={ event => {
+                    this.setState({write_mode: event.target.value})
+                  }}>
+            <option value="overwrite">overwrite file</option>
+            <option value="rename">rename file</option>
           </select>
           <div>
             <label>Name:
