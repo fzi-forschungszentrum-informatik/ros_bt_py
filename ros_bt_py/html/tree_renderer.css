@@ -247,6 +247,10 @@ path.data-hover {
   background-color: #007bff;
 }
 
+.search-result-highlighted {
+  background-color: #007bff;
+}
+
 div.jsoneditor,
 div.jsoneditor-menu {
   border-color: #4b4b4b;

@@ -3269,9 +3269,11 @@ class FileBrowser extends Component{
       file_path: null,
       file_type_filter: ".yaml",
       highlighted: null,
+      highlighted_package: null,
     };
 
     this.searchPackageName = this.searchPackageName.bind(this);
+    this.keyPressHandler = this.keyPressHandler.bind(this);
     this.selectPackageSearchResult = this.selectPackageSearchResult.bind(this);
   }
 
@@ -3303,16 +3305,49 @@ class FileBrowser extends Component{
       var results = this.props.packagesFuse.search(event.target.value);
       this.setState({package_results: results.slice(0,5)});
     }
-    this.setState({package: event.target.value});
-    this.setState({selected_package: null});
+    this.setState({
+      package: event.target.value,
+      selected_package: null,
+      highlighted_package: null,
+    });
+
+  }
+
+  keyPressHandler(event)
+  {
+    if (event.keyCode == 9)
+    {
+      if (this.state.package_results && this.state.package_results.length !== 0)
+      {
+        console.log("search results are here");
+        var package_to_highlight = 0;
+        if (this.state.highlighted_package !== null)
+        {
+          console.log("mhh");
+          package_to_highlight = (this.state.highlighted_package + 1) % (this.state.package_results.length);
+        }
+        console.log("highlighting package: ", package_to_highlight);
+        this.setState({highlighted_package: package_to_highlight});
+      }
+    } else if (event.key === 'Enter') {
+      if (this.state.package_results && this.state.package_results.length !== 0)
+      {
+        if (this.state.highlighted_package !== null)
+        {
+          this.selectPackageSearchResult(this.state.package_results[this.state.highlighted_package].package);
+        }
+      }
+    }
   }
 
   selectPackageSearchResult(result)
   {
-    this.setState({package: result});
-    this.setState({package_results: []});
-    this.setState({selected_package: result});
-    //this.props.onSelectedPackageChange(result);
+    this.setState({
+      package: result,
+      package_results: [],
+      selected_package: result,
+      highlighted_package: null,
+    });
 
     // get package structure
     this.get_package_structure_service.callService(
@@ -3340,11 +3375,13 @@ class FileBrowser extends Component{
   {
     if(results.length > 0)
     {
-      var result_rows = results.map(x => {
+      var result_rows = results.map((x, i) => {
         return (
           <div className="list-group-item search-result align-items-start" onClick={() => this.selectPackageSearchResult(x.package)}>
             <div className="d-flex w-100 justify-content-between">
-              <span>{x.package}</span>
+              <span className={
+                this.state.highlighted_package === i && 'search-result-highlighted'
+              }>{x.package}</span>
               <i class="far fa-file-code" title={x.path}></i>
             </div>
           </div>
@@ -3352,7 +3389,8 @@ class FileBrowser extends Component{
       });
 
       return (
-        <div className="mb-2 search-results" ref={node => this.node = node}>
+        <div className="mb-2 search-results"
+             ref={node => this.node = node}>
           <div className="list-group">
               {result_rows}
           </div>
@@ -3705,14 +3743,21 @@ class FileBrowser extends Component{
 
     return (
       <div>
+        <button className="btn btn-primary w-30 m-1"
+                onClick={ () => {
+                  this.props.onChangeFileModal(null);
+                }}>
+          <i class="fas fa-times-circle"></i> Cancel
+        </button>
         <h2>{title}</h2>
         <div className="d-flex flex-column">
           <label className="m-1">Package:
             <input className="m-2"
                    type="text"
-                   autoFocus
+                   ref={input => input && input.focus()}
                    value={this.state.package}
-                   onChange={this.searchPackageName}/>
+                   onChange={this.searchPackageName}
+                   onKeyDown={this.keyPressHandler}/>
           </label>
           {this.renderPackageSearchResults(package_results)}
         </div>
