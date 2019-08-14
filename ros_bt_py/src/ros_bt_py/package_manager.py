@@ -286,6 +286,11 @@ class PackageManager(object):
                 response.error_message = 'Package path "{}" does not exist'.format(package_path)
             else:
                 save_path = os.path.join(package_path, request.filename)
+
+                if os.path.commonprefix((os.path.realpath(save_path), package_path)) != package_path:
+                    response.success = False
+                    response.error_message = 'Path outside package path'
+                    return response
                 rospy.loginfo("save path %s" % save_path)
                 save_path = save_path.rstrip(os.sep) # split trailing /
                 path, filename = os.path.split(save_path)
