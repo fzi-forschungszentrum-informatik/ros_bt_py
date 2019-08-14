@@ -7,7 +7,7 @@ from ros_bt_py_msgs.msg import Tree, DebugInfo, DebugSettings
 from ros_bt_py_msgs.srv import AddNode, AddNodeAtIndex, ControlTreeExecution, ModifyBreakpoints, RemoveNode, \
      WireNodeData, GetAvailableNodes, SetExecutionMode, SetOptions, Continue, LoadTree, \
      MoveNode, ReplaceNode, GetSubtree, ClearTree, MorphNode, SaveTree
-from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, GetMessageFields, GetPackageStructure
+from ros_bt_py_msgs.srv import LoadTreeRequest, ControlTreeExecutionRequest, GetMessageFields, GetPackageStructure
 from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message
 from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.package_manager import PackageManager
@@ -28,6 +28,10 @@ class TreeNode(object):
                             type(node_module_names.__name__))
 
         show_traceback_on_exception = rospy.get_param('~show_traceback_on_exception', default=False)
+        load_default_tree = rospy.get_param('~load_default_tree', default=False)
+        default_tree_path = rospy.get_param('~default_tree_path', default="")
+        default_tree_tick_frequency_hz = rospy.get_param('~default_tree_tick_frequency_hz', default=1)
+        default_tree_control_command = rospy.get_param('~default_tree_control_command', default=2)
 
         self.tree_pub = rospy.Publisher('~tree', Tree, latch=True, queue_size=1)
         self.debug_info_pub = rospy.Publisher('~debug/debug_info', DebugInfo, latch=True, queue_size=1)
@@ -125,6 +129,21 @@ class TreeNode(object):
         self.save_tree_service = rospy.Service('~save_tree',
                                                SaveTree,
                                                self.package_manager.save_tree)
+
+        if load_default_tree:
+            rospy.logwarn("loading default tree: %s" % default_tree_path)
+            tree = Tree(path=default_tree_path)
+            load_tree_request = LoadTreeRequest(tree=tree)
+            load_tree_response = self.tree_manager.load_tree(load_tree_request)
+            if not load_tree_response.success:
+                rospy.logerr("could not load default tree")
+            else:
+                control_tree_execution_request = ControlTreeExecutionRequest(
+                    command=default_tree_control_command,
+                    tick_frequency_hz=default_tree_tick_frequency_hz)
+                control_tree_execution_response = self.tree_manager.control_execution(control_tree_execution_request)
+                if not control_tree_execution_response.success:
+                    rospy.logerr("could not execute default tree")
 
     def shutdown(self):
         if self.tree_manager.get_state() not in [Tree.IDLE, Tree.EDITABLE, Tree.ERROR]:

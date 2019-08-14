@@ -1,4 +1,10 @@
 <launch>
+  <!-- start rqt_console by default -->
+  <arg name="rqt_console" default="true" />
+  <group if="$(arg rqt_console)">
+    <node name="rqt_console" pkg="rqt_console" type="rqt_console" />
+  </group>
+
   <!-- port of the editor web interface -->
   <arg name="port" value="8085" />
 
@@ -8,6 +14,17 @@
        <arg name="additional_node_modules" default="future_advanced_nodes.learning, future_advanced_nodes.doing," />
   -->
   <arg name="additional_node_modules" default="" />
+
+  <arg name="load_default_tree" default="false" />
+  <arg name="default_tree_path" default="package://ros_bt_py/etc/trees/examples/file_example.yaml" />
+  <arg name="default_tree_tick_frequency_hz" default="1" />
+  <!-- available commands are:
+    DO_NOTHING = 0
+    TICK_ONCE = 1
+    TICK_PERIODICALLY = 2
+    TICK_UNTIL_RESULT = 3
+  -->
+  <arg name="default_tree_control_command" default="0" />
 
   <!-- -->
   <arg name="show_traceback_on_exception" default="false" />
@@ -55,6 +72,10 @@
       ]
     </rosparam>
     <param name="show_traceback_on_exception" value="$(arg show_traceback_on_exception)" />
+    <param name="load_default_tree" value="$(arg load_default_tree)" />
+    <param name="default_tree_path" value="$(arg default_tree_path)" />
+    <param name="default_tree_tick_frequency_hz" value="$(arg default_tree_tick_frequency_hz)" />
+    <param name="default_tree_control_command" value="$(arg default_tree_control_command)" />
   </node>
 
   <!-- helper node that prints the url of the editor web interface for convenience -->
