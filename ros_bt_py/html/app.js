@@ -153,7 +153,6 @@ class App extends Component
     this.changeCopyMode = this.changeCopyMode.bind(this);
     this.onPublishingSubtreesChange = this.onPublishingSubtreesChange.bind(this);
     this.onPackagesUpdate = this.onPackagesUpdate.bind(this);
-    this.onCapabilitiesUpdate = this.onCapabilitiesUpdate.bind(this);
   }
 
   onTreeUpdate(msg)
