@@ -24,7 +24,7 @@
     TICK_PERIODICALLY = 2
     TICK_UNTIL_RESULT = 3
   -->
-  <arg name="default_tree_control_command" default="2" />
+  <arg name="default_tree_control_command" default="0" />
 
   <!-- -->
   <arg name="show_traceback_on_exception" default="false" />
