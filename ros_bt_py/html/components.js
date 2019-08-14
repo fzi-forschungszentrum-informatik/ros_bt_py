@@ -3123,7 +3123,7 @@ class FileBrowser extends Component{
       file_type_filter: ".yaml",
       highlighted: null,
       highlighted_package: null,
-      write_mode: "overwrite",
+      write_mode: "ask",
       error_message: null,
     };
 
@@ -3418,6 +3418,7 @@ class FileBrowser extends Component{
                   onChange={ event => {
                     this.setState({write_mode: event.target.value})
                   }}>
+            <option value="ask">ask before overwrite</option>
             <option value="overwrite">overwrite file</option>
             <option value="rename">rename file</option>
           </select>
@@ -3450,23 +3451,52 @@ class FileBrowser extends Component{
                     {
                       overwrite = false;
                       rename = true;
+                    } else if (this.state.write_mode === "ask") {
+                      overwrite = false;
+                      rename = false;
                     }
 
+                    var request = {
+                      filename: save_file_path,
+                      package: this.state.package,
+                      tree: this.props.tree_message,
+                      allow_overwrite: overwrite,
+                      allow_rename: rename,
+                    };
+
                     this.save_service.callService(
-                      new ROSLIB.ServiceRequest({
-                        filename: save_file_path,
-                        package: this.state.package,
-                        tree: this.props.tree_message,
-                        allow_overwrite: overwrite,
-                        allow_rename: rename,
-                      }),
+                      new ROSLIB.ServiceRequest(request),
                       function(response) {
                         if (response.success) {
                           console.log('called SaveTree service successfully');
                           this.props.onChangeFileModal(null);
                         }
                         else {
-                          this.setState({error_message: response.error_message});
+                          if (this.state.write_mode === "ask" && response.error_message === "Overwrite not allowed")
+                          {
+                            if (window.confirm("Do you want to overwrite " + save_file_path + "?"))
+                            {
+                              request.allow_overwrite = true;
+                              this.save_service.callService(
+                                new ROSLIB.ServiceRequest(request),
+                                function(response) {
+                                  if (response.success) {
+                                    console.log('called SaveTree service successfully');
+                                    this.props.onChangeFileModal(null);
+                                  }
+                                  else {
+                                    this.setState({error_message: response.error_message});
+                                  }
+                                }.bind(this),
+                                function(failed) {
+                                  this.setState({error_message: 'Error saving tree'});
+                                }.bind(this));
+                            } else {
+                              this.setState({error_message: response.error_message});
+                            }
+                          } else {
+                            this.setState({error_message: response.error_message});
+                          }
                         }
                       }.bind(this),
                       function(failed) {
