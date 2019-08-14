@@ -3315,18 +3315,26 @@ class FileBrowser extends Component{
 
   keyPressHandler(event)
   {
-    if (event.keyCode == 9)
+    if (event.keyCode == 38 || event.keyCode == 40) // up or down arrow
     {
       if (this.state.package_results && this.state.package_results.length !== 0)
       {
-        console.log("search results are here");
         var package_to_highlight = 0;
         if (this.state.highlighted_package !== null)
         {
-          console.log("mhh");
-          package_to_highlight = (this.state.highlighted_package + 1) % (this.state.package_results.length);
+          var direction = 1;
+          if (event.keyCode == 38)
+          {
+            direction = -1;
+          }
+          package_to_highlight = (this.state.highlighted_package + direction);
+          if (package_to_highlight < 0)
+          {
+            package_to_highlight = this.state.package_results.length -1;
+          }
+
+          package_to_highlight %= this.state.package_results.length;
         }
-        console.log("highlighting package: ", package_to_highlight);
         this.setState({highlighted_package: package_to_highlight});
       }
     } else if (event.key === 'Enter') {
@@ -3357,9 +3365,6 @@ class FileBrowser extends Component{
       }),
       function(response) {
         if (response.success) {
-          console.log("got package structure: ", response.package_structure);
-
-          // TODO: reset
           this.setState({
             package_structure:  JSON.parse(response.package_structure),
             selected_directory: 0,
@@ -3481,7 +3486,6 @@ class FileBrowser extends Component{
       // TODO: this is a bit of a hack
       if (this.state.selected_directory === 0)
       {
-        console.log("this is a bit of a hack");
         // none selected, discard whole package structure
         this.setState({selected_directory: this.state.package_structure.item_id});
         selected_directory = this.state.package_structure.item_id;
@@ -3489,18 +3493,13 @@ class FileBrowser extends Component{
         selected_directory = this.state.selected_directory;
       }
 
-      console.log("selected directory: ", selected_directory);
-
       var tree = this.search(selected_directory, this.state.package_structure);
-
-      console.log("parent:", tree.parent);
 
       var par = tree.parent;
       var path = [];
       var extended_path = [];
       if (par !== 0)
       {
-        console.log("tree item_id", tree.item_id);
         path.push(tree.name);
         extended_path.push({
           name: tree.name,
@@ -3520,8 +3519,6 @@ class FileBrowser extends Component{
           });
         }
       }
-      console.log("path: ", path);
-      console.log("extended_path: ", extended_path);
 
       var open_save_button = null;
       if (this.props.mode === "load")
@@ -3530,12 +3527,11 @@ class FileBrowser extends Component{
           <button className="btn btn-primary w-30 ml-1"
                   disabled={!this.state.file_path}
                   onClick={ () => {
-                    console.log("loading... ", this.state.file_path);
                     var msg = {
                       path: "package://"+this.state.package+"/"+this.state.file_path
                     };
 
-                    console.log("message: ", msg);
+                    console.log("loading... ", msg.path);
 
                     this.load_service.callService(
                       new ROSLIB.ServiceRequest({
@@ -3563,7 +3559,6 @@ class FileBrowser extends Component{
           <button className="btn btn-primary w-30 m-1"
                   disabled={!this.state.file_path}
                   onClick={ () => {
-                    console.log("saving... ", this.state.file_path);
 
                     var save_file_path = this.state.file_path;
 
@@ -3575,6 +3570,8 @@ class FileBrowser extends Component{
                         save_file_path += this.state.file_type_filter;
                       }
                     }
+                    var debug_file_path = "package://"+this.state.package+"/"+save_file_path;
+                    console.log("saving... ", debug_file_path);
 
                     this.save_service.callService(
                       new ROSLIB.ServiceRequest({
@@ -3641,10 +3638,8 @@ class FileBrowser extends Component{
                      type="text"
                      ref={input => input && input.focus()}
                      onChange={ event => {
-                      console.log("new file name: ", event.target.value);
                       var file_path = path.concat( event.target.value);
                       var relative_path = file_path.join("/");
-                      console.log("file path:", relative_path);
                       this.setState({
                         file_path: relative_path,
                         selected_file: event.target.value,
@@ -3697,10 +3692,8 @@ class FileBrowser extends Component{
                  onClick={ () => {
                   if (child.type === "file")
                   {
-                    console.log("selected a file", child);
                     var file_path = path.concat(child.name);
                     var relative_path = file_path.join("/");
-                    console.log("file path:", relative_path);
                     this.setState({
                       file_path: relative_path,
                       selected_file: child.name,
@@ -3710,7 +3703,6 @@ class FileBrowser extends Component{
                   } else {
                     if (child.type === "directory")
                     {
-                      console.log("selected a directory");
                       this.setState({
                         selected_directory: child.item_id,
                         file_path: null,
@@ -3729,8 +3721,6 @@ class FileBrowser extends Component{
         </div>
       );
     }
-
-    console.log("mode? ", this.props.mode);
 
     var title = null;
     if (this.props.mode === "save")
