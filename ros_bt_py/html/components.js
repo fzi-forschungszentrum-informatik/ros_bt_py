@@ -657,7 +657,7 @@ class NamespaceSelect extends Component
       <Fragment>
         <span aria-hidden="true" title={connected_title} className={connected_class} />
         <div className="form-inline">
-          <label className="ml-1">BT Namespace:
+          <label className="ml-1">Namespace:
             <select className="custom-select ml-1"
                     value={this.props.currentNamespace}
                     onChange={this.handleNamespaceChange}>
@@ -815,28 +815,40 @@ class TickControls extends Component
     return (
       <Fragment>
         <button onClick={this.controlExec.bind(this, 1)}
-                className="btn btn-primary m-1">
-          Tick Once
+                className="btn btn-primary ml-1"
+                title="Tick Once">
+          <i class="fas fa-check show-button-icon"></i>
+          <span className="ml-1 hide-button-text-control">Tick Once</span>
         </button>
         <button onClick={this.controlExec.bind(this, 2)}
-                className="btn btn-primary m-1">
-          Tick Periodically
+                className="btn btn-primary ml-1"
+                title="Tick Periodically">
+          <i class="fas fa-sync show-button-icon"></i>
+          <span className="ml-1 hide-button-text-control">Tick Periodically</span>
         </button>
         <button onClick={this.controlExec.bind(this, 3)}
-                className="btn btn-primary m-1">
-          Tick Until Result
+                className="btn btn-primary ml-1"
+                title="Tick Until Result">
+          <i class="fas fa-play show-button-icon"></i>
+          <span className="ml-1 hide-button-text-control">Tick Until Result</span>
         </button>
         <button onClick={this.controlExec.bind(this, 4)}
-                className="btn btn-primary m-1">
-          Stop
+                className="btn btn-primary ml-1"
+                title="Stop">
+          <i class="fas fa-stop show-button-icon"></i>
+          <span className="ml-1 hide-button-text-control">Stop</span>
         </button>
         <button onClick={this.controlExec.bind(this, 5)}
-                className="btn btn-primary m-1">
-          Reset
+                className="btn btn-primary ml-1"
+                title="Reset">
+          <i class="fas fa-undo show-button-icon"></i>
+          <span className="ml-1 hide-button-text-control">Reset</span>
         </button>
         <button onClick={this.controlExec.bind(this, 6)}
-                className="btn btn-primary m-1">
-          Shutdown
+                className="btn btn-primary ml-1"
+                title="Shutdown">
+          <i class="fas fa-power-off show-button-icon"></i>
+          <span className="ml-1 hide-button-text-control">Shutdown</span>
         </button>
       </Fragment>
     );
@@ -956,27 +968,37 @@ class LoadSaveControls extends Component
     return (
       <Fragment>
         <button onClick={this.newTree.bind(this)}
-                className="btn btn-primary m-1">
-          New
+                className="btn btn-primary ml-1"
+                title="New tree">
+          <i class="fas fa-file show-button-icon"></i>
+          <span className="ml-1 hide-button-text">New</span>
         </button>
         <button onClick={this.loadFromPackage.bind(this)}
-                className="btn btn-primary m-1">
-          Load
+                className="btn btn-primary ml-1"
+                title="Load from package">
+          <i class="fas fa-folder show-button-icon"></i>
+          <span className="ml-1 hide-button-text">Load</span>
         </button>
         <button onClick={this.saveToPackage.bind(this)}
-                className="btn btn-primary m-1">
-          Save
+                className="btn btn-primary ml-1"
+                title="Save to package">
+          <i class="fas fa-save show-button-icon"></i>
+          <span className="ml-1 hide-button-text">Save</span>
         </button>
         <div>
           <input ref={this.fileref} type="file" style={{display:"none"}} onChange={this.loadTree.bind(this)}/>
           <button onClick={this.openFileDialog.bind(this)}
-                  className="btn btn-primary m-1">
-            Upload
+                  className="btn btn-primary ml-1"
+                  title="Upload">
+            <i class="fas fa-file-upload show-button-icon"></i>
+            <span className="ml-1 hide-button-text">Upload</span>
           </button>
         </div>
         <button onClick={this.saveTree.bind(this)}
-                className="btn btn-primary m-1">
-          Download
+                className="btn btn-primary m-1"
+                title="Download">
+          <i class="fas fa-file-download show-button-icon"></i>
+          <span className="ml-1 hide-button-text">Download</span>
         </button>
       </Fragment>
     );
@@ -1115,8 +1137,9 @@ class DebugControls extends Component
                  htmlFor={this.publishSubtreesID}>Publish Subtrees</label>
         </div>
         <button onClick={this.onClickStep}
-                className="btn btn-primary m-1">
-          Step
+                className="btn btn-primary ml-1">
+          <i class="fas fa-step-forward show-button-icon"></i>
+          <span className="ml-1 hide-button-text-control">Step</span>
         </button>
       </Fragment>
     );
