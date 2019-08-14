@@ -1,4 +1,5 @@
 var render = ReactDOM.render;
+ReactModal.setAppElement("#react-container");
 
 class App extends Component
 {
@@ -57,7 +58,9 @@ class App extends Component
       skin: 'darkmode',
       copy_node: false,
       connected: false,
-      publishing_subtrees: false
+      publishing_subtrees: false,
+      last_selected_package: '',
+      show_file_modal: null,
     };
 
     ros.on("connection", function(e) {
@@ -115,6 +118,13 @@ class App extends Component
       serviceType: 'ros_bt_py_msgs/SetExecutionMode'
     });
 
+    // topics needed for capability functionality
+    this.packages_topic = new ROSLIB.Topic({
+      ros : this.state.ros,
+      name : this.state.bt_namespace + 'packages',
+      messageType : 'ros_bt_py_msgs/Packages'
+    });
+
     this.lastTreeUpdate = null;
     this.topicTimeoutID = null;
     this.newMsgDelay = 500;  // ms
@@ -126,9 +136,11 @@ class App extends Component
     this.onChangeErrorHistorySorting = this.onChangeErrorHistorySorting.bind(this);
     this.onNodeListSelectionChange = this.onNodeListSelectionChange.bind(this);
     this.onNodeListDragging = this.onNodeListDragging.bind(this);
+    this.onChangeFileModal = this.onChangeFileModal.bind(this);
     this.check_dragging = this.check_dragging.bind(this);
     this.onNodeChanged = this.onNodeChanged.bind(this);
     this.onEditorSelectionChange = this.onEditorSelectionChange.bind(this);
+    this.onSelectedPackageChange = this.onSelectedPackageChange.bind(this);
     this.onSelectedEdgeChange = this.onSelectedEdgeChange.bind(this);
     this.onTreeUpdate = this.onTreeUpdate.bind(this);
     this.onDebugUpdate = this.onDebugUpdate.bind(this);
@@ -140,6 +152,8 @@ class App extends Component
     this.changeSkin = this.changeSkin.bind(this);
     this.changeCopyMode = this.changeCopyMode.bind(this);
     this.onPublishingSubtreesChange = this.onPublishingSubtreesChange.bind(this);
+    this.onPackagesUpdate = this.onPackagesUpdate.bind(this);
+    this.onCapabilitiesUpdate = this.onCapabilitiesUpdate.bind(this);
   }
 
   onTreeUpdate(msg)
@@ -231,6 +245,26 @@ class App extends Component
     this.messagesFuse = new Fuse(this.messages, options);
   }
 
+  onPackagesUpdate(msg)
+  {
+    console.log("received list of packages");
+    this.last_received_packages_msg = msg;
+    this.packages = msg.packages;
+
+    var options = {
+      shouldSort: true,
+      threshold: 0.6,
+      location: 0,
+      distance: 100,
+      maxPatternLength: 32,
+      minMatchCharLength: 1,
+      keys: [
+        "package",
+        "path"
+      ]
+    };
+    this.packagesFuse = new Fuse(this.packages, options);
+  }
   changeSkin(skin)
   {
     this.setState({skin:skin});
@@ -325,6 +359,7 @@ class App extends Component
       this.tree_topic.unsubscribe(this.onTreeUpdate);
       this.debug_topic.unsubscribe(this.onDebugUpdate);
       this.messages_topic.unsubscribe(this.onMessagesUpdate);
+      this.packages_topic.unsubscribe(this.onPackagesUpdate);
 
       this.tree_topic = new ROSLIB.Topic({
         ros : this.state.ros,
@@ -344,10 +379,16 @@ class App extends Component
         messageType: 'ros_bt_py_msgs/Messages'
       });
 
+      this.packages_topic = new ROSLIB.Topic({
+        ros : this.state.ros,
+        name : namespace + 'packages',
+        messageType : 'ros_bt_py_msgs/Packages'
+      });
       // Subscribe again
       this.tree_topic.subscribe(this.onTreeUpdate);
       this.debug_topic.subscribe(this.onDebugUpdate);
       this.messages_topic.subscribe(this.onMessagesUpdate);
+      this.packages_topic.subscribe(this.onPackagesUpdate);
 
       // Update GetAvailableNodes Service
       this.get_nodes_service = new ROSLIB.Service({
@@ -420,7 +461,12 @@ class App extends Component
     this.tree_topic.subscribe(this.onTreeUpdate);
     this.debug_topic.subscribe(this.onDebugUpdate);
     this.messages_topic.subscribe(this.onMessagesUpdate);
+    this.packages_topic.subscribe(this.onPackagesUpdate);
     document.body.addEventListener("keydown",function(e){
+      if ( this.state.show_file_modal && e.keyCode == 27) // 27 = ESC
+      {
+        this.setState({show_file_modal: null});
+      }
       if ( this.state.copy_node && e.keyCode == 67 && (e.ctrlKey || e.metaKey) ) {
         this.setState({copied_node: this.state.selected_node});
       } else if ( this.state.copy_node && e.keyCode == 86 && (e.ctrlKey || e.metaKey) ) {
@@ -486,6 +532,7 @@ class App extends Component
     this.tree_topic.unsubscribe(this.onTreeUpdate);
     this.debug_topic.unsubscribe(this.onDebugUpdate);
     this.messages_topic.unsubscribe(this.onMessagesUpdate);
+    this.packages_topic.unsubscribe(this.onPackagesUpdate);
   }
 
   onError(error_message)
@@ -534,6 +581,10 @@ class App extends Component
     this.setState({dragging_node_list_item: dragging});
   }
 
+  onChangeFileModal(mode)
+  {
+    this.setState({show_file_modal: mode});
+  }
   check_dragging()
   {
     if (this.state.dragging_node_list_item)
@@ -541,6 +592,12 @@ class App extends Component
       this.setState({dragging_node_list_item: null});
     }
   }
+  onSelectedPackageChange(new_selected_package_name)
+  {
+    this.setState({last_selected_package: new_selected_package_name});
+    return;
+  }
+
   onEditorSelectionChange(new_selected_node_name)
   {
     if (this.state.node_changed && (new_selected_node_name === null || new_selected_node_name != this.state.selected_node_name))
@@ -668,6 +725,18 @@ class App extends Component
 
     return (
       <div onMouseUp={this.check_dragging} className={dragging_cursor}>
+        <ReactModal key={this.state.bt_namespace}
+                    isOpen={this.state.show_file_modal !== null}>
+          <FileBrowser ros={this.state.ros}
+                       bt_namespace={this.state.bt_namespace}
+                       packagesFuse={this.packagesFuse}
+                       onError={this.onError}
+                       mode={this.state.show_file_modal}
+                       tree_message={this.state.last_tree_msg}
+                       last_selected_package={this.state.last_selected_package}
+                       onChangeFileModal={this.onChangeFileModal}
+                       onSelectedPackageChange={this.onSelectedPackageChange}/>
+        </ReactModal>
         <ExecutionBar key={this.state.bt_namespace}
                       ros={this.state.ros}
                       connected={this.state.connected}
@@ -677,7 +746,8 @@ class App extends Component
                       onSelectedTreeChange={this.onSelectedTreeChange}
                       onNamespaceChange={this.onNamespaceChange}
                       onError={this.onError}
-                      onPublishingSubtreesChange={this.onPublishingSubtreesChange}/>
+                      onPublishingSubtreesChange={this.onPublishingSubtreesChange}
+                      onChangeFileModal={this.onChangeFileModal}/>
 
         <div className="container-fluid">
           <div className="row row-height">

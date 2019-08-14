@@ -11,7 +11,7 @@ import genpy
 import rospy
 import rospkg
 
-from ros_bt_py_msgs.srv import LoadTreeResponse
+from ros_bt_py_msgs.srv import LoadTreeRequest, LoadTreeResponse
 from ros_bt_py_msgs.srv import ClearTreeResponse
 from ros_bt_py_msgs.srv import MorphNodeResponse
 from ros_bt_py_msgs.srv import MoveNodeRequest, RemoveNodeRequest, ReplaceNodeRequest, WireNodeDataRequest
