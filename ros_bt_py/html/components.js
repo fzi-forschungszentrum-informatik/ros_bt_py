@@ -3271,6 +3271,7 @@ class FileBrowser extends Component{
       highlighted: null,
       highlighted_package: null,
       write_mode: "overwrite",
+      error_message: null,
     };
 
     this.searchPackageName = this.searchPackageName.bind(this);
@@ -3547,12 +3548,11 @@ class FileBrowser extends Component{
                           this.props.onChangeFileModal(null);
                         }
                         else {
-                          this.props.onError(response.error_message);
+                          this.setState({error_message: response.error_message});
                         }
                       }.bind(this),
-                      // FIXME: error message in file modal!
                       function(failed) {
-                        this.props.onError('Error loading tree, is your yaml file correct? ' + failed)
+                        this.setState({error_message: 'Error loading tree, is your yaml file correct? '});
                       }.bind(this));
                   }}>
             <i class="far fa-folder-open"></i> Open
@@ -3603,12 +3603,11 @@ class FileBrowser extends Component{
                           this.props.onChangeFileModal(null);
                         }
                         else {
-                          this.props.onError(response.error_message);
+                          this.setState({error_message: response.error_message});
                         }
                       }.bind(this),
-                      // FIXME: error message in file modal!
                       function(failed) {
-                        this.props.onError('Error saving tree, is your yaml file correct? ' + failed)
+                        this.setState({error_message: 'Error saving tree'});
                       }.bind(this));
                   }}>
             <i class="far fa-save"></i> Save
@@ -3777,12 +3776,15 @@ class FileBrowser extends Component{
 
     return (
       <div>
-        <button className="btn btn-primary w-30 m-1"
-                onClick={ () => {
-                  this.props.onChangeFileModal(null);
-                }}>
-          <i class="fas fa-times-circle"></i> Cancel
-        </button>
+        <div className="d-flex justify-content-between">
+          <button className="btn btn-primary w-30 m-1"
+                  onClick={ () => {
+                    this.props.onChangeFileModal(null);
+                  }}>
+            <i class="fas fa-times-circle"></i> Cancel
+          </button>
+          <span className="disconnected">{this.state.error_message}</span>
+        </div>
         <h2>{title}</h2>
         <div className="d-flex flex-column">
           <label className="m-1">Package: {package_name_element}
