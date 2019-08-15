@@ -1262,7 +1262,8 @@ def load_node_module(package_name):
     """
     try:
         return importlib.import_module(package_name)
-    except (ImportError, ValueError):
+    except (ImportError, ValueError) as e:
+        rospy.logerr("Could not load node module \"%s\": %s" % (package_name, repr(e)))
         return None
 
 
