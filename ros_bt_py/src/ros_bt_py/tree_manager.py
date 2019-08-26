@@ -12,6 +12,7 @@ import rospy
 import rospkg
 
 from ros_bt_py_msgs.srv import LoadTreeRequest, LoadTreeResponse
+from ros_bt_py_msgs.srv import LoadTreeFromPathResponse
 from ros_bt_py_msgs.srv import ClearTreeResponse
 from ros_bt_py_msgs.srv import MorphNodeResponse
 from ros_bt_py_msgs.srv import MoveNodeRequest, RemoveNodeRequest, ReplaceNodeRequest, WireNodeDataRequest
@@ -316,6 +317,21 @@ class TreeManager(object):
                                  tick_frequency_hz=self.tree_msg.tick_frequency_hz)
 
         self.publish_info(self.debug_manager.get_debug_info_msg())
+
+        return response
+
+    @is_edit_service
+    def load_tree_from_path(self, request):
+        """Wrapper around load_tree for convenience
+        """
+        tree = Tree()
+        tree.path = request.path
+        load_tree_request = LoadTreeRequest(tree=tree)
+        load_tree_response = self.load_tree(request=load_tree_request)
+
+        response = LoadTreeFromPathResponse()
+        response.success = load_tree_response.success
+        response.error_message = load_tree_response.error_message
 
         return response
 
