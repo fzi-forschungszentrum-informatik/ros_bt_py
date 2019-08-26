@@ -15,6 +15,7 @@ from ros_bt_py.package_manager import PackageManager
 
 class TreeNode(object):
     def __init__(self):
+        rospy.loginfo("initializing tree node...")
         node_module_names = rospy.get_param('~node_modules', default=[])
         if isinstance(node_module_names, basestring):
             if ',' in node_module_names:
@@ -116,6 +117,24 @@ class TreeNode(object):
                                            ClearTree,
                                            self.tree_manager.clear)
 
+        rospy.loginfo("initialized tree manager")
+
+        if load_default_tree:
+            rospy.logwarn("loading default tree: %s" % default_tree_path)
+            tree = Tree(path=default_tree_path)
+            load_tree_request = LoadTreeRequest(tree=tree)
+            load_tree_response = self.tree_manager.load_tree(load_tree_request)
+            if not load_tree_response.success:
+                rospy.logerr("could not load default tree")
+            else:
+                control_tree_execution_request = ControlTreeExecutionRequest(
+                    command=default_tree_control_command,
+                    tick_frequency_hz=default_tree_tick_frequency_hz)
+                control_tree_execution_response = self.tree_manager.control_execution(control_tree_execution_request)
+                if not control_tree_execution_response.success:
+                    rospy.logerr("could not execute default tree")
+
+        rospy.loginfo("initializing package manager...")
         self.message_list_pub = rospy.Publisher('~messages', Messages, latch=True, queue_size=1)
         self.packages_list_pub = rospy.Publisher('~packages', Packages, latch=True, queue_size=1)
 
@@ -134,20 +153,8 @@ class TreeNode(object):
                                                SaveTree,
                                                self.package_manager.save_tree)
 
-        if load_default_tree:
-            rospy.logwarn("loading default tree: %s" % default_tree_path)
-            tree = Tree(path=default_tree_path)
-            load_tree_request = LoadTreeRequest(tree=tree)
-            load_tree_response = self.tree_manager.load_tree(load_tree_request)
-            if not load_tree_response.success:
-                rospy.logerr("could not load default tree")
-            else:
-                control_tree_execution_request = ControlTreeExecutionRequest(
-                    command=default_tree_control_command,
-                    tick_frequency_hz=default_tree_tick_frequency_hz)
-                control_tree_execution_response = self.tree_manager.control_execution(control_tree_execution_request)
-                if not control_tree_execution_response.success:
-                    rospy.logerr("could not execute default tree")
+        rospy.loginfo("initialized package manager")
+        rospy.loginfo("initialized tree node")
 
     def shutdown(self):
         if self.tree_manager.get_state() not in [Tree.IDLE, Tree.EDITABLE, Tree.ERROR]:
