@@ -468,6 +468,7 @@ class TreeManager(object):
 
         response.success = True
         self.publish_info(self.debug_manager.get_debug_info_msg())
+        rospy.loginfo('Successfully loaded tree')
         return response
 
     def set_execution_mode(self, request):
