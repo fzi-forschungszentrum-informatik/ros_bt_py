@@ -43,6 +43,7 @@ add_service_files(
   GetSubtree.srv
   InsertNode.srv
   LoadTree.srv
+  LoadTreeFromPath.srv
   ModifyBreakpoints.srv
   MorphNode.srv
   MoveNode.srv
