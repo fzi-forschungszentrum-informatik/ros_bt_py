@@ -73,15 +73,15 @@ variables:
     - mkdir -p ${HOME}/.config
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@ids-git.fzi.de/Utilities/fzi_styles.git ${HOME}/fzi_styles
     - cp ${HOME}/fzi_styles/.config/pylintrc ${HOME}/.config/pylintrc
-    - mkdir -p ${HOME}/lint_results
+    - mkdir -p ${CI_PROJECT_DIR}/lint_results
     - cd ${CATKIN_ROOT}/src
     - apt-get install -y bc ros-${ROS_DISTRIBUTION}-roslint
-    - ${HOME}/ci_scripts/catkin_build_scripts/roslint.sh ${CATKIN_ROOT} ${HOME}/lint_results
+    - ${HOME}/ci_scripts/catkin_build_scripts/roslint.sh ${CATKIN_ROOT} ${CI_PROJECT_DIR}/lint_results
   allow_failure: true
   artifacts:
     when: always
     paths:
-      - ${HOME}/lint_results/
+      - ${CI_PROJECT_DIR}/lint_results
 
 .run_tests:
   tags:
