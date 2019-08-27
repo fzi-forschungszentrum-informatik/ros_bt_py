@@ -23,7 +23,7 @@ class TestTopicPublisherLeaf(unittest.TestCase):
         self.publisher_leaf = TopicPublisher(options={
             'topic_name': '/numbers_in',
             'topic_type': Int32
-            })
+        })
         self.publisher_leaf.setup()
         self._lock = Lock()
         self.msg = None

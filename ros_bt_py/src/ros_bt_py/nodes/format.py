@@ -10,14 +10,16 @@ from ros_bt_py.node_config import NodeConfig
     outputs={'formatted_string': str},
     max_children=0))
 class FormatOptionNode(Leaf):
-    """Accepts a dictionary as input and output a formatted string based on the format string set in the options.
+    """Accepts a dictionary as input and outputs a formatted string
+    based on the format string set in the options.
     """
     def _do_setup(self):
         return NodeMsg.IDLE
 
     def _do_tick(self):
         try:
-            self.outputs['formatted_string'] = self.options['format_string'].format(**self.inputs['dict'])
+            self.outputs['formatted_string'] = self.options['format_string'].format(
+                **self.inputs['dict'])
         except Exception:
             return NodeMsg.FAILED
         return NodeMsg.SUCCEEDED
@@ -41,14 +43,16 @@ class FormatOptionNode(Leaf):
     outputs={'formatted_string': str},
     max_children=0))
 class FormatInputNode(Leaf):
-    """Accepts a dictionary and a format string as input and outputs a formatted string based on the format string
+    """Accepts a dictionary and a format string as input and outputs a formatted string
+    based on the format string
     """
     def _do_setup(self):
         return NodeMsg.IDLE
 
     def _do_tick(self):
         try:
-            self.outputs['formatted_string'] = self.inputs['format_string'].format(**self.inputs['dict'])
+            self.outputs['formatted_string'] = self.inputs['format_string'].format(
+                **self.inputs['dict'])
         except Exception:
             return NodeMsg.FAILED
         return NodeMsg.SUCCEEDED

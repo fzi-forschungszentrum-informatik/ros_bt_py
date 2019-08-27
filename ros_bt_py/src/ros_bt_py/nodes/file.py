@@ -1,3 +1,6 @@
+import yaml
+import rospkg
+
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import UtilityBounds, Tree, NodeDataLocation
 from ros_bt_py_msgs.srv import LoadTreeRequest
@@ -7,8 +10,6 @@ from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig
 
-import yaml
-import rospkg
 
 @define_bt_node(NodeConfig(
     options={'file_path': str},
@@ -59,8 +60,8 @@ class File(Leaf):
             file_path = package_path + path[len('package://') + len(package_name):]
         else:
             self.outputs['load_success'] = False
-            self.outputs['load_error_msg']= ('File path "%s" is malformed. It needs to start with '
-                                             'either "file://" or "package://"') % path
+            self.outputs['load_error_msg'] = ('File path "%s" is malformed. It needs to start with '
+                                              'either "file://" or "package://"') % path
             return None
         try:
             data_file = open(file_path, 'r')
@@ -74,7 +75,8 @@ class File(Leaf):
             if data and isinstance(data, list):
                 if not all(isinstance(line, basestring) for line in data):
                     self.outputs['load_success'] = False
-                    self.outputs['load_error_msg'] = ('YAML file "%s" is malformed, is it really a list?' % file_path)
+                    self.outputs['load_error_msg'] = (
+                        'YAML file "%s" is malformed, is it really a list?' % file_path)
                 else:
                     self.outputs['load_success'] = True
                     return data

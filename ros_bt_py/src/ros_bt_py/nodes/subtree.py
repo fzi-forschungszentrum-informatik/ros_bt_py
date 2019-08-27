@@ -139,8 +139,9 @@ class Subtree(Leaf):
     def _do_setup(self):
         self.root = self.manager.find_root()
         if self.root is None:
-            raise BehaviorTreeException('Cannot find root in subtree, does the subtree {} exist?'.format(
-                                        self.options['subtree_path']))
+            raise BehaviorTreeException(
+                'Cannot find root in subtree, does the subtree {} exist?'.format(
+                    self.options['subtree_path']))
         self.root.setup()
         if self.debug_manager and self.debug_manager.get_publish_subtrees():
             self.debug_manager.add_subtree_info(

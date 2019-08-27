@@ -4,9 +4,10 @@ import jsonpickle
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import NodeData, NodeDataWiring, NodeDataLocation, Tree
-from ros_bt_py_msgs.srv import WireNodeDataRequest, AddNodeRequest, RemoveNodeRequest, \
-     ControlTreeExecutionRequest, GetAvailableNodesRequest, SetExecutionModeRequest, \
-     SetOptionsRequest, ContinueRequest, LoadTreeRequest, MoveNodeRequest, ReplaceNodeRequest
+from ros_bt_py_msgs.srv import (WireNodeDataRequest, AddNodeRequest, RemoveNodeRequest,
+                                ControlTreeExecutionRequest, GetAvailableNodesRequest,
+                                SetExecutionModeRequest, SetOptionsRequest, ContinueRequest,
+                                LoadTreeRequest, MoveNodeRequest, ReplaceNodeRequest)
 
 from ros_bt_py.node import Node
 from ros_bt_py.nodes.sequence import Sequence
@@ -212,7 +213,9 @@ class TestTreeManager(unittest.TestCase):
         # The nodes and keys exist. There aren't any callbacks to remove, but
         # the unwire operation still succeeds (after running it, the two data
         # values are unconnected).
-        self.assertTrue(get_success(response), get_error_message(response) + "\n" + str(self.manager.nodes))
+        self.assertTrue(
+            get_success(response),
+            get_error_message(response) + "\n" + str(self.manager.nodes))
 
         response = self.manager.wire_data(wire_request)
         self.assertTrue(get_success(response))
@@ -773,7 +776,7 @@ class TestTreeManager(unittest.TestCase):
                               rename_node=False,
                               options=[NodeData(key='passthrough_type',
                                                 serialized_value=jsonpickle.encode(
-                                                   'I am not a type, but a string!'))]))))
+                                                    'I am not a type, but a string!'))]))))
 
         # finally, this is valid :)
         self.assertTrue(get_success(self.manager.set_options(
@@ -942,8 +945,9 @@ class TestTreeManager(unittest.TestCase):
 
     def testLoadFromValidFileWithEmptyObject(self):
         """Load a tree from a rostopic echo file that has "---" at the end"""
-        load_request = LoadTreeRequest(tree=Tree(name='from_file',
-                                                 path='package://ros_bt_py/etc/trees/test_extra_empty.yaml'))
+        load_request = LoadTreeRequest(
+            tree=Tree(name='from_file',
+                      path='package://ros_bt_py/etc/trees/test_extra_empty.yaml'))
         response = self.manager.load_tree(load_request)
 
         self.assertTrue(get_success(response), get_error_message(response))

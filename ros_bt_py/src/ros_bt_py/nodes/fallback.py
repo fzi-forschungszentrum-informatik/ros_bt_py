@@ -240,7 +240,7 @@ def calculate_utility_fallback(children):
             success_bounds[index].has_upper_bound_success &= child_bounds.has_upper_bound_success
             # Range returns an empty range if the first parameter is larger
             # than the second, so no bounds checking necessary
-            for i in range(index+1, len(success_bounds)):
+            for i in range(index + 1, len(success_bounds)):
                 success_bounds[i].lower_bound_success += child_bounds.lower_bound_failure
                 success_bounds[i].has_lower_bound_success &= child_bounds.has_lower_bound_failure
                 success_bounds[i].upper_bound_success += child_bounds.upper_bound_failure

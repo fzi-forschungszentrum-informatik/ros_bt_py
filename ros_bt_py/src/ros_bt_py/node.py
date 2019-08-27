@@ -72,7 +72,7 @@ def define_bt_node(node_config):
         if node_class.__module__ not in Node.node_classes:
             Node.node_classes[node_class.__module__] = {
                 node_class.__name__: node_class
-                }
+            }
         else:
             Node.node_classes[node_class.__module__][node_class.__name__] = node_class
         return node_class
@@ -697,7 +697,8 @@ class Node(object):
 
     def __repr__(self):
         return \
-            '%s(options=%r, name=%r), parent_name:%r, state:%r, inputs:%r, outputs:%r, children:%r, option_wirings:%r' \
+            '%s(options=%r, name=%r), parent_name:%r, state:%r, inputs:%r, outputs:%r,' \
+            ' children:%r, option_wirings:%r' \
             % (type(self).__name__,
                {key: self.options[key] for key in self.options},
                self.name,
@@ -826,7 +827,8 @@ class Node(object):
         # Instantiate node - this shouldn't do anything yet, since we don't
         # call setup()
         if msg.name:
-            node_instance = node_class(name=msg.name, options=options_dict, debug_manager=debug_manager)
+            node_instance = node_class(
+                name=msg.name, options=options_dict, debug_manager=debug_manager)
         else:
             node_instance = node_class(options=options_dict, debug_manager=debug_manager)
         # Set inputs, ignore missing inputs (this can happen if a subtree changes between runs)
@@ -1232,21 +1234,21 @@ class Node(object):
                            key=key,
                            serialized_value=self.options.get_serialized(key),
                            serialized_type=self.options.get_serialized_type(key))
-                                for key in self.options],
+                           for key in self.options],
                        option_wirings=[NodeOptionWiring(
                            source=data['source'],
                            target=data['target'])
-                               for data in self.option_wirings],
+                           for data in self.option_wirings],
                        inputs=[NodeDataMsg(
                            key=key,
                            serialized_value=self.inputs.get_serialized(key),
                            serialized_type=self.inputs.get_serialized_type(key))
-                               for key in self.inputs],
+                           for key in self.inputs],
                        outputs=[NodeDataMsg(
                            key=key,
                            serialized_value=self.outputs.get_serialized(key),
                            serialized_type=self.outputs.get_serialized_type(key))
-                                for key in self.outputs],
+                           for key in self.outputs],
                        max_children=(self.node_config.max_children
                                      if self.node_config.max_children is not None
                                      else -1),

@@ -48,7 +48,7 @@ class TestShovable(unittest.TestCase):
         self.constant = Constant(options={
             'constant_type': int,
             'constant_value': 42
-            })
+        })
         self.inner_passthrough = PassthroughNode(
             name='inner',
             options={
