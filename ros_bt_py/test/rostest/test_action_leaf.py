@@ -4,7 +4,8 @@ import unittest
 import rospy
 
 from actionlib_msgs.msg import GoalStatus
-from actionlib_tutorials.msg import FibonacciAction, FibonacciGoal, FibonacciFeedback, FibonacciResult
+from actionlib_tutorials.msg import (FibonacciAction, FibonacciGoal, FibonacciFeedback,
+                                     FibonacciResult)
 from ros_bt_py_msgs.msg import Node as NodeMsg
 
 from ros_bt_py.node_config import NodeConfig
@@ -25,7 +26,7 @@ class TestActionLeaf(unittest.TestCase):
             # time out slightly before the server sends a second piece of
             # feedback
             'timeout_seconds': 0.8
-            })
+        })
         self.action_leaf.setup()
 
     def tearDown(self):

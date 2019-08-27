@@ -69,7 +69,8 @@ class Action(Leaf):
             self._action_available = True
         else:
             if rospy.Time.now() >= self._maximum_wait_time:
-                if 'fail_if_not_available' in self.options and self.options['fail_if_not_available']:
+                if ('fail_if_not_available' in self.options and
+                        self.options['fail_if_not_available']):
                     self._action_available = False
                 else:
                     raise BehaviorTreeException(
@@ -97,11 +98,12 @@ class Action(Leaf):
                 else:
                     return NodeMsg.RUNNING
             else:
-                if 'fail_if_not_available' in self.options and self.options['fail_if_not_available']:
+                if ('fail_if_not_available' in self.options and
+                        self.options['fail_if_not_available']):
                     return NodeMsg.FAILED
                 else:
                     raise BehaviorTreeException(
-                            'Action server %s not available after waiting %f seconds!' % (
+                        'Action server %s not available after waiting %f seconds!' % (
                             self.options['action_name'],
                             self.options['wait_for_action_server_seconds']))
 
@@ -146,8 +148,7 @@ class Action(Leaf):
                 GoalStatus.ABORTED,
                 GoalStatus.REJECTED,
                 GoalStatus.RECALLED,
-                GoalStatus.LOST
-                ]:
+                GoalStatus.LOST]:
             # we're done, one way or the other
             self.outputs['result'] = self._ac.get_result()
             # cancel goal to be sure, then stop tracking it so get_state()

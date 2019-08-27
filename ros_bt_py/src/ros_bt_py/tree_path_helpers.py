@@ -2,7 +2,7 @@ CONTROL_CHARACTERS = {
     '/': 'path_separator',
     '[': 'index_start',
     ']': 'index_end'
-    }
+}
 
 
 def increment_child_name(name):

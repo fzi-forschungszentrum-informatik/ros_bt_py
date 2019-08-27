@@ -5,7 +5,8 @@ import tf2_ros
 from tf.transformations import vector_norm
 
 from std_msgs.msg import Header
-from geometry_msgs.msg import Pose, Point, Vector3, Quaternion, PoseStamped, Transform, TransformStamped
+from geometry_msgs.msg import (Pose, Point, Vector3, Quaternion, PoseStamped, Transform,
+                               TransformStamped)
 from visualization_msgs.msg import Marker, MarkerArray
 
 from bt_sim_helpers.msg import SimObjects, SimObject

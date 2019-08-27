@@ -5,7 +5,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 
 from rosbridge_library.internal.message_conversion import populate_instance, extract_values
 from rosbridge_library.internal.message_conversion import InvalidMessageException
-# FIXME: right now input/output are exact copies of each other, move this code to a common implementation
+# FIXME: input/output are exact copies of each other, move this code to a common implementation
 
 
 @define_bt_node(NodeConfig(

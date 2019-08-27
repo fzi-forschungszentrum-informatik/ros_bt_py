@@ -218,7 +218,7 @@ def calculate_utility_sequence(children):
             failure_bounds[index].has_upper_bound_failure &= child_bounds.has_upper_bound_failure
             # Range returns an empty range if the first parameter is larger
             # than the second, so no bounds checking necessary
-            for i in range(index+1, len(failure_bounds)):
+            for i in range(index + 1, len(failure_bounds)):
                 failure_bounds[i].lower_bound_failure += child_bounds.lower_bound_success
                 failure_bounds[i].has_lower_bound_failure &= child_bounds.has_lower_bound_success
                 failure_bounds[i].upper_bound_failure += child_bounds.upper_bound_success

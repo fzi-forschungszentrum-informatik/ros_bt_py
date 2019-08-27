@@ -4,10 +4,12 @@ import rospy
 from ros_bt_py_msgs.msg import Messages, Packages
 
 from ros_bt_py_msgs.msg import Tree, DebugInfo, DebugSettings
-from ros_bt_py_msgs.srv import AddNode, AddNodeAtIndex, ControlTreeExecution, ModifyBreakpoints, RemoveNode, \
-     WireNodeData, GetAvailableNodes, SetExecutionMode, SetOptions, Continue, LoadTree, LoadTreeFromPath, \
-     MoveNode, ReplaceNode, GetSubtree, ClearTree, MorphNode, SaveTree
-from ros_bt_py_msgs.srv import LoadTreeRequest, ControlTreeExecutionRequest, GetMessageFields, GetPackageStructure
+from ros_bt_py_msgs.srv import (AddNode, AddNodeAtIndex, ControlTreeExecution, ModifyBreakpoints,
+                                RemoveNode, WireNodeData, GetAvailableNodes, SetExecutionMode,
+                                SetOptions, Continue, LoadTree, LoadTreeFromPath, MoveNode,
+                                ReplaceNode, GetSubtree, ClearTree, MorphNode, SaveTree)
+from ros_bt_py_msgs.srv import (LoadTreeRequest, ControlTreeExecutionRequest, GetMessageFields,
+                                GetPackageStructure)
 from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message
 from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.package_manager import PackageManager
@@ -31,11 +33,14 @@ class TreeNode(object):
         show_traceback_on_exception = rospy.get_param('~show_traceback_on_exception', default=False)
         load_default_tree = rospy.get_param('~load_default_tree', default=False)
         default_tree_path = rospy.get_param('~default_tree_path', default="")
-        default_tree_tick_frequency_hz = rospy.get_param('~default_tree_tick_frequency_hz', default=1)
-        default_tree_control_command = rospy.get_param('~default_tree_control_command', default=2)
+        default_tree_tick_frequency_hz = rospy.get_param('~default_tree_tick_frequency_hz',
+                                                         default=1)
+        default_tree_control_command = rospy.get_param('~default_tree_control_command',
+                                                       default=2)
 
         self.tree_pub = rospy.Publisher('~tree', Tree, latch=True, queue_size=1)
-        self.debug_info_pub = rospy.Publisher('~debug/debug_info', DebugInfo, latch=True, queue_size=1)
+        self.debug_info_pub = rospy.Publisher('~debug/debug_info', DebugInfo, latch=True,
+                                              queue_size=1)
         self.debug_settings_pub = rospy.Publisher(
             '~debug/debug_settings',
             DebugSettings,
@@ -130,9 +135,11 @@ class TreeNode(object):
                 control_tree_execution_request = ControlTreeExecutionRequest(
                     command=default_tree_control_command,
                     tick_frequency_hz=default_tree_tick_frequency_hz)
-                control_tree_execution_response = self.tree_manager.control_execution(control_tree_execution_request)
+                control_tree_execution_response = self.tree_manager.control_execution(
+                    control_tree_execution_request)
                 if not control_tree_execution_response.success:
-                    rospy.logerr("could not execute default tree: %s" % control_tree_execution_response.error_message)
+                    rospy.logerr("could not execute default tree: %s" %
+                                 control_tree_execution_response.error_message)
 
         rospy.loginfo("initializing package manager...")
         self.message_list_pub = rospy.Publisher('~messages', Messages, latch=True, queue_size=1)
@@ -145,9 +152,9 @@ class TreeNode(object):
                                                         GetMessageFields,
                                                         self.package_manager.get_message_fields)
 
-        self.get_package_structure_service = rospy.Service('~get_package_structure',
-                                                            GetPackageStructure,
-                                                            self.package_manager.get_package_structure)
+        self.get_package_structure_service = rospy.Service(
+            '~get_package_structure', GetPackageStructure,
+            self.package_manager.get_package_structure)
 
         self.save_tree_service = rospy.Service('~save_tree',
                                                SaveTree,

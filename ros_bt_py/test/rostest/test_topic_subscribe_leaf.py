@@ -22,7 +22,7 @@ class TestTopicSubscriberLeaf(unittest.TestCase):
         self.subscriber_leaf = TopicSubscriber(options={
             'topic_name': '/numbers_out',
             'topic_type': Int32
-            })
+        })
         self.subscriber_leaf.setup()
         self.publisher = rospy.Publisher('/numbers_in', Int32, latch=True, queue_size=1)
         rospy.wait_for_message('/ready', Int32)

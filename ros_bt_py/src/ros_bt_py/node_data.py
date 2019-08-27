@@ -238,7 +238,8 @@ class NodeDataMap(object):
         self._map[key] = value
 
     def is_updated(self, key):
-        """Check whether the data at the given key has been updated since the `updated` property was last reset
+        """Check whether the data at the given key has been updated since the `updated` property
+        was last reset
 
         :param basestring key: Key for the data object whose updated status we want to check
 

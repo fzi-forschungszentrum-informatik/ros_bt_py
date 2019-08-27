@@ -15,10 +15,10 @@ from ros_bt_py_msgs.srv import LoadTreeRequest, LoadTreeResponse
 from ros_bt_py_msgs.srv import LoadTreeFromPathResponse
 from ros_bt_py_msgs.srv import ClearTreeResponse
 from ros_bt_py_msgs.srv import MorphNodeResponse
-from ros_bt_py_msgs.srv import MoveNodeRequest, RemoveNodeRequest, ReplaceNodeRequest, WireNodeDataRequest
-from ros_bt_py_msgs.srv import MoveNodeResponse, ReplaceNodeResponse
-from ros_bt_py_msgs.srv import WireNodeDataResponse, AddNodeResponse, AddNodeAtIndexResponse, RemoveNodeResponse
-from ros_bt_py_msgs.srv import ContinueResponse, AddNodeAtIndexRequest
+from ros_bt_py_msgs.srv import MoveNodeRequest, RemoveNodeRequest, ReplaceNodeRequest
+from ros_bt_py_msgs.srv import WireNodeDataRequest, MoveNodeResponse, ReplaceNodeResponse
+from ros_bt_py_msgs.srv import WireNodeDataResponse, AddNodeResponse, AddNodeAtIndexResponse
+from ros_bt_py_msgs.srv import RemoveNodeResponse, ContinueResponse, AddNodeAtIndexRequest
 from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, ControlTreeExecutionResponse
 from ros_bt_py_msgs.srv import GetAvailableNodesResponse
 from ros_bt_py_msgs.srv import GetSubtreeResponse
@@ -58,7 +58,7 @@ def is_edit_service(func):
                 'error_message': ('Cannot edit tree in state %s. You need to '
                                   'shut down the tree to enable editing.'
                                   % tree_state)
-                }
+            }
         with self._edit_lock:
             return func(self, request, **kwds)
     return service_handler
@@ -232,7 +232,7 @@ class TreeManager(object):
             root.setup()
             with self._state_lock:
                 self._setting_up = False
-        sleep_duration_sec = (1.0/self.tree_msg.tick_frequency_hz)
+        sleep_duration_sec = (1.0 / self.tree_msg.tick_frequency_hz)
 
         while True:
             start_time = time.time()
@@ -453,7 +453,8 @@ class TreeManager(object):
                 return response
 
         # All nodes are added, now do the wiring
-        wire_response = self.wire_data(WireNodeDataRequest(wirings=tree.data_wirings, ignore_failure=True))
+        wire_response = self.wire_data(
+            WireNodeDataRequest(wirings=tree.data_wirings, ignore_failure=True))
         if not get_success(wire_response):
             response.success = False
             response.error_message = get_error_message(wire_response)
@@ -497,7 +498,9 @@ class TreeManager(object):
             collect_performance_data=request.collect_performance_data,
             publish_subtrees=request.publish_subtrees)
         if request.publish_subtrees:
-            self.control_execution(ControlTreeExecutionRequest(command=ControlTreeExecutionRequest.SETUP_AND_SHUTDOWN))
+            self.control_execution(
+                ControlTreeExecutionRequest(
+                    command=ControlTreeExecutionRequest.SETUP_AND_SHUTDOWN))
         else:
             self.debug_manager.clear_subtrees()
             self.publish_info(self.debug_manager.get_debug_info_msg())
@@ -801,17 +804,17 @@ class TreeManager(object):
           A request describing the node to add.
         """
         internal_request = AddNodeAtIndexRequest(
-            parent_name = request.parent_name,
-            node = request.node,
-            allow_rename = request.allow_rename,
-            new_child_index = -1,
+            parent_name=request.parent_name,
+            node=request.node,
+            allow_rename=request.allow_rename,
+            new_child_index=-1,
         )
         internal_response = self.add_node_at_index(request=internal_request)
 
         response = AddNodeResponse(
-            success = internal_response.success,
-            error_message = internal_response.error_message,
-            actual_node_name = internal_response.actual_node_name
+            success=internal_response.success,
+            error_message=internal_response.error_message,
+            actual_node_name=internal_response.actual_node_name
         )
         return response
 
@@ -984,7 +987,8 @@ class TreeManager(object):
 
     @is_edit_service
     def morph_node(self, request):
-        """Morphs the flow control node identified by `request.node_name` into the new node provided in `request.new_node`.
+        """Morphs the flow control node identified by `request.node_name`
+        into the new node provided in `request.new_node`.
         """
         response = MorphNodeResponse()
 
@@ -1012,7 +1016,7 @@ class TreeManager(object):
         # TODO(khermann): evaluate if other node types are to be supported
         if node_instance.node_config.max_children is not None:
             response.success = False
-            response.error_message = "Node morphing only supported for FlowControl nodes at the moment."
+            response.error_message = "Node morphing only supported for FlowControl nodes."
 
         node_instance.children = self.nodes[request.node_name].children
         node_instance.parent = self.nodes[request.node_name].parent
@@ -1089,8 +1093,10 @@ class TreeManager(object):
 
         incompatible_options = []
         if preliminary_incompatible_options:
-            # traditionally we would fail here, but re-check if the type of an option with a known option-wiring changed
-            # this could mean that the previously incompatible option is actually compatible with the new type!
+            # traditionally we would fail here, but re-check if the type of an option
+            # with a known option-wiring changed
+            # this could mean that the previously incompatible option is actually
+            # compatible with the new type!
             for key, required_type_name in preliminary_incompatible_options:
                 incompatible = True
                 for option_wiring in node.node_config.option_wirings:
@@ -1099,19 +1105,25 @@ class TreeManager(object):
                         our_type = type(deserialized_options[option_wiring['target']])
                         if other_type == our_type:
                             incompatible = False
-                        elif inspect.isclass(other_type) and genpy.message.Message in other_type.__mro__:
+                        elif (inspect.isclass(other_type) and
+                              genpy.message.Message in other_type.__mro__):
                             try:
                                 genpy.message.fill_message_args(
-                                    other_type(), [deserialized_options[option_wiring['target']]], keys={})
+                                    other_type(),
+                                    [deserialized_options[option_wiring['target']]], keys={})
                                 incompatible = False
                             except genpy.message.MessageException as e:
                                 raise TypeError('ROSMessageException %s' % e)
                         else:
                             # check if the types are str or unicode and treat them the same
-                            if isinstance(deserialized_options[option_wiring['target']], str) and other_type == unicode:
-                                incompatible = False
-                            if isinstance(deserialized_options[option_wiring['target']], unicode) and other_type == str:
-                                incompatible = False
+                            if (isinstance(
+                                deserialized_options[option_wiring['target']], str)
+                                    and other_type == unicode):
+                                        incompatible = False
+                            if (isinstance(
+                                deserialized_options[option_wiring['target']], unicode)
+                                    and other_type == str):
+                                        incompatible = False
                 if incompatible:
                     incompatible_options.append((key, required_type_name))
 
@@ -1350,7 +1362,8 @@ class TreeManager(object):
         if request.old_node_name not in self.nodes:
             return ReplaceNodeResponse(
                 success=False,
-                error_message="Node to be replaced (\"%s\") is not in tree." % request.old_node_name)
+                error_message="Node to be replaced (\"%s\") is not in tree." %
+                              request.old_node_name)
         if request.new_node_name not in self.nodes:
             return ReplaceNodeResponse(
                 success=False,
@@ -1366,8 +1379,8 @@ class TreeManager(object):
                 len(old_node.children) > new_node_max_children):
             return ReplaceNodeResponse(
                 success=False,
-                error_message="Replacement node (\"%s\") does not support the number of \
-                               children required (%s has %d children, %s supports %d." % (
+                error_message=("Replacement node (\"{}\") does not support the number of"
+                               "children required ({} has {} children, {} supports {}.").format(
                                    request.new_node_name,
                                    request.old_node_name,
                                    len(old_node.children),
@@ -1623,11 +1636,11 @@ class TreeManager(object):
                     inputs=to_node_data(node_class._node_config.inputs),
                     outputs=to_node_data(node_class._node_config.outputs),
                     option_wirings=[NodeOptionWiring(
-                           source=data['source'],
-                           target=data['target'])
-                               for data in node_class._node_config.option_wirings],
+                        source=data['source'],
+                        target=data['target'])
+                        for data in node_class._node_config.option_wirings],
                     doc=str(doc)
-                    ))
+                ))
 
         response.success = True
         return response
@@ -1683,8 +1696,8 @@ class TreeManager(object):
         # overhead?
         self.tree_msg.nodes = [node.to_msg() for node in self.nodes.itervalues()]
 
-        # TODO(khermann): using root.get_subtree_msg() here anyway to get the correct public_node_data
-        # monitor overhead of this decision
+        # TODO(khermann): using root.get_subtree_msg() here anyway
+        # to get the correct public_node_data. Monitor overhead of this decision
         try:
             root = self.find_root()
             if root is not None:

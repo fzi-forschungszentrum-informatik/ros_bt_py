@@ -12,7 +12,8 @@ from ros_bt_py.node_config import NodeConfig
     outputs={},
     max_children=0))
 class Wait(Leaf):
-    """Returns "RUNNING" until at least the specified amount of seconds are elapsed from the first received tick.
+    """Returns "RUNNING" until at least the specified amount of seconds are elapsed
+    from the first received tick.
     This is naturally not extremely precise because it depends on the tick interval
     """
     def _do_setup(self):
@@ -51,7 +52,8 @@ class Wait(Leaf):
     outputs={},
     max_children=0))
 class WaitInput(Leaf):
-    """Returns "RUNNING" until at least the specified amount of seconds are elapsed from the first received tick.
+    """Returns "RUNNING" until at least the specified amount of seconds are elapsed
+    from the first received tick.
     This is naturally not extremely precise because it depends on the tick interval
     """
     def _do_setup(self):
