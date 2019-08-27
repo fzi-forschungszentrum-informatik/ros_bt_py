@@ -72,6 +72,7 @@ variables:
     - pip install pyopenssl
     - mkdir -p ${HOME}/.config
     - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@ids-git.fzi.de/Utilities/fzi_styles.git ${HOME}/fzi_styles
+    - cp ${HOME}/fzi_styles/.config/pep8 ${HOME}/.config/pep8
     - cp ${HOME}/fzi_styles/.config/pylintrc ${HOME}/.config/pylintrc
     - mkdir -p ${CI_PROJECT_DIR}/lint_results
     - cd ${CATKIN_ROOT}/src
