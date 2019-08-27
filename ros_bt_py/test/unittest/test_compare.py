@@ -45,6 +45,14 @@ class TestCompare(unittest.TestCase):
         self.compare.tick()
         self.assertEqual(self.compare.state, NodeMsg.SUCCEEDED)
 
+    def testUntick(self):
+        self.compare.untick()
+        self.assertEqual(self.compare.state, NodeMsg.IDLE)
+
+    def testShutdown(self):
+        self.compare.shutdown()
+        self.assertEqual(self.compare.state, NodeMsg.SHUTDOWN)
+
 
 class TestCompareNewOnly(unittest.TestCase):
     def setUp(self):
@@ -85,6 +93,14 @@ class TestCompareNewOnly(unittest.TestCase):
         self.compare.tick()
         self.assertEqual(self.compare.state, NodeMsg.SUCCEEDED)
 
+    def testUntick(self):
+        self.compare.untick()
+        self.assertEqual(self.compare.state, NodeMsg.IDLE)
+
+    def testShutdown(self):
+        self.compare.shutdown()
+        self.assertEqual(self.compare.state, NodeMsg.SHUTDOWN)
+
 
 class TestCompareConstant(unittest.TestCase):
     def setUp(self):
@@ -124,6 +140,14 @@ class TestCompareConstant(unittest.TestCase):
         self.compare.tick()
         self.assertEqual(self.compare.state, NodeMsg.SUCCEEDED)
 
+    def testUntick(self):
+        self.compare.untick()
+        self.assertEqual(self.compare.state, NodeMsg.IDLE)
+
+    def testShutdown(self):
+        self.compare.shutdown()
+        self.assertEqual(self.compare.state, NodeMsg.SHUTDOWN)
+
 
 class TestLessThan(unittest.TestCase):
     def testALessThanB(self):
@@ -144,6 +168,24 @@ class TestLessThan(unittest.TestCase):
         less_than.inputs['a'] = 1
         self.assertEqual(less_than.tick(), NodeMsg.SUCCEEDED)
 
+        less_than.reset()
+        self.assertEqual(less_than.state, NodeMsg.IDLE)
+        # Neither of the inputs have updated, so ticking fails
+        less_than.tick()
+        self.assertEqual(less_than.state, NodeMsg.FAILED)
+
+        # If we update the inputs, the result changes to SUCCEEDED
+        less_than.inputs['a'] = 1
+        less_than.inputs['b'] = 42
+        less_than.tick()
+        self.assertEqual(less_than.state, NodeMsg.SUCCEEDED)
+
+        less_than.untick()
+        self.assertEqual(less_than.state, NodeMsg.IDLE)
+
+        less_than.shutdown()
+        self.assertEqual(less_than.state, NodeMsg.SHUTDOWN)
+
     def testLessThanConstant(self):
         less_than = LessThanConstant({'target': 42})
         less_than.setup()
@@ -160,3 +202,20 @@ class TestLessThan(unittest.TestCase):
 
         less_than.inputs['a'] = 1
         self.assertEqual(less_than.tick(), NodeMsg.SUCCEEDED)
+
+        less_than.reset()
+        self.assertEqual(less_than.state, NodeMsg.IDLE)
+        # Neither of the inputs have updated, so ticking fails
+        less_than.tick()
+        self.assertEqual(less_than.state, NodeMsg.FAILED)
+
+        # If we update the inputs, the result changes to SUCCEEDED
+        less_than.inputs['a'] = 1
+        less_than.tick()
+        self.assertEqual(less_than.state, NodeMsg.SUCCEEDED)
+
+        less_than.untick()
+        self.assertEqual(less_than.state, NodeMsg.IDLE)
+
+        less_than.shutdown()
+        self.assertEqual(less_than.state, NodeMsg.SHUTDOWN)
