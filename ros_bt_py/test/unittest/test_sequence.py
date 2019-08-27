@@ -30,6 +30,14 @@ class TestSequence(unittest.TestCase):
                 'utility_upper_bound_success': 10.0,
                 'utility_lower_bound_failure': 1.0,
                 'utility_upper_bound_failure': 2.0})
+        self.cheap_fail_cannot_execute = MockUtilityLeaf(
+            name='cheap_fail',
+            options={
+                'can_execute': False,
+                'utility_lower_bound_success': 0.0,
+                'utility_upper_bound_success': 0.0,
+                'utility_lower_bound_failure': 0.0,
+                'utility_upper_bound_failure': 0.0})
         self.cheap_success = MockUtilityLeaf(
             name='cheap_success',
             options={
@@ -56,6 +64,24 @@ class TestSequence(unittest.TestCase):
         self.assertEqual(self.succeeder.outputs['tick_count'], 1)
         self.assertEqual(self.succeeder.state, Node.SUCCEEDED)
         self.assertEqual(self.sequence.state, Node.SUCCEEDED)
+
+    def testUntick(self):
+        self.sequence.add_child(self.succeeder)
+        self.sequence.setup()
+        self.sequence.tick()
+        self.sequence.untick()
+        self.assertEqual(self.succeeder.outputs['tick_count'], 1)
+        self.assertEqual(self.succeeder.state, Node.PAUSED)
+        self.assertEqual(self.sequence.state, Node.IDLE)
+
+    def testReset(self):
+        self.sequence.add_child(self.succeeder)
+        self.sequence.setup()
+        self.sequence.tick()
+        self.sequence.reset()
+        self.assertEqual(self.succeeder.outputs['tick_count'], None)
+        self.assertEqual(self.succeeder.state, Node.IDLE)
+        self.assertEqual(self.sequence.state, Node.IDLE)
 
     def testTickRunning(self):
         self.sequence.add_child(self.runner)
@@ -153,6 +179,18 @@ class TestSequence(unittest.TestCase):
         self.assertEqual(self.sequence.calculate_utility(),
                          expected_bounds)
 
+    def testUtilityWithChildThatCannotExecute(self):
+        self.sequence.add_child(self.cheap_fail_cannot_execute)
+
+        expected_bounds = UtilityBounds(can_execute=False,
+                                        has_lower_bound_success=False,
+                                        has_upper_bound_success=False,
+                                        has_lower_bound_failure=False,
+                                        has_upper_bound_failure=False)
+
+        self.assertEqual(self.sequence.calculate_utility(),
+                         expected_bounds)
+
 
 class TestMemorySequence(unittest.TestCase):
     def setUp(self):
@@ -226,6 +264,24 @@ class TestMemorySequence(unittest.TestCase):
         self.assertEqual(self.succeeder_2.state, Node.SUCCEEDED)
 
         self.assertEqual(self.mem_sequence.state, Node.SUCCEEDED)
+
+    def testUntick(self):
+        self.mem_sequence.add_child(self.succeeder)
+        self.mem_sequence.setup()
+        self.mem_sequence.tick()
+        self.mem_sequence.untick()
+        self.assertEqual(self.succeeder.outputs['tick_count'], 1)
+        self.assertEqual(self.succeeder.state, Node.PAUSED)
+        self.assertEqual(self.mem_sequence.state, Node.IDLE)
+
+    def testReset(self):
+        self.mem_sequence.add_child(self.succeeder)
+        self.mem_sequence.setup()
+        self.mem_sequence.tick()
+        self.mem_sequence.reset()
+        self.assertEqual(self.succeeder.outputs['tick_count'], None)
+        self.assertEqual(self.succeeder.state, Node.IDLE)
+        self.assertEqual(self.mem_sequence.state, Node.IDLE)
 
     def testTickRunning(self):
         self.mem_sequence.add_child(self.runner)
