@@ -430,13 +430,13 @@ class Optional(Decorator):
 
     def _do_reset(self):
         if self.execute_child:
-            self.children[0].reset()
+            return self.children[0].reset()
         else:
             return NodeMsg.IDLE
 
     def _do_untick(self):
         if self.execute_child:
-            self.children[0].untick()
+            return self.children[0].untick()
         else:
             return NodeMsg.IDLE
 

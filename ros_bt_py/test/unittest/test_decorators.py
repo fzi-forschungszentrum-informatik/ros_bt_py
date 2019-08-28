@@ -5,7 +5,7 @@ from ros_bt_py_msgs.msg import Node, UtilityBounds
 
 from ros_bt_py.nodes.mock_nodes import MockLeaf, MockUtilityLeaf
 from ros_bt_py.nodes.decorators import IgnoreFailure, IgnoreSuccess, UntilSuccess, Retry, Optional
-from ros_bt_py.nodes.decorators import Inverter
+from ros_bt_py.nodes.decorators import Inverter, Repeat, RepeatAlways, RepeatUntilFail
 
 
 class TestDecorators(unittest.TestCase):
@@ -27,6 +27,11 @@ class TestDecorators(unittest.TestCase):
                                                    'state_values': [Node.FAILED, Node.FAILED,
                                                                     Node.SUCCEEDED],
                                                    'output_values': [1, 1, 1]})
+        self.run_fail_succeed = MockLeaf(name='run_fail_succeed',
+                                         options={'output_type': int,
+                                                  'state_values': [Node.RUNNING, Node.FAILED,
+                                                                   Node.SUCCEEDED],
+                                                  'output_values': [1, 1, 1]})
 
         self.cannot_exec = MockUtilityLeaf(
             name='cannot_exec',
@@ -141,7 +146,22 @@ class TestDecorators(unittest.TestCase):
         self.assertEqual(inverter.shutdown(), Node.SHUTDOWN)
 
     def testRetry(self):
-        retry = Retry(options={'num_retries': 1}).add_child(self.failer)
+        retry = Retry(options={'num_retries': 1})
+        retry.setup()
+        self.assertEqual(retry.tick(), Node.SUCCEEDED)
+        self.assertEqual(retry.untick(), Node.IDLE)
+        self.assertEqual(retry.reset(), Node.IDLE)
+        self.assertEqual(retry.shutdown(), Node.SHUTDOWN)
+
+        retry.add_child(self.succeeder)
+        retry.setup()
+        self.assertEqual(retry.tick(), Node.SUCCEEDED)
+        self.assertEqual(retry.untick(), Node.PAUSED)
+        self.assertEqual(retry.reset(), Node.IDLE)
+        self.assertEqual(retry.shutdown(), Node.SHUTDOWN)
+        retry.remove_child(child_name="succeeder")
+
+        retry.add_child(self.failer)
         retry.setup()
 
         self.assertEqual(retry.tick(), Node.RUNNING)
@@ -164,9 +184,104 @@ class TestDecorators(unittest.TestCase):
 
         self.assertEqual(retry.shutdown(), Node.SHUTDOWN)
 
+    def testRepeat(self):
+        repeat = Repeat(options={'num_repeats': 3})
+
+        # check the no-children case
+        repeat.setup()
+        self.assertEqual(repeat.tick(), Node.SUCCEEDED)
+        self.assertEqual(repeat.untick(), Node.IDLE)
+        self.assertEqual(repeat.reset(), Node.IDLE)
+        self.assertEqual(repeat.shutdown(), Node.SHUTDOWN)
+
+        repeat.add_child(self.running)
+        repeat.setup()
+        self.assertEqual(repeat.reset(), Node.IDLE)
+        self.assertEqual(repeat.tick(), Node.RUNNING)
+        self.assertEqual(repeat.untick(), Node.PAUSED)
+        self.assertEqual(repeat.shutdown(), Node.SHUTDOWN)
+
+        repeat.remove_child(child_name="running")
+
+        self.assertEqual(repeat.reset(), Node.IDLE)
+        self.assertEqual(repeat.shutdown(), Node.SHUTDOWN)
+
+        repeat.add_child(self.failer)
+        repeat.setup()
+
+        self.assertEqual(repeat.tick(), Node.FAILED)
+
+        self.assertEqual(repeat.shutdown(), Node.SHUTDOWN)
+
+        repeat.remove_child(child_name="failer")
+
+        self.assertEqual(repeat.reset(), Node.IDLE)
+        self.assertEqual(repeat.shutdown(), Node.SHUTDOWN)
+
+        repeat.add_child(self.succeeder)
+        repeat.setup()
+
+        self.assertEqual(repeat.tick(), Node.RUNNING)
+        self.assertEqual(repeat.tick(), Node.RUNNING)
+        self.assertEqual(repeat.tick(), Node.RUNNING)
+        self.assertEqual(repeat.tick(), Node.SUCCEEDED)
+
+    def testRepeatAlways(self):
+        repeat_always = RepeatAlways()
+
+        # check the no-children case
+        repeat_always.setup()
+        self.assertEqual(repeat_always.tick(), Node.SUCCEEDED)
+        self.assertEqual(repeat_always.untick(), Node.IDLE)
+        self.assertEqual(repeat_always.reset(), Node.IDLE)
+        self.assertEqual(repeat_always.shutdown(), Node.SHUTDOWN)
+
+        repeat_always.add_child(self.succeeder)
+        repeat_always.setup()
+
+        self.assertEqual(repeat_always.tick(), Node.RUNNING)
+        self.assertEqual(repeat_always.tick(), Node.RUNNING)
+        self.assertEqual(repeat_always.tick(), Node.RUNNING)
+        self.assertEqual(repeat_always.tick(), Node.RUNNING)
+
+        self.assertEqual(repeat_always.untick(), Node.PAUSED)
+        self.assertEqual(repeat_always.reset(), Node.IDLE)
+        self.assertEqual(repeat_always.shutdown(), Node.SHUTDOWN)
+
+    def testRepeatUntilFail(self):
+        repeat_until_fail = RepeatUntilFail()
+
+        # check the no-children case
+        repeat_until_fail.setup()
+        self.assertEqual(repeat_until_fail.tick(), Node.SUCCEEDED)
+        self.assertEqual(repeat_until_fail.untick(), Node.IDLE)
+        self.assertEqual(repeat_until_fail.reset(), Node.IDLE)
+        self.assertEqual(repeat_until_fail.shutdown(), Node.SHUTDOWN)
+
+        repeat_until_fail.add_child(self.run_fail_succeed)
+        repeat_until_fail.setup()
+        self.assertEqual(repeat_until_fail.tick(), Node.RUNNING)
+        self.assertEqual(self.run_fail_succeed.state, Node.RUNNING)
+        self.assertEqual(repeat_until_fail.tick(), Node.FAILED)
+        self.assertEqual(self.run_fail_succeed.state, Node.FAILED)
+        self.assertEqual(repeat_until_fail.tick(), Node.RUNNING)
+        self.assertEqual(self.run_fail_succeed.state, Node.IDLE)
+        self.assertEqual(repeat_until_fail.tick(), Node.RUNNING)
+        self.assertEqual(self.run_fail_succeed.state, Node.RUNNING)
+        self.assertEqual(repeat_until_fail.tick(), Node.FAILED)
+        self.assertEqual(self.run_fail_succeed.state, Node.FAILED)
+
+        self.assertEqual(repeat_until_fail.untick(), Node.PAUSED)
+        self.assertEqual(repeat_until_fail.reset(), Node.IDLE)
+        self.assertEqual(repeat_until_fail.shutdown(), Node.SHUTDOWN)
+
     def testOptional(self):
-        optional = Optional()\
-            .add_child(self.failer)
+        optional = Optional()
+        optional.setup()
+        self.assertEqual(optional.reset(), Node.IDLE)
+        self.assertEqual(optional.shutdown(), Node.SHUTDOWN)
+
+        optional.add_child(self.failer)
 
         self.assertEqual(optional.calculate_utility(), self.failer.calculate_utility())
 
@@ -177,7 +292,9 @@ class TestDecorators(unittest.TestCase):
         self.assertEqual(optional.tick(), Node.FAILED)
         self.assertEqual(self.failer.tick_count, 1)
 
+        self.assertEqual(optional.untick(), Node.PAUSED)
         self.assertEqual(optional.shutdown(), Node.SHUTDOWN)
+        self.assertEqual(optional.reset(), Node.IDLE)
 
         optional = Optional()\
             .add_child(self.cannot_exec)
@@ -201,4 +318,6 @@ class TestDecorators(unittest.TestCase):
         # raised
         self.assertFalse(hasattr(self.cannot_exec, 'tick_count'))
 
+        self.assertEqual(optional.untick(), Node.IDLE)
         self.assertEqual(optional.shutdown(), Node.SHUTDOWN)
+        self.assertEqual(optional.reset(), Node.IDLE)
