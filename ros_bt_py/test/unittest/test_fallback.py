@@ -37,6 +37,14 @@ class TestFallback(unittest.TestCase):
                 'utility_upper_bound_success': 2.0,
                 'utility_lower_bound_failure': 5.0,
                 'utility_upper_bound_failure': 10.0})
+        self.can_not_execute = MockUtilityLeaf(
+            name='can_not_execute',
+            options={
+                'can_execute': False,
+                'utility_lower_bound_success': 0.0,
+                'utility_upper_bound_success': 0.0,
+                'utility_lower_bound_failure': 0.0,
+                'utility_upper_bound_failure': 0.0})
 
         self.fallback = Fallback()
 
@@ -47,6 +55,11 @@ class TestFallback(unittest.TestCase):
         self.fallback.setup()
         self.fallback.tick()
         self.assertEqual(self.fallback.state, Node.FAILED)
+
+    def testReset(self):
+        self.fallback.add_child(self.succeeder)
+        self.fallback.setup()
+        self.assertEqual(self.fallback.reset(), Node.IDLE)
 
     def testTickSuccess(self):
         self.fallback.add_child(self.succeeder)
@@ -59,6 +72,11 @@ class TestFallback(unittest.TestCase):
         # failer node.
         self.assertEqual(self.succeeder.outputs['tick_count'], 1)
         self.assertEqual(self.failer.outputs['untick_count'], 1)
+        self.assertEqual(self.succeeder.state, Node.SUCCEEDED)
+        self.assertEqual(self.fallback.state, Node.SUCCEEDED)
+
+        # check: If we've previously succeeded or failed, untick all children
+        self.fallback.tick()
         self.assertEqual(self.succeeder.state, Node.SUCCEEDED)
         self.assertEqual(self.fallback.state, Node.SUCCEEDED)
 
@@ -191,6 +209,40 @@ class TestFallback(unittest.TestCase):
         self.assertEqual(self.fallback.calculate_utility(),
                          expected_bounds)
 
+    def testCalculateUtilityCanNotExecute(self):
+        self.fallback.add_child(self.can_not_execute)
+
+        self.assertEqual(self.fallback.calculate_utility().can_execute,
+                         False)
+
+        # cheap_fail_2 = deepcopy(self.cheap_fail)
+        # cheap_fail_2.name = 'cheap_fail_2'
+        # self.fallback.add_child(cheap_fail_2)
+        # cheap_fail_bounds = self.cheap_fail.calculate_utility()
+        # expected_bounds = UtilityBounds(can_execute=True,
+        #                                 has_lower_bound_success=True,
+        #                                 has_upper_bound_success=True,
+        #                                 has_lower_bound_failure=True,
+        #                                 has_upper_bound_failure=True)
+
+        # # Upper and lower bounds for failure should be the sum of the
+        # # children's bounds
+        # expected_bounds.lower_bound_failure = cheap_fail_bounds.lower_bound_failure * 2.0
+        # expected_bounds.upper_bound_failure = cheap_fail_bounds.upper_bound_failure * 2.0
+        # # Lower bound for success is the same as for a single node
+        # # (i.e. first child fails as cheaply as possible)
+        # expected_bounds.lower_bound_success = cheap_fail_bounds.lower_bound_success
+        # # Upper bound for success is sum of upper *failure* bounds for
+        # # all children but the last, plus upper *success* bound for
+        # # the last child. In our case, that's one failing and one
+        # # succeeding child.
+        # expected_bounds.upper_bound_success = (
+        #     cheap_fail_bounds.upper_bound_failure +
+        #     cheap_fail_bounds.upper_bound_success)
+
+        # self.assertEqual(self.fallback.calculate_utility(),
+        #                  expected_bounds)
+
 
 class TestMemoryFallback(unittest.TestCase):
     def setUp(self):
@@ -210,7 +262,14 @@ class TestMemoryFallback(unittest.TestCase):
                                options={'output_type': int,
                                         'state_values': [Node.RUNNING],
                                         'output_values': [1]})
-
+        self.cheap_fail = MockUtilityLeaf(
+            name='cheap_fail',
+            options={
+                'can_execute': True,
+                'utility_lower_bound_success': 5.0,
+                'utility_upper_bound_success': 10.0,
+                'utility_lower_bound_failure': 1.0,
+                'utility_upper_bound_failure': 2.0})
         self.mem_fallback = MemoryFallback()
 
     def tearDown(self):
@@ -271,3 +330,76 @@ class TestMemoryFallback(unittest.TestCase):
         self.assertEqual(self.run_then_succeed.outputs['tick_count'], 3)
         # run_then_succeed loops back to RUNNING
         self.assertEqual(self.mem_fallback.state, Node.RUNNING)
+
+    def testSuccessAfterSuccessAfterRunning(self):
+        self.mem_fallback.add_child(self.failer)\
+            .add_child(self.run_then_succeed)\
+            .add_child(self.succeeder)
+
+        self.mem_fallback.setup()
+        self.mem_fallback.tick()
+
+        self.assertEqual(self.failer.outputs['tick_count'], 1)
+        self.assertEqual(self.run_then_succeed.outputs['tick_count'], 1)
+        self.assertEqual(self.mem_fallback.state, Node.RUNNING)
+
+        self.mem_fallback.tick()
+
+        # The MemoryFallback remembers that failer failed, so it won't
+        # try again until it has reached an overall result other than
+        # RUNNING
+        self.assertEqual(self.failer.outputs['tick_count'], 1)
+        self.assertEqual(self.run_then_succeed.outputs['tick_count'], 2)
+        self.assertEqual(self.mem_fallback.state, Node.SUCCEEDED)
+
+        self.mem_fallback.tick()
+
+        # On this third tick, the MemoryFallback should tick the
+        # failer again, because it delivered a result of SUCCEEDED
+        # last tick, and thus needs to start over
+        self.assertEqual(self.failer.outputs['tick_count'], 2)
+        self.assertEqual(self.failer.outputs['reset_count'], 1)
+        self.assertEqual(self.run_then_succeed.outputs['tick_count'], 3)
+        # run_then_succeed loops back to RUNNING
+        self.assertEqual(self.mem_fallback.state, Node.RUNNING)
+
+    def testFailed(self):
+        self.mem_fallback.add_child(self.failer)
+        self.mem_fallback.setup()
+        self.assertEqual(self.mem_fallback.tick(), Node.FAILED)
+        self.assertEqual(self.mem_fallback.untick(), Node.IDLE)
+        self.assertEqual(self.mem_fallback.reset(), Node.IDLE)
+
+    def testCalculateUtility(self):
+        self.mem_fallback.add_child(self.cheap_fail)
+
+        self.assertEqual(self.mem_fallback.calculate_utility(),
+                         self.cheap_fail.calculate_utility())
+
+        cheap_fail_2 = deepcopy(self.cheap_fail)
+        cheap_fail_2.name = 'cheap_fail_2'
+        self.mem_fallback.add_child(cheap_fail_2)
+        cheap_fail_bounds = self.cheap_fail.calculate_utility()
+        expected_bounds = UtilityBounds(can_execute=True,
+                                        has_lower_bound_success=True,
+                                        has_upper_bound_success=True,
+                                        has_lower_bound_failure=True,
+                                        has_upper_bound_failure=True)
+
+        # Upper and lower bounds for failure should be the sum of the
+        # children's bounds
+        expected_bounds.lower_bound_failure = cheap_fail_bounds.lower_bound_failure * 2.0
+        expected_bounds.upper_bound_failure = cheap_fail_bounds.upper_bound_failure * 2.0
+        # Lower bound for success is the same as for a single node
+        # (i.e. first child fails as cheaply as possible)
+        expected_bounds.lower_bound_success = cheap_fail_bounds.lower_bound_success
+        # Upper bound for success is sum of upper *failure* bounds for
+        # all children but the last, plus upper *success* bound for
+        # the last child. In our case, that's one failing and one
+        # succeeding child.
+        expected_bounds.upper_bound_success = (
+            cheap_fail_bounds.upper_bound_failure +
+            cheap_fail_bounds.upper_bound_success)
+
+        self.assertEqual(self.mem_fallback.calculate_utility(),
+                         expected_bounds)
