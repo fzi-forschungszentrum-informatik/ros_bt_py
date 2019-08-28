@@ -279,6 +279,25 @@ class TestAttrGetter(unittest.TestCase):
 
         self.assertEqual(NodeMsg.SHUTDOWN, getter.shutdown())
 
+    def testAttrGetterNestedObject(self):
+        class Inner(object):
+            def __init__(self, name='inner_object'):
+                self.name = name
+
+        class Outer(object):
+            def __init__(self):
+                self.inner = Inner()
+
+        getter = GetAttr({'attr_type': str,
+                          'attr_name': 'inner.name',
+                          'succeed_on_stale_data': False})
+        getter.setup()
+        self.assertEqual(NodeMsg.IDLE, getter.state)
+
+        getter.inputs['object'] = Outer()
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
+        self.assertEqual(getter.outputs['attr'], 'inner_object')
+
     def testAttrGetterAsDecorator(self):
         getter = GetAttr({'attr_type': str,
                           'attr_name': 'node_name',
