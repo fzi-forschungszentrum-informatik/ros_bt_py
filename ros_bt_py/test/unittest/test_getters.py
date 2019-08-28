@@ -6,11 +6,11 @@ from ros_bt_py_msgs.msg import NodeData, NodeDataLocation
 
 from ros_bt_py.exceptions import BehaviorTreeException, NodeConfigError
 from ros_bt_py.nodes.mock_nodes import MockLeaf
-from ros_bt_py.nodes.getters import GetConstListItem, GetDictItem, GetAttr
+from ros_bt_py.nodes.getters import GetConstListItem, GetListItem, GetDictItem, GetAttr
 
 
 class TestListGetter(unittest.TestCase):
-    def testListGetter(self):
+    def testConstListGetter(self):
         getter = GetConstListItem({'list_type': int,
                                    'index': 3,
                                    'succeed_on_stale_data': False})
@@ -42,7 +42,11 @@ class TestListGetter(unittest.TestCase):
         # This tick should succeed on stale data
         self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
 
-    def testListGetterAsDecorator(self):
+        self.assertEqual(NodeMsg.IDLE, getter.untick())
+        self.assertEqual(NodeMsg.IDLE, getter.reset())
+        self.assertEqual(NodeMsg.SHUTDOWN, getter.shutdown())
+
+    def testConstListGetterAsDecorator(self):
         getter = GetConstListItem({'list_type': int,
                                    'index': 3,
                                    'succeed_on_stale_data': True})
@@ -56,6 +60,107 @@ class TestListGetter(unittest.TestCase):
 
         getter.setup()
 
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
+        self.assertEqual(getter.outputs['item'], 4)
+
+    def testGetListItem(self):
+        getter = GetListItem({'list_type': int,
+                              'succeed_on_stale_data': True})
+
+        self.assertEqual(NodeMsg.UNINITIALIZED, getter.state)
+
+        getter.inputs['list'] = [1, 2, 3, 4]
+        getter.inputs['index'] = 0
+
+        getter.setup()
+
+        self.assertEqual(NodeMsg.IDLE, getter.state)
+
+        getter.inputs['index'] = 0
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.state)
+        self.assertEqual(getter.outputs['item'], 1)
+
+        getter.inputs['index'] = 1
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.state)
+        self.assertEqual(getter.outputs['item'], 2)
+
+        getter.inputs['index'] = 2
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.state)
+        self.assertEqual(getter.outputs['item'], 3)
+
+        getter.inputs['index'] = 3
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.state)
+        self.assertEqual(getter.outputs['item'], 4)
+
+        getter.inputs['index'] = 4
+        self.assertEqual(NodeMsg.FAILED, getter.tick())
+        self.assertEqual(NodeMsg.FAILED, getter.state)
+
+        self.assertEqual(NodeMsg.IDLE, getter.untick())
+        self.assertEqual(NodeMsg.IDLE, getter.reset())
+        self.assertEqual(getter.outputs['item'], None)
+
+        self.assertEqual(NodeMsg.SHUTDOWN, getter.shutdown())
+
+    def testGetListItemStaleData(self):
+        getter = GetListItem({'list_type': int,
+                              'succeed_on_stale_data': True})
+
+        self.assertEqual(NodeMsg.UNINITIALIZED, getter.state)
+
+        getter.inputs['list'] = [1, 2, 3, 4]
+        getter.inputs['index'] = 0
+
+        getter.setup()
+
+        self.assertEqual(NodeMsg.IDLE, getter.state)
+
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.state)
+        self.assertEqual(getter.outputs['item'], 1)
+
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.state)
+        self.assertEqual(getter.outputs['item'], 1)
+
+        getter = GetListItem({'list_type': int,
+                              'succeed_on_stale_data': False})
+
+        self.assertEqual(NodeMsg.UNINITIALIZED, getter.state)
+
+        getter.inputs['list'] = [1, 2, 3, 4]
+        getter.inputs['index'] = 0
+
+        getter.setup()
+
+        self.assertEqual(NodeMsg.IDLE, getter.state)
+
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.state)
+        self.assertEqual(getter.outputs['item'], 1)
+
+        self.assertEqual(NodeMsg.RUNNING, getter.tick())
+        self.assertEqual(NodeMsg.RUNNING, getter.state)
+        self.assertEqual(getter.outputs['item'], 1)
+
+    def testGetListItemAsDecorator(self):
+        getter = GetListItem({'list_type': int,
+                              'succeed_on_stale_data': True})
+        list_provider = MockLeaf(
+            options={'output_type': list,
+                     'state_values': [NodeMsg.SUCCEEDED],
+                     'output_values': [[1, 2, 3, 4]]})
+
+        getter.add_child(list_provider)
+        list_provider.outputs.subscribe('out', getter.inputs.get_callback('list'))
+
+        getter.setup()
+
+        getter.inputs['index'] = 3
         self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
         self.assertEqual(getter.outputs['item'], 4)
 
@@ -100,6 +205,12 @@ class TestDictGetter(unittest.TestCase):
 
         # This tick should succeed on stale data
         self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
+
+        self.assertEqual(NodeMsg.IDLE, getter.untick())
+        self.assertEqual(NodeMsg.IDLE, getter.reset())
+        self.assertEqual(getter.outputs['value'], None)
+
+        self.assertEqual(NodeMsg.SHUTDOWN, getter.shutdown())
 
     def testDictGetterAsDecorator(self):
         getter = GetDictItem({'value_type': int,
@@ -161,6 +272,12 @@ class TestAttrGetter(unittest.TestCase):
 
         # This tick should succeed on stale data
         self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
+
+        self.assertEqual(NodeMsg.IDLE, getter.untick())
+        self.assertEqual(NodeMsg.IDLE, getter.reset())
+        self.assertEqual(getter.outputs['attr'], None)
+
+        self.assertEqual(NodeMsg.SHUTDOWN, getter.shutdown())
 
     def testAttrGetterAsDecorator(self):
         getter = GetAttr({'attr_type': str,
