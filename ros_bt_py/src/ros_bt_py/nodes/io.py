@@ -37,22 +37,11 @@ class IOInputOption(IO):
         self.inputs.handle_subscriptions()
 
     def _do_tick(self):
-        try:
-            if self.inputs['in'] and self.inputs.is_updated('in'):
-                self.outputs['out'] = self.inputs['in']
-            else:
-                try:
-                    values = extract_values(self.options['default'])
-                    message = self.options['io_type']()
-                    populate_instance(values, message)
-                    self.outputs['out'] = message
-                except InvalidMessageException:
-                    # this means it is a "primitive" type such as int
-                    self.outputs['out'] = self.options['default']
-            return NodeMsg.SUCCEEDED
-        except Exception as e:
-            self.logerr("Input Exception: %s" % e)
-            return NodeMsg.FAILED
+        if self.inputs['in'] is not None:
+            self.outputs['out'] = self.inputs['in']
+        else:
+            self.outputs['out'] = self.options['default']
+        return NodeMsg.SUCCEEDED
 
     def _do_untick(self):
         return NodeMsg.IDLE
@@ -97,7 +86,7 @@ class IOInput(IO):
         self.inputs.handle_subscriptions()
 
     def _do_tick(self):
-        if self.inputs['in'] and self.inputs.is_updated('in'):
+        if self.inputs['in'] is not None:
             self.outputs['out'] = self.inputs['in']
         else:
             self.outputs['out'] = self.inputs['default']
@@ -144,22 +133,11 @@ class IOOutputOption(IO):
         self.inputs.handle_subscriptions()
 
     def _do_tick(self):
-        try:
-            if self.inputs['in'] and self.inputs.is_updated('in'):
-                self.outputs['out'] = self.inputs['in']
-            else:
-                try:
-                    values = extract_values(self.options['default'])
-                    message = self.options['io_type']()
-                    populate_instance(values, message)
-                    self.outputs['out'] = message
-                except InvalidMessageException:
-                    # this means it is a "primitive" type such as int
-                    self.outputs['out'] = self.options['default']
-            return NodeMsg.SUCCEEDED
-        except Exception as e:
-            self.logerr("Output Exception: %s" % e)
-            return NodeMsg.FAILED
+        if self.inputs['in'] is not None:
+            self.outputs['out'] = self.inputs['in']
+        else:
+            self.outputs['out'] = self.options['default']
+        return NodeMsg.SUCCEEDED
 
     def _do_untick(self):
         return NodeMsg.IDLE
@@ -204,7 +182,7 @@ class IOOutput(IO):
         self.inputs.handle_subscriptions()
 
     def _do_tick(self):
-        if self.inputs['in'] and self.inputs.is_updated('in'):
+        if self.inputs['in'] is not None:
             self.outputs['out'] = self.inputs['in']
         else:
             self.outputs['out'] = self.inputs['default']
