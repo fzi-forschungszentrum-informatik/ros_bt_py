@@ -3,6 +3,8 @@ import unittest
 
 from ros_bt_py_msgs.msg import Node, UtilityBounds
 
+from ros_bt_py.exceptions import BehaviorTreeException
+
 from ros_bt_py.nodes.mock_nodes import MockLeaf, MockUtilityLeaf
 from ros_bt_py.nodes.parallel import Parallel
 
@@ -46,6 +48,33 @@ class TestParallel(unittest.TestCase):
                 'utility_upper_bound_success': 2.0,
                 'utility_lower_bound_failure': 5.0,
                 'utility_upper_bound_failure': 10.0})
+        self.can_not_execute = MockUtilityLeaf(
+            name='can_not_execute',
+            options={
+                'can_execute': False,
+                'utility_lower_bound_success': 0.0,
+                'utility_upper_bound_success': 0.0,
+                'utility_lower_bound_failure': 0.0,
+                'utility_upper_bound_failure': 0.0})
+
+    def testSuccessesException(self):
+        par = make_parallel(3)\
+            .add_child(self.succeeder)\
+            .add_child(self.run_then_succeed)
+
+        self.assertRaises(BehaviorTreeException, par.setup)
+        self.assertRaises(BehaviorTreeException, par.calculate_utility)
+
+    def testWithRunningChildren(self):
+        par = make_parallel(2)\
+            .add_child(self.failer)\
+            .add_child(self.runner)
+
+        par.setup()
+        self.assertEqual(par.tick(), Node.FAILED)
+        self.assertEqual(par.untick(), Node.IDLE)
+        self.assertEqual(par.reset(), Node.IDLE)
+        self.assertEqual(par.shutdown(), Node.SHUTDOWN)
 
     def testBarrierSuccess(self):
         par = make_parallel(2)\
@@ -197,6 +226,19 @@ class TestParallel(unittest.TestCase):
 
         expected_bounds.lower_bound_failure = cheap_fail_bounds.lower_bound_failure
         expected_bounds.upper_bound_failure = cheap_success_bounds.upper_bound_failure
+        self.assertEqual(par.calculate_utility(), expected_bounds)
+
+    def testParallelUtilityCalculationCanNotExecute(self):
+        par = make_parallel(1)\
+            .add_child(self.can_not_execute)
+
+        expected_bounds = UtilityBounds(
+            can_execute=False,
+            has_lower_bound_success=False,
+            has_upper_bound_success=False,
+            has_lower_bound_failure=False,
+            has_upper_bound_failure=False)
+
         self.assertEqual(par.calculate_utility(), expected_bounds)
 
 
