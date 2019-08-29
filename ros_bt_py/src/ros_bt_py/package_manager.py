@@ -288,7 +288,7 @@ class PackageManager(object):
             else:
                 save_path = os.path.join(package_path, request.filename)
 
-                if os.path.commonprefix(os.path.realpath(save_path), package_path) != package_path:
+                if os.path.commonprefix([os.path.realpath(save_path), package_path]) != package_path:
                     response.success = False
                     response.error_message = 'Path outside package path'
                     return response
