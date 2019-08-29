@@ -12,6 +12,13 @@ from ros_bt_py.node_config import NodeConfig
 class FormatOptionNode(Leaf):
     """Accepts a dictionary as input and outputs a formatted string
     based on the format string set in the options.
+
+    Example dict and format_string:
+    dict: {'first': 'bar', 'second': 'not_printed'}
+    format_string: 'foo {first}'
+
+    results in the following output:
+    formatted_string: 'foo bar'
     """
     def _do_setup(self):
         return NodeMsg.IDLE
@@ -45,6 +52,13 @@ class FormatOptionNode(Leaf):
 class FormatInputNode(Leaf):
     """Accepts a dictionary and a format string as input and outputs a formatted string
     based on the format string
+
+    Example dict and format_string:
+    dict: {'first': 'bar', 'second': 'not_printed'}
+    format_string: 'foo {first}'
+
+    results in the following output:
+    formatted_string: 'foo bar'
     """
     def _do_setup(self):
         return NodeMsg.IDLE
