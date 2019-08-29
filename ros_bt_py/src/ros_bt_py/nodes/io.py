@@ -85,7 +85,6 @@ class IOInput(IO):
 
         But only if an input has been updated since the last tick.
         """
-        self.logerr('OVERWRITTEN _handle_inputs')
         for input_name in self.inputs:
             if input_name == 'in' and self.inputs[input_name] is None:
                 self.logwarn('ignoring unset "in" input and using default value')
