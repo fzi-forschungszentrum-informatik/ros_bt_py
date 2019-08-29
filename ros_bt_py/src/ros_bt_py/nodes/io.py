@@ -34,9 +34,6 @@ class IOInputOption(IO):
             else:
                 if not self.inputs.is_updated(input_name):
                     self.logwarn('Running tick() with stale data!')
-                if self.inputs[input_name] is None:
-                    raise ValueError('Trying to tick a node with an unset input (%s)!' %
-                                     input_name)
         self.inputs.handle_subscriptions()
 
     def _do_tick(self):
@@ -145,9 +142,6 @@ class IOOutputOption(IO):
             else:
                 if not self.inputs.is_updated(input_name):
                     self.logwarn('Running tick() with stale data!')
-                if self.inputs[input_name] is None:
-                    raise ValueError('Trying to tick a node with an unset input (%s)!' %
-                                     input_name)
         self.inputs.handle_subscriptions()
 
     def _do_tick(self):
