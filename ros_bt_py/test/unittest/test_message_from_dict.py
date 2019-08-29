@@ -16,6 +16,10 @@ class TestMessageFromDict(unittest.TestCase):
         self.assertEqual(self.mfd.tick(), NodeMsg.SUCCEEDED)
         self.assertEqual(self.mfd.outputs['message'].name, 'foo')
 
+        self.assertEqual(self.mfd.untick(), NodeMsg.IDLE)
+        self.assertEqual(self.mfd.reset(), NodeMsg.IDLE)
+        self.assertEqual(self.mfd.shutdown(), NodeMsg.SHUTDOWN)
+
     def testPopulateInvalidKey(self):
         self.mfd.inputs['dict'] = {'frob': 123}
 
@@ -30,6 +34,10 @@ class TestMessageFromConstDict(unittest.TestCase):
 
         self.assertEqual(mfd.tick(), NodeMsg.SUCCEEDED)
         self.assertEqual(mfd.outputs['message'].name, 'foo')
+
+        self.assertEqual(mfd.untick(), NodeMsg.IDLE)
+        self.assertEqual(mfd.reset(), NodeMsg.IDLE)
+        self.assertEqual(mfd.shutdown(), NodeMsg.SHUTDOWN)
 
     def testPopulateInvalidKey(self):
         mfd = MessageFromConstDict({'message_type': NodeMsg,
