@@ -1,0 +1,96 @@
+name: ''
+path: ''
+root_name: ''
+nodes: 
+  - 
+    module: "ros_bt_py.nodes.io"
+    node_class: "IOInputOption"
+    max_children: 0
+    name: "IOInputOption"
+    child_names: []
+    options: 
+      - 
+        key: "default"
+        serialized_value: "0"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      - 
+        key: "io_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "in"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    outputs: 
+      - 
+        key: "out"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    option_wirings: 
+      - 
+        source: "io_type"
+        target: "default"
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.nodes.io"
+    node_class: "IOOutputOption"
+    max_children: 0
+    name: "IOOutputOption"
+    child_names: []
+    options: 
+      - 
+        key: "default"
+        serialized_value: "42"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      - 
+        key: "io_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "in"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    outputs: 
+      - 
+        key: "out"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    option_wirings: 
+      - 
+        source: "io_type"
+        target: "default"
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    max_children: -1
+    name: "Sequence"
+    child_names: [IOInputOption, IOOutputOption]
+    options: []
+    inputs: []
+    outputs: []
+    option_wirings: []
+    state: "UNINITIALIZED"
+data_wirings: 
+  - 
+    source: 
+      node_name: "IOInputOption"
+      data_kind: "outputs"
+      data_key: "out"
+    target: 
+      node_name: "IOOutputOption"
+      data_kind: "inputs"
+      data_key: "in"
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: 
+  - 
+    node_name: "IOInputOption"
+    data_kind: "inputs"
+    data_key: "in"
+  - 
+    node_name: "IOOutputOption"
+    data_kind: "outputs"
+    data_key: "out"
