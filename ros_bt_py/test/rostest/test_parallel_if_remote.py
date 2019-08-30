@@ -59,6 +59,10 @@ class TestParallelIfRemote(unittest.TestCase):
             self.assertEqual(self.immediate_success.tick_count, 0)
             rospy.sleep(0.1)
 
+        self.parseq.untick()
+        self.assertEqual(self.parseq.state, NodeMsg.IDLE)
+        self.parseq.reset()
+        self.assertEqual(self.parseq.state, NodeMsg.IDLE)
         self.parseq.shutdown()
         self.assertEqual(self.parseq.state, NodeMsg.SHUTDOWN)
 
@@ -88,6 +92,10 @@ class TestParallelIfRemote(unittest.TestCase):
         self.assertTrue(shovable.outputs['running_remotely'])
         self.assertGreater(self.immediate_success.tick_count, 0)
 
+        self.parseq.untick()
+        self.assertEqual(self.parseq.state, NodeMsg.IDLE)
+        self.parseq.reset()
+        self.assertEqual(self.parseq.state, NodeMsg.IDLE)
         self.parseq.shutdown()
         self.assertEqual(self.parseq.state, NodeMsg.SHUTDOWN)
 
