@@ -56,6 +56,18 @@ class TestNode(unittest.TestCase):
                              'foo': 42})
 
 
+class TestOptionRef(unittest.TestCase):
+    def testOptionRefImplementation(self):
+        first = OptionRef('first')
+        second = OptionRef('second')
+
+        self.assertEqual(first, first)
+        self.assertNotEqual(first, second)
+
+        self.assertEqual("OptionRef(option_key='first')", repr(first))
+        self.assertEqual("OptionRef(option_key='first')", first.__name__())
+
+
 class TestNodeConfig(unittest.TestCase):
     def setUp(self):
         self.conf = NodeConfig(
@@ -95,6 +107,23 @@ class TestNodeConfig(unittest.TestCase):
 
         self.assertRaises(ValueError, self.conf.extend, wrong_num_children)
         self.assertEqual(self.conf, conf_original)
+
+    def testExtend(self):
+        additional_option = NodeConfig(options={'new_option': int},
+                                       inputs={},
+                                       outputs={},
+                                       max_children=42)
+
+        conf_original = deepcopy(self.conf)
+        self.conf.extend(additional_option)
+        self.assertNotEqual(self.conf, conf_original)
+
+    def testRepr(self):
+        expected = "NodeConfig(inputs={'int_input': <type 'int'>}," \
+                   " outputs={'str_output': <type 'str'>}," \
+                   " options={'float_option': <type 'float'>}," \
+                   " max_children=42, option_wirings=[], optional_options=[])"
+        self.assertEqual(expected, repr(self.conf))
 
 
 class TestPassthroughNode(unittest.TestCase):
