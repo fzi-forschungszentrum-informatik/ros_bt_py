@@ -2,7 +2,7 @@ class OptionRef(object):
     """Marks an input or output type as dependent on an option value.
 
     Can be used instead of an actual type in the maps passed to a
-    :class:Nodefonfig
+    :class:NodeConfig
     """
     def __init__(self, option_key):
         self.option_key = option_key
