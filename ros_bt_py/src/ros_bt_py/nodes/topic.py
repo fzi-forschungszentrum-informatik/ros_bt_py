@@ -154,11 +154,6 @@ class TopicPublisher(Leaf):
         return NodeMsg.IDLE
 
     def _do_tick(self):
-        if self.inputs['message'] is None:
-            self.logwarn('Trying to publish to topic %s with no message set' %
-                         self.options['topic_name'])
-            return NodeMsg.FAILED
-
         # Only publish a new message if our input data has been updated - the
         # old one is latched anyway.
         if self.inputs.is_updated('message'):
