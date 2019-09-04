@@ -94,8 +94,6 @@ class Subtree(Leaf):
                 else:
                     subtree_outputs['%s.%s' % (node_name, node_data.data_key)] = \
                         self.manager.nodes[node_data.node_name].outputs.get_type(node_data.data_key)
-            elif node_data.data_kind == NodeDataLocation.OPTION_DATA:
-                raise BehaviorTreeException('Option values cannot be public!')
 
         # merge subtree input and option dicts, so we can receive
         # option updates between ticks

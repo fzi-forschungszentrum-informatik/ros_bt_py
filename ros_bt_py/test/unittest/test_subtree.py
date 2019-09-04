@@ -48,6 +48,24 @@ class TestSubtree(unittest.TestCase):
 
         self.assertEqual(subtree.calculate_utility(), expected_bounds)
 
+    def testSubtreeLoadErrorPublicOption(self):
+        path = 'package://ros_bt_py/test/testdata/trees/subtree_constant_public_option.yaml'
+        subtree = Subtree(options={
+            'subtree_path': path,
+            'use_io_nodes': False
+        })
+        self.assertFalse(subtree.outputs['load_success'])
+
+        self.assertRaises(BehaviorTreeException, subtree.setup)
+
+        expected_bounds = UtilityBounds(can_execute=False,
+                                        has_lower_bound_success=False,
+                                        has_upper_bound_success=False,
+                                        has_lower_bound_failure=False,
+                                        has_upper_bound_failure=False)
+
+        self.assertEqual(subtree.calculate_utility(), expected_bounds)
+
     def testSubtreeWithDebugManager(self):
         debug_manager = DebugManager()
         debug_manager.set_execution_mode(single_step=False,

@@ -28,7 +28,7 @@ from ros_bt_py_msgs.srv import ModifyBreakpointsResponse
 from ros_bt_py_msgs.msg import Tree
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import DocumentedNode
-from ros_bt_py_msgs.msg import NodeData, NodeOptionWiring
+from ros_bt_py_msgs.msg import NodeData, NodeDataLocation, NodeOptionWiring
 
 from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, TreeTopologyError
 from ros_bt_py.node import Node, load_node_module, increment_name
@@ -427,6 +427,13 @@ class TreeManager(object):
                 wiring.target.node_name = prefix + wiring.target.node_name
             for public_datum in tree.public_node_data:
                 public_datum.node_name = prefix + public_datum.node_name
+
+        for public_datum in tree.public_node_data:
+            if public_datum.data_kind == NodeDataLocation.OPTION_DATA:
+                response.success = False
+                response.error_message = ('public_node_data: option values cannot be public!')
+
+                return response
 
         # Clear existing tree, then replace it with the message's contents
         self.clear(None)
