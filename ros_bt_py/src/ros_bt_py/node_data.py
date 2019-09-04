@@ -94,7 +94,7 @@ class NodeData(object):
         if self._serialized_value is not None and new_value != self._value:
             self._serialized_value = jsonpickle.encode(new_value)
         self._value = new_value
-        self.updated = True
+        self.set_updated()
 
     def get(self):
         """Get the current value
