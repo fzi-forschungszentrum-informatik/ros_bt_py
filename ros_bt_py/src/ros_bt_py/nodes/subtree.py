@@ -83,17 +83,11 @@ class Subtree(Leaf):
                 node_name = node_name[len(self.prefix):]
 
             if node_data.data_kind == NodeDataLocation.INPUT_DATA:
-                if options.get('use_io_nodes') and node_data.node_name not in io_inputs:
-                    pass
-                else:
-                    subtree_inputs['%s.%s' % (node_name, node_data.data_key)] = \
-                        self.manager.nodes[node_data.node_name].inputs.get_type(node_data.data_key)
+                subtree_inputs['%s.%s' % (node_name, node_data.data_key)] = \
+                    self.manager.nodes[node_data.node_name].inputs.get_type(node_data.data_key)
             elif node_data.data_kind == NodeDataLocation.OUTPUT_DATA:
-                if options.get('use_io_nodes') and node_data.node_name not in io_outputs:
-                    pass
-                else:
-                    subtree_outputs['%s.%s' % (node_name, node_data.data_key)] = \
-                        self.manager.nodes[node_data.node_name].outputs.get_type(node_data.data_key)
+                subtree_outputs['%s.%s' % (node_name, node_data.data_key)] = \
+                    self.manager.nodes[node_data.node_name].outputs.get_type(node_data.data_key)
 
         # merge subtree input and option dicts, so we can receive
         # option updates between ticks
