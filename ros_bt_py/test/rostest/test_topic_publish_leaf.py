@@ -58,6 +58,8 @@ class TestTopicPublisherLeaf(unittest.TestCase):
         rospy.sleep(0.1)
         self.assertEqual(self.msg.data, 42)
 
+        self.assertEqual(self.publisher_leaf.untick(), NodeMsg.IDLE)
+
         self.publisher_leaf.reset()
         self.publisher_leaf.inputs['message'] = Int32(data=23)
         self.publisher_leaf.tick()
