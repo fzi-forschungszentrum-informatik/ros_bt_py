@@ -340,17 +340,13 @@ class Node(object):
 
             unset_options = []
             for option_name in self.options:
-                if not self.options.is_updated(option_name):
-                    unset_options.append(option_name)
+                if not self.options.is_updated(option_name) and \
+                   option_name not in self.node_config.optional_options:
+                        unset_options.append(option_name)
             if unset_options:
-                optional_options = []
-                for option in unset_options:
-                    if option in self.node_config.optional_options:
-                        optional_options.append(option)
-                if unset_options != optional_options:
-                    msg = 'Trying to tick node with unset options: %s' % str(unset_options)
-                    self.logerr(msg)
-                    raise BehaviorTreeException(msg)
+                msg = 'Trying to tick node with unset options: %s' % str(unset_options)
+                self.logerr(msg)
+                raise BehaviorTreeException(msg)
             self.options.handle_subscriptions()
 
             # Outputs are updated in the tick. To catch that, we need to reset here.

@@ -29,6 +29,32 @@ class TestWiring(unittest.TestCase):
 
         self.root.setup()
 
+    def testWiringWithInvalidDataKind(self):
+        with self.assertRaises(BehaviorTreeException):
+            self.second.wire_data(NodeDataWiring(
+                source=NodeDataLocation(
+                    node_name=self.first.name,
+                    data_kind='broken',
+                    data_key='out'
+                ),
+                target=NodeDataLocation(
+                    node_name=self.second.name,
+                    data_kind=NodeDataLocation.INPUT_DATA,
+                    data_key='a'
+                )))
+        with self.assertRaises(BehaviorTreeException):
+            self.second.wire_data(NodeDataWiring(
+                source=NodeDataLocation(
+                    node_name=self.first.name,
+                    data_kind=NodeDataLocation.OUTPUT_DATA,
+                    data_key='out'
+                ),
+                target=NodeDataLocation(
+                    node_name=self.second.name,
+                    data_kind='broken',
+                    data_key='a'
+                )))
+
     def testWiringFromMissingNode(self):
         with self.assertRaises(BehaviorTreeException):
             self.second.wire_data(NodeDataWiring(
