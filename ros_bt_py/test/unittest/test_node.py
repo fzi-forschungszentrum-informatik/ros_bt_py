@@ -576,6 +576,17 @@ class TestPassthroughNode(unittest.TestCase):
                               serialized_value=jsonpickle.encode(int))])
         self.assertRaises(BehaviorTreeException, Node.from_msg, msg)
 
+    def testNodeFromMsgInvalidOutput(self):
+        msg = NodeMsg(
+            module="ros_bt_py.nodes.passthrough_node",
+            node_class="PassthroughNode",
+            inputs=[NodeData(key="in",
+                             serialized_value=jsonpickle.encode(42))],
+            outputs=[NodeData(key="out", serialized_value='nope')],
+            options=[NodeData(key="passthrough_type",
+                              serialized_value=jsonpickle.encode(int))])
+        self.assertRaises(BehaviorTreeException, Node.from_msg, msg)
+
     def testNodeToMsg(self):
         node = PassthroughNode(options={'passthrough_type': int})
 
