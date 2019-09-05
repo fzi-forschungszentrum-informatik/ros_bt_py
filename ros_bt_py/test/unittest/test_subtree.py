@@ -209,3 +209,29 @@ class TestSubtree(unittest.TestCase):
         self.assertEqual(len(subtree.inputs), 1)
         # And 3 outputs (load_success, load_error_msg, out)
         self.assertEqual(len(subtree.outputs), 3)
+
+    def testSubtreeWithChangedInputs(self):
+        path = 'package://ros_bt_py/test/testdata/trees/subtree_changed_inputs.yaml'
+        subtree = Subtree(options={
+            'subtree_path': path,
+            'use_io_nodes': False
+        })
+        self.assertTrue(subtree.outputs['load_success'])
+
+        # Should have no inputs
+        self.assertEqual(len(subtree.inputs), 0)
+        # And 5 outputs (2xload_success, 2xload_error_msg, out)
+        self.assertEqual(len(subtree.outputs), 5)
+
+    def testSubtreeWithChangedOutputs(self):
+        path = 'package://ros_bt_py/test/testdata/trees/subtree_changed_outputs.yaml'
+        subtree = Subtree(options={
+            'subtree_path': path,
+            'use_io_nodes': False
+        })
+        self.assertTrue(subtree.outputs['load_success'])
+
+        # Should have 2 inputs
+        self.assertEqual(len(subtree.inputs), 2)
+        # And 4 outputs (2xload_success, 2xload_error_msg)
+        self.assertEqual(len(subtree.outputs), 4)
