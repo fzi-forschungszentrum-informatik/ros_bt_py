@@ -1,6 +1,7 @@
 import unittest
 
 import jsonpickle
+import sys
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import NodeData, NodeDataWiring, NodeDataLocation, Tree
@@ -9,8 +10,10 @@ from ros_bt_py_msgs.srv import (WireNodeDataRequest, AddNodeRequest, RemoveNodeR
                                 SetExecutionModeRequest, SetOptionsRequest, ContinueRequest,
                                 LoadTreeRequest, MoveNodeRequest, ReplaceNodeRequest)
 
-from ros_bt_py.node import Node
+from ros_bt_py.node import Node, Leaf, define_bt_node
+from ros_bt_py.node_config import NodeConfig
 from ros_bt_py.nodes.sequence import Sequence
+from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, TreeTopologyError
 from ros_bt_py.tree_manager import TreeManager
 
 
@@ -56,6 +59,55 @@ class TestTreeManager(unittest.TestCase):
                               serialized_value=jsonpickle.encode([NodeMsg.SUCCEEDED])),
                      NodeData(key='output_values',
                               serialized_value=jsonpickle.encode(['Yay!']))])
+
+    def testEnsureTickFrequencyGreaterZero(self):
+        manager = TreeManager(tick_frequency_hz=0)
+        self.assertNotEquals(manager.tree_msg.tick_frequency_hz, 0)
+
+    def testLoadNodeModule(self):
+        manager = TreeManager(module_list=['ros_bt_py.nodes.sequence'])
+        self.assertIn('ros_bt_py.nodes.sequence', sys.modules)
+
+    def testCycle(self):
+        node = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
+        self.manager.nodes[node.name].parent = node.name
+
+        self.assertRaises(TreeTopologyError, self.manager.find_root)
+
+    def testTickExceptionHandling(self):
+        @define_bt_node(NodeConfig(
+            options={},
+            inputs={},
+            outputs={},
+            max_children=0))
+        class ExceptionNode(Leaf):
+            def _do_setup(self):
+                pass
+
+            def _do_tick(self):
+                raise BehaviorTreeException
+
+            def _do_shutdown(self):
+                pass
+
+            def _do_reset(self):
+                return NodeMsg.IDLE
+
+            def _do_untick(self):
+                return NodeMsg.IDLE
+
+        node = ExceptionNode()
+        manager = TreeManager(show_traceback_on_exception=False)
+        manager.nodes[node.name] = node
+        self.assertEqual(manager.tree_msg.state, Tree.EDITABLE)
+        manager.tick_report_exceptions()
+        self.assertEqual(manager.tree_msg.state, Tree.ERROR)
+
+        manager = TreeManager(show_traceback_on_exception=True)
+        manager.nodes[node.name] = node
+        self.assertEqual(manager.tree_msg.state, Tree.EDITABLE)
+        manager.tick_report_exceptions()
+        self.assertEqual(manager.tree_msg.state, Tree.ERROR)
 
     def testLoadNode(self):
         _ = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
