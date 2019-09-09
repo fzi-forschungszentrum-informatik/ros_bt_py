@@ -1153,7 +1153,7 @@ class Node(object):
         """
         if wiring.source.node_name != self.name:
             raise KeyError('%s: Trying to unsubscribe from another node (%s)' %
-                           (self.name, source.node_name))
+                           (self.name, wiring.source.node_name))
         source_map = self.get_data_map(wiring.source.data_kind)
 
         if wiring.source.data_key not in source_map:

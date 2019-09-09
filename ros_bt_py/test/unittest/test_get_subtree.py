@@ -118,3 +118,40 @@ class TestSubtree(unittest.TestCase):
         self.assertEqual(len(incoming_conns), 0)
         self.assertEqual(len(outgoing_conns), 0)
         self.assertEqual(len(subtree.public_node_data), 2)
+
+    def testDuplicateSubscription(self):
+        duplicate_wiring = NodeDataWiring()
+        duplicate_wiring.source.node_name = 'inner_leaf_1'
+        duplicate_wiring.source.data_kind = NodeDataLocation.OUTPUT_DATA
+        duplicate_wiring.source.data_key = 'out'
+
+        duplicate_wiring.target.node_name = 'inner_passthrough'
+        duplicate_wiring.target.data_kind = NodeDataLocation.INPUT_DATA
+        duplicate_wiring.target.data_key = 'in'
+
+        self.inner_passthrough.wire_data(duplicate_wiring)
+        self.assertRaises(BehaviorTreeException,
+                          self.inner_passthrough.wire_data, duplicate_wiring)
+        self.assertRaises(BehaviorTreeException, self.inner_leaf_1._subscribe,
+                          duplicate_wiring, None, None)
+        duplicate_wiring.source.data_kind = NodeDataLocation.OUTPUT_DATA
+        duplicate_wiring.source.data_key = 'in'
+        self.assertRaises(KeyError, self.inner_leaf_1._subscribe,
+                          duplicate_wiring, None, None)
+
+    def testInvalidSubscribeUnsubscribe(self):
+        broken_wiring = NodeDataWiring()
+        broken_wiring.source.node_name = 'does_not_exist'
+        broken_wiring.source.data_kind = NodeDataLocation.OUTPUT_DATA
+        broken_wiring.source.data_key = 'out'
+        broken_wiring.target.node_name = 'does_not_exist'
+        broken_wiring.target.data_kind = NodeDataLocation.INPUT_DATA
+        broken_wiring.target.data_key = 'in'
+
+        self.assertRaises(KeyError, self.inner_leaf_1._subscribe, broken_wiring, None, None)
+        self.assertRaises(KeyError, self.inner_leaf_1._unsubscribe, broken_wiring)
+
+        broken_wiring.source.node_name = 'inner_leaf_1'
+        broken_wiring.source.data_key = 'does_not_exist'
+        self.assertRaises(KeyError, self.inner_leaf_1._subscribe, broken_wiring, None, None)
+        self.assertRaises(KeyError, self.inner_leaf_1._unsubscribe, broken_wiring)
