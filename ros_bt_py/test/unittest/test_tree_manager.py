@@ -23,6 +23,29 @@ from ros_bt_py.tree_manager import (get_success as tm_get_success,
                                     get_error_message as tm_get_error_message)
 
 
+@define_bt_node(NodeConfig(
+    options={},
+    inputs={},
+    outputs={},
+    max_children=0))
+class LongRunningNode(Leaf):
+    def _do_setup(self):
+        pass
+
+    def _do_tick(self):
+        time.sleep(1.0)
+        return NodeMsg.SUCCEEDED
+
+    def _do_shutdown(self):
+        pass
+
+    def _do_reset(self):
+        return NodeMsg.IDLE
+
+    def _do_untick(self):
+        return NodeMsg.IDLE
+
+
 class TestTreeManager(unittest.TestCase):
     def setUp(self):
         self.tree_msg = None
@@ -577,6 +600,26 @@ class TestTreeManager(unittest.TestCase):
         self.assertTrue(get_success(remove_response), get_error_message(remove_response))
         self.assertEqual(len(self.manager.nodes), 0)
 
+    def testRemoveParentAndChildrenWithBrokenChildren(self):
+        add_response = self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg))
+
+        child_response = self.manager.add_node(
+            AddNodeRequest(node=self.node_msg,
+                           parent_name=add_response.actual_node_name))
+
+        self.assertEqual(len(self.manager.nodes), 2)
+
+        self.manager.nodes[child_response.actual_node_name].children.append(
+            Sequence(name='not_in_tree'))
+
+        remove_response = self.manager.remove_node(
+            RemoveNodeRequest(node_name=add_response.actual_node_name,
+                              remove_children=True))
+
+        self.assertFalse(get_success(remove_response), get_error_message(remove_response))
+        self.assertEqual(len(self.manager.nodes), 2)
+
     def testMoveNode(self):
         self.sequence_msg.name = 'outer_seq'
         self.assertTrue(get_success(self.manager.add_node(
@@ -1006,6 +1049,177 @@ class TestTreeManager(unittest.TestCase):
         # Fails because of the nodes BehaviorTreeException
         execution_request.command = ControlTreeExecutionRequest.SETUP_AND_SHUTDOWN
         self.assertFalse(get_success(self.manager.control_execution(execution_request)))
+
+    def testControlTickPeriodicallyNoNodes(self):
+        execution_request = ControlTreeExecutionRequest()
+
+        execution_request.command = ControlTreeExecutionRequest.TICK_PERIODICALLY
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+        execution_request.command = ControlTreeExecutionRequest.SHUTDOWN
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+        execution_request.command = ControlTreeExecutionRequest.RESET
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+    def testControlTickPeriodically0Hz(self):
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg))))
+
+        self.manager.tree_msg.tick_frequency_hz = 0
+
+        execution_request = ControlTreeExecutionRequest()
+
+        execution_request.command = ControlTreeExecutionRequest.RESET
+        self.assertFalse(get_success(self.manager.control_execution(execution_request)))
+
+        execution_request.command = ControlTreeExecutionRequest.TICK_PERIODICALLY
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+        time.sleep(0.01)
+
+        execution_request.command = ControlTreeExecutionRequest.RESET
+        self.assertFalse(get_success(self.manager.control_execution(execution_request)))
+
+        execution_request.command = ControlTreeExecutionRequest.SHUTDOWN
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+    def testControlLongRunningTreeNode(self):
+        node = LongRunningNode()
+        self.manager.nodes[node.name] = node
+
+        execution_request = ControlTreeExecutionRequest()
+
+        execution_request.command = ControlTreeExecutionRequest.TICK_PERIODICALLY
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+        time.sleep(0.1)
+
+        execution_request.command = ControlTreeExecutionRequest.STOP
+        self.assertRaises(BehaviorTreeException,
+                          self.manager.control_execution, execution_request)
+
+    def testControlLongRunningTreeNodetickOnce(self):
+        node = LongRunningNode()
+        self.manager.nodes[node.name] = node
+
+        execution_request = ControlTreeExecutionRequest()
+
+        execution_request.command = ControlTreeExecutionRequest.TICK_ONCE
+        self.assertRaises(BehaviorTreeException,
+                          self.manager.control_execution, execution_request)
+
+        time.sleep(0.1)
+
+        execution_request.command = ControlTreeExecutionRequest.STOP
+        self.assertRaises(BehaviorTreeException,
+                          self.manager.control_execution, execution_request)
+
+    def testControlLongRunningTreeNodeDebugging(self):
+        node = LongRunningNode()
+        self.manager.nodes[node.name] = node
+        request = SetExecutionModeRequest(single_step=True,
+                                          collect_performance_data=False, publish_subtrees=False)
+        self.assertEqual(self.manager.set_execution_mode(request), SetExecutionModeResponse())
+
+        execution_request = ControlTreeExecutionRequest()
+        execution_request.command = ControlTreeExecutionRequest.TICK_PERIODICALLY
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+        time.sleep(0.1)
+
+        execution_request.command = ControlTreeExecutionRequest.STOP
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+    def testControlLongRunningTreeNodeDebuggingTickOnce(self):
+        node = LongRunningNode()
+        self.manager.nodes[node.name] = node
+        request = SetExecutionModeRequest(single_step=True,
+                                          collect_performance_data=False, publish_subtrees=False)
+        self.assertEqual(self.manager.set_execution_mode(request), SetExecutionModeResponse())
+
+        execution_request = ControlTreeExecutionRequest()
+        execution_request.command = ControlTreeExecutionRequest.TICK_ONCE
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+        time.sleep(0.1)
+
+        execution_request.command = ControlTreeExecutionRequest.STOP
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+    def testControlTickExceptionNode(self):
+        @define_bt_node(NodeConfig(
+            options={},
+            inputs={},
+            outputs={},
+            max_children=0))
+        class ExceptionNode(Leaf):
+            def _do_setup(self):
+                pass
+
+            def _do_tick(self):
+                raise BehaviorTreeException
+
+            def _do_shutdown(self):
+                pass
+
+            def _do_reset(self):
+                return NodeMsg.IDLE
+
+            def _do_untick(self):
+                return NodeMsg.IDLE
+
+        node = ExceptionNode()
+        self.manager.nodes[node.name] = node
+
+        execution_request = ControlTreeExecutionRequest()
+
+        execution_request.command = ControlTreeExecutionRequest.TICK_PERIODICALLY
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+        time.sleep(0.1)
+
+        execution_request.command = ControlTreeExecutionRequest.STOP
+        self.assertFalse(get_success(self.manager.control_execution(execution_request)))
+
+    def testControlUntickNoNodes(self):
+        self.manager.tree_msg.state = Tree.WAITING_FOR_TICK
+        execution_request = ControlTreeExecutionRequest()
+
+        execution_request.command = ControlTreeExecutionRequest.STOP
+        response = self.manager.control_execution(execution_request)
+        self.assertTrue(get_success(response))
+        self.assertEqual(response.tree_state, Tree.IDLE)
+
+    def testControlStopTopologyError(self):
+        # build a cycle
+        node = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
+        self.manager.nodes[node.name].parent = node.name
+
+        self.manager.tree_msg.state = Tree.WAITING_FOR_TICK
+        execution_request = ControlTreeExecutionRequest()
+
+        execution_request.command = ControlTreeExecutionRequest.STOP
+        response = self.manager.control_execution(execution_request)
+        self.assertFalse(get_success(response))
+
+    def testControlShutdownNotRunningTopologyError(self):
+        # build a cycle
+        node = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
+        self.manager.nodes[node.name].parent = node.name
+
+        execution_request = ControlTreeExecutionRequest()
+
+        execution_request.command = ControlTreeExecutionRequest.SHUTDOWN
+        response = self.manager.control_execution(execution_request)
+        self.assertFalse(get_success(response))
+
+    def testControlTickNoNodes(self):
+        execution_request = ControlTreeExecutionRequest()
+
+        execution_request.command = ControlTreeExecutionRequest.TICK_ONCE
+        response = self.manager.control_execution(execution_request)
+        self.assertTrue(get_success(response))
 
     def testGetAvailableNodes(self):
         request = GetAvailableNodesRequest(node_modules=['ros_bt_py.nodes.passthrough_node'])
