@@ -11,13 +11,16 @@ from ros_bt_py_msgs.srv import (WireNodeDataRequest, AddNodeRequest, RemoveNodeR
                                 SetExecutionModeRequest, SetOptionsRequest, ContinueRequest,
                                 LoadTreeRequest, MoveNodeRequest, ReplaceNodeRequest,
                                 ClearTreeRequest, LoadTreeFromPathRequest,
-                                SetExecutionModeResponse, ModifyBreakpointsRequest)
+                                SetExecutionModeResponse, ModifyBreakpointsRequest,
+                                GetSubtreeRequest)
 
 from ros_bt_py.node import Node, Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig
 from ros_bt_py.nodes.sequence import Sequence
 from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, TreeTopologyError
 from ros_bt_py.tree_manager import TreeManager
+from ros_bt_py.tree_manager import (get_success as tm_get_success,
+                                    get_error_message as tm_get_error_message)
 
 
 class TestTreeManager(unittest.TestCase):
@@ -111,6 +114,58 @@ class TestTreeManager(unittest.TestCase):
     def testNoNodes(self):
         self.manager.tick(once=True)
         self.assertEqual(self.manager.tree_msg.state, Tree.EDITABLE)
+
+    def testGetSuccessErrorMessageDict(self):
+        message = {'success': False,
+                   'error_message': 'error'}
+        self.assertFalse(tm_get_success(message))
+        self.assertEqual(tm_get_error_message(message), 'error')
+
+    def testGetSubtreeService(self):
+        add_request = AddNodeRequest(node=self.sequence_msg,
+                                     allow_rename=True)
+
+        response = self.manager.add_node(add_request)
+
+        self.assertEqual(len(self.manager.nodes), 1)
+        self.assertTrue(get_success(response))
+
+        add_request = AddNodeRequest(node=self.sequence_msg,
+                                     allow_rename=True,
+                                     parent_name=response.actual_node_name)
+        response = self.manager.add_node(add_request)
+
+        self.assertEqual(len(self.manager.nodes), 2)
+        self.assertTrue(get_success(response))
+
+        seq_2_name = response.actual_node_name
+
+        add_request = AddNodeRequest(node=self.succeeder_msg,
+                                     allow_rename=True,
+                                     parent_name=seq_2_name)
+        response = self.manager.add_node(add_request)
+
+        self.assertEqual(len(self.manager.nodes), 3)
+        self.assertTrue(get_success(response))
+
+        add_request = AddNodeRequest(node=self.succeeder_msg,
+                                     allow_rename=True,
+                                     parent_name=seq_2_name)
+        response = self.manager.add_node(add_request)
+
+        self.assertEqual(len(self.manager.nodes), 4)
+        self.assertTrue(get_success(response))
+
+        subtree_request = GetSubtreeRequest(subtree_root_name=seq_2_name)
+        subtree_response = self.manager.get_subtree(subtree_request)
+
+        self.assertTrue(get_success(subtree_response))
+        self.assertEqual(len(subtree_response.subtree.nodes), 3)
+
+        subtree_request = GetSubtreeRequest(subtree_root_name='no_in_tree')
+        subtree_response = self.manager.get_subtree(subtree_request)
+
+        self.assertFalse(get_success(subtree_response))
 
     def testTickExceptionHandling(self):
         @define_bt_node(NodeConfig(
@@ -558,6 +613,13 @@ class TestTreeManager(unittest.TestCase):
                 new_parent_name='asdf',
                 new_child_index=0))))
 
+        # Should fail, since "asdf" is not in the tree
+        self.assertFalse(get_success(self.manager.move_node(
+            MoveNodeRequest(
+                node_name='asdf',
+                new_parent_name='outer_seq',
+                new_child_index=0))))
+
         # Should succeed and put "A" after "B" (-1 means
         # "first from the back")
         self.assertTrue(get_success(self.manager.move_node(
@@ -686,6 +748,16 @@ class TestTreeManager(unittest.TestCase):
                            parent_name='seq'))))
 
         self.assertEqual(len(self.tree_msg.nodes), 3)
+
+        self.assertFalse(get_success(self.manager.replace_node(
+            ReplaceNodeRequest(
+                old_node_name="asdf",
+                new_node_name="A"))))
+
+        self.assertFalse(get_success(self.manager.replace_node(
+            ReplaceNodeRequest(
+                old_node_name="B",
+                new_node_name="asdf"))))
 
         self.assertTrue(get_success(self.manager.replace_node(
             ReplaceNodeRequest(
@@ -951,6 +1023,13 @@ class TestTreeManager(unittest.TestCase):
         node = self.tree_msg.nodes[0]
         # and it only has one option
         self.assertEqual(node.options[0].serialized_value, jsonpickle.encode(int))
+
+        # a node that is not in the tree should fail
+        self.assertFalse(get_success(self.manager.set_options(
+            SetOptionsRequest(node_name='not_in_tree',
+                              rename_node=False,
+                              options=[NodeData(key='passthrough_type',
+                                                serialized_value=jsonpickle.encode(str))]))))
 
         # unparseable values should fail
         self.assertFalse(get_success(self.manager.set_options(
