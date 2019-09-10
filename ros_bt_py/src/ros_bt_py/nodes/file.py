@@ -2,11 +2,7 @@ import yaml
 import rospkg
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
-from ros_bt_py_msgs.msg import UtilityBounds, Tree, NodeDataLocation
-from ros_bt_py_msgs.srv import LoadTreeRequest
 
-from ros_bt_py.exceptions import BehaviorTreeException
-from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig
 
@@ -27,6 +23,7 @@ class File(Leaf):
     """
     def __init__(self, options=None, debug_manager=None, name=None):
         super(File, self).__init__(options, debug_manager, name)
+        self.data = None
 
     def _do_setup(self):
         self.data = self.load_file(self.options['file_path'])
@@ -37,8 +34,7 @@ class File(Leaf):
             self.outputs['line_count'] = len(self.data)
 
             return NodeMsg.SUCCEEDED
-        else:
-            return NodeMsg.FAILED
+        return NodeMsg.FAILED
 
     def _do_untick(self):
         return NodeMsg.IDLE

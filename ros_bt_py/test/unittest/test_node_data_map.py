@@ -54,6 +54,23 @@ class TestNodeDataMap(unittest.TestCase):
 
         self.assertFalse(self.map.is_updated('integer'))
 
+        self.map.set_updated('integer')
+
+        self.assertTrue(self.map.is_updated('integer'))
+
+        self.assertRaises(KeyError, self.map.set_updated, 'does_not_exist')
+
+        self.assertEqual(self.map.get_serialized('integer'), '42')
+        self.assertRaises(KeyError, self.map.get_serialized, 'does_not_exist')
+
+        self.assertEqual(self.map.get_serialized_type('integer'), '{"py/type": "__builtin__.int"}')
+        self.assertRaises(KeyError, self.map.get_serialized_type, 'does_not_exist')
+
+        self.assertEqual(self.map.get_type('integer'), int)
+        self.assertRaises(KeyError, self.map.get_type, 'does_not_exist')
+        self.assertRaises(KeyError, self.map.__getitem__, 'does_not_exist')
+        self.assertRaises(KeyError, self.map.__setitem__, 'does_not_exist', 23)
+
     def testGetCallback(self):
         self.map.add(key='hello', value=NodeData(data_type=str))
 
@@ -69,6 +86,9 @@ class TestNodeDataMap(unittest.TestCase):
 
     def testSubscription(self):
         self.map.add(key='hello', value=NodeData(data_type=str))
+
+        self.map.unsubscribe('hello')
+        self.assertEqual(len(self.map.callbacks['hello']), 0)
 
         self.called = False
 
@@ -111,3 +131,15 @@ class TestNodeDataMap(unittest.TestCase):
         self.assertEqual(len(self.map.callbacks['hello']), 1)
         self.map.unsubscribe('hello')
         self.assertEqual(len(self.map.callbacks['hello']), 0)
+        self.map.unsubscribe('hello', 'unknown_callback')
+        self.assertEqual(len(self.map.callbacks['hello']), 0)
+
+        # (un)subscribing non existing key raises KeyError
+        self.assertRaises(KeyError, self.map.subscribe, 'does_not_exist', None)
+        self.assertRaises(KeyError, self.map.unsubscribe, 'does_not_exist')
+
+    def testNotEqual(self):
+        other_map = NodeDataMap()
+        other_map.add(key='some_key', value=NodeData(data_type=int))
+
+        self.assertNotEqual(self.map, other_map)

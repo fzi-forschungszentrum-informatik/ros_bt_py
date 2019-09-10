@@ -28,7 +28,7 @@ from ros_bt_py_msgs.srv import ModifyBreakpointsResponse
 from ros_bt_py_msgs.msg import Tree
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import DocumentedNode
-from ros_bt_py_msgs.msg import NodeData, NodeOptionWiring
+from ros_bt_py_msgs.msg import NodeData, NodeDataLocation, NodeOptionWiring
 
 from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, TreeTopologyError
 from ros_bt_py.node import Node, load_node_module, increment_name
@@ -428,6 +428,13 @@ class TreeManager(object):
             for public_datum in tree.public_node_data:
                 public_datum.node_name = prefix + public_datum.node_name
 
+        for public_datum in tree.public_node_data:
+            if public_datum.data_kind == NodeDataLocation.OPTION_DATA:
+                response.success = False
+                response.error_message = ('public_node_data: option values cannot be public!')
+
+                return response
+
         # Clear existing tree, then replace it with the message's contents
         self.clear(None)
         # add nodes whose children exist already, until all nodes are there
@@ -477,11 +484,9 @@ class TreeManager(object):
 
         # find and set root name
         root = self.find_root()
-        if not root:
-            rospy.loginfo('No nodes in tree, tick will not do anything')
-            return
         with self._state_lock:
-            self.tree_msg.root_name = root.name
+            if root:
+                self.tree_msg.root_name = root.name
 
         response.success = True
         self.publish_info(self.debug_manager.get_debug_info_msg())
@@ -566,6 +571,7 @@ class TreeManager(object):
                 response.error_message = ('Tried to setup tree while it is running, aborting')
                 response.tree_state = tree_state
                 rospy.logwarn(response.error_message)
+                return response
             else:
                 self.debug_manager.clear_subtrees()
                 try:
@@ -580,10 +586,12 @@ class TreeManager(object):
                     response.success = False
                     response.error_message = str(ex)
                     response.tree_state = self.get_state()
+                    return response
                 except BehaviorTreeException as ex:
                     response.success = False
                     response.error_message = str(ex)
                     response.tree_state = self.get_state()
+                    return response
                 response.tree_state = tree_state
                 # shutdown the tree after the setup and shutdown request
                 request.command = ControlTreeExecutionRequest.SHUTDOWN
@@ -685,7 +693,11 @@ class TreeManager(object):
                 rospy.logwarn(response.error_message)
             else:
                 try:
-                    self.find_root()
+                    # If there are no nodes in the tree, no ticking is needed
+                    if not self.find_root():
+                        response.success = True
+                        return response
+
                     self._once = True
                     self._stop_after_result = False
                     with self._state_lock:
@@ -739,7 +751,11 @@ class TreeManager(object):
                 rospy.logwarn(response.error_message)
             else:
                 try:
-                    self.find_root()
+                    # If there are no nodes in the tree, no ticking is needed
+                    if not self.find_root():
+                        response.success = True
+                        return response
+
                     with self._state_lock:
                         self.tree_msg.state = Tree.TICKING
                     self._once = False

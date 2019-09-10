@@ -103,13 +103,19 @@ class TopicOnlineSubscriber(Leaf):
         return NodeMsg.SUCCEEDED
 
     def _do_shutdown(self):
-        pass
+        with self._lock:
+            if self._subscriber:
+                self._subscriber.unregister()
+                self._subscriber = None
 
     def _do_reset(self):
         # discard the last received message and re-subscribe to the
         # topic, so we receive any latched messages again
         self._msg = None
-        self._subscriber = None
+        with self._lock:
+            if self._subscriber:
+                self._subscriber.unregister()
+                self._subscriber = None
         return NodeMsg.IDLE
 
     def _do_untick(self):
@@ -148,11 +154,6 @@ class TopicPublisher(Leaf):
         return NodeMsg.IDLE
 
     def _do_tick(self):
-        if self.inputs['message'] is None:
-            self.logwarn('Trying to publish to topic %s with no message set' %
-                         self.options['topic_name'])
-            return NodeMsg.FAILED
-
         # Only publish a new message if our input data has been updated - the
         # old one is latched anyway.
         if self.inputs.is_updated('message'):
