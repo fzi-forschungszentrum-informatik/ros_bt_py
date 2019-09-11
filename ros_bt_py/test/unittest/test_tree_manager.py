@@ -14,7 +14,7 @@ from ros_bt_py_msgs.srv import (WireNodeDataRequest, AddNodeRequest, RemoveNodeR
                                 SetExecutionModeResponse, ModifyBreakpointsRequest,
                                 GetSubtreeRequest)
 
-from ros_bt_py.node import Node, Leaf, define_bt_node
+from ros_bt_py.node import Node, Leaf, FlowControl, define_bt_node
 from ros_bt_py.node_config import NodeConfig
 from ros_bt_py.nodes.sequence import Sequence
 from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, TreeTopologyError
@@ -619,6 +619,77 @@ class TestTreeManager(unittest.TestCase):
 
         self.assertFalse(get_success(remove_response), get_error_message(remove_response))
         self.assertEqual(len(self.manager.nodes), 2)
+
+    def testRemoveParentAndChildrenWithIdenticalChildren(self):
+        add_response = self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg))
+
+        child_response = self.manager.add_node(
+            AddNodeRequest(node=self.succeeder_msg,
+                           parent_name=add_response.actual_node_name))
+
+        first_child_name = child_response.actual_node_name
+
+        child_response = self.manager.add_node(
+            AddNodeRequest(node=self.succeeder_msg,
+                           parent_name=add_response.actual_node_name,
+                           allow_rename=True))
+
+        self.assertEqual(len(self.manager.nodes), 3)
+
+        self.manager.nodes[add_response.actual_node_name].children[1].name = first_child_name
+
+        remove_response = self.manager.remove_node(
+            RemoveNodeRequest(node_name=add_response.actual_node_name,
+                              remove_children=True))
+
+        self.assertTrue(get_success(remove_response))
+        self.assertEqual(len(self.manager.nodes), 1)
+
+    def testRemoveParentAndChildrenWithParentThatDoesNotShutdownItsChildren(self):
+        @define_bt_node(NodeConfig(
+            options={},
+            inputs={},
+            outputs={},
+            max_children=None))
+        class FlowControlNode(FlowControl):
+            def _do_setup(self):
+                for child in self.children:
+                    child.setup()
+
+            def _do_tick(self):
+                return NodeMsg.SUCCEEDED
+
+            def _do_shutdown(self):
+                pass
+
+            def _do_reset(self):
+                return NodeMsg.IDLE
+
+            def _do_untick(self):
+                return NodeMsg.IDLE
+
+        parent = FlowControlNode()
+        self.manager.nodes[parent.name] = parent
+
+        child = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
+
+        parent.add_child(child)
+
+        self.assertEqual(self.manager.nodes[parent.name].state, NodeMsg.UNINITIALIZED)
+        self.assertEqual(self.manager.nodes[child.name].state, NodeMsg.UNINITIALIZED)
+
+        self.manager.nodes[parent.name].setup()
+
+        self.assertEqual(self.manager.nodes[parent.name].state, NodeMsg.IDLE)
+        self.assertEqual(self.manager.nodes[child.name].state, NodeMsg.IDLE)
+
+        remove_response = self.manager.remove_node(
+            RemoveNodeRequest(node_name=parent.name,
+                              remove_children=True))
+
+        self.assertTrue(get_success(remove_response))
+        self.assertEqual(len(self.manager.nodes), 0)
 
     def testMoveNode(self):
         self.sequence_msg.name = 'outer_seq'
