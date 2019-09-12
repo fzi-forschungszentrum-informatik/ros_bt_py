@@ -4,7 +4,7 @@ import jsonpickle
 import sys
 import time
 
-from ros_bt_py_msgs.msg import Node as NodeMsg
+from ros_bt_py_msgs.msg import Node as NodeMsg, Message, Package
 from ros_bt_py_msgs.msg import NodeData, NodeDataWiring, NodeDataLocation, Tree
 from ros_bt_py_msgs.srv import (WireNodeDataRequest, AddNodeRequest, RemoveNodeRequest,
                                 ControlTreeExecutionRequest, GetAvailableNodesRequest,
@@ -969,6 +969,25 @@ class TestTreeManager(unittest.TestCase):
         self.assertIsNotNone(seq_msg, 'Failed to find sequence in tree message')
         self.assertEqual(seq_msg.child_names, ['A', 'C'])
 
+    def testReplaceBrokenNode(self):
+        self.succeeder_msg.name = 'A'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.succeeder_msg))))
+
+        self.succeeder_msg.name = 'B'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.succeeder_msg))))
+
+        self.assertEqual(len(self.tree_msg.nodes), 2)
+
+        # Break the node
+        node = self.manager.nodes['A'].children = [self.manager.nodes['B']]
+
+        self.assertFalse(get_success(self.manager.replace_node(
+            ReplaceNodeRequest(
+                old_node_name="A",
+                new_node_name="B"))))
+
     def testTick(self):
         add_request = AddNodeRequest(node=self.node_msg)
         add_request.node.inputs.append(NodeData(key='in',
@@ -1436,6 +1455,118 @@ class TestTreeManager(unittest.TestCase):
             options=[NodeData(key='passthrough_type',
                               serialized_value=jsonpickle.encode(int))]))
         self.assertTrue(get_success(retry_res), get_error_message(retry_res))
+
+        # Renaming should work
+        rename_res = self.manager.set_options(SetOptionsRequest(
+            node_name='child1',
+            rename_node=True,
+            new_name='child_new_name1'))
+        self.assertTrue(get_success(rename_res), get_error_message(rename_res))
+
+        rename_res = self.manager.set_options(SetOptionsRequest(
+            node_name='child2',
+            rename_node=True,
+            new_name='child_new_name2'))
+        self.assertTrue(get_success(rename_res), get_error_message(rename_res))
+
+        rename_res = self.manager.set_options(SetOptionsRequest(
+            node_name='Sequence',
+            rename_node=True,
+            new_name='Sequence_new_name'))
+        self.assertTrue(get_success(rename_res), get_error_message(rename_res))
+
+    def testSetOptionsChangeTypeWithOptionWirings(self):
+        # OptionWirings allow a semnatic relationship between option fields
+        # For example the constant_type and constant_value options of the Constant node
+        # have a wiring where the constant_type is the source and the constant_value the target
+        add_response = self.manager.add_node(AddNodeRequest(node=self.constant_msg))
+
+        self.assertTrue(get_success(add_response))
+
+        node = self.manager.nodes[add_response.actual_node_name]
+
+        self.assertEqual(node.options.get_serialized('constant_value'), jsonpickle.encode(42))
+
+        self.assertEqual(node.options.get_serialized('constant_type'), jsonpickle.encode(int))
+
+        # Changing type and value at the same time should work
+        set_options_response = self.manager.set_options(SetOptionsRequest(
+            node_name=add_response.actual_node_name,
+            options=[NodeData(key='constant_value',
+                              serialized_value=jsonpickle.encode('foo')),
+                     NodeData(key='constant_type',
+                              serialized_value=jsonpickle.encode(str))]))
+
+        self.assertTrue(get_success(set_options_response))
+
+        # The node has been replaced, so we need an updated reference
+        node = self.manager.nodes[add_response.actual_node_name]
+
+        self.assertEqual(node.options.get_serialized('constant_value'), jsonpickle.encode('foo'))
+
+        self.assertEqual(node.options.get_serialized('constant_type'), jsonpickle.encode(str))
+
+        # Changing type and value at the same time should work
+        # str and unicode are considered equal
+        set_options_response = self.manager.set_options(SetOptionsRequest(
+            node_name=add_response.actual_node_name,
+            options=[NodeData(key='constant_value',
+                              serialized_value=jsonpickle.encode('bar')),
+                     NodeData(key='constant_type',
+                              serialized_value=jsonpickle.encode(unicode))]))
+
+        self.assertTrue(get_success(set_options_response))
+
+        # The node has been replaced, so we need an updated reference
+        node = self.manager.nodes[add_response.actual_node_name]
+
+        self.assertEqual(node.options.get_serialized('constant_value'), jsonpickle.encode('bar'))
+
+        self.assertEqual(node.options.get_serialized('constant_type'), jsonpickle.encode(unicode))
+
+        # Changing type and value also works with ROS Messages
+        tree_msg = Tree(name='test')
+        set_options_response = self.manager.set_options(SetOptionsRequest(
+            node_name=add_response.actual_node_name,
+            options=[NodeData(key='constant_value',
+                              serialized_value=jsonpickle.encode(tree_msg)),
+                     NodeData(key='constant_type',
+                              serialized_value=jsonpickle.encode(Tree))]))
+
+        self.assertTrue(get_success(set_options_response))
+
+        # The node has been replaced, so we need an updated reference
+        node = self.manager.nodes[add_response.actual_node_name]
+
+        self.assertEqual(node.options.get_serialized('constant_value'),
+                         jsonpickle.encode(tree_msg))
+
+        self.assertEqual(node.options.get_serialized('constant_type'), jsonpickle.encode(Tree))
+
+    def testSetOptionsBrokenNodes(self):
+        add_response = self.manager.add_node(AddNodeRequest(node=self.constant_msg))
+
+        self.assertTrue(get_success(add_response))
+
+        constant_node = self.manager.nodes[add_response.actual_node_name]
+
+        add_response = self.manager.add_node(AddNodeRequest(node=self.sequence_msg))
+
+        self.assertTrue(get_success(add_response))
+
+        sequence_node = self.manager.nodes[add_response.actual_node_name]
+
+        self.assertIsNone(constant_node.parent)
+        self.assertEqual(len(sequence_node.children), 0)
+
+        # now deliberately break the constant node by claiming to have a parent
+        constant_node.parent = sequence_node
+
+        self.assertFalse(get_success(self.manager.set_options(
+            SetOptionsRequest(node_name='Constant',
+                              rename_node=False,
+                              options=[NodeData(key='constant_value',
+                                                serialized_value=jsonpickle.encode(23))]))))
 
     def testEnforceEditable(self):
         add_request = AddNodeRequest(node=self.node_msg)
