@@ -1320,6 +1320,11 @@ class TestTreeManager(unittest.TestCase):
 
         self.assertIn("PassthroughNode", [node.node_class for node in response.available_nodes])
 
+        request = GetAvailableNodesRequest(node_modules=['ros_bt_py.tests.node_does_not_exist'])
+
+        response = self.manager.get_available_nodes(request)
+        self.assertFalse(get_success(response))
+
     def testSetOptions(self):
         self.assertTrue(get_success(self.manager.add_node(
             AddNodeRequest(node=self.node_msg))))
@@ -1845,6 +1850,12 @@ class TestWiringServices(unittest.TestCase):
         unwire_response = self.manager.wire_data(unwire_request)
         self.assertFalse(get_success(unwire_response))
         self.assertEqual(len(self.manager.tree_msg.data_wirings), 2)
+
+    def testWiringWithoutNodes(self):
+        manager = TreeManager()
+        wire_request = WireNodeDataRequest()
+        wire_response = manager.wire_data(wire_request)
+        self.assertFalse(get_success(wire_response))
 
 
 def get_success(response):
