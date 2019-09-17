@@ -75,12 +75,6 @@ class RandomIntInputs(Leaf):
 def validate_range(minimum, maximum):
     """checks if `minimum` < `maximum` and raises a BehaviorTreeException if not"""
     if minimum == maximum:
-        raise BehaviorTreeException(
-            ('minimum (%d) cannot be equal to maximum (%d)') % (
-                minimum,
-                maximum))
+        raise BehaviorTreeException('minimum ({}) cannot be equal to maximum ({})'.format(minimum, maximum))
     if minimum > maximum:
-        raise BehaviorTreeException(
-            ('minimum (%d) cannot be greater that maximum (%d)') % (
-                minimum,
-                maximum))
+        raise BehaviorTreeException('minimum ({}) cannot be greater that maximum ({})'.format(minimum, maximum))
