@@ -100,6 +100,8 @@ class TopicMemorySubscriber(Leaf):
         return NodeMsg.SUCCEEDED
 
     def _do_shutdown(self):
+        self._msg = None
+        self._last_time = None
         # Unsubscribe from the topic so we don't receive further updates
         self._subscriber.unregister()
 
