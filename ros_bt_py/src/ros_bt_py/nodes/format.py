@@ -42,6 +42,32 @@ class FormatOptionNode(Leaf):
         self.outputs.reset_updated()
         return NodeMsg.IDLE
 
+@define_bt_node(NodeConfig(
+    options={},
+    inputs={'a': str, 'b': str},
+    outputs={'formatted_string': str},
+    max_children=0))
+class StringConcatenation(Leaf):
+    """Concatenate strings a and b
+    """
+    def _do_setup(self):
+        return NodeMsg.IDLE
+
+    def _do_tick(self):
+        self.outputs['formatted_string'] = self.inputs['a'] + self.inputs['b']
+        return NodeMsg.SUCCEEDED
+
+    def _do_untick(self):
+        return NodeMsg.IDLE
+
+    def _do_shutdown(self):
+        pass
+
+    def _do_reset(self):
+        self.outputs['formatted_string'] = None
+        self.outputs.reset_updated()
+        return NodeMsg.IDLE
+
 
 @define_bt_node(NodeConfig(
     options={},

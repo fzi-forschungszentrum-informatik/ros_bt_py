@@ -446,10 +446,10 @@ class Throttle(Decorator):
     outputs={},
     max_children=1))
 class ThrottleSuccess(Decorator):
-    """Wraps a child that stores its success for tick_interval seconds
+    """Wraps a child that is prevented to SUCCEEDED multiple times in tick_interval seconds
 
     A child that SUCCEEDED less than tick_interval seconds will not be ticked.
-    This decorator will return SUCCEEDED until tick_interval seconds elapsed.
+    This decorator will return SUCCEEDED once then FAILED until tick_interval seconds elapsed.
 
     """
     def _do_setup(self):
@@ -462,14 +462,15 @@ class ThrottleSuccess(Decorator):
         if self._last_success_tick is None or (current_time - self._last_success_tick).to_sec() > self.options['tick_interval']:
             for child in self.children:
                 result = child.tick()
-                if result != NodeMsg.RUNNING:
-                    child.reset()
+                if result == NodeMsg.RUNNING:
+                    return result
                 if result == NodeMsg.SUCCEEDED:
                     self._last_success_tick = current_time
-                return result
-        return NodeMsg.SUCCEEDED
+                    return result
+        return NodeMsg.FAILED
 
     def _do_shutdown(self):
+        self._last_success_tick = None
         for child in self.children:
             return child.shutdown()
 

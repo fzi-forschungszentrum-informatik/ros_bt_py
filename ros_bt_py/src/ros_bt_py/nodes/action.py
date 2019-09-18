@@ -53,7 +53,6 @@ class Action(Leaf):
 
         self._ac = SimpleActionClient(self.options['action_name'],
                                       self.options['action_type'])
-
         if not self._ac.wait_for_server(rospy.Duration.from_sec(
                 self.options['wait_for_action_server_seconds'])):
             self._action_available = False
@@ -104,11 +103,11 @@ class Action(Leaf):
             self.outputs['goal_status'] = current_state
             self.outputs['feedback'] = self._feedback
 
-        if self.options['timeout_seconds'] != 0 and self._last_goal_time is not None:
+        if self.options['timeout_seconds'] != 0 and self._active_goal is not None:
             seconds_since_goal_start = (rospy.Time.now() - self._last_goal_time).to_sec()
             if seconds_since_goal_start > self.options['timeout_seconds']:
-                self.logwarn('Stopping timed-out goal after %f seconds!' %
-                             self.options['timeout_seconds'])
+                rospy.logwarn('Stopping timed-out goal after %f seconds!' %
+                              self.options['timeout_seconds'])
                 self.outputs['goal_status'] = GoalStatus.LOST
                 self._ac.cancel_goal()
                 self._ac.stop_tracking_goal()
@@ -164,19 +163,4 @@ class Action(Leaf):
         self._action_available = False
 
     def _do_calculate_utility(self):
-        resolved_topic = rospy.resolve_name(self.options['action_name'] + '/status')
-
-        for topic, topic_type_name in rospy.get_published_topics(rospy.get_namespace()):
-            topic_type = get_message_class(topic_type_name)
-            if (topic == resolved_topic and
-                    topic_type == GoalStatusArray):
-                # if the goal topic exists, we can execute the action, but
-                # don't know much about the bounds, so set them all to
-                # zero
-                return UtilityBounds(
-                    can_execute=True,
-                    has_lower_bound_success=True,
-                    has_upper_bound_success=True,
-                    has_lower_bound_failure=True,
-                    has_upper_bound_failure=True)
         return UtilityBounds()
