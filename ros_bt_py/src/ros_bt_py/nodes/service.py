@@ -97,6 +97,7 @@ class Service(Leaf):
                 self.outputs['response'] = self._service_proxy.get_response()
             if self._service_proxy.get_state() == AsyncServiceProxy.ERROR:
                 # TODO(nberg): Leave old response or set to None?
+                self._service_proxy.stop_call()
                 new_state = NodeMsg.FAILED
 
             self._reported_result = True
@@ -107,7 +108,7 @@ class Service(Leaf):
         return NodeMsg.IDLE
 
     def _do_shutdown(self):
-        self._service_proxy.stop_call()
+        self._service_proxy.shutdown()
 
     def _do_calculate_utility(self):
         resolved_service = rospy.resolve_name(self.options['service_name'])

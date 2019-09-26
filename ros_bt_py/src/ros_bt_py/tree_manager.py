@@ -903,15 +903,6 @@ class TreeManager(object):
         return response
 
     @is_edit_service
-    def insert_node(self, parent_name, previous_child_name, child_node):
-        """Insert `child_node` in between two nodes
-
-        The two nodes are identified by `parent_name` and
-        `previous_child_name`
-        """
-        pass
-
-    @is_edit_service
     def remove_node(self, request):
         """Remove the node identified by `request.node_name` from the tree.
 

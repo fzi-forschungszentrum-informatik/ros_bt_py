@@ -14,9 +14,16 @@ def crash(req):
     return None
 
 
+def crash_if_true(req):
+    if req.data:
+        return
+    return SetBoolResponse(True, '')
+
+
 if __name__ == '__main__':
     rospy.init_node('test_services')
-    srv = rospy.Service('delay_1s_if_true', SetBool, delay_if_true)
-    srv = rospy.Service('crash', SetBool, crash)
+    delay = rospy.Service('delay_1s_if_true', SetBool, delay_if_true)
+    crash = rospy.Service('crash', SetBool, crash)
+    crash_if_true = rospy.Service('crash_if_true', SetBool, crash_if_true)
 
     rospy.spin()
