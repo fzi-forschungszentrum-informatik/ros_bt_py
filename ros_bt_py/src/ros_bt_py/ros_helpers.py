@@ -32,7 +32,7 @@ class AsyncServiceProxy(object):
         self._data['proxy'] = None
 
     def stop_call(self):
-        if self._process is not None and self._data['state'] == self.RUNNING:
+        if self._process is not None:
             # kill -9 the stuck process - not clean, but reliable
             # Fire...
             os.kill(self._process.pid, signal.SIGKILL)
