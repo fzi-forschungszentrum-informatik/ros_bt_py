@@ -94,6 +94,27 @@ class TestAsyncService(unittest.TestCase):
 
         self.assertEqual(crash_proxy.get_state(), AsyncServiceProxy.ERROR)
 
+    def testCrashIfTrueService(self):
+        crash_proxy = AsyncServiceProxy('crash_if_true', SetBool)
+
+        crash_proxy.call_service(SetBoolRequest(data=True))
+        rospy.sleep(0.1)
+
+        self.assertEqual(crash_proxy.get_state(), AsyncServiceProxy.ERROR)
+
+        _call_service_impl(crash_proxy._data)
+
+        self.assertEqual(crash_proxy.get_state(), AsyncServiceProxy.ERROR)
+
+        crash_proxy.call_service(SetBoolRequest(data=False))
+        rospy.sleep(0.1)
+
+        self.assertEqual(crash_proxy.get_state(), AsyncServiceProxy.RESPONSE_READY)
+
+        _call_service_impl(crash_proxy._data)
+
+        self.assertEqual(crash_proxy.get_state(), AsyncServiceProxy.RESPONSE_READY)
+
     def testCallServiceImpl(self):
         self.async_proxy._data['req'] = SetBoolRequest()
         _call_service_impl(self.async_proxy._data)

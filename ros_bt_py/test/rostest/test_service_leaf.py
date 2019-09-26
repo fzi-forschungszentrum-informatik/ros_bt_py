@@ -92,6 +92,37 @@ class TestServiceLeaf(unittest.TestCase):
         crash_service_leaf.tick()
         self.assertEqual(crash_service_leaf.state, NodeMsg.FAILED)
 
+    def testCrashIfTrueServiceCall(self):
+        crash_if_true_service_leaf = Service(options={
+            'service_type': SetBool,
+            'request_type': SetBoolRequest,
+            'response_type': SetBoolResponse,
+            'service_name': 'crash_if_true',
+            'wait_for_service_seconds': 0.5,
+            'wait_for_response_seconds': 1.5
+        })
+        crash_if_true_service_leaf.setup()
+
+        crash_if_true_service_leaf.inputs['request'] = SetBoolRequest(data=True)
+        crash_if_true_service_leaf.tick()
+        self.assertEqual(crash_if_true_service_leaf.state, NodeMsg.RUNNING)
+
+        rospy.sleep(0.5)
+        crash_if_true_service_leaf.tick()
+        self.assertEqual(crash_if_true_service_leaf.state, NodeMsg.FAILED)
+
+        self.assertIsNone(crash_if_true_service_leaf.outputs['response'])
+
+        crash_if_true_service_leaf.inputs['request'] = SetBoolRequest(data=False)
+        crash_if_true_service_leaf.tick()
+        self.assertEqual(crash_if_true_service_leaf.state, NodeMsg.RUNNING)
+
+        rospy.sleep(0.5)
+        crash_if_true_service_leaf.tick()
+        self.assertEqual(crash_if_true_service_leaf.state, NodeMsg.SUCCEEDED)
+
+        self.assertEqual(crash_if_true_service_leaf.outputs['response'], SetBoolResponse(True, ''))
+
     def testReset(self):
         self.delay_service_leaf.inputs['request'] = SetBoolRequest(data=True)
 
