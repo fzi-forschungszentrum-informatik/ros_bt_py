@@ -107,7 +107,7 @@ class Service(Leaf):
         return NodeMsg.IDLE
 
     def _do_shutdown(self):
-        self._service_proxy.stop_call()
+        self._service_proxy.shutdown()
 
     def _do_calculate_utility(self):
         resolved_service = rospy.resolve_name(self.options['service_name'])
