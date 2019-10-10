@@ -189,10 +189,87 @@ class TestTreeManager(unittest.TestCase):
         self.assertTrue(get_success(subtree_response))
         self.assertEqual(len(subtree_response.subtree.nodes), 3)
 
-        subtree_request = GetSubtreeRequest(subtree_root_name='no_in_tree')
+        subtree_request = GetSubtreeRequest(subtree_root_name='not_in_tree')
         subtree_response = self.manager.get_subtree(subtree_request)
 
         self.assertFalse(get_success(subtree_response))
+
+    def testGetSubtreeServiceWirings(self):
+        load_request = LoadTreeRequest(tree=Tree(
+            name='from_file',
+            path='package://ros_bt_py/test/testdata/trees/get_subtree.yaml'))
+        self.assertTrue(get_success(self.manager.load_tree(load_request)))
+
+        wire_request = WireNodeDataRequest()
+        wire_request.wirings.append(NodeDataWiring(
+            source=NodeDataLocation(node_name='PassthroughNode_2',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA),
+            target=NodeDataLocation(node_name='PassthroughNode',
+                                    data_key='in',
+                                    data_kind=NodeDataLocation.INPUT_DATA)))
+        wire_request.wirings.append(NodeDataWiring(
+            source=NodeDataLocation(node_name='PassthroughNode_2',
+                                    data_key='in',
+                                    data_kind=NodeDataLocation.INPUT_DATA),
+            target=NodeDataLocation(node_name='PassthroughNode',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA)))
+        wire_request.wirings.append(NodeDataWiring(
+            source=NodeDataLocation(node_name='PassthroughNode_2',
+                                    data_key='in',
+                                    data_kind=NodeDataLocation.INPUT_DATA),
+            target=NodeDataLocation(node_name='PassthroughNode',
+                                    data_key='in',
+                                    data_kind=NodeDataLocation.INPUT_DATA)))
+        wire_request.wirings.append(NodeDataWiring(
+            source=NodeDataLocation(node_name='PassthroughNode_2',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA),
+            target=NodeDataLocation(node_name='PassthroughNode',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA)))
+
+        wire_request.wirings.append(NodeDataWiring(
+            source=NodeDataLocation(node_name='PassthroughNode',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA),
+            target=NodeDataLocation(node_name='PassthroughNode_2',
+                                    data_key='in',
+                                    data_kind=NodeDataLocation.INPUT_DATA)))
+        wire_request.wirings.append(NodeDataWiring(
+            source=NodeDataLocation(node_name='PassthroughNode',
+                                    data_key='in',
+                                    data_kind=NodeDataLocation.INPUT_DATA),
+            target=NodeDataLocation(node_name='PassthroughNode_2',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA)))
+        wire_request.wirings.append(NodeDataWiring(
+            source=NodeDataLocation(node_name='PassthroughNode',
+                                    data_key='in',
+                                    data_kind=NodeDataLocation.INPUT_DATA),
+            target=NodeDataLocation(node_name='PassthroughNode_2',
+                                    data_key='in',
+                                    data_kind=NodeDataLocation.INPUT_DATA)))
+        wire_request.wirings.append(NodeDataWiring(
+            source=NodeDataLocation(node_name='PassthroughNode',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA),
+            target=NodeDataLocation(node_name='PassthroughNode_2',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA)))
+
+        response = self.manager.wire_data(wire_request)
+        self.assertTrue(get_success(response), get_error_message(response))
+
+        subtree_request = GetSubtreeRequest(subtree_root_name='Sequence')
+        subtree_response = self.manager.get_subtree(subtree_request)
+
+        self.assertTrue(get_success(subtree_response))
+        self.assertEqual(len(subtree_response.subtree.nodes), 4)
+
+        response = self.manager.unwire_data(wire_request)
+        self.assertTrue(get_success(response), get_error_message(response))
 
     def testTickExceptionHandling(self):
         @define_bt_node(NodeConfig(
