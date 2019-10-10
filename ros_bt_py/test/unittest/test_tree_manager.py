@@ -1602,7 +1602,7 @@ class TestTreeManager(unittest.TestCase):
         self.assertTrue(get_success(rename_res), get_error_message(rename_res))
 
     def testSetOptionsChangeTypeWithOptionWirings(self):
-        # OptionWirings allow a semnatic relationship between option fields
+        # OptionWirings allow a semantic relationship between option fields
         # For example the constant_type and constant_value options of the Constant node
         # have a wiring where the constant_type is the source and the constant_value the target
         add_response = self.manager.add_node(AddNodeRequest(node=self.constant_msg))
@@ -1668,6 +1668,34 @@ class TestTreeManager(unittest.TestCase):
                          jsonpickle.encode(tree_msg))
 
         self.assertEqual(node.options.get_serialized('constant_type'), jsonpickle.encode(Tree))
+
+    def testSetOptionsChangeTypeWithOptionWiringsBroken(self):
+        add_response = self.manager.add_node(AddNodeRequest(node=self.constant_msg))
+
+        self.assertTrue(get_success(add_response))
+
+        node = self.manager.nodes[add_response.actual_node_name]
+
+        # intentionally break wiring
+        self.manager.tree_msg.data_wirings.append(
+            NodeDataWiring(
+                source=NodeDataLocation(
+                    node_name='Constant'
+                ),
+                target=NodeDataLocation(
+                    node_name='missing'
+                )
+            ))
+
+        # with broken wirings changing options should not work
+        set_options_response = self.manager.set_options(SetOptionsRequest(
+            node_name=add_response.actual_node_name,
+            options=[NodeData(key='constant_value',
+                              serialized_value=jsonpickle.encode('foo')),
+                     NodeData(key='constant_type',
+                              serialized_value=jsonpickle.encode(str))]))
+
+        self.assertFalse(get_success(set_options_response))
 
     def testSetOptionsBrokenNodes(self):
         add_response = self.manager.add_node(AddNodeRequest(node=self.constant_msg))
