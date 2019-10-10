@@ -271,6 +271,43 @@ class TestTreeManager(unittest.TestCase):
         response = self.manager.unwire_data(wire_request)
         self.assertTrue(get_success(response), get_error_message(response))
 
+    def testGetSubtreeServiceSubscriptions(self):
+        add_request = AddNodeRequest(node=self.sequence_msg,
+                                     allow_rename=True)
+
+        response = self.manager.add_node(add_request)
+
+        self.assertEqual(len(self.manager.nodes), 1)
+        self.assertTrue(get_success(response))
+
+        node = self.manager.nodes[response.actual_node_name]
+
+        node.subscriptions.append(NodeDataWiring(
+            source=NodeDataLocation(node_name=node.name,
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA),
+            target=NodeDataLocation(node_name='also_missing',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA)))
+
+        subtree_request = GetSubtreeRequest(subtree_root_name=response.actual_node_name)
+        subtree_response = self.manager.get_subtree(subtree_request)
+
+        self.assertTrue(get_success(subtree_response))
+
+        node.subscriptions.append(NodeDataWiring(
+            source=NodeDataLocation(node_name='missing',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA),
+            target=NodeDataLocation(node_name='also_missing',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA)))
+
+        subtree_request = GetSubtreeRequest(subtree_root_name=response.actual_node_name)
+        subtree_response = self.manager.get_subtree(subtree_request)
+
+        self.assertFalse(get_success(subtree_response))
+
     def testTickExceptionHandling(self):
         @define_bt_node(NodeConfig(
             options={},
