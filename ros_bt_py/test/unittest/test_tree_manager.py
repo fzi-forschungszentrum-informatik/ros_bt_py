@@ -10,7 +10,7 @@ from ros_bt_py_msgs.srv import (WireNodeDataRequest, AddNodeRequest, RemoveNodeR
                                 ControlTreeExecutionRequest, GetAvailableNodesRequest,
                                 SetExecutionModeRequest, SetOptionsRequest, ContinueRequest,
                                 LoadTreeRequest, MoveNodeRequest, ReplaceNodeRequest,
-                                ClearTreeRequest, LoadTreeFromPathRequest,
+                                MorphNodeRequest, ClearTreeRequest, LoadTreeFromPathRequest,
                                 SetExecutionModeResponse, ModifyBreakpointsRequest,
                                 GetSubtreeRequest)
 
@@ -78,6 +78,10 @@ class TestTreeManager(unittest.TestCase):
         self.sequence_msg = NodeMsg(
             module='ros_bt_py.nodes.sequence',
             node_class='Sequence')
+
+        self.memory_sequence_msg = NodeMsg(
+            module='ros_bt_py.nodes.sequence',
+            node_class='MemorySequence')
 
         self.succeeder_msg = NodeMsg(
             module='ros_bt_py.nodes.mock_nodes',
@@ -845,6 +849,123 @@ class TestTreeManager(unittest.TestCase):
                 new_parent_name='seq_2',
                 new_child_index=0
             ))))
+
+    def testMorphNode(self):
+        self.sequence_msg.name = 'seq'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg))))
+
+        self.succeeder_msg.name = 'A'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.succeeder_msg,
+                           parent_name='seq'))))
+
+        self.succeeder_msg.name = 'B'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.succeeder_msg,
+                           parent_name='seq'))))
+
+        self.assertEqual(len(self.tree_msg.nodes), 3)
+
+        self.assertFalse(get_success(self.manager.morph_node(
+            MorphNodeRequest(node_name='node_not_in_tree',
+                             new_node=self.memory_sequence_msg)
+        )))
+
+        self.assertTrue(get_success(self.manager.morph_node(
+            MorphNodeRequest(node_name='seq',
+                             new_node=self.memory_sequence_msg)
+        )))
+
+    def testMorphNodeWithParent(self):
+        self.sequence_msg.name = 'outer_seq'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg))))
+
+        self.sequence_msg.name = "inner_seq"
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg,
+                           parent_name='outer_seq'))))
+
+        self.assertTrue(get_success(self.manager.morph_node(
+            MorphNodeRequest(node_name='inner_seq',
+                             new_node=self.memory_sequence_msg)
+        )))
+
+    def testMorphNodeWithBrokenParent(self):
+        self.sequence_msg.name = 'outer_seq'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg))))
+
+        self.sequence_msg.name = "inner_seq"
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg,
+                           parent_name='outer_seq'))))
+
+        # break parent node
+        self.manager.nodes['outer_seq'].node_config.max_children = 0
+
+        self.assertFalse(get_success(self.manager.morph_node(
+            MorphNodeRequest(node_name='inner_seq',
+                             new_node=self.memory_sequence_msg)
+        )))
+
+        self.manager.nodes['outer_seq'].node_config.max_children = None
+        self.manager.nodes['outer_seq'].children = []
+
+        self.assertFalse(get_success(self.manager.morph_node(
+            MorphNodeRequest(node_name='inner_seq',
+                             new_node=self.memory_sequence_msg)
+        )))
+
+    def testMorphNodeWithAnotherBrokenParent(self):
+        self.sequence_msg.name = 'outer_seq'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg))))
+
+        self.sequence_msg.name = "inner_seq"
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg,
+                           parent_name='outer_seq'))))
+
+        # break parent node
+        self.manager.nodes['outer_seq'].children = []
+
+        self.assertFalse(get_success(self.manager.morph_node(
+            MorphNodeRequest(node_name='inner_seq',
+                             new_node=self.memory_sequence_msg)
+        )))
+
+    def testMorphNodeBrokenMessage(self):
+        self.sequence_msg.name = 'seq'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg))))
+
+        msg = NodeMsg(
+            module="ros_bt_py.nodes.passthrough_node",
+            node_class="PassthroughNode",
+            options=[NodeData(key='passthrough_type',
+                              serialized_value='definitely_not_a_type')])
+
+        self.assertFalse(get_success(self.manager.morph_node(
+            MorphNodeRequest(node_name='seq',
+                             new_node=msg)
+        )))
+
+        # intentionally break wiring
+        self.manager.tree_msg.data_wirings.append(
+            NodeDataWiring(
+                source=NodeDataLocation(
+                    node_name='seq'
+                ),
+                target=NodeDataLocation(
+                    node_name='missing'
+                )
+            ))
+        self.assertFalse(get_success(self.manager.morph_node(
+            MorphNodeRequest(node_name='seq',
+                             new_node=self.memory_sequence_msg)
+        )))
 
     def testReplaceNode(self):
         self.sequence_msg.name = 'seq'
