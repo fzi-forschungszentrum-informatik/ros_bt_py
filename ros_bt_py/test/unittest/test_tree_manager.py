@@ -2099,7 +2099,7 @@ class TestWiringServices(unittest.TestCase):
                 source=NodeDataLocation(node_name=self.node_2_name,
                                         data_key='fake',
                                         data_kind=NodeDataLocation.OUTPUT_DATA),
-                target=NodeDataLocation(node_name=self.node_3_name,
+                target=NodeDataLocation(node_name='missing',
                                         data_key='invalid',
                                         data_kind=NodeDataLocation.INPUT_DATA)))
 
@@ -2108,7 +2108,23 @@ class TestWiringServices(unittest.TestCase):
         self.assertEqual(len(self.manager.tree_msg.data_wirings), 2)
 
         # Number of wirings should stay the same, since the unwire operation failed
-        unwire_response = self.manager.wire_data(unwire_request)
+        unwire_response = self.manager.unwire_data(unwire_request)
+        self.assertFalse(get_success(unwire_response))
+        self.assertEqual(len(self.manager.tree_msg.data_wirings), 2)
+
+        unwire_request = WireNodeDataRequest()
+        unwire_request.wirings.append(self.wiring(self.node_1_name, self.node_2_name))
+        unwire_request.wirings.append(
+            NodeDataWiring(
+                source=NodeDataLocation(node_name='missing',
+                                        data_key='fake',
+                                        data_kind=NodeDataLocation.OUTPUT_DATA),
+                target=NodeDataLocation(node_name=self.node_2_name,
+                                        data_key='invalid',
+                                        data_kind=NodeDataLocation.INPUT_DATA)))
+
+        # Number of wirings should stay the same, since the unwire operation failed
+        unwire_response = self.manager.unwire_data(unwire_request)
         self.assertFalse(get_success(unwire_response))
         self.assertEqual(len(self.manager.tree_msg.data_wirings), 2)
 
