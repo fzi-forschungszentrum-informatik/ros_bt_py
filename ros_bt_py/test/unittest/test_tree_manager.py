@@ -1470,6 +1470,41 @@ class TestTreeManager(unittest.TestCase):
         execution_request.command = ControlTreeExecutionRequest.STOP
         self.assertFalse(get_success(self.manager.control_execution(execution_request)))
 
+    def testControlUntickExceptionNode(self):
+        @define_bt_node(NodeConfig(
+            options={},
+            inputs={},
+            outputs={},
+            max_children=0))
+        class ExceptionNode(Leaf):
+            def _do_setup(self):
+                pass
+
+            def _do_tick(self):
+                return NodeMsg.SUCCEEDED
+
+            def _do_shutdown(self):
+                pass
+
+            def _do_reset(self):
+                return NodeMsg.IDLE
+
+            def _do_untick(self):
+                raise BehaviorTreeException
+
+        node = ExceptionNode()
+        self.manager.nodes[node.name] = node
+
+        execution_request = ControlTreeExecutionRequest()
+
+        execution_request.command = ControlTreeExecutionRequest.TICK_PERIODICALLY
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+        time.sleep(0.1)
+
+        execution_request.command = ControlTreeExecutionRequest.STOP
+        self.assertFalse(get_success(self.manager.control_execution(execution_request)))
+
     def testControlUntickNoNodes(self):
         self.manager.tree_msg.state = Tree.WAITING_FOR_TICK
         execution_request = ControlTreeExecutionRequest()
