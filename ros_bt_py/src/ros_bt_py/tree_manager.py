@@ -1674,9 +1674,7 @@ class TreeManager(object):
             for (class_name, node_class) in nodes.iteritems():
                 max_children = node_class._node_config.max_children
                 max_children = -1 if max_children is None else max_children
-                doc = inspect.getdoc(node_class)
-                if doc is None:
-                    doc = ""
+                doc = inspect.getdoc(node_class) or ''
                 response.available_nodes.append(DocumentedNode(
                     module=module,
                     node_class=class_name,
