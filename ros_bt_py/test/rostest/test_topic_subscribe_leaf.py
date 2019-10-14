@@ -121,20 +121,9 @@ class TestTopicSubscriberLeaf(unittest.TestCase):
 
         # Should receive a message at time t=0 and tick 1 second later
         mock_time_now.return_value = rospy.Time.from_seconds(0.)
-        self.publisher.publish(data=8)
+        memory_subscriber_leaf._callback(Int32(8))
         mock_time_now.return_value = rospy.Time.from_seconds(1.)
         memory_subscriber_leaf.tick()
-
-        sleeps = 0
-        while True:
-            memory_subscriber_leaf.tick()
-            self.assertNotEqual(self.subscriber_leaf.state, NodeMsg.RUNNING)
-            if self.subscriber_leaf.state == NodeMsg.SUCCEEDED:
-                break
-            rospy.sleep(0.1)
-            sleeps += 1
-            # If we don't get a response for half a second, something has gone wrong
-            self.assertLess(sleeps, 5)
 
         self.assertEqual(memory_subscriber_leaf.state, NodeMsg.SUCCEEDED)
         self.assertEqual(memory_subscriber_leaf.outputs['message'].data, 8)
@@ -144,8 +133,14 @@ class TestTopicSubscriberLeaf(unittest.TestCase):
         self.assertEqual(memory_subscriber_leaf.state, NodeMsg.SUCCEEDED)
         self.assertEqual(memory_subscriber_leaf.outputs['message'].data, 8)
 
+        # Should succeed again with a new message
+        memory_subscriber_leaf._callback(Int32(3))
+        memory_subscriber_leaf.tick()
+        self.assertEqual(memory_subscriber_leaf.state, NodeMsg.SUCCEEDED)
+        self.assertEqual(memory_subscriber_leaf.outputs['message'].data, 3)
+
         # Should fail if the message is too old
-        mock_time_now.return_value = rospy.Time.from_seconds(101.)
+        mock_time_now.return_value = rospy.Time.from_seconds(105.)
         memory_subscriber_leaf.tick()
         self.assertEqual(memory_subscriber_leaf.state, NodeMsg.FAILED)
 
@@ -161,12 +156,12 @@ class TestTopicSubscriberLeaf(unittest.TestCase):
         memory_subscriber_leaf.setup()
         self.assertEqual(memory_subscriber_leaf.state, NodeMsg.IDLE)
 
-        self.assertEqual(memory_subscriber_leaf.tick(), NodeMsg.RUNNING)
+        self.assertEqual(memory_subscriber_leaf.tick(), NodeMsg.FAILED)
         self.assertEqual(memory_subscriber_leaf.shutdown(), NodeMsg.SHUTDOWN)
 
         memory_subscriber_leaf.setup()
         self.assertEqual(memory_subscriber_leaf.state, NodeMsg.IDLE)
-        self.assertEqual(memory_subscriber_leaf.tick(), NodeMsg.RUNNING)
+        self.assertEqual(memory_subscriber_leaf.tick(), NodeMsg.FAILED)
         self.assertEqual(memory_subscriber_leaf.reset(), NodeMsg.IDLE)
         self.assertEqual(memory_subscriber_leaf.shutdown(), NodeMsg.SHUTDOWN)
 
