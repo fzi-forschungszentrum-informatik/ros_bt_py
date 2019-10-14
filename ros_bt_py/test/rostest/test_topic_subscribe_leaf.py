@@ -1,5 +1,6 @@
 #!/usr/bin/env python2.7
 import unittest
+import mock
 
 import rospy
 
@@ -7,7 +8,7 @@ from std_msgs.msg import Int32
 from ros_bt_py_msgs.msg import Node as NodeMsg, UtilityBounds
 
 from ros_bt_py.node_config import NodeConfig
-from ros_bt_py.nodes.topic import TopicSubscriber, TopicOnlineSubscriber
+from ros_bt_py.nodes.topic import TopicSubscriber, TopicMemorySubscriber
 
 PKG = 'ros_bt_py'
 
@@ -97,82 +98,99 @@ class TestTopicSubscriberLeaf(unittest.TestCase):
         self.subscriber_leaf.options['topic_name'] = '/topic/does/not/exist'
         self.assertEqual(self.subscriber_leaf.calculate_utility(), expected_bounds)
 
-    def testOnlineSubscriber(self):
-        online_subscriber_leaf = TopicOnlineSubscriber(options={
+    @mock.patch('ros_bt_py.nodes.topic.rospy.Time.now')
+    def testMemorySubscriber(self, mock_time_now):
+        memory_subscriber_leaf = TopicMemorySubscriber(options={
             'topic_name': '/numbers_out',
-            'topic_type': Int32
+            'topic_type': Int32,
+            'memory_delay': 100.
         })
-        online_subscriber_leaf.setup()
-        self.assertEqual(online_subscriber_leaf.state, NodeMsg.IDLE)
-        self.assertIsNone(online_subscriber_leaf.outputs['message'])
-        self.assertIsNone(online_subscriber_leaf._subscriber)
+        memory_subscriber_leaf.setup()
 
-        online_subscriber_leaf.tick()
+        self.assertEqual(memory_subscriber_leaf.state, NodeMsg.IDLE)
+        self.assertIsNone(memory_subscriber_leaf.outputs['message'])
+        self.assertIsNotNone(memory_subscriber_leaf._subscriber)
+
+        memory_subscriber_leaf.tick()
         # Should not have received any messages yet
-        self.assertEqual(online_subscriber_leaf.state, NodeMsg.RUNNING)
-        # subscriber should not be None anymore
-        self.assertIsNotNone(online_subscriber_leaf._subscriber)
+        self.assertEqual(memory_subscriber_leaf.state, NodeMsg.FAILED)
 
+        # Should receive a message at time t=0 and tick 1 second later
+        mock_time_now.return_value = rospy.Time.from_seconds(0.)
         self.publisher.publish(data=8)
+        mock_time_now.return_value = rospy.Time.from_seconds(1.)
+        memory_subscriber_leaf.tick()
 
         sleeps = 0
         while True:
-            online_subscriber_leaf.tick()
-            self.assertNotEqual(online_subscriber_leaf.state, NodeMsg.FAILED)
-            if online_subscriber_leaf.state == NodeMsg.SUCCEEDED:
+            memory_subscriber_leaf.tick()
+            self.assertNotEqual(self.subscriber_leaf.state, NodeMsg.RUNNING)
+            if self.subscriber_leaf.state == NodeMsg.SUCCEEDED:
                 break
             rospy.sleep(0.1)
             sleeps += 1
             # If we don't get a response for half a second, something has gone wrong
             self.assertLess(sleeps, 5)
 
-        self.assertEqual(online_subscriber_leaf.state, NodeMsg.SUCCEEDED)
-        self.assertEqual(online_subscriber_leaf.outputs['message'].data, 8)
-        self.assertIsNone(online_subscriber_leaf._subscriber)
+        self.assertEqual(memory_subscriber_leaf.state, NodeMsg.SUCCEEDED)
+        self.assertEqual(memory_subscriber_leaf.outputs['message'].data, 8)
 
-        self.assertEqual(online_subscriber_leaf.untick(), NodeMsg.IDLE)
+        # Should succeed again with the same message
+        memory_subscriber_leaf.tick()
+        self.assertEqual(memory_subscriber_leaf.state, NodeMsg.SUCCEEDED)
+        self.assertEqual(memory_subscriber_leaf.outputs['message'].data, 8)
 
-        online_subscriber_leaf.reset()
-        self.assertEqual(online_subscriber_leaf.state, NodeMsg.IDLE)
-        self.assertEqual(online_subscriber_leaf.outputs['message'], None)
+        # Should fail if the message is too old
+        mock_time_now.return_value = rospy.Time.from_seconds(101.)
+        memory_subscriber_leaf.tick()
+        self.assertEqual(memory_subscriber_leaf.state, NodeMsg.FAILED)
 
-        self.assertEqual(online_subscriber_leaf.shutdown(), NodeMsg.SHUTDOWN)
+        self.assertEqual(memory_subscriber_leaf.untick(), NodeMsg.IDLE)
 
-        online_subscriber_leaf.setup()
-        self.assertEqual(online_subscriber_leaf.state, NodeMsg.IDLE)
+        # Standard behavior
+        memory_subscriber_leaf.reset()
+        self.assertEqual(memory_subscriber_leaf.state, NodeMsg.IDLE)
+        self.assertEqual(memory_subscriber_leaf.outputs['message'], None)
 
-        self.assertEqual(online_subscriber_leaf.tick(), NodeMsg.RUNNING)
-        self.assertEqual(online_subscriber_leaf.shutdown(), NodeMsg.SHUTDOWN)
+        self.assertEqual(memory_subscriber_leaf.shutdown(), NodeMsg.SHUTDOWN)
 
-        online_subscriber_leaf.setup()
-        self.assertEqual(online_subscriber_leaf.state, NodeMsg.IDLE)
-        self.assertEqual(online_subscriber_leaf.tick(), NodeMsg.RUNNING)
-        self.assertEqual(online_subscriber_leaf.reset(), NodeMsg.IDLE)
-        self.assertEqual(online_subscriber_leaf.shutdown(), NodeMsg.SHUTDOWN)
+        memory_subscriber_leaf.setup()
+        self.assertEqual(memory_subscriber_leaf.state, NodeMsg.IDLE)
 
-    def testCalculateUtilityOnlineSubscriber(self):
-        online_subscriber_leaf = TopicOnlineSubscriber(options={
+        self.assertEqual(memory_subscriber_leaf.tick(), NodeMsg.RUNNING)
+        self.assertEqual(memory_subscriber_leaf.shutdown(), NodeMsg.SHUTDOWN)
+
+        memory_subscriber_leaf.setup()
+        self.assertEqual(memory_subscriber_leaf.state, NodeMsg.IDLE)
+        self.assertEqual(memory_subscriber_leaf.tick(), NodeMsg.RUNNING)
+        self.assertEqual(memory_subscriber_leaf.reset(), NodeMsg.IDLE)
+        self.assertEqual(memory_subscriber_leaf.shutdown(), NodeMsg.SHUTDOWN)
+
+    def testCalculateUtilityMemorySubscriber(self):
+        memory_subscriber_leaf = TopicMemorySubscriber(options={
             'topic_name': '/numbers_out',
-            'topic_type': Int32
+            'topic_type': Int32,
+            'memory_delay': 100.
         })
         expected_bounds = UtilityBounds(can_execute=True,
                                         has_lower_bound_success=True,
                                         has_upper_bound_success=True,
                                         has_lower_bound_failure=True,
                                         has_upper_bound_failure=True)
-        self.assertEqual(online_subscriber_leaf.calculate_utility(), expected_bounds)
+        self.assertEqual(memory_subscriber_leaf.calculate_utility(), expected_bounds)
 
-    def testCalculateUtilityWithoutCorrectTopicOnlineSubscriber(self):
-        online_subscriber_leaf = TopicOnlineSubscriber(options={
+    def testCalculateUtilityWithoutCorrectTopicMemorySubscriber(self):
+        memory_subscriber_leaf = TopicMemorySubscriber(options={
             'topic_name': '/topic/does/not/exist',
-            'topic_type': Int32
+            'topic_type': Int32,
+            'memory_delay': 100.
         })
         expected_bounds = UtilityBounds(can_execute=False,
                                         has_lower_bound_success=False,
                                         has_upper_bound_success=False,
                                         has_lower_bound_failure=False,
                                         has_upper_bound_failure=False)
-        self.assertEqual(online_subscriber_leaf.calculate_utility(), expected_bounds)
+        self.assertEqual(memory_subscriber_leaf.calculate_utility(), expected_bounds)
 
 if __name__ == '__main__':
     rospy.init_node('test_topic_subscribe_leaf')

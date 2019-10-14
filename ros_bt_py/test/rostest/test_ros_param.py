@@ -8,14 +8,14 @@ from std_msgs.msg import Int32
 from ros_bt_py_msgs.msg import Node as NodeMsg, UtilityBounds
 
 from ros_bt_py.node_config import NodeConfig
-from ros_bt_py.nodes.ros_param import RosParamInput
+from ros_bt_py.nodes.ros_param import RosParamOption
 
 PKG = 'ros_bt_py'
 
 
-class TestRosParamInput(unittest.TestCase):
+class TestRosParamOption(unittest.TestCase):
     def testExistingParam(self):
-        ros_param = RosParamInput(options={
+        ros_param = RosParamOption(options={
             'param_name': '/param_int',
             'param_type': int,
         })
@@ -40,7 +40,7 @@ class TestRosParamInput(unittest.TestCase):
         self.assertEqual(ros_param.shutdown(), NodeMsg.SHUTDOWN)
 
     def testMissingParam(self):
-        ros_param = RosParamInput(options={
+        ros_param = RosParamOption(options={
             'param_name': '/param_missing',
             'param_type': int,
         })
@@ -61,7 +61,7 @@ class TestRosParamInput(unittest.TestCase):
         self.assertEqual(ros_param.calculate_utility(), expected_bounds)
 
     def testWrongParamType(self):
-        ros_param = RosParamInput(options={
+        ros_param = RosParamOption(options={
             'param_name': '/param_int',
             'param_type': str,
         })
@@ -79,5 +79,5 @@ if __name__ == '__main__':
     import sys
     import os
     os.environ['COVERAGE_FILE'] = '%s.%s.coverage' % (PKG, 'test_ros_param')
-    rostest.rosrun(PKG, 'test_ros_param', TestRosParamInput,
+    rostest.rosrun(PKG, 'test_ros_param', TestRosParamOption,
                    sysargs=sys.argv + ['--cov'])
