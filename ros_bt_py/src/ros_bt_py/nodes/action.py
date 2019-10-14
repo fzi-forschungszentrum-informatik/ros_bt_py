@@ -103,7 +103,7 @@ class Action(Leaf):
             self.outputs['goal_status'] = current_state
             self.outputs['feedback'] = self._feedback
 
-        if self.options['timeout_seconds'] != 0 and self._active_goal is not None:
+        if self.options['timeout_seconds'] != 0 and self._last_goal_time is not None:
             seconds_since_goal_start = (rospy.Time.now() - self._last_goal_time).to_sec()
             if seconds_since_goal_start > self.options['timeout_seconds']:
                 self.logwarn('Stopping timed-out goal after %f seconds!' %
