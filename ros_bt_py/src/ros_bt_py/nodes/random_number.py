@@ -53,6 +53,7 @@ class RandomIntInputs(Leaf):
     """
     def _do_setup(self):
         pass
+
     def _do_tick(self):
         validate_range(self.inputs['min'], self.inputs['max'])
         self.outputs['random_number'] = random.randrange(self.inputs['min'], self.inputs['max'])
@@ -76,6 +77,8 @@ class RandomIntInputs(Leaf):
 def validate_range(minimum, maximum):
     """checks if `minimum` < `maximum` and raises a BehaviorTreeException if not"""
     if minimum == maximum:
-        raise BehaviorTreeException('minimum ({}) cannot be equal to maximum ({})'.format(minimum, maximum))
+        raise BehaviorTreeException(
+            'minimum ({}) cannot be equal to maximum ({})'.format(minimum, maximum))
     if minimum > maximum:
-        raise BehaviorTreeException('minimum ({}) cannot be greater that maximum ({})'.format(minimum, maximum))
+        raise BehaviorTreeException(
+            'minimum ({}) cannot be greater that maximum ({})'.format(minimum, maximum))

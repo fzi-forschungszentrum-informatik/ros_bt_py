@@ -158,8 +158,8 @@ class FormatOptionListNode(Leaf):
     outputs={'formatted_strings': list},
     max_children=0))
 class FormatInputListNode(Leaf):
-    """Accepts a dictionary and a list of format strings as input and outputs a list of formatted strings
-    based on the format string
+    """Accepts a dictionary and a list of format strings as input and
+    outputs a list of formatted strings based on the format string
 
     Example dict and format_string:
     dict: {'first': 'bar', 'second': 'not_printed'}

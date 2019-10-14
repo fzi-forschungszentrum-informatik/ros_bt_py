@@ -38,6 +38,7 @@ class RosParamInput(Leaf):
     def _do_calculate_utility(self):
         return UtilityBounds()
 
+
 @define_bt_node(NodeConfig(
     options={'param_name': str, 'param_type': type},
     inputs={'default_value': OptionRef('param_type')},

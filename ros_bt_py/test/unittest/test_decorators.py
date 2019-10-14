@@ -13,6 +13,7 @@ from ros_bt_py.nodes.decorators import Inverter, Repeat, RepeatAlways, RepeatUnt
 from ros_bt_py.nodes.decorators import Throttle, ThrottleSuccess
 from rospy import Time
 
+
 class TestDecorators(unittest.TestCase):
     def setUp(self):
         self.succeeder = MockLeaf(name='succeeder',

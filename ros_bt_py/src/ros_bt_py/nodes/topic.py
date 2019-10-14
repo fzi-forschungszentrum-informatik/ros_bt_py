@@ -83,7 +83,8 @@ class TopicSubscriber(Leaf):
 class TopicMemorySubscriber(Leaf):
     """Subscribe to the specified topic and returns FAILED if no message was recently received.
 
-    This node  will return FAILED if no message has been received since the last memory_delay seconds.
+    This node will return FAILED if no message has been received since
+    the last memory_delay seconds.
     When a message is received, it outputs the message and returns SUCCEEDED.
     The message is not cleared for the next runs.
 
@@ -105,7 +106,8 @@ class TopicMemorySubscriber(Leaf):
 
     def _do_tick(self):
         with self._lock:
-            if self._msg is None or (rospy.Time.now() - self._last_time).to_sec() > self.options['memory_delay']:
+            if (self._msg is None or
+                    (rospy.Time.now() - self._last_time).to_sec() > self.options['memory_delay']):
                 return NodeMsg.FAILED
             self.outputs['message'] = self._msg
         return NodeMsg.SUCCEEDED
