@@ -18,10 +18,9 @@ PKG = 'ros_bt_py'
 
 
 class TestTopicSubscriberLeaf(unittest.TestCase):
-    """This expects a test_topics_node.py instance running alongside
-
-    That node will "reflect" anything we publish to /numbers_in - it's a
-    separate node to avoid threading shenanigans in here.
+    """
+    Test the topic subscriber nodes.
+    We call the callbacks directly instead of playing with ros asynchronous communication.
     """
     def setUp(self):
         self.subscriber_leaf = TopicSubscriber(options={
@@ -29,7 +28,6 @@ class TestTopicSubscriberLeaf(unittest.TestCase):
             'topic_type': Int32
         })
         self.subscriber_leaf.setup()
-        self.publisher = rospy.Publisher('/numbers_in', Int32, latch=True, queue_size=1)
         rospy.wait_for_message('/ready', Int32)
 
     def tearDown(self):
@@ -41,20 +39,12 @@ class TestTopicSubscriberLeaf(unittest.TestCase):
         self.subscriber_leaf.tick()
         # Should not have received any messages yet
         self.assertEqual(self.subscriber_leaf.state, NodeMsg.RUNNING)
+        self.assertIsNotNone(self.subscriber_leaf._subscriber)
+        self.assertEqual(self.subscriber_leaf._subscriber.callback,
+                         self.subscriber_leaf._callback)
 
-        self.publisher.publish(data=8)
-
-        sleeps = 0
-        while True:
-            self.subscriber_leaf.tick()
-            self.assertNotEqual(self.subscriber_leaf.state, NodeMsg.FAILED)
-            if self.subscriber_leaf.state == NodeMsg.SUCCEEDED:
-                break
-            rospy.sleep(0.1)
-            sleeps += 1
-            # If we don't get a response for half a second, something has gone wrong
-            self.assertLess(sleeps, 5)
-
+        self.subscriber_leaf._callback(Int32(8))
+        self.subscriber_leaf.tick()
         self.assertEqual(self.subscriber_leaf.state, NodeMsg.SUCCEEDED)
         self.assertEqual(self.subscriber_leaf.outputs['message'].data, 8)
 
@@ -64,20 +54,7 @@ class TestTopicSubscriberLeaf(unittest.TestCase):
         self.assertEqual(self.subscriber_leaf.state, NodeMsg.IDLE)
         self.assertEqual(self.subscriber_leaf.outputs['message'], None)
 
-        rospy.sleep(0.1)
-        self.publisher.publish(data=9)
-
-        sleeps = 0
-        while True:
-            self.subscriber_leaf.tick()
-            self.assertNotEqual(self.subscriber_leaf.state, NodeMsg.FAILED)
-            if self.subscriber_leaf.state == NodeMsg.SUCCEEDED:
-                break
-            rospy.sleep(0.1)
-            sleeps += 1
-            # If we don't get a response for half a second, something has gone wrong
-            self.assertLess(sleeps, 5)
-
+        self.subscriber_leaf._callback(Int32(9))
         self.subscriber_leaf.tick()
         # Same as before
         self.assertEqual(self.subscriber_leaf.state, NodeMsg.SUCCEEDED)
@@ -114,6 +91,8 @@ class TestTopicSubscriberLeaf(unittest.TestCase):
         self.assertEqual(memory_subscriber_leaf.state, NodeMsg.IDLE)
         self.assertIsNone(memory_subscriber_leaf.outputs['message'])
         self.assertIsNotNone(memory_subscriber_leaf._subscriber)
+        self.assertEqual(memory_subscriber_leaf._subscriber.callback,
+                         memory_subscriber_leaf._callback)
 
         memory_subscriber_leaf.tick()
         # Should not have received any messages yet
