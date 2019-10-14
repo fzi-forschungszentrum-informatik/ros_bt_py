@@ -23,7 +23,7 @@ from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, ControlTreeExecution
 from ros_bt_py_msgs.srv import GetAvailableNodesResponse
 from ros_bt_py_msgs.srv import GetSubtreeResponse
 from ros_bt_py_msgs.srv import SetExecutionModeResponse
-from ros_bt_py_msgs.srv import SetOptionsResponse
+from ros_bt_py_msgs.srv import SetOptionsRequest, SetOptionsResponse
 from ros_bt_py_msgs.srv import ModifyBreakpointsResponse
 from ros_bt_py_msgs.msg import Tree
 from ros_bt_py_msgs.msg import Node as NodeMsg
@@ -1005,44 +1005,87 @@ class TreeManager(object):
                 request.node_name, self.tree_msg.name)
             return response
 
-        # Shutdown node - this should also shutdown all children, but you
-        # never know, so check later.
-        self.nodes[request.node_name].shutdown()
-        # names_to_remove = [request.node_name]
-
-        # save the children of the old node
+        old_node = self.nodes[request.node_name]
 
         try:
-            node_instance = Node.from_msg(request.new_node, self.debug_manager)
-        except TypeError as exc:
-            rospy.logerr(BehaviorTreeException(str(exc)))
+            new_node = Node.from_msg(request.new_node)
+        except (TypeError, BehaviorTreeException) as exc:
             response.success = False
-            response.error_message = "Could not create node instance from message"
+            response.error_message = 'Error instantiating node %s' % (
+                str(exc))
             return response
 
-        # TODO(khermann): evaluate if other node types are to be supported
-        if node_instance.node_config.max_children is not None:
-            response.success = False
-            response.error_message = "Node morphing only supported for FlowControl nodes."
+        # First unwire all data connection to the existing node
+        wire_request = WireNodeDataRequest(
+            wirings=[wiring for wiring in self.tree_msg.data_wirings
+                     if (wiring.source.node_name == old_node.name or
+                         wiring.target.node_name == old_node.name)])
 
-        node_instance.children = self.nodes[request.node_name].children
-        node_instance.parent = self.nodes[request.node_name].parent
-        self.nodes[request.node_name] = node_instance
+        unwire_resp = self.unwire_data(wire_request)
+        if not get_success(unwire_resp):
+            return MorphNodeResponse(
+                success=False,
+                error_message='Failed to unwire data for node %s: %s' % (
+                    old_node.name,
+                    get_error_message(unwire_resp)))
 
-        # FIXME: do we need to do re-wiring here?
-        # Unwire wirings that have removed nodes as source or target
-        # self.unwire_data(WireNodeDataRequest(
-        #     wirings=[wiring for wiring in self.tree_msg.data_wirings
-        #              if (wiring.source.node_name in names_to_remove or
-        #                  wiring.target.node_name in names_to_remove)]))
+        parent = None
+        if old_node.parent:
+            parent = old_node.parent
+            # Remember the old index so we can insert the new instance at
+            # the same position
+            old_child_index = parent.get_child_index(old_node.name)
 
-        # # Keep tree_msg up-to-date
-        # self.tree_msg.data_wirings = [
-        #     wiring for wiring in self.tree_msg.data_wirings
-        #     if (wiring.source.node_name not in names_to_remove and
-        #         wiring.target.node_name not in names_to_remove)]
-        # self.tree_msg.public_node_data = [data for data in self.tree_msg.public_node_data
-        #                                   if data.node_name not in names_to_remove]
+            if old_child_index is None:
+                return MorphNodeResponse(
+                    success=False,
+                    error_message=('Parent of node %s claims to have no child with that name?!' %
+                                   old_node.name))
+            else:
+                parent.remove_child(old_node.name)
+
+            try:
+                parent.add_child(new_node, at_index=old_child_index)
+            except (KeyError, BehaviorTreeException) as ex:
+                error_message = ('Failed to add new instance of node %s: %s' %
+                                 (old_node.name, str(ex)))
+                try:
+                    parent.add_child(old_node, at_index=old_child_index)
+                    rewire_resp = self.wire_data(wire_request)
+                    if not get_success(rewire_resp):
+                        error_message += '\nAlso failed to restore data wirings: %s' % (
+                            get_error_message(rewire_resp))
+                        with self._state_lock:
+                            self.tree_msg.state = Tree.ERROR
+
+                except (KeyError, BehaviorTreeException):
+                    error_message += '\n Also failed to restore old node.'
+                    with self._state_lock:
+                        self.tree_msg.state = Tree.ERROR
+
+                return MorphNodeResponse(
+                    success=False,
+                    error_message=error_message)
+
+        # Move the children from old to new
+        for child_name in [child.name for child in old_node.children]:
+            child = old_node.remove_child(child_name)
+            if child_name != new_node.name:
+                new_node.add_child(child)
+
+        # Add the new node to self.nodes
+        del self.nodes[old_node.name]
+        self.nodes[new_node.name] = new_node
+
+        # Re-wire all the data, just as it was before
+        # FIXME: this should be a best-effort rewiring, only re-wire identical input/outputs
+        new_wire_request = deepcopy(wire_request)
+
+        rewire_resp = self.wire_data(new_wire_request)
+        if not get_success(rewire_resp):
+            error_message = 'Failed to re-wire data to new node %s: %s' % (
+                new_node.name,
+                get_error_message(rewire_resp))
 
         response.success = True
         self.publish_info(self.debug_manager.get_debug_info_msg())
@@ -1631,9 +1674,7 @@ class TreeManager(object):
             for (class_name, node_class) in nodes.iteritems():
                 max_children = node_class._node_config.max_children
                 max_children = -1 if max_children is None else max_children
-                doc = inspect.getdoc(node_class)
-                if doc is None:
-                    doc = ""
+                doc = inspect.getdoc(node_class) or ''
                 response.available_nodes.append(DocumentedNode(
                     module=module,
                     node_class=class_name,
