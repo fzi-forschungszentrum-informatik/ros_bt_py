@@ -19,7 +19,7 @@ class RandomInt(Leaf):
     """Provides a pseudo-random integer in range min <= random_number < max
     """
     def _do_setup(self):
-        pass
+        validate_range(self.options['min'], self.options['max'])
 
     def _do_tick(self):
         validate_range(self.options['min'], self.options['max'])
