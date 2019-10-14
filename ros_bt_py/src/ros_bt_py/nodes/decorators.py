@@ -410,7 +410,7 @@ class Throttle(Decorator):
     """
     def _do_setup(self):
         self._last_tick = None
-        self._last_result = None
+        self._last_result = NodeMsg.FAILED
         for child in self.children:
             child.setup()
 

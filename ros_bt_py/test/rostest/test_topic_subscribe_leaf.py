@@ -1,10 +1,9 @@
 #!/usr/bin/env python2.7
 import unittest
 try:
-    import unittest.mock as mock
-except ImportError:
     import mock
-
+except ImportError:
+    import unittest.mock as mock
 
 import rospy
 
