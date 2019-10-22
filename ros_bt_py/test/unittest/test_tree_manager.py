@@ -1472,6 +1472,30 @@ class TestTreeManager(unittest.TestCase):
         execution_request.command = ControlTreeExecutionRequest.STOP
         self.assertTrue(get_success(self.manager.control_execution(execution_request)))
 
+    def testControlDebugRaceCondition(self):
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.constant_msg))))
+
+        execution_request = ControlTreeExecutionRequest()
+        execution_request.command = ControlTreeExecutionRequest.TICK_PERIODICALLY
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+        debug_request = SetExecutionModeRequest(single_step=True,
+                                                collect_performance_data=False,
+                                                publish_subtrees=False)
+        self.assertEqual(self.manager.set_execution_mode(debug_request),
+                         SetExecutionModeResponse())
+
+        debug_request = SetExecutionModeRequest(single_step=False,
+                                                collect_performance_data=False,
+                                                publish_subtrees=False)
+        self.assertEqual(self.manager.set_execution_mode(debug_request),
+                         SetExecutionModeResponse())
+
+        execution_request = ControlTreeExecutionRequest()
+        execution_request.command = ControlTreeExecutionRequest.SHUTDOWN
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
     def testControlTickExceptionNode(self):
         @define_bt_node(NodeConfig(
             options={},
