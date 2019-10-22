@@ -1116,6 +1116,17 @@ class DebugControls extends Component
 
   render()
   {
+    var debug_controls = null;
+    if (this.state.debugging)
+    {
+      debug_controls = (
+        <button onClick={this.onClickStep}
+                className="btn btn-primary ml-1">
+          <i class="fas fa-step-forward show-button-icon"></i>
+          <span className="ml-1 hide-button-text-control">Step</span>
+        </button>
+      );
+    }
     return (
       <Fragment>
         <div className="custom-control custom-checkbox m-1">
@@ -1136,11 +1147,7 @@ class DebugControls extends Component
           <label className="custom-control-label"
                  htmlFor={this.publishSubtreesID}>Publish Subtrees</label>
         </div>
-        <button onClick={this.onClickStep}
-                className="btn btn-primary ml-1">
-          <i class="fas fa-step-forward show-button-icon"></i>
-          <span className="ml-1 hide-button-text-control">Step</span>
-        </button>
+        {debug_controls}
       </Fragment>
     );
   }
