@@ -4182,7 +4182,37 @@ class EditableNode extends Component
       var result_rows = results.map(x => {
         return (
           <div className="list-group-item search-result"
-               onClick={ () => { this.selectMessageResult(x); onNewValue(x.msg);}}>
+               onClick={ () => {
+                 if (this.props.nodeClass === 'Action' && this.props.module === 'ros_bt_py.nodes.action')
+                 {
+                   var action_types = {action_type: 'Action', feedback_type: 'Feedback', goal_type: 'Goal', result_type: 'Result'};
+                   var type_name = x.msg.split('.').pop();
+                   var action_name = type_name.replace(action_types[key], '');
+                   var replace_regex = new RegExp(type_name, 'g');
+                   for (var action_type in action_types)
+                   {
+                     if (key !== action_type)
+                     {
+                       this.updateValue('options', action_type, x.msg.replace(replace_regex, action_name+action_types[action_type]));
+                     }
+                   }
+                 } else if (this.props.nodeClass === 'Service' && this.props.module === 'ros_bt_py.nodes.service')
+                 {
+                   var service_types = {service_type: '', request_type: 'Request', response_type: 'Response'};
+                   var type_name = x.msg.split('.').pop();
+                   var service_name = type_name.replace(service_types[key], '');
+                   var replace_regex = new RegExp(type_name, 'g');
+                   for (var service_type in service_types)
+                   {
+                     if (key !== service_type)
+                     {
+                       this.updateValue('options', service_type, x.msg.replace(replace_regex, service_name+service_types[service_type]));
+                     }
+                   }
+                 }
+                 this.selectMessageResult(x);
+                 onNewValue(x.msg);
+               }}>
             {x.msg}
           </div>
         );
