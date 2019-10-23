@@ -4201,7 +4201,7 @@ class EditableNode extends Component
                    var service_types = {service_type: '', request_type: 'Request', response_type: 'Response'};
                    var type_name = x.msg.split('.').pop();
                    var service_name = type_name.replace(service_types[key], '');
-                   var replace_regex = new RegExp(type_name, 'g');
+                   var replace_regex = new RegExp(type_name + '$');
                    for (var service_type in service_types)
                    {
                      if (key !== service_type)
