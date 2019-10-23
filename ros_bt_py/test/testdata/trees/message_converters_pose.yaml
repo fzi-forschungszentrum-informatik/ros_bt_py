@@ -1,0 +1,121 @@
+name: ''
+path: ''
+root_name: "FieldsToMessage"
+nodes: 
+  - 
+    module: "ros_bt_py.nodes.constant"
+    node_class: "Constant"
+    max_children: 0
+    name: "Constant_2"
+    child_names: []
+    options: 
+      - 
+        key: "constant_value"
+        serialized_value: "{\"py/object\": \"geometry_msgs.msg._Quaternion.Quaternion\", \"py/state\": [0, 0,\
+  \ 0, 0]}"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._Quaternion.Quaternion\"}"
+      - 
+        key: "constant_type"
+        serialized_value: "{\"py/type\": \"geometry_msgs.msg._Quaternion.Quaternion\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: []
+    outputs: 
+      - 
+        key: "constant"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._Quaternion.Quaternion\"}"
+    option_wirings: 
+      - 
+        source: "constant_type"
+        target: "constant_value"
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.nodes.constant"
+    node_class: "Constant"
+    max_children: 0
+    name: "Constant"
+    child_names: []
+    options: 
+      - 
+        key: "constant_value"
+        serialized_value: "{\"py/object\": \"geometry_msgs.msg._Point.Point\", \"py/state\": [0, 0, 0]}"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._Point.Point\"}"
+      - 
+        key: "constant_type"
+        serialized_value: "{\"py/type\": \"geometry_msgs.msg._Point.Point\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: []
+    outputs: 
+      - 
+        key: "constant"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._Point.Point\"}"
+    option_wirings: 
+      - 
+        source: "constant_type"
+        target: "constant_value"
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.ros_nodes.message_converters"
+    node_class: "FieldsToMessage"
+    max_children: 0
+    name: "FieldsToMessage"
+    child_names: []
+    options: 
+      - 
+        key: "output_type"
+        serialized_value: "{\"py/type\": \"geometry_msgs.msg._Pose.Pose\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "position"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._Point.Point\"}"
+      - 
+        key: "orientation"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._Quaternion.Quaternion\"}"
+    outputs: 
+      - 
+        key: "out"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"geometry_msgs.msg._Pose.Pose\"}"
+    option_wirings: []
+    state: "SHUTDOWN"
+  - 
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    max_children: -1
+    name: "Sequence"
+    child_names: [Constant, Constant_2, FieldsToMessage]
+    options: []
+    inputs: []
+    outputs: []
+    option_wirings: []
+    state: "UNINITIALIZED"
+data_wirings: 
+  - 
+    source: 
+      node_name: "Constant"
+      data_kind: "outputs"
+      data_key: "constant"
+    target: 
+      node_name: "FieldsToMessage"
+      data_kind: "inputs"
+      data_key: "position"
+  - 
+    source: 
+      node_name: "Constant_2"
+      data_kind: "outputs"
+      data_key: "constant"
+    target: 
+      node_name: "FieldsToMessage"
+      data_kind: "inputs"
+      data_key: "orientation"
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: 
+  - 
+    node_name: "FieldsToMessage"
+    data_kind: "outputs"
+    data_key: "out"
