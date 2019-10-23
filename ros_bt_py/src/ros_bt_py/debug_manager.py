@@ -42,10 +42,15 @@ class DebugManager(object):
             single_step=False)
 
     def set_execution_mode(self, single_step, collect_performance_data, publish_subtrees):
+        was_debugging = self.is_debugging()
         with self._lock:
             self._debug_settings_msg.single_step = single_step
             self._debug_settings_msg.collect_performance_data = collect_performance_data
             self._debug_settings_msg.publish_subtrees = publish_subtrees
+        if was_debugging and not self.is_debugging():
+            # stopped debugging in this call, send a continue event to prevent issues
+            # with control_execution in the tree_manager
+            self.continue_debug()
         if self.publish_debug_settings:
             self.publish_debug_settings(self._debug_settings_msg)
 

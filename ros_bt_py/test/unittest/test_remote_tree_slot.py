@@ -143,6 +143,11 @@ class TestRemoteTreeSlot(unittest.TestCase):
     def testExecuteRemoteTree(self):
         execute_tree, _, _ = self.execute_root.get_subtree_msg()
 
+        # Nothing to do, succeeding
+        res = self.remote_slot.control_tree_execution_handler(ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.STOP))
+        self.assertTrue(get_success(res), get_error_message(res))
+
         gh = MockGoalHandle(RunTreeGoal(tree=execute_tree), goal_id=1)
         self.assertEqual(gh.state, MockGoalHandle.INIT)
 
