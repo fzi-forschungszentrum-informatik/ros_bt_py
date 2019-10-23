@@ -3,6 +3,7 @@ import inspect
 import genpy
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
+from std_msgs.msg import Duration, Time
 
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
@@ -31,9 +32,15 @@ class MessageToFields(Leaf):
         if (inspect.isclass(self.options['input_type']) and
                 genpy.message.Message in self.options['input_type'].__mro__):
             msg = self.options['input_type']()
-            for field in str(msg).split("\n"):
-                name = field.split(":")[0].strip()
-                node_outputs[name] = type(getattr(msg, name))
+            for field in msg.__slots__:
+                if isinstance(getattr(msg, field), genpy.rostime.Time):
+                    # change the type of a genpy.rostime.Time field to std_msgs/Time
+                    node_outputs[field] = Time
+                elif isinstance(getattr(msg, field), genpy.rostime.Duration):
+                    # change the type of a genpy.rostime.Duration field to std_msgs/Duration
+                    node_outputs[field] = Duration
+                else:
+                    node_outputs[field] = type(getattr(msg, field))
             self.passthrough = False
         else:
             node_outputs['out'] = self.options['input_type']
@@ -55,7 +62,19 @@ class MessageToFields(Leaf):
             self.outputs['out'] = self.inputs['in']
         else:
             for field in self.outputs:
-                self.outputs[field] = getattr(self.inputs['in'], field)
+                value = getattr(self.inputs['in'], field)
+                if isinstance(value, genpy.rostime.Time):
+                    time_value = Time()
+                    time_value.data.secs = value.secs
+                    time_value.data.nsecs = value.nsecs
+                    self.outputs[field] = time_value
+                elif isinstance(value, genpy.rostime.Duration):
+                    duration_value = Duration()
+                    duration_value.data.secs = value.secs
+                    duration_value.data.nsecs = value.nsecs
+                    self.outputs[field] = duration_value
+                else:
+                    self.outputs[field] = value
         return NodeMsg.SUCCEEDED
 
     def _do_untick(self):
@@ -91,9 +110,15 @@ class FieldsToMessage(Leaf):
         if (inspect.isclass(self.options['output_type']) and
                 genpy.message.Message in self.options['output_type'].__mro__):
             msg = self.options['output_type']()
-            for field in str(msg).split("\n"):
-                name = field.split(":")[0].strip()
-                node_inputs[name] = type(getattr(msg, name))
+            for field in msg.__slots__:
+                if isinstance(getattr(msg, field), genpy.rostime.Time):
+                    # change the type of a genpy.rostime.Time field to std_msgs/Time
+                    node_inputs[field] = Time
+                elif isinstance(getattr(msg, field), genpy.rostime.Duration):
+                    # change the type of a genpy.rostime.Duration field to std_msgs/Duration
+                    node_inputs[field] = Duration
+                else:
+                    node_inputs[field] = type(getattr(msg, field))
             self.passthrough = False
         else:
             node_inputs['in'] = self.options['output_type']
@@ -114,15 +139,23 @@ class FieldsToMessage(Leaf):
         if self.passthrough:
             self.outputs['out'] = self.inputs['in']
         else:
-            try:
-                msg = self.options['output_type']()
-                fields = dict()
-                for key in self.inputs:
-                    fields[key] = self.inputs[key]
-                genpy.message.fill_message_args(msg, [fields], keys={})
-                self.outputs['out'] = msg
-            except genpy.message.MessageException:
-                return NodeMsg.FAILED
+            msg = self.options['output_type']()
+
+            for field in msg.__slots__:
+                if isinstance(getattr(msg, field), genpy.rostime.Time):
+                    time_value = genpy.rostime.Time(
+                        secs=self.inputs[field].data.secs,
+                        nsecs=self.inputs[field].data.nsecs)
+                    setattr(msg, field, time_value)
+                elif isinstance(getattr(msg, field), genpy.rostime.Duration):
+                    duration_value = genpy.rostime.Duration(
+                        secs=self.inputs[field].data.secs,
+                        nsecs=self.inputs[field].data.nsecs)
+                    setattr(msg, field, duration_value)
+                else:
+                    setattr(msg, field, self.inputs[field])
+
+            self.outputs['out'] = msg
         return NodeMsg.SUCCEEDED
 
     def _do_untick(self):
