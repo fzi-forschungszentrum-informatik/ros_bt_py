@@ -4,11 +4,14 @@ from threading import Thread
 import time
 import unittest
 
+import rospy
+
 from ros_bt_py_msgs.msg import Node as NodeMsg
 
 from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.exceptions import BehaviorTreeException
 from ros_bt_py.nodes.passthrough_node import PassthroughNode
+from ros_bt_py.nodes.sequence import Sequence
 from ros_bt_py.nodes.subtree import Subtree
 
 
@@ -16,6 +19,7 @@ class TestDebugManager(unittest.TestCase):
     def setUp(self):
         self.debug_settings_msg = None
         self.debug_info_msg = None
+        self.diagnostics_messages = []
 
     def testReport(self):
         self.manager = DebugManager()
@@ -93,6 +97,7 @@ class TestDebugManager(unittest.TestCase):
             single_step=False,
             collect_performance_data=False,
             publish_subtrees=False,
+            collect_node_diagnostics=False,
         )
         time.sleep(0.05)
         self.assertIsNotNone(self.debug_settings_msg)
@@ -181,7 +186,8 @@ class TestDebugManager(unittest.TestCase):
             debug_info_publish_callback=self._publish_debug_info_callback,
             debug_settings_publish_callback=self._publish_debug_settings_callback)
         debug_manager.set_execution_mode(single_step=False,
-                                         collect_performance_data=False, publish_subtrees=True)
+                                         collect_performance_data=False, publish_subtrees=True,
+                                         collect_node_diagnostics=False)
         subtree_options = {
             'subtree_path': 'package://ros_bt_py/etc/trees/test.yaml',
             'use_io_nodes': False
@@ -207,3 +213,39 @@ class TestDebugManager(unittest.TestCase):
         debug_manager.clear_subtrees()
         info_msg = debug_manager.get_debug_info_msg()
         self.assertEqual(info_msg.subtree_states, [])
+
+    def _publish_node_diagnostics_callback(self, msg):
+        self.diagnostics_messages.append(msg)
+
+    def testNodeDiagnostics(self):
+        # fake initialized rostime to test code that uses rospy.Time
+        rospy.rostime.set_rostime_initialized(True)
+        manager = DebugManager(
+            node_diagnostics_publish_callback=self._publish_node_diagnostics_callback
+        )
+        manager._debug_settings_msg.collect_node_diagnostics = True
+
+        seq = Sequence(debug_manager=manager)
+
+        node = PassthroughNode(name='foo',
+                               options={'passthrough_type': int},
+                               debug_manager=manager)
+
+        seq.add_child(node)
+        node.setup()
+
+        time.sleep(0.05)
+
+        self.assertEqual(len(self.diagnostics_messages), 2)
+        self.assertEqual(self.diagnostics_messages[0].path, ['Sequence', 'foo'])
+        node.shutdown()
+        self.assertEqual(len(self.diagnostics_messages), 4)
+
+        self.diagnostics_messages = []
+        node.inputs['in'] = 1
+        seq.setup()
+        self.assertEqual(len(self.diagnostics_messages), 4)
+        seq.tick()
+        self.assertEqual(len(self.diagnostics_messages), 8)
+
+        rospy.rostime.set_rostime_initialized(False)

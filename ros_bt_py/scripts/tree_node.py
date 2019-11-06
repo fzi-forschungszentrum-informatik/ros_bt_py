@@ -3,7 +3,7 @@ import rospy
 
 from ros_bt_py_msgs.msg import Messages, Packages
 
-from ros_bt_py_msgs.msg import Tree, DebugInfo, DebugSettings
+from ros_bt_py_msgs.msg import Tree, DebugInfo, DebugSettings, NodeDiagnostics
 from ros_bt_py_msgs.srv import (AddNode, AddNodeAtIndex, ControlTreeExecution, ModifyBreakpoints,
                                 RemoveNode, WireNodeData, GetAvailableNodes, SetExecutionMode,
                                 SetOptions, Continue, LoadTree, LoadTreeFromPath, MoveNode,
@@ -46,6 +46,11 @@ class TreeNode(object):
             DebugSettings,
             latch=True,
             queue_size=1)
+        self.node_diagnostics_pub = rospy.Publisher(
+            '~debug/node_diagnostics',
+            NodeDiagnostics,
+            latch=True,
+            queue_size=10)
 
         self.debug_manager = DebugManager()
         self.tree_manager = TreeManager(
@@ -54,6 +59,7 @@ class TreeNode(object):
             publish_tree_callback=self.tree_pub.publish,
             publish_debug_info_callback=self.debug_info_pub.publish,
             publish_debug_settings_callback=self.debug_settings_pub.publish,
+            publish_node_diagnostics_callback=self.node_diagnostics_pub.publish,
             show_traceback_on_exception=show_traceback_on_exception)
 
         self.add_node_service = rospy.Service('~add_node',
