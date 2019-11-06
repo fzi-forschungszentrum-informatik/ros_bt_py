@@ -17,6 +17,7 @@ add_message_files(
      NodeDataLocation.msg
      NodeData.msg
      NodeDataWiring.msg
+     NodeDiagnostics.msg
      NodeOptionWiring.msg
      Node.msg
      Package.msg
