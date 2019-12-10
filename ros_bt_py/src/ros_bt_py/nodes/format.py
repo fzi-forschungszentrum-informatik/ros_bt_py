@@ -3,6 +3,41 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig
 
+from string import Formatter
+
+class ExtendedFormatter(Formatter):
+    """An extended format string formatter
+
+    Formatter with extended conversion symbol
+    """
+    def convert_field(self, value, conversion):
+        """ Extend conversion symbol
+        Following additional symbol has been added
+        * l: convert to string and low case
+        * u: convert to string and up case
+
+        default are:
+        * s: convert with str()
+        * r: convert with repr()
+        * a: convert with ascii()
+        """
+
+        if conversion == "u":
+            return str(value).upper()
+        elif conversion == "l":
+            return str(value).lower()
+        elif conversion == "c":
+            return str(value).capitalize()
+
+        # Do the default conversion or raise error if no matching conversion found
+        super(ExtendedFormatter, self).convert_field(value, conversion)
+
+        # return for None case
+        return value
+
+
+myformatter = ExtendedFormatter()
+
 
 @define_bt_node(NodeConfig(
     options={},
@@ -52,7 +87,7 @@ class FormatOptionNode(Leaf):
 
     def _do_tick(self):
         try:
-            self.outputs['formatted_string'] = self.options['format_string'].format(
+            self.outputs['formatted_string'] = myformatter.format(self.options['format_string'],
                 **self.inputs['dict'])
         except Exception:
             return NodeMsg.FAILED
@@ -92,7 +127,7 @@ class FormatInputNode(Leaf):
 
     def _do_tick(self):
         try:
-            self.outputs['formatted_string'] = self.inputs['format_string'].format(
+            self.outputs['formatted_string'] = myformatter.format(self.inputs['format_string'],
                 **self.inputs['dict'])
         except Exception:
             return NodeMsg.FAILED
@@ -132,7 +167,7 @@ class FormatOptionListNode(Leaf):
     def _do_tick(self):
         try:
             self.outputs['formatted_strings'] = [
-                phrase.format(**self.inputs['dict'])
+                myformatter.format(phrase, **self.inputs['dict'])
                 for phrase in self.options['format_strings']
             ]
         except Exception:
@@ -174,7 +209,7 @@ class FormatInputListNode(Leaf):
     def _do_tick(self):
         try:
             self.outputs['formatted_strings'] = [
-                phrase.format(**self.inputs['dict'])
+                myformatter.format(phrase, **self.inputs['dict'])
                 for phrase in self.inputs['format_strings']
             ]
         except Exception:

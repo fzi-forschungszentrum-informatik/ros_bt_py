@@ -183,7 +183,7 @@ class GetDictItem(Decorator):
     options={'value_type': type,
              'dict': dict,
              'succeed_on_stale_data': bool},
-    inputs={'key': str}
+    inputs={'key': str},
     outputs={'value': OptionRef('value_type')},
     max_children=1))
 class GetDictItemFromKey(Decorator):
