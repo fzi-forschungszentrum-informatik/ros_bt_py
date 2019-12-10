@@ -26,3 +26,45 @@ class ListLength(Leaf):
 
     def _do_untick(self):
         return NodeMsg.IDLE
+
+
+@define_bt_node(NodeConfig(
+    options={'compare_type': type,
+             'list': list },
+    inputs={
+        'in': OptionRef('compare_type')
+    },
+    outputs={},
+    max_children=0))
+class IsInList(Leaf):
+    """Check if `in` is in provided list
+
+    Will succeed if `in` is in `list` and fail otherwise
+    """
+    def _do_setup(self):
+        self._received_in = False
+        return NodeMsg.IDLE
+
+    def _do_tick(self):
+        if not self._received_in:
+            if self.inputs.is_updated('in'):
+                self._received_in = True
+
+        if self._received_in and self.inputs['in'] in self.options['list']:
+            return NodeMsg.SUCCEEDED
+        else:
+            return NodeMsg.FAILED
+
+    def _do_untick(self):
+        # Nothing to do
+        return NodeMsg.IDLE
+
+    def _do_reset(self):
+        self.inputs.reset_updated()
+        self._received_in = False
+
+        return NodeMsg.IDLE
+
+    def _do_shutdown(self):
+        # Nothing to do
+        pass
