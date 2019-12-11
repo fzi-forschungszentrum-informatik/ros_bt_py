@@ -1,6 +1,6 @@
 from ros_bt_py_msgs.msg import Node as NodeMsg
 
-from ros_bt_py.node import Leaf, define_bt_node
+from ros_bt_py.node import Leaf, Decorator, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
@@ -68,3 +68,59 @@ class IsInList(Leaf):
     def _do_shutdown(self):
         # Nothing to do
         pass
+
+@define_bt_node(NodeConfig(
+    options={'item_type': type},
+    inputs={'list' : list},
+    outputs={'list_item' : OptionRef('item_type')},
+    max_children=1))
+class IterateList(Decorator):
+    """
+    Iterate through list, will succeed if iterated through entire list, returns running while iterating.
+    To be used as a decorator, with one child.
+    """
+    def _do_setup(self):
+        self.counter = 0
+        for child in self.children:
+            child.setup()
+        return NodeMsg.IDLE
+
+    def _do_tick(self):
+        if self.inputs.is_updated('list'):
+            self.logwarn('Input list changed - resetting iterator')
+            self.counter = 0
+
+        if self.counter < len(self.inputs['list']):
+            self.outputs['list_item'] = self.inputs['list'][self.counter]
+            for child in self.children:
+                result = child.tick()
+                if result == NodeMsg.FAILED:
+                    return NodeMsg.FAILED
+                elif result == NodeMsg.RUNNING:
+                    return NodeMsg.RUNNING
+                elif result == NodeMsg.SUCCESS:
+                    # we only increment the counter when the child succeeded
+                    self.counter += 1
+
+        if self.counter >= len(self.inputs['list']):
+            self.counter = 0
+            return NodeMsg.SUCCEEDED
+        else:
+            # iteration not done: we are running
+            return NodeMsg.RUNNING
+
+    def _do_untick(self):
+        for child in self.children:
+            return child.untick()
+        return NodeMsg.IDLE
+
+    def _do_reset(self):
+        self.inputs.reset_updated()
+        self.counter = 0
+        for child in self.children:
+            return child.reset()
+        return NodeMsg.IDLE
+
+    def _do_shutdown(self):
+        for child in self.children:
+            return child.shutdown()
