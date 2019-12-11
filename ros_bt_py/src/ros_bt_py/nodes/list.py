@@ -80,34 +80,39 @@ class IterateList(Decorator):
     To be used as a decorator, with one child.
     """
     def _do_setup(self):
-        self.counter = 0
+        self.reset_counter()
         for child in self.children:
             child.setup()
         return NodeMsg.IDLE
 
+    def reset_counter(self):
+        self.counter = 0
+        self.output_ready = False
+
     def _do_tick(self):
         if self.inputs.is_updated('list'):
             self.logwarn('Input list changed - resetting iterator')
-            self.counter = 0
+            self.reset_counter()
 
         if self.counter < len(self.inputs['list']):
             self.outputs['list_item'] = self.inputs['list'][self.counter]
+
+            if not self.output_ready:
+                # we need empty ticks when the input change
+                self.output_ready = True
+                return NodeMsg.RUNNING
+
             for child in self.children:
                 result = child.tick()
-                if result == NodeMsg.FAILED:
-                    return NodeMsg.FAILED
-                elif result == NodeMsg.RUNNING:
-                    return NodeMsg.RUNNING
-                elif result == NodeMsg.SUCCESS:
-                    # we only increment the counter when the child succeeded
+                if result != NodeMsg.RUNNING:
+                    # we only increment the counter when the child succeeded or failed
                     self.counter += 1
-
-        if self.counter >= len(self.inputs['list']):
-            self.counter = 0
-            return NodeMsg.SUCCEEDED
-        else:
-            # iteration not done: we are running
+                    # next tick is void
+                    self.output_ready = False
             return NodeMsg.RUNNING
+        else:
+            self.reset_counter()
+            return NodeMsg.SUCCEEDED
 
     def _do_untick(self):
         for child in self.children:
@@ -116,7 +121,7 @@ class IterateList(Decorator):
 
     def _do_reset(self):
         self.inputs.reset_updated()
-        self.counter = 0
+        self.reset_counter()
         for child in self.children:
             return child.reset()
         return NodeMsg.IDLE
