@@ -53,6 +53,48 @@ class IgnoreFailure(Decorator):
 
 
 @define_bt_node(NodeConfig(
+    options={'running_is_success': bool},
+    inputs={},
+    outputs={},
+    max_children=1))
+class IgnoreRunning(Decorator):
+    """Return SUCCESS or FAILURE when the child returns RUNNING
+
+    """
+    def _do_setup(self):
+        for child in self.children:
+            child.setup()
+        if self.options['running_is_success']:
+            self.result = NodeMsg.SUCCEEDED
+        else:
+            self.result = NodeMsg.FAILED
+
+    def _do_tick(self):
+        for child in self.children:
+            result = child.tick()
+            if result == NodeMsg.RUNNING:
+                return self.result
+            return result
+
+        # Fails if we have no children
+        return NodeMsg.FAILED
+
+    def _do_shutdown(self):
+        for child in self.children:
+            return child.shutdown()
+
+    def _do_reset(self):
+        for child in self.children:
+            return child.reset()
+        return NodeMsg.IDLE
+
+    def _do_untick(self):
+        for child in self.children:
+            return child.untick()
+        return NodeMsg.IDLE
+
+
+@define_bt_node(NodeConfig(
     options={},
     inputs={},
     outputs={},
