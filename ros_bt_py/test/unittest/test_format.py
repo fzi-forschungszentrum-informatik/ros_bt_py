@@ -8,15 +8,15 @@ from ros_bt_py.exceptions import BehaviorTreeException
 
 class TestFormatOptionNode(unittest.TestCase):
     def testSimpleFormatString(self):
-        format_option = FormatOptionNode({'format_string': 'foo {first}'})
-        format_option.inputs['dict'] = {'first': 'bar', 'second': 'not_printed'}
+        format_option = FormatOptionNode({'format_string': 'foo {first} {third!u} {third!l} {third!c}'})
+        format_option.inputs['dict'] = {'first': 'bar', 'second': 'not_printed', 'third': 'ToTo'}
         self.assertEqual(format_option.state, NodeMsg.UNINITIALIZED)
 
         format_option.setup()
 
         self.assertEqual(format_option.state, NodeMsg.IDLE)
         self.assertEqual(format_option.tick(), NodeMsg.SUCCEEDED)
-        self.assertEqual(format_option.outputs['formatted_string'], 'foo bar')
+        self.assertEqual(format_option.outputs['formatted_string'], 'foo bar TOTO toto Toto')
 
         self.assertEqual(format_option.untick(), NodeMsg.IDLE)
         self.assertEqual(format_option.reset(), NodeMsg.IDLE)
@@ -36,15 +36,15 @@ class TestFormatOptionNode(unittest.TestCase):
 class TestFormatInputNode(unittest.TestCase):
     def testSimpleFormatString(self):
         format_input = FormatInputNode()
-        format_input.inputs['format_string'] = 'foo {first}'
-        format_input.inputs['dict'] = {'first': 'bar', 'second': 'not_printed'}
+        format_input.inputs['format_string'] = 'foo {first} {third!u} {third!l} {third!c}'
+        format_input.inputs['dict'] = {'first': 'bar', 'second': 'not_printed', 'third': 'ToTo'}
         self.assertEqual(format_input.state, NodeMsg.UNINITIALIZED)
 
         format_input.setup()
 
         self.assertEqual(format_input.state, NodeMsg.IDLE)
         self.assertEqual(format_input.tick(), NodeMsg.SUCCEEDED)
-        self.assertEqual(format_input.outputs['formatted_string'], 'foo bar')
+        self.assertEqual(format_input.outputs['formatted_string'], 'foo bar TOTO toto Toto')
 
         self.assertEqual(format_input.untick(), NodeMsg.IDLE)
         self.assertEqual(format_input.reset(), NodeMsg.IDLE)
