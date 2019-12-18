@@ -149,19 +149,21 @@ class GetDictItem(Decorator):
         # Tick child (if any) so it can produce its output before we process it
         for child in self.children:
             child.tick()
-        # if not self.inputs.is_updated('dict'):
-        #     if self.options['succeed_on_stale_data']:
-        #         return NodeMsg.SUCCEEDED
-        #     else:
-        #         self.loginfo('No new data since last tick!')
-        #         return NodeMsg.RUNNING
-        try:
-            self.outputs['value'] = self.inputs['dict'][self.options['key']]
-            return NodeMsg.SUCCEEDED
-        except KeyError:
-            self.logerr('Key %s is not in dict %s'
-                        % (self.options['key'], str(self.inputs['dict'])))
-            return NodeMsg.FAILED
+
+        if self.inputs.is_updated('dict'):
+            try:
+                self.outputs['value'] = self.inputs['dict'][self.options['key']]
+                return NodeMsg.SUCCEEDED
+            except KeyError:
+                self.logerr('Key %s is not in dict %s'
+                            % (self.options['key'], str(self.inputs['dict'])))
+                return NodeMsg.FAILED
+        else:
+            if self.options['succeed_on_stale_data']:
+                return NodeMsg.SUCCEEDED
+            else:
+                self.loginfo('No new data since last tick!')
+                return NodeMsg.RUNNING
 
     def _do_shutdown(self):
         pass
