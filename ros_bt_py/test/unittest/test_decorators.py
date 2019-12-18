@@ -8,7 +8,7 @@ except ImportError:
 from ros_bt_py_msgs.msg import Node, UtilityBounds
 
 from ros_bt_py.nodes.mock_nodes import MockLeaf, MockUtilityLeaf
-from ros_bt_py.nodes.decorators import IgnoreFailure, IgnoreSuccess, UntilSuccess, Retry, Optional
+from ros_bt_py.nodes.decorators import IgnoreFailure, IgnoreSuccess, UntilSuccess, Retry, Optional, IgnoreRunning
 from ros_bt_py.nodes.decorators import Inverter, Repeat, RepeatAlways, RepeatUntilFail
 from ros_bt_py.nodes.decorators import Throttle, ThrottleSuccess
 from rospy import Time
@@ -28,6 +28,17 @@ class TestDecorators(unittest.TestCase):
                                 options={'output_type': int,
                                          'state_values': [Node.RUNNING],
                                          'output_values': [1]})
+        self.running_fail_running = MockLeaf(name='running_fail_running',
+                                             options={'output_type': int,
+                                                      'state_values': [Node.RUNNING, Node.FAILED,
+                                                                       Node.RUNNING],
+                                                      'output_values': [1, 1, 1]})
+        self.running_succeed_running = MockLeaf(name='running_succeed_running',
+                                                options={'output_type': int,
+                                                         'state_values': [Node.RUNNING,
+                                                                          Node.SUCCEEDED,
+                                                                          Node.RUNNING],
+                                                         'output_values': [1, 1, 1]})
         self.fail_fail_succeed = MockLeaf(name='fail_fail_succeed',
                                           options={'output_type': int,
                                                    'state_values': [Node.FAILED, Node.FAILED,
@@ -96,6 +107,48 @@ class TestDecorators(unittest.TestCase):
         self.assertEqual(self.fail_fail_succeed.state, Node.SUCCEEDED)
 
         self.assertEqual(ignore_success.shutdown(), Node.SHUTDOWN)
+
+    def testIgnoreRunning(self):
+        ignore_running = IgnoreRunning(options={'running_is_success': True})
+        ignore_running.setup()
+
+        self.assertEqual(ignore_running.tick(), Node.FAILED)
+        self.assertEqual(ignore_running.untick(), Node.IDLE)
+        self.assertEqual(ignore_running.reset(), Node.IDLE)
+        self.assertEqual(ignore_running.shutdown(), Node.SHUTDOWN)
+
+        def test_for_running_option(running_is_success):
+            if running_is_success:
+                fail_or_success = Node.SUCCEEDED
+            else:
+                fail_or_success = Node.FAILED
+
+            ignore_running = IgnoreRunning(options={'running_is_success': running_is_success})
+
+            ignore_running.add_child(self.running_succeed_running)
+            ignore_running.setup()
+
+            self.assertEqual(ignore_running.tick(), fail_or_success)
+            self.assertEqual(ignore_running.untick(), Node.PAUSED)
+            self.assertEqual(ignore_running.tick(), Node.SUCCEEDED)
+            self.assertEqual(ignore_running.untick(), Node.PAUSED)
+            self.assertEqual(ignore_running.tick(), fail_or_success)
+
+            self.assertEqual(ignore_running.shutdown(), Node.SHUTDOWN)
+            ignore_running.remove_child(child_name="running_succeed_running")
+            ignore_running.add_child(self.running_fail_running)
+            ignore_running.setup()
+
+            self.assertEqual(ignore_running.tick(), fail_or_success)
+            self.assertEqual(ignore_running.untick(), Node.PAUSED)
+            self.assertEqual(ignore_running.tick(), Node.FAILED)
+            self.assertEqual(ignore_running.untick(), Node.PAUSED)
+            self.assertEqual(ignore_running.tick(), fail_or_success)
+
+            self.assertEqual(ignore_running.shutdown(), Node.SHUTDOWN)
+
+        test_for_running_option(False)
+        test_for_running_option(True)
 
     def testUntilSuccess(self):
         until_success = UntilSuccess()
