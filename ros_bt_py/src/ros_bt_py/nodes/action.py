@@ -53,6 +53,7 @@ class Action(Leaf):
 
         self._ac = SimpleActionClient(self.options['action_name'],
                                       self.options['action_type'])
+
         if not self._ac.wait_for_server(rospy.Duration.from_sec(
                 self.options['wait_for_action_server_seconds'])):
             self._action_available = False
