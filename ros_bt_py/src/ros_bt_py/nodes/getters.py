@@ -190,9 +190,10 @@ class GetDictItemFromKey(Decorator):
     def _do_setup(self):
         for child in self.children:
             child.setup()
-            # We have a child, so set dict to an empty dict. We're avoiding an
+            # We have a child, so set key to an empty string. We're avoiding an
             # error this way because we know what we're doing, don't use this
             # gratuitously!
+            self.inputs['key'] = ''
             self.inputs.reset_updated()
         return NodeMsg.IDLE
 
