@@ -1116,6 +1116,17 @@ class DebugControls extends Component
 
   render()
   {
+    var debug_controls = null;
+    if (this.state.debugging)
+    {
+      debug_controls = (
+        <button onClick={this.onClickStep}
+                className="btn btn-primary ml-1">
+          <i class="fas fa-step-forward show-button-icon"></i>
+          <span className="ml-1 hide-button-text-control">Step</span>
+        </button>
+      );
+    }
     return (
       <Fragment>
         <div className="custom-control custom-checkbox m-1">
@@ -1136,11 +1147,7 @@ class DebugControls extends Component
           <label className="custom-control-label"
                  htmlFor={this.publishSubtreesID}>Publish Subtrees</label>
         </div>
-        <button onClick={this.onClickStep}
-                className="btn btn-primary ml-1">
-          <i class="fas fa-step-forward show-button-icon"></i>
-          <span className="ml-1 hide-button-text-control">Step</span>
-        </button>
+        {debug_controls}
       </Fragment>
     );
   }
@@ -4175,7 +4182,37 @@ class EditableNode extends Component
       var result_rows = results.map(x => {
         return (
           <div className="list-group-item search-result"
-               onClick={ () => { this.selectMessageResult(x); onNewValue(x.msg);}}>
+               onClick={ () => {
+                 if (this.props.nodeClass === 'Action' && this.props.module === 'ros_bt_py.nodes.action')
+                 {
+                   var action_types = {action_type: 'Action', feedback_type: 'Feedback', goal_type: 'Goal', result_type: 'Result'};
+                   var type_name = x.msg.split('.').pop();
+                   var action_name = type_name.replace(action_types[key], '');
+                   var replace_regex = new RegExp(type_name, 'g');
+                   for (var action_type in action_types)
+                   {
+                     if (key !== action_type)
+                     {
+                       this.updateValue('options', action_type, x.msg.replace(replace_regex, action_name+action_types[action_type]));
+                     }
+                   }
+                 } else if (this.props.nodeClass === 'Service' && this.props.module === 'ros_bt_py.nodes.service')
+                 {
+                   var service_types = {service_type: '', request_type: 'Request', response_type: 'Response'};
+                   var type_name = x.msg.split('.').pop();
+                   var service_name = type_name.replace(service_types[key], '');
+                   var replace_regex = new RegExp(type_name + '$');
+                   for (var service_type in service_types)
+                   {
+                     if (key !== service_type)
+                     {
+                       this.updateValue('options', service_type, x.msg.replace(replace_regex, service_name+service_types[service_type]));
+                     }
+                   }
+                 }
+                 this.selectMessageResult(x);
+                 onNewValue(x.msg);
+               }}>
             {x.msg}
           </div>
         );

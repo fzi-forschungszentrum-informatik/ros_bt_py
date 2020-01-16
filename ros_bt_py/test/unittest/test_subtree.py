@@ -69,7 +69,8 @@ class TestSubtree(unittest.TestCase):
     def testSubtreeWithDebugManager(self):
         debug_manager = DebugManager()
         debug_manager.set_execution_mode(single_step=False,
-                                         collect_performance_data=False, publish_subtrees=True)
+                                         collect_performance_data=False, publish_subtrees=True,
+                                         collect_node_diagnostics=False)
         subtree = Subtree(
             options=self.subtree_options,
             debug_manager=debug_manager,

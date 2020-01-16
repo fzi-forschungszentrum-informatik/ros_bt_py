@@ -78,6 +78,7 @@ class TreeManager(object):
                  publish_tree_callback=None,
                  publish_debug_info_callback=None,
                  publish_debug_settings_callback=None,
+                 publish_node_diagnostics_callback=None,
                  show_traceback_on_exception=False):
         self.name = name
         self.publish_tree = publish_tree_callback
@@ -91,6 +92,10 @@ class TreeManager(object):
         self.publish_debug_settings = publish_debug_settings_callback
         if self.publish_debug_settings is None:
             rospy.loginfo('No callback for publishing debug data provided.')
+
+        self.publish_node_diagnostics = publish_node_diagnostics_callback
+        if self.publish_node_diagnostics is None:
+            rospy.loginfo('No callback for publishing node diagnostics data provided.')
 
         self.debug_manager = debug_manager
         if not self.debug_manager:
@@ -108,6 +113,7 @@ class TreeManager(object):
 
         self.debug_manager.publish_debug_info = self.publish_info
         self.debug_manager.publish_debug_settings = self.publish_debug_settings
+        self.debug_manager.publish_node_diagnostics = self.publish_node_diagnostics
 
         self.nodes = {}
 
@@ -501,7 +507,8 @@ class TreeManager(object):
         self.debug_manager.set_execution_mode(
             single_step=request.single_step,
             collect_performance_data=request.collect_performance_data,
-            publish_subtrees=request.publish_subtrees)
+            publish_subtrees=request.publish_subtrees,
+            collect_node_diagnostics=request.collect_node_diagnostics)
         if request.publish_subtrees:
             self.control_execution(
                 ControlTreeExecutionRequest(

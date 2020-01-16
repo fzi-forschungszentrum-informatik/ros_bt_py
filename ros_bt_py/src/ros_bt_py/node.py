@@ -164,6 +164,11 @@ class Node(object):
     __metaclass__ = NodeMeta
 
     @contextmanager
+    def _dummy_report_state(self):
+        self.loginfo('Reporting state up without debug manager')
+        yield
+
+    @contextmanager
     def _dummy_report_tick(self):
         self.loginfo('Ticking without debug manager')
         yield
@@ -268,13 +273,19 @@ class Node(object):
 
         :raises: BehaviorTreeException if called when the node is not UNINITIALIZED or SHUTDOWN
         """
-        if self.state != NodeMsg.UNINITIALIZED and self.state != NodeMsg.SHUTDOWN:
-            raise BehaviorTreeException(
-                'Calling setup() is only allowed in states %s and %s, but node %s is in state %s'
-                % (NodeMsg.UNINITIALIZED, NodeMsg.SHUTDOWN, self.name, self.state))
-        self._do_setup()
-        self.state = NodeMsg.IDLE
-        self._setup_called = True
+        report_state = self._dummy_report_state()
+        if self.debug_manager:
+            report_state = self.debug_manager.report_state(self, 'SETUP')
+
+        with report_state:
+            if self.state != NodeMsg.UNINITIALIZED and self.state != NodeMsg.SHUTDOWN:
+                raise BehaviorTreeException(
+                    'Calling setup() is only allowed in states %s and %s, '
+                    'but node %s is in state %s'
+                    % (NodeMsg.UNINITIALIZED, NodeMsg.SHUTDOWN, self.name, self.state))
+            self._do_setup()
+            self.state = NodeMsg.IDLE
+            self._setup_called = True
 
     @_required
     def _do_setup(self):
@@ -415,15 +426,20 @@ class Node(object):
         by running `setup()`.
 
         """
-        if self.state is NodeMsg.UNINITIALIZED:
-            raise BehaviorTreeException('Trying to untick uninitialized node!')
-        self.state = self._do_untick()
-        self.raise_if_in_invalid_state(allowed_states=[NodeMsg.IDLE,
-                                                       NodeMsg.PAUSED],
-                                       action_name='untick()')
+        report_state = self._dummy_report_state()
+        if self.debug_manager:
+            report_state = self.debug_manager.report_state(self, 'UNTICK')
 
-        self.outputs.reset_updated()
-        return self.state
+        with report_state:
+            if self.state is NodeMsg.UNINITIALIZED:
+                raise BehaviorTreeException('Trying to untick uninitialized node!')
+            self.state = self._do_untick()
+            self.raise_if_in_invalid_state(allowed_states=[NodeMsg.IDLE,
+                                                           NodeMsg.PAUSED],
+                                           action_name='untick()')
+
+            self.outputs.reset_updated()
+            return self.state
 
     @_required
     def _do_untick(self):
@@ -450,22 +466,27 @@ class Node(object):
         :raises: BehaviorTreeException
           When trying to reset a node that hasn't been initialized yet
         """
-        if self.state is NodeMsg.UNINITIALIZED:
-            raise BehaviorTreeException('Trying to reset uninitialized node!')
+        report_state = self._dummy_report_state()
+        if self.debug_manager:
+            report_state = self.debug_manager.report_state(self, 'RESET')
 
-        # Reset input/output reset state and set outputs to None
-        # before calling _do_reset() - the node can overwrite the None
-        # with more appropriate values if need be.
-        self.inputs.reset_updated()
+        with report_state:
+            if self.state is NodeMsg.UNINITIALIZED:
+                raise BehaviorTreeException('Trying to reset uninitialized node!')
 
-        for output_key in self.outputs:
-            self.outputs[output_key] = None
-        self.outputs.reset_updated()
+            # Reset input/output reset state and set outputs to None
+            # before calling _do_reset() - the node can overwrite the None
+            # with more appropriate values if need be.
+            self.inputs.reset_updated()
 
-        self.state = self._do_reset()
-        self.raise_if_in_invalid_state(allowed_states=[NodeMsg.IDLE],
-                                       action_name='reset()')
-        return self.state
+            for output_key in self.outputs:
+                self.outputs[output_key] = None
+            self.outputs.reset_updated()
+
+            self.state = self._do_reset()
+            self.raise_if_in_invalid_state(allowed_states=[NodeMsg.IDLE],
+                                           action_name='reset()')
+            return self.state
 
     @_required
     def _do_reset(self):
@@ -497,29 +518,34 @@ class Node(object):
 
         :meth:`_do_shutdown` will not be called if the node has not been initialized yet.
         """
-        if self.state == NodeMsg.UNINITIALIZED:
-            self.loginfo('Not calling shutdown method, node has not been initialized yet')
-            self.state = NodeMsg.SHUTDOWN
-            # Call shutdown on all children - this should only set
-            # their state to shutdown
-            for child in self.children:
-                child.shutdown()
-        elif self.state != NodeMsg.SHUTDOWN:
-            self._do_shutdown()
-            self.state = NodeMsg.SHUTDOWN
-        else:
-            self.logwarn('Shutdown called twice')
+        report_state = self._dummy_report_state()
+        if self.debug_manager:
+            report_state = self.debug_manager.report_state(self, 'SHUTDOWN')
 
-        unshutdown_children = ['%s (%s), state: %s' % (child.name,
-                                                       type(child).__name__,
-                                                       child.state)
-                               for child in self.children
-                               if child.state != NodeMsg.SHUTDOWN]
-        if unshutdown_children:
-            self.logwarn('Not all children are shut down after calling shutdown(). '
-                         'List of not-shutdown children and states:\n' +
-                         '\n'.join(unshutdown_children))
-        return self.state
+        with report_state:
+            if self.state == NodeMsg.UNINITIALIZED:
+                self.loginfo('Not calling shutdown method, node has not been initialized yet')
+                self.state = NodeMsg.SHUTDOWN
+                # Call shutdown on all children - this should only set
+                # their state to shutdown
+                for child in self.children:
+                    child.shutdown()
+            elif self.state != NodeMsg.SHUTDOWN:
+                self._do_shutdown()
+                self.state = NodeMsg.SHUTDOWN
+            else:
+                self.logwarn('Shutdown called twice')
+
+            unshutdown_children = ['%s (%s), state: %s' % (child.name,
+                                                           type(child).__name__,
+                                                           child.state)
+                                   for child in self.children
+                                   if child.state != NodeMsg.SHUTDOWN]
+            if unshutdown_children:
+                self.logwarn('Not all children are shut down after calling shutdown(). '
+                             'List of not-shutdown children and states:\n' +
+                             '\n'.join(unshutdown_children))
+            return self.state
 
     @_required
     def _do_shutdown(self):

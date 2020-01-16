@@ -1,0 +1,5 @@
+<launch>
+  <node name="diagnostics_node" pkg="ros_bt_py" type="diagnostics_node.py" output="screen"
+        respawn="false">
+  </node>
+</launch>
