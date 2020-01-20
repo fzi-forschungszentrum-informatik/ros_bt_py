@@ -30,46 +30,51 @@ class TestIsInList(unittest.TestCase):
 
 
 class TestIterateList(unittest.TestCase):
-    def testIterate(self):
+    def testIterateWithChild(self):
         iterate_list = IterateList({
             'item_type': str
         })
 
-        list_provider = MockLeaf(
+        run_success_fail = MockLeaf(
             options={'output_type': int,
                      'state_values': [Node.RUNNING,
                                       Node.SUCCEEDED,
                                       Node.FAILED],
                      'output_values': [0, 1, 2]})
-        iterate_list.add_child(list_provider)
+        iterate_list.add_child(run_success_fail)
 
         iterate_list.inputs['list'] = ['a', 'b']
 
         iterate_list.setup()
 
-        # input just changed - child are not ticked but input is set
         self.assertEqual(iterate_list.tick(), Node.RUNNING)
         self.assertEqual(iterate_list.outputs['list_item'], 'a')
-        self.assertEqual(list_provider.state, Node.IDLE)
+        self.assertEqual(run_success_fail.tick_count, 1)
 
-        # first iteration: childs are ticked
         self.assertEqual(iterate_list.tick(), Node.RUNNING)
         self.assertEqual(iterate_list.outputs['list_item'], 'a')
-        self.assertEqual(list_provider.state, Node.RUNNING)
+        self.assertEqual(run_success_fail.tick_count, 2)
 
-        # child returned running so first iteration is still not over
-        self.assertEqual(iterate_list.tick(), Node.RUNNING)
-        self.assertEqual(iterate_list.outputs['list_item'], 'a')
-        self.assertEqual(list_provider.state, Node.SUCCEEDED)
-
-        # First iteration is over, output changed, childs aren't ticked
         self.assertEqual(iterate_list.tick(), Node.RUNNING)
         self.assertEqual(iterate_list.outputs['list_item'], 'b')
-
-        # second and iteration
-        self.assertEqual(iterate_list.tick(), Node.RUNNING)
-        self.assertEqual(iterate_list.outputs['list_item'], 'b')
-        self.assertEqual(list_provider.state, Node.FAILED)
+        self.assertEqual(run_success_fail.tick_count, 3)
 
         # iteration is over
+        self.assertEqual(iterate_list.tick(), Node.SUCCEEDED)
+        self.assertEqual(iterate_list.outputs['list_item'], 'b')
+        self.assertEqual(run_success_fail.tick_count, 3)
+
+    def testIterateWithoutChild(self):
+        iterate_list = IterateList({
+            'item_type': str
+        })
+
+        iterate_list.inputs['list'] = ['a', 'b']
+
+        iterate_list.setup()
+
+        self.assertEqual(iterate_list.tick(), Node.RUNNING)
+        self.assertEqual(iterate_list.outputs['list_item'], 'a')
+        self.assertEqual(iterate_list.tick(), Node.RUNNING)
+        self.assertEqual(iterate_list.outputs['list_item'], 'b')
         self.assertEqual(iterate_list.tick(), Node.SUCCEEDED)
