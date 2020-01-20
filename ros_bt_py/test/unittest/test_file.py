@@ -88,12 +88,12 @@ class TestFile(unittest.TestCase):
     #     self.constant.shutdown()
     #     self.assertEqual(self.constant.state, NodeMsg.SHUTDOWN)
 
+
 class TestFileInput(unittest.TestCase):
     def testFileLoad(self):
         path = 'package://ros_bt_py/test/testdata/data/file_greetings.yaml'
         file_node = FileInput()
         file_node.setup()
-
 
         file_node.inputs['file_path'] = path
         self.assertTrue(file_node.inputs.is_updated('file_path'))

@@ -332,7 +332,7 @@ class TestParallelFailureTolerance(unittest.TestCase):
     def testOverlyPessimistic(self):
         """Fail after first failure is received"""
 
-        par = make_parallel_failure_tolerance(1,0)\
+        par = make_parallel_failure_tolerance(1, 0)\
             .add_child(self.failer)\
             .add_child(self.run_then_fail)
 
@@ -410,7 +410,7 @@ class TestParallelFailureTolerance(unittest.TestCase):
     def testHeurekaSuccess(self):
         """The "Heureka" configuration returns SUCCEEDED with just a single succeeding child"""
 
-        par = make_parallel_failure_tolerance(1,1)\
+        par = make_parallel_failure_tolerance(1, 1)\
             .add_child(self.succeeder)\
             .add_child(self.run_then_fail)
 
@@ -433,7 +433,7 @@ class TestParallelFailureTolerance(unittest.TestCase):
     def testHeurekaFailure(self):
         """The "Heureka" configuration returns FAILED only when all children fail"""
 
-        par = make_parallel_failure_tolerance(1,1)\
+        par = make_parallel_failure_tolerance(1, 1)\
             .add_child(self.failer)\
             .add_child(self.run_then_fail)
 
@@ -459,7 +459,6 @@ class TestParallelFailureTolerance(unittest.TestCase):
         self.assertEqual(self.run_then_fail.tick_count, 4)
 
         par.shutdown()
-
 
     def testParallelUtilityCalculation(self):
         par = make_parallel_failure_tolerance(1, 1)\

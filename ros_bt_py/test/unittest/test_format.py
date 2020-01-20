@@ -34,6 +34,7 @@ class TestFormatOptionNode(unittest.TestCase):
         self.assertEqual(format_option.state, NodeMsg.IDLE)
         self.assertEqual(format_option.tick(), NodeMsg.FAILED)
 
+
 class TestFormatOptionListNode(unittest.TestCase):
     def testSimpleFormatListString(self):
         format_option = FormatOptionListNode({'format_strings': ['foo {first}',

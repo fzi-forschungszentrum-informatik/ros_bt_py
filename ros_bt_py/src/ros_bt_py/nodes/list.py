@@ -30,7 +30,7 @@ class ListLength(Leaf):
 
 @define_bt_node(NodeConfig(
     options={'compare_type': type,
-             'list': list },
+             'list': list},
     inputs={
         'in': OptionRef('compare_type')
     },
@@ -69,10 +69,11 @@ class IsInList(Leaf):
         # Nothing to do
         pass
 
+
 @define_bt_node(NodeConfig(
     options={'item_type': type},
-    inputs={'list' : list},
-    outputs={'list_item' : OptionRef('item_type')},
+    inputs={'list': list},
+    outputs={'list_item': OptionRef('item_type')},
     max_children=1))
 class IterateList(Decorator):
     """

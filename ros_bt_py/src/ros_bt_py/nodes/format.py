@@ -5,6 +5,7 @@ from ros_bt_py.node_config import NodeConfig
 
 from string import Formatter
 
+
 class ExtendedFormatter(Formatter):
     """An extended format string formatter
 
@@ -88,7 +89,7 @@ class FormatOptionNode(Leaf):
     def _do_tick(self):
         try:
             self.outputs['formatted_string'] = myformatter.format(self.options['format_string'],
-                **self.inputs['dict'])
+                                                                  **self.inputs['dict'])
         except Exception:
             return NodeMsg.FAILED
         return NodeMsg.SUCCEEDED
@@ -128,7 +129,7 @@ class FormatInputNode(Leaf):
     def _do_tick(self):
         try:
             self.outputs['formatted_string'] = myformatter.format(self.inputs['format_string'],
-                **self.inputs['dict'])
+                                                                  **self.inputs['dict'])
         except Exception:
             return NodeMsg.FAILED
         return NodeMsg.SUCCEEDED

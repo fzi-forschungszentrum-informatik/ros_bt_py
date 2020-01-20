@@ -5,6 +5,7 @@ from ros_bt_py_msgs.msg import Node, UtilityBounds
 from ros_bt_py.nodes.list import ListLength, IsInList, IterateList
 from ros_bt_py.nodes.mock_nodes import MockLeaf
 
+
 class TestListLength(unittest.TestCase):
     def testListLength(self):
         list_length = ListLength()

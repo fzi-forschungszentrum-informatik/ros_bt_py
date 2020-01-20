@@ -9,13 +9,14 @@ import shutil
 import os
 import hashlib
 
+
 @define_bt_node(NodeConfig(
     options={'cache_folder': str},
     inputs={'image_url': str},
     outputs={
         'filepath': str,
         'download_success': bool,
-        'download_error_msg':str
+        'download_error_msg': str
     },
     max_children=0))
 class DownloadImage(Leaf):
@@ -33,7 +34,7 @@ class DownloadImage(Leaf):
             self.logerr(self.outputs['download_error_msg'])
 
     def _do_tick(self):
-        if self.output_path == None:
+        if self.output_path is None:
             return NodeMsg.FAILED
 
         if self.inputs.is_updated('image_url'):
@@ -55,7 +56,8 @@ class DownloadImage(Leaf):
             r = requests.get(url=self.inputs['image_url'], stream=True)
             if r.status_code != 200:
                 self.outputs['download_success'] = False
-                self.outputs['download_error_msg'] = ('Could not download image, http error code: {}'.format(r.status_code))
+                self.outputs['download_error_msg'] = ('Could not download image, http error code: {}'
+                                                      .format(r.status_code))
                 return NodeMsg.FAILED
 
         with open(self.output_filepath, 'wb') as f:
