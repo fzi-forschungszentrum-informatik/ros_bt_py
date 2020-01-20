@@ -103,13 +103,18 @@ class IterateList(Decorator):
                 self.output_ready = True
                 return NodeMsg.RUNNING
 
-            for child in self.children:
-                result = child.tick()
-                if result != NodeMsg.RUNNING:
-                    # we only increment the counter when the child succeeded or failed
-                    self.counter += 1
-                    # next tick is void
-                    self.output_ready = False
+            if len(self.children) == 0:
+                self.counter += 1
+                # next tick is void
+                self.output_ready = False
+            else:
+                for child in self.children:
+                    result = child.tick()
+                    if result != NodeMsg.RUNNING:
+                        # we only increment the counter when the child succeeded or failed
+                        self.counter += 1
+                        # next tick is void
+                        self.output_ready = False
             return NodeMsg.RUNNING
         else:
             self.reset_counter()

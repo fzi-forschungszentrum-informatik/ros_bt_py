@@ -58,6 +58,7 @@ class DownloadImage(Leaf):
                 self.outputs['download_success'] = False
                 self.outputs['download_error_msg'] = ('Could not download image, http error code: {}'
                                                       .format(r.status_code))
+                self.outputs['filepath'] = ''
                 return NodeMsg.FAILED
 
         with open(self.output_filepath, 'wb') as f:
