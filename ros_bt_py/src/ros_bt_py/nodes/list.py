@@ -88,7 +88,6 @@ class IterateList(Decorator):
 
     def reset_counter(self):
         self.counter = 0
-        self.output_ready = False
 
     def _do_tick(self):
         if self.inputs.is_updated('list'):
@@ -98,23 +97,14 @@ class IterateList(Decorator):
         if self.counter < len(self.inputs['list']):
             self.outputs['list_item'] = self.inputs['list'][self.counter]
 
-            if not self.output_ready:
-                # we need empty ticks when the input change
-                self.output_ready = True
-                return NodeMsg.RUNNING
-
             if len(self.children) == 0:
                 self.counter += 1
-                # next tick is void
-                self.output_ready = False
             else:
                 for child in self.children:
                     result = child.tick()
                     if result != NodeMsg.RUNNING:
                         # we only increment the counter when the child succeeded or failed
                         self.counter += 1
-                        # next tick is void
-                        self.output_ready = False
             return NodeMsg.RUNNING
         else:
             self.reset_counter()
