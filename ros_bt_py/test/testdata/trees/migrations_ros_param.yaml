@@ -1,0 +1,56 @@
+name: ''
+path: ''
+root_name: ''
+nodes: 
+  - 
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    version: ''
+    max_children: -1
+    name: "Sequence"
+    child_names: [RosParam]
+    options: []
+    inputs: []
+    outputs: []
+    option_wirings: []
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.nodes.ros_param"
+    node_class: "RosParam"
+    version: ''
+    max_children: 0
+    name: "RosParam"
+    child_names: []
+    options: 
+      - 
+        key: "param_name"
+        serialized_value: "\"foo\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "param_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "default_value"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    outputs: 
+      - 
+        key: "param"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    option_wirings: []
+    state: "UNINITIALIZED"
+data_wirings: []
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: 
+  - 
+    node_name: "RosParam"
+    data_kind: "inputs"
+    data_key: "default_value"
+  - 
+    node_name: "RosParam"
+    data_kind: "outputs"
+    data_key: "param"

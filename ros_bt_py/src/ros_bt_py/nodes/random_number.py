@@ -9,6 +9,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'min': int,
              'max': int},
     inputs={},
@@ -41,6 +42,7 @@ class RandomInt(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={},
     inputs={'min': int,
             'max': int},

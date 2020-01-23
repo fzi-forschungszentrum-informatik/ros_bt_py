@@ -9,6 +9,7 @@ from ros_bt_py.nodes.shovable import Shovable
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={},
     inputs={},
     outputs={},

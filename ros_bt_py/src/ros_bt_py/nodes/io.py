@@ -9,6 +9,7 @@ from rosbridge_library.internal.message_conversion import InvalidMessageExceptio
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'io_type': type,
              'default': OptionRef('io_type')},
     inputs={'in': OptionRef('io_type')},
@@ -56,6 +57,7 @@ class IOInputOption(IO):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'io_type': type},
     inputs={'in': OptionRef('io_type'),
             'default': OptionRef('io_type')},
@@ -105,6 +107,7 @@ class IOInput(IO):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'io_type': type,
              'default': OptionRef('io_type')},
     inputs={'in': OptionRef('io_type')},
@@ -152,6 +155,7 @@ class IOOutputOption(IO):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'io_type': type},
     inputs={'in': OptionRef('io_type'),
             'default': OptionRef('io_type')},

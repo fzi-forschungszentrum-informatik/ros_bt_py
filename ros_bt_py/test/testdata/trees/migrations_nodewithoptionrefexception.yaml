@@ -1,0 +1,20 @@
+name: ''
+path: ''
+root_name: ''
+nodes: 
+  - 
+    module: "ros_bt_py.testing_nodes.migrations_test_nodes"
+    node_class: "NodeWithOptionrefException"
+    version: ""
+    max_children: 0
+    name: "NodeWithOptionrefException"
+    child_names: []
+    options: []
+    inputs: []
+    outputs: []
+    option_wirings: []
+    state: "UNINITIALIZED"
+data_wirings: []
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: []

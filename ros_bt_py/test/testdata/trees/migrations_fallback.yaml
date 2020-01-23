@@ -1,0 +1,32 @@
+name: ''
+path: ''
+root_name: ''
+nodes: 
+  - 
+    module: "ros_bt_py.nodes.fallback"
+    node_class: "Fallback"
+    version: ''
+    max_children: -1
+    name: "Fallback"
+    child_names: [MemoryFallback]
+    options: []
+    inputs: []
+    outputs: []
+    option_wirings: []
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.nodes.fallback"
+    node_class: "MemoryFallback"
+    version: ''
+    max_children: -1
+    name: "MemoryFallback"
+    child_names: []
+    options: []
+    inputs: []
+    outputs: []
+    option_wirings: []
+    state: "UNINITIALIZED"
+data_wirings: []
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: []

@@ -7,6 +7,7 @@ from ros_bt_py.exceptions import BehaviorTreeException
 
 from ros_bt_py.ros_helpers import LoggerLevel
 
+
 class TestLog(unittest.TestCase):
     def testDebug(self):
         log = Log({'logger_level': LoggerLevel(logger_level='debug')})

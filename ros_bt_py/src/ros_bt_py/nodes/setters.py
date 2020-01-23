@@ -8,6 +8,7 @@ from ros_bt_py.helpers import rsetattr
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'list_type': type},
     inputs={'list': list,
             'value': OptionRef('list_type')},
@@ -35,6 +36,7 @@ class AppendListItem(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'object_type': type,
              'attr_name': str,
              'attr_type': type},
@@ -65,6 +67,7 @@ class SetAttr(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'attr_name': str,
              'attr_type': type},
     inputs={'object': dict,

@@ -2,10 +2,12 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig
+from ros_bt_py.ros_helpers import LoggerLevel
 
 
 @define_bt_node(NodeConfig(
-    options={'logger_level': str},
+    version='1.0.0',
+    options={'logger_level': LoggerLevel},
     inputs={'in': str},
     outputs={},
     max_children=0))
@@ -14,18 +16,18 @@ class Log(Leaf):
 
     """
     def _do_setup(self):
-        logger_level = self.options['logger_level'].lower()
+        logger_level = self.options['logger_level']
         self.log = self.loginfo
 
-        if logger_level == "debug":
+        if logger_level.logger_level == 'debug':
             self.log = self.logdebug
-        elif logger_level == "info":
+        elif logger_level.logger_level == 'info':
             self.log = self.loginfo
-        elif logger_level == "warn" or logger_level == "warning":
+        elif logger_level.logger_level == 'warning':
             self.log = self.logwarn
-        elif logger_level == "err" or logger_level == "error":
+        elif logger_level.logger_level == 'error':
             self.log = self.logerr
-        elif logger_level == "fatal":
+        elif logger_level.logger_level == 'fatal':
             self.log = self.logfatal
 
         return NodeMsg.IDLE

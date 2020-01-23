@@ -12,7 +12,7 @@ import rospy
 import rospkg
 
 from ros_bt_py_msgs.srv import LoadTreeRequest, LoadTreeResponse
-from ros_bt_py_msgs.srv import LoadTreeFromPathResponse
+from ros_bt_py_msgs.srv import LoadTreeFromPathResponse, MigrateTreeResponse
 from ros_bt_py_msgs.srv import ClearTreeResponse
 from ros_bt_py_msgs.srv import MorphNodeResponse
 from ros_bt_py_msgs.srv import MoveNodeRequest, RemoveNodeRequest, ReplaceNodeRequest
@@ -341,31 +341,10 @@ class TreeManager(object):
 
         return response
 
-    @is_edit_service
-    def load_tree(self, request, prefix=None):
-        """Load a tree from the given message (which may point to a file)
-
-        :param ros_bt_py_msgs.srv.LoadTree request:
-
-        `request.tree` describes the tree to be loaded, including
-        nodes, wirings and public node data.
-
-        If the `Tree` message itself isn't populated, but contains a
-        `path` to load a tree from, we open the file it points to and
-        load that.
-
-        :param str prefix:
-
-        If set, all node names in the tree will be prefixed with this string.
-
-        This is used by the subtree node (using its own name as a
-        prefix, since that must be unique in the tree) to ensure
-        unique node names for easier debugging.
-
+    def load_tree_from_file(self, request):
+        """Loads a tree file from disk
         """
-        if prefix is None:
-            prefix = ''
-        response = LoadTreeResponse()
+        response = MigrateTreeResponse()
         tree = request.tree
         rospack = rospkg.RosPack()
         while not tree.nodes:
@@ -419,6 +398,42 @@ class TreeManager(object):
                     response.error_message = ('No data in YAML file %s!' % file_path)
 
                     return response
+        response.success = True
+        response.tree = tree
+        return response
+
+    @is_edit_service
+    def load_tree(self, request, prefix=None):
+        """Load a tree from the given message (which may point to a file)
+
+        :param ros_bt_py_msgs.srv.LoadTree request:
+
+        `request.tree` describes the tree to be loaded, including
+        nodes, wirings and public node data.
+
+        If the `Tree` message itself isn't populated, but contains a
+        `path` to load a tree from, we open the file it points to and
+        load that.
+
+        :param str prefix:
+
+        If set, all node names in the tree will be prefixed with this string.
+
+        This is used by the subtree node (using its own name as a
+        prefix, since that must be unique in the tree) to ensure
+        unique node names for easier debugging.
+
+        """
+        if prefix is None:
+            prefix = ''
+        response = LoadTreeResponse()
+
+        load_response = self.load_tree_from_file(request)
+        if not load_response.success:
+            response.error_message = load_response.error_message
+            return response
+
+        tree = load_response.tree
 
         # we should have a tree message with all the info we need now
 
@@ -1685,6 +1700,7 @@ class TreeManager(object):
                 response.available_nodes.append(DocumentedNode(
                     module=module,
                     node_class=class_name,
+                    version=node_class._node_config.version,
                     max_children=max_children,
                     name=class_name,
                     options=to_node_data(node_class._node_config.options),

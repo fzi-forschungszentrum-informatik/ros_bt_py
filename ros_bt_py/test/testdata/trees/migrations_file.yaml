@@ -1,0 +1,56 @@
+name: ''
+path: ''
+root_name: ''
+nodes: 
+  - 
+    module: "ros_bt_py.nodes.file"
+    node_class: "File"
+    version: ''
+    max_children: 0
+    name: "File"
+    child_names: []
+    options: 
+      - 
+        key: "file_path"
+        serialized_value: "\"foo\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+    inputs: []
+    outputs: 
+      - 
+        key: "load_success"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+      - 
+        key: "content"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.list\"}"
+      - 
+        key: "line_count"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      - 
+        key: "load_error_msg"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+    option_wirings: []
+    state: "UNINITIALIZED"
+data_wirings: []
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: 
+  - 
+    node_name: "File"
+    data_kind: "outputs"
+    data_key: "load_success"
+  - 
+    node_name: "File"
+    data_kind: "outputs"
+    data_key: "content"
+  - 
+    node_name: "File"
+    data_kind: "outputs"
+    data_key: "line_count"
+  - 
+    node_name: "File"
+    data_kind: "outputs"
+    data_key: "load_error_msg"
