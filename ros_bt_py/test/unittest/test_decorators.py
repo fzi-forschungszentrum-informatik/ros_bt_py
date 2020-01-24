@@ -151,6 +151,16 @@ class TestDecorators(unittest.TestCase):
         test_for_running_option(False)
         test_for_running_option(True)
 
+    def testIgnoreRunningWithChild(self):
+        ignore_running = IgnoreRunning(options={'running_is_success': True})
+        ignore_running.add_child(self.fail_fail_succeed)
+        ignore_running.setup()
+
+        self.assertEqual(ignore_running.tick(), Node.FAILED)
+        self.assertEqual(ignore_running.untick(), Node.PAUSED)
+        self.assertEqual(ignore_running.reset(), Node.IDLE)
+        self.assertEqual(ignore_running.shutdown(), Node.SHUTDOWN)
+
     def testUntilSuccess(self):
         until_success = UntilSuccess()
         until_success.setup()
@@ -428,7 +438,33 @@ class TestDecorators(unittest.TestCase):
         magic_leaf._do_tick.assert_not_called()
         magic_leaf._do_tick.reset_mock()
 
+        self.assertEqual(throttle.untick(), Node.PAUSED)
+        self.assertEqual(throttle.reset(), Node.IDLE)
         self.assertEqual(throttle.shutdown(), Node.SHUTDOWN)
+
+    @mock.patch('ros_bt_py.nodes.decorators.rospy.Time.now')
+    def testThrottleWithRunningChild(self, mock_time_now):
+        throttle = Throttle(options={'tick_interval': 100.})
+
+        throttle.setup()
+        self.assertEqual(throttle.tick(), Node.FAILED)
+        self.assertEqual(throttle.untick(), Node.IDLE)
+        self.assertEqual(throttle.reset(), Node.IDLE)
+        self.assertEqual(throttle.shutdown(), Node.SHUTDOWN)
+
+        magic_leaf = MockLeaf(name='magic_leaf',
+                              options={'output_type': int,
+                                       'state_values': [Node.RUNNING],
+                                       'output_values': [1]})
+        magic_leaf._do_tick = mock.MagicMock()
+
+        throttle.add_child(magic_leaf)
+        throttle.setup()
+        mock_time_now.return_value = Time.from_seconds(0.)
+        magic_leaf._do_tick.return_value = Node.RUNNING
+        self.assertEqual(throttle.tick(), Node.RUNNING)
+        magic_leaf._do_tick.assert_called()
+        magic_leaf._do_tick.reset_mock()
 
     @mock.patch('ros_bt_py.nodes.decorators.rospy.Time.now')
     def testThrottleSuccess(self, mock_time_now):
@@ -474,4 +510,30 @@ class TestDecorators(unittest.TestCase):
         magic_leaf._do_tick.assert_called()
         magic_leaf._do_tick.reset_mock()
 
+        self.assertEqual(throttle_success.untick(), Node.PAUSED)
+        self.assertEqual(throttle_success.reset(), Node.IDLE)
         self.assertEqual(throttle_success.shutdown(), Node.SHUTDOWN)
+
+    @mock.patch('ros_bt_py.nodes.decorators.rospy.Time.now')
+    def testThrottleSuccessWithRunningChild(self, mock_time_now):
+        throttle = ThrottleSuccess(options={'tick_interval': 100.})
+
+        throttle.setup()
+        self.assertEqual(throttle.tick(), Node.FAILED)
+        self.assertEqual(throttle.untick(), Node.IDLE)
+        self.assertEqual(throttle.reset(), Node.IDLE)
+        self.assertEqual(throttle.shutdown(), Node.SHUTDOWN)
+
+        magic_leaf = MockLeaf(name='magic_leaf',
+                              options={'output_type': int,
+                                       'state_values': [Node.RUNNING],
+                                       'output_values': [1]})
+        magic_leaf._do_tick = mock.MagicMock()
+
+        throttle.add_child(magic_leaf)
+        throttle.setup()
+        mock_time_now.return_value = Time.from_seconds(0.)
+        magic_leaf._do_tick.return_value = Node.RUNNING
+        self.assertEqual(throttle.tick(), Node.RUNNING)
+        magic_leaf._do_tick.assert_called()
+        magic_leaf._do_tick.reset_mock()
