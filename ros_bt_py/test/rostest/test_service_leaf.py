@@ -8,7 +8,7 @@ from std_srvs.srv import SetBool, SetBoolRequest, SetBoolResponse
 from ros_bt_py_msgs.msg import Node as NodeMsg, UtilityBounds
 
 from ros_bt_py.node_config import NodeConfig
-from ros_bt_py.nodes.service import Service
+from ros_bt_py.nodes.service import Service, WaitForService
 
 PKG = 'ros_bt_py'
 
@@ -27,6 +27,49 @@ class TestServiceLeaf(unittest.TestCase):
 
     def tearDown(self):
         self.delay_service_leaf.shutdown()
+
+    def testWaitForService(self):
+        wait_for_service = WaitForService(options={
+            'service_type': SetBool,
+            'service_name': 'delay_1s_if_true',
+            'wait_for_service_seconds': 0.5,
+        })
+
+        wait_for_service.setup()
+
+        wait_for_service.tick()
+        self.assertEqual(wait_for_service.state, NodeMsg.RUNNING)
+
+        rospy.sleep(0.6)
+
+        wait_for_service.tick()
+        self.assertEqual(wait_for_service.state, NodeMsg.SUCCEEDED)
+
+        wait_for_service.untick()
+        self.assertEqual(wait_for_service.state, NodeMsg.IDLE)
+
+        wait_for_service.reset()
+        self.assertEqual(wait_for_service.state, NodeMsg.IDLE)
+
+        wait_for_service.shutdown()
+        self.assertEqual(wait_for_service.state, NodeMsg.SHUTDOWN)
+
+    def testWaitForServiceNotAvailable(self):
+        wait_for_service = WaitForService(options={
+            'service_type': SetBool,
+            'service_name': 'this_service_is_not_available',
+            'wait_for_service_seconds': 0.1,
+        })
+
+        wait_for_service.setup()
+
+        wait_for_service.tick()
+        self.assertEqual(wait_for_service.state, NodeMsg.RUNNING)
+
+        rospy.sleep(0.5)
+
+        wait_for_service.tick()
+        self.assertEqual(wait_for_service.state, NodeMsg.FAILED)
 
     def testNoDelayServiceCall(self):
         # No delay

@@ -9,6 +9,7 @@ from ros_bt_py.node_config import NodeConfig
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'subtree_path': str,
              'use_io_nodes': bool},
     inputs={},

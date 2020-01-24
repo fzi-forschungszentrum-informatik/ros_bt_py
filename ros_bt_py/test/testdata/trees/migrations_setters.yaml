@@ -1,0 +1,152 @@
+name: ''
+path: ''
+root_name: ''
+nodes: 
+  - 
+    module: "ros_bt_py.nodes.setters"
+    node_class: "SetAttr"
+    version: ''
+    max_children: 0
+    name: "SetAttr"
+    child_names: []
+    options: 
+      - 
+        key: "object_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "attr_name"
+        serialized_value: "\"foo\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "attr_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "object"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      - 
+        key: "attr_value"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    outputs: 
+      - 
+        key: "new_object"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    option_wirings: []
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    version: ''
+    max_children: -1
+    name: "Sequence"
+    child_names: [AppendListItem, SetAttr, SetDictItem]
+    options: []
+    inputs: []
+    outputs: []
+    option_wirings: []
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.nodes.setters"
+    node_class: "AppendListItem"
+    version: ''
+    max_children: 0
+    name: "AppendListItem"
+    child_names: []
+    options: 
+      - 
+        key: "list_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "list"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.list\"}"
+      - 
+        key: "value"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    outputs: 
+      - 
+        key: "new_list"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.list\"}"
+    option_wirings: []
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.nodes.setters"
+    node_class: "SetDictItem"
+    version: ''
+    max_children: 0
+    name: "SetDictItem"
+    child_names: []
+    options: 
+      - 
+        key: "attr_name"
+        serialized_value: "\"foo\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "attr_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "object"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.dict\"}"
+      - 
+        key: "attr_value"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    outputs: 
+      - 
+        key: "new_object"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.dict\"}"
+    option_wirings: []
+    state: "UNINITIALIZED"
+data_wirings: []
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: 
+  - 
+    node_name: "AppendListItem"
+    data_kind: "inputs"
+    data_key: "list"
+  - 
+    node_name: "AppendListItem"
+    data_kind: "inputs"
+    data_key: "value"
+  - 
+    node_name: "AppendListItem"
+    data_kind: "outputs"
+    data_key: "new_list"
+  - 
+    node_name: "SetAttr"
+    data_kind: "inputs"
+    data_key: "object"
+  - 
+    node_name: "SetAttr"
+    data_kind: "inputs"
+    data_key: "attr_value"
+  - 
+    node_name: "SetAttr"
+    data_kind: "outputs"
+    data_key: "new_object"
+  - 
+    node_name: "SetDictItem"
+    data_kind: "inputs"
+    data_key: "object"
+  - 
+    node_name: "SetDictItem"
+    data_kind: "inputs"
+    data_key: "attr_value"
+  - 
+    node_name: "SetDictItem"
+    data_kind: "outputs"
+    data_key: "new_object"

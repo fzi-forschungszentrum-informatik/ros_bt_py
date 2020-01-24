@@ -7,6 +7,7 @@ from ros_bt_py.node_config import NodeConfig
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'seconds_to_wait': int},
     inputs={},
     outputs={},
@@ -50,6 +51,7 @@ class Wait(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={},
     inputs={'seconds_to_wait': int},
     outputs={},

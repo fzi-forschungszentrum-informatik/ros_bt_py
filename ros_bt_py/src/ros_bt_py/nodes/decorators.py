@@ -8,6 +8,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={},
     inputs={},
     outputs={},
@@ -53,6 +54,7 @@ class IgnoreFailure(Decorator):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'running_is_success': bool},
     inputs={},
     outputs={},
@@ -95,6 +97,7 @@ class IgnoreRunning(Decorator):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={},
     inputs={},
     outputs={},
@@ -135,6 +138,7 @@ class IgnoreSuccess(Decorator):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={},
     inputs={},
     outputs={},
@@ -182,6 +186,7 @@ class UntilSuccess(Decorator):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={},
     inputs={},
     outputs={},
@@ -231,6 +236,7 @@ class Inverter(Decorator):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'num_retries': int},
     inputs={},
     outputs={},
@@ -285,6 +291,7 @@ class Retry(Decorator):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'num_repeats': int},
     inputs={},
     outputs={},
@@ -342,6 +349,7 @@ class Repeat(Decorator):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={},
     inputs={},
     outputs={},
@@ -389,6 +397,7 @@ class RepeatAlways(Decorator):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={},
     inputs={},
     outputs={},
@@ -439,6 +448,7 @@ class RepeatUntilFail(Decorator):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'tick_interval': float},
     inputs={},
     outputs={},
@@ -485,6 +495,7 @@ class Throttle(Decorator):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'tick_interval': float},
     inputs={},
     outputs={},
@@ -531,6 +542,7 @@ class ThrottleSuccess(Decorator):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={},
     inputs={},
     outputs={},

@@ -8,6 +8,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'param_type': type, 'default_value': OptionRef('param_type')},
     inputs={'param_name': str},
     outputs={'param': OptionRef('param_type')},
@@ -40,6 +41,7 @@ class RosParamInput(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='1.0.0',
     options={'param_name': str, 'param_type': type},
     inputs={'default_value': OptionRef('param_type')},
     outputs={'param': OptionRef('param_type')},

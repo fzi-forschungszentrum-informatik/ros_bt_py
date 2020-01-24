@@ -399,7 +399,7 @@ class TestNodeConfig(unittest.TestCase):
         expected = "NodeConfig(inputs={'int_input': <type 'int'>}," \
                    " outputs={'str_output': <type 'str'>}," \
                    " options={'float_option': <type 'float'>}," \
-                   " max_children=42, option_wirings=[], optional_options=[])"
+                   " max_children=42, option_wirings=[], optional_options=[], version=)"
         self.assertEqual(expected, repr(self.conf))
 
 
@@ -413,6 +413,7 @@ class TestPassthroughNode(unittest.TestCase):
     def testPassthroughNodeConfig(self):
         self.assertEqual(PassthroughNode._node_config,
                          NodeConfig(
+                             version='0.9.0',
                              options={'passthrough_type': type},
                              inputs={'in': OptionRef('passthrough_type')},
                              outputs={'out': OptionRef('passthrough_type')},
@@ -613,6 +614,7 @@ class TestPassthroughNode(unittest.TestCase):
             name='Test Node',
             module="ros_bt_py.nodes.passthrough_node",
             node_class="PassthroughNode",
+            version="0.9.0",
             options=[NodeData(key='passthrough_type',
                               serialized_value=jsonpickle.encode(int),
                               serialized_type=jsonpickle.encode(type))])

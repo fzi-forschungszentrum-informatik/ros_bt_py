@@ -1,0 +1,132 @@
+name: ''
+path: ''
+root_name: ''
+nodes: 
+  - 
+    module: "ros_bt_py.nodes.mock_nodes"
+    node_class: "MockUtilityLeaf"
+    version: ''
+    max_children: 0
+    name: "MockUtilityLeaf"
+    child_names: []
+    options: 
+      - 
+        key: "utility_lower_bound_success"
+        serialized_value: "1.2"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+      - 
+        key: "utility_upper_bound_failure"
+        serialized_value: "1.2"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+      - 
+        key: "utility_upper_bound_success"
+        serialized_value: "1.2"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+      - 
+        key: "can_execute"
+        serialized_value: "true"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+      - 
+        key: "utility_lower_bound_failure"
+        serialized_value: "1.2"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+    inputs: []
+    outputs: 
+      - 
+        key: "calculate_utility_count"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    option_wirings: []
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.nodes.mock_nodes"
+    node_class: "MockLeaf"
+    version: ''
+    max_children: 0
+    name: "MockLeaf"
+    child_names: []
+    options: 
+      - 
+        key: "state_values"
+        serialized_value: "[]"
+        serialized_type: "{\"py/type\": \"__builtin__.list\"}"
+      - 
+        key: "output_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "output_values"
+        serialized_value: "[]"
+        serialized_type: "{\"py/type\": \"__builtin__.list\"}"
+    inputs: []
+    outputs: 
+      - 
+        key: "shutdown_count"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      - 
+        key: "tick_count"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      - 
+        key: "reset_count"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      - 
+        key: "current_index"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      - 
+        key: "untick_count"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      - 
+        key: "out"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    option_wirings: []
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    version: ''
+    max_children: -1
+    name: "Sequence"
+    child_names: [MockLeaf, MockUtilityLeaf]
+    options: []
+    inputs: []
+    outputs: []
+    option_wirings: []
+    state: "UNINITIALIZED"
+data_wirings: []
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: 
+  - 
+    node_name: "MockLeaf"
+    data_kind: "outputs"
+    data_key: "shutdown_count"
+  - 
+    node_name: "MockLeaf"
+    data_kind: "outputs"
+    data_key: "tick_count"
+  - 
+    node_name: "MockLeaf"
+    data_kind: "outputs"
+    data_key: "reset_count"
+  - 
+    node_name: "MockLeaf"
+    data_kind: "outputs"
+    data_key: "current_index"
+  - 
+    node_name: "MockLeaf"
+    data_kind: "outputs"
+    data_key: "untick_count"
+  - 
+    node_name: "MockLeaf"
+    data_kind: "outputs"
+    data_key: "out"
+  - 
+    node_name: "MockUtilityLeaf"
+    data_kind: "outputs"
+    data_key: "calculate_utility_count"

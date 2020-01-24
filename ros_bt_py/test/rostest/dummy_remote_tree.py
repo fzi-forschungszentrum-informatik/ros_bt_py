@@ -52,6 +52,22 @@ class FindBestExecutorActionServer(object):
         self._as.set_succeeded(self.callback(goal))
 
 
+class SlowFindBestExecutorActionServer(object):
+    def __init__(self, name, callback):
+        self._as = SimpleActionServer(
+            name,
+            FindBestExecutorAction,
+            self.execute_cb,
+            auto_start=False)
+        self.callback = callback
+
+        self._as.start()
+
+    def execute_cb(self, goal):
+        rospy.sleep(2.0)
+        self._as.set_succeeded(self.callback(goal))
+
+
 class RunTreeActionServer(object):
     def __init__(self):
         self._lock = Lock()
@@ -137,6 +153,11 @@ if __name__ == '__main__':
 
     evaluate_local = FindBestExecutorActionServer(
         'evaluate_utility_local',
+        callback=lambda _: FindBestExecutorResult(
+            local_is_best=True))
+
+    slow_evaluate_local = SlowFindBestExecutorActionServer(
+        'slow_evaluate_utility_local',
         callback=lambda _: FindBestExecutorResult(
             local_is_best=True))
 

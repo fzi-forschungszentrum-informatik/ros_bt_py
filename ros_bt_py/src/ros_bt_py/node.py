@@ -1250,6 +1250,7 @@ class Node(object):
         node_type = type(self)
         return NodeMsg(module=node_type.__module__,
                        node_class=node_type.__name__,
+                       version=self.node_config.version,
                        name=self.name,
                        child_names=[child.name for child in self.children],
                        options=[NodeDataMsg(

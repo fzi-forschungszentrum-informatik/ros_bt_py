@@ -19,6 +19,7 @@ from ros_bt_py.exceptions import BehaviorTreeException
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={
         'find_best_executor_action': str,
         'wait_for_find_best_executor_seconds': float,
