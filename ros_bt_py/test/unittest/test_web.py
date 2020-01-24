@@ -26,6 +26,11 @@ class TestDownloadImage(unittest.TestCase):
         with mock.patch('ros_bt_py.nodes.web.open', mock.mock_open()) as mocked_file:
             self.assertEqual(dl.tick(), Node.SUCCEEDED)
             mocked_file.assert_called_once()
+            # test caching
+            with mock.patch('os.path.exists') as mocked_exists:
+                mocked_exists.return_value = True
+                self.assertEqual(dl.tick(), Node.SUCCEEDED)
+                mocked_exists.assert_called_once()
 
         self.assertEqual(dl.outputs['download_error_msg'], '')
         self.assertTrue(dl.outputs['download_success'])
@@ -53,3 +58,14 @@ class TestDownloadImage(unittest.TestCase):
         self.assertEqual(dl.untick(), Node.IDLE)
         self.assertEqual(dl.reset(), Node.IDLE)
         self.assertEqual(dl.shutdown(), Node.SHUTDOWN)
+
+    def testMalformedCacheFolder(self):
+        dl = DownloadImage({'cache_folder': '/notareal.file'})
+        dl.setup()
+        self.assertFalse(dl.outputs['download_success'])
+        dl.inputs['image_url'] = 'www.foobar.com/picture.png'
+        self.assertEqual(dl.tick(), Node.FAILED)
+
+    def testPackageCacheFolder(self):
+        dl = DownloadImage({'cache_folder': 'package://ros_bt_py/cache'})
+        dl.setup()
