@@ -10,7 +10,8 @@ from ros_bt_py.exceptions import BehaviorTreeException
 
 class TestFormatOptionNode(unittest.TestCase):
     def testSimpleFormatString(self):
-        format_option = FormatOptionNode({'format_string': 'foo {first} {third!u} {third!l} {third!c}'})
+        format_option = FormatOptionNode(
+            {'format_string': 'foo {first} {third!u} {third!l} {third!c}'})
         format_option.inputs['dict'] = {'first': 'bar', 'second': 'not_printed', 'third': 'ToTo'}
         self.assertEqual(format_option.state, NodeMsg.UNINITIALIZED)
 

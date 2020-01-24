@@ -8,7 +8,8 @@ except ImportError:
 from ros_bt_py_msgs.msg import Node, UtilityBounds
 
 from ros_bt_py.nodes.mock_nodes import MockLeaf, MockUtilityLeaf
-from ros_bt_py.nodes.decorators import IgnoreFailure, IgnoreSuccess, UntilSuccess, Retry, Optional, IgnoreRunning
+from ros_bt_py.nodes.decorators import IgnoreFailure, IgnoreSuccess, UntilSuccess
+from ros_bt_py.nodes.decorators import Retry, Optional, IgnoreRunning
 from ros_bt_py.nodes.decorators import Inverter, Repeat, RepeatAlways, RepeatUntilFail
 from ros_bt_py.nodes.decorators import Throttle, ThrottleSuccess
 from rospy import Time

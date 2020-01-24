@@ -77,7 +77,8 @@ class IsInList(Leaf):
     max_children=1))
 class IterateList(Decorator):
     """
-    Iterate through list, will succeed if iterated through entire list, returns running while iterating.
+    Iterate through list, will succeed if iterated through entire list,
+    returns running while iterating.
     To be used as a decorator, with one child.
     """
     def _do_setup(self):

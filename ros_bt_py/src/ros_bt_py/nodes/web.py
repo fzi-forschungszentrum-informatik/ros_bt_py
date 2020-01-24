@@ -29,8 +29,9 @@ class DownloadImage(Leaf):
         except ValueError as exc:
             self.output_path = None
             self.outputs['download_success'] = False
-            self.outputs['download_error_msg'] = ('File path "%s" is malformed. It needs to start with '
-                                                  'either "file://" or "package://"') % self.inputs['image_url']
+            self.outputs['download_error_msg'] = (
+                'File path "%s" is malformed. It needs to start with '
+                'either "file://" or "package://"') % self.inputs['image_url']
             self.logerr(self.outputs['download_error_msg'])
 
     def _do_tick(self):
@@ -40,7 +41,8 @@ class DownloadImage(Leaf):
         if self.inputs.is_updated('image_url'):
             # update the filepath
             _, file_extension = os.path.splitext(self.inputs['image_url'])
-            output_filename = hashlib.md5(self.inputs['image_url'].encode()).hexdigest() + file_extension
+            output_filename = hashlib.md5(
+                self.inputs['image_url'].encode()).hexdigest() + file_extension
 
             self.output_filepath = os.path.join(self.output_path, output_filename)
 
@@ -56,8 +58,9 @@ class DownloadImage(Leaf):
             r = requests.get(url=self.inputs['image_url'], stream=True)
             if r.status_code != 200:
                 self.outputs['download_success'] = False
-                self.outputs['download_error_msg'] = ('Could not download image, http error code: {}'
-                                                      .format(r.status_code))
+                self.outputs['download_error_msg'] = (
+                    'Could not download image, http error code: {}'
+                    .format(r.status_code))
                 self.outputs['filepath'] = ''
                 return NodeMsg.FAILED
 
