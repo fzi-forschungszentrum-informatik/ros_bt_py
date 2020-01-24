@@ -14,6 +14,10 @@ class TestListLength(unittest.TestCase):
         self.assertEqual(list_length.tick(), Node.SUCCEEDED)
         self.assertEqual(list_length.outputs['length'], 3)
 
+        self.assertEqual(list_length.untick(), Node.IDLE)
+        self.assertEqual(list_length.reset(), Node.IDLE)
+        self.assertEqual(list_length.shutdown(), Node.SHUTDOWN)
+
 
 class TestIsInList(unittest.TestCase):
     def testIsInList(self):
@@ -27,6 +31,11 @@ class TestIsInList(unittest.TestCase):
         self.assertEqual(in_list.tick(), Node.FAILED)
         in_list.inputs['in'] = 'a'
         self.assertEqual(in_list.tick(), Node.SUCCEEDED)
+
+        self.assertEqual(in_list.untick(), Node.IDLE)
+        self.assertEqual(in_list.reset(), Node.IDLE)
+        self.assertFalse(in_list._received_in)
+        self.assertEqual(in_list.shutdown(), Node.SHUTDOWN)
 
 
 class TestIterateList(unittest.TestCase):
@@ -64,6 +73,13 @@ class TestIterateList(unittest.TestCase):
         self.assertEqual(iterate_list.outputs['list_item'], 'b')
         self.assertEqual(run_success_fail.tick_count, 3)
 
+        self.assertEqual(iterate_list.untick(), Node.PAUSED)
+        self.assertEqual(iterate_list.children[0].state, Node.PAUSED)
+        self.assertEqual(iterate_list.reset(), Node.IDLE)
+        self.assertEqual(iterate_list.children[0].state, Node.IDLE)
+        self.assertEqual(iterate_list.shutdown(), Node.SHUTDOWN)
+        self.assertEqual(iterate_list.children[0].state, Node.SHUTDOWN)
+
     def testIterateWithoutChild(self):
         iterate_list = IterateList({
             'item_type': str
@@ -78,3 +94,7 @@ class TestIterateList(unittest.TestCase):
         self.assertEqual(iterate_list.tick(), Node.RUNNING)
         self.assertEqual(iterate_list.outputs['list_item'], 'b')
         self.assertEqual(iterate_list.tick(), Node.SUCCEEDED)
+
+        self.assertEqual(iterate_list.untick(), Node.IDLE)
+        self.assertEqual(iterate_list.reset(), Node.IDLE)
+        self.assertEqual(iterate_list.shutdown(), Node.SHUTDOWN)
