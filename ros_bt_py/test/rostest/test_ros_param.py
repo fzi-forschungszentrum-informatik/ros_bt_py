@@ -87,14 +87,6 @@ class TestRosParamInput(unittest.TestCase):
         self.assertEqual(ros_param.tick(), NodeMsg.SUCCEEDED)
         self.assertEqual(ros_param.outputs['param'], 42)
 
-        expected_bounds = UtilityBounds(can_execute=True,
-                                        has_lower_bound_success=True,
-                                        has_upper_bound_success=True,
-                                        has_lower_bound_failure=True,
-                                        has_upper_bound_failure=True)
-
-        self.assertEqual(ros_param.calculate_utility(), expected_bounds)
-
         self.assertEqual(ros_param.untick(), NodeMsg.IDLE)
         self.assertEqual(ros_param.reset(), NodeMsg.IDLE)
         self.assertEqual(ros_param.shutdown(), NodeMsg.SHUTDOWN)
@@ -109,15 +101,11 @@ class TestRosParamInput(unittest.TestCase):
         ros_param.setup()
         self.assertEqual(ros_param.state, NodeMsg.IDLE)
 
-        ros_param.inputs['default_value'] = '/param_missing'
+        ros_param.inputs['param_name'] = '/param_missing'
         self.assertEqual(ros_param.tick(), NodeMsg.SUCCEEDED)
         self.assertEqual(ros_param.outputs['param'], 0)
 
-        expected_bounds = UtilityBounds(can_execute=False,
-                                        has_lower_bound_success=False,
-                                        has_upper_bound_success=False,
-                                        has_lower_bound_failure=False,
-                                        has_upper_bound_failure=False)
+        expected_bounds = UtilityBounds()
 
         self.assertEqual(ros_param.calculate_utility(), expected_bounds)
 
@@ -141,4 +129,6 @@ if __name__ == '__main__':
     import os
     os.environ['COVERAGE_FILE'] = '%s.%s.coverage' % (PKG, 'test_ros_param')
     rostest.rosrun(PKG, 'test_ros_param', TestRosParamOption,
+                   sysargs=sys.argv + ['--cov'])
+    rostest.rosrun(PKG, 'test_ros_param', TestRosParamInput,
                    sysargs=sys.argv + ['--cov'])
