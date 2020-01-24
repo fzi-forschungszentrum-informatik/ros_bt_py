@@ -1,11 +1,18 @@
 from copy import deepcopy
 import unittest
+try:
+    import unittest.mock as mock
+except ImportError:
+    import mock
 
 from ros_bt_py_msgs.msg import Node, UtilityBounds
 
 from ros_bt_py.nodes.mock_nodes import MockLeaf, MockUtilityLeaf
-from ros_bt_py.nodes.decorators import IgnoreFailure, IgnoreSuccess, UntilSuccess, Retry, Optional
+from ros_bt_py.nodes.decorators import IgnoreFailure, IgnoreSuccess, UntilSuccess
+from ros_bt_py.nodes.decorators import Retry, Optional, IgnoreRunning
 from ros_bt_py.nodes.decorators import Inverter, Repeat, RepeatAlways, RepeatUntilFail
+from ros_bt_py.nodes.decorators import Throttle, ThrottleSuccess
+from rospy import Time
 
 
 class TestDecorators(unittest.TestCase):
@@ -22,11 +29,23 @@ class TestDecorators(unittest.TestCase):
                                 options={'output_type': int,
                                          'state_values': [Node.RUNNING],
                                          'output_values': [1]})
+        self.running_fail_running = MockLeaf(name='running_fail_running',
+                                             options={'output_type': int,
+                                                      'state_values': [Node.RUNNING, Node.FAILED,
+                                                                       Node.RUNNING],
+                                                      'output_values': [1, 1, 1]})
+        self.running_succeed_running = MockLeaf(name='running_succeed_running',
+                                                options={'output_type': int,
+                                                         'state_values': [Node.RUNNING,
+                                                                          Node.SUCCEEDED,
+                                                                          Node.RUNNING],
+                                                         'output_values': [1, 1, 1]})
         self.fail_fail_succeed = MockLeaf(name='fail_fail_succeed',
                                           options={'output_type': int,
                                                    'state_values': [Node.FAILED, Node.FAILED,
                                                                     Node.SUCCEEDED],
                                                    'output_values': [1, 1, 1]})
+
         self.run_fail_succeed = MockLeaf(name='run_fail_succeed',
                                          options={'output_type': int,
                                                   'state_values': [Node.RUNNING, Node.FAILED,
@@ -89,6 +108,48 @@ class TestDecorators(unittest.TestCase):
         self.assertEqual(self.fail_fail_succeed.state, Node.SUCCEEDED)
 
         self.assertEqual(ignore_success.shutdown(), Node.SHUTDOWN)
+
+    def testIgnoreRunning(self):
+        ignore_running = IgnoreRunning(options={'running_is_success': True})
+        ignore_running.setup()
+
+        self.assertEqual(ignore_running.tick(), Node.FAILED)
+        self.assertEqual(ignore_running.untick(), Node.IDLE)
+        self.assertEqual(ignore_running.reset(), Node.IDLE)
+        self.assertEqual(ignore_running.shutdown(), Node.SHUTDOWN)
+
+        def test_for_running_option(running_is_success):
+            if running_is_success:
+                fail_or_success = Node.SUCCEEDED
+            else:
+                fail_or_success = Node.FAILED
+
+            ignore_running = IgnoreRunning(options={'running_is_success': running_is_success})
+
+            ignore_running.add_child(self.running_succeed_running)
+            ignore_running.setup()
+
+            self.assertEqual(ignore_running.tick(), fail_or_success)
+            self.assertEqual(ignore_running.untick(), Node.PAUSED)
+            self.assertEqual(ignore_running.tick(), Node.SUCCEEDED)
+            self.assertEqual(ignore_running.untick(), Node.PAUSED)
+            self.assertEqual(ignore_running.tick(), fail_or_success)
+
+            self.assertEqual(ignore_running.shutdown(), Node.SHUTDOWN)
+            ignore_running.remove_child(child_name="running_succeed_running")
+            ignore_running.add_child(self.running_fail_running)
+            ignore_running.setup()
+
+            self.assertEqual(ignore_running.tick(), fail_or_success)
+            self.assertEqual(ignore_running.untick(), Node.PAUSED)
+            self.assertEqual(ignore_running.tick(), Node.FAILED)
+            self.assertEqual(ignore_running.untick(), Node.PAUSED)
+            self.assertEqual(ignore_running.tick(), fail_or_success)
+
+            self.assertEqual(ignore_running.shutdown(), Node.SHUTDOWN)
+
+        test_for_running_option(False)
+        test_for_running_option(True)
 
     def testUntilSuccess(self):
         until_success = UntilSuccess()
@@ -321,3 +382,96 @@ class TestDecorators(unittest.TestCase):
         self.assertEqual(optional.untick(), Node.IDLE)
         self.assertEqual(optional.shutdown(), Node.SHUTDOWN)
         self.assertEqual(optional.reset(), Node.IDLE)
+
+    @mock.patch('ros_bt_py.nodes.decorators.rospy.Time.now')
+    def testThrottle(self, mock_time_now):
+        throttle = Throttle(options={'tick_interval': 100.})
+
+        throttle.setup()
+        self.assertEqual(throttle.tick(), Node.FAILED)
+        self.assertEqual(throttle.untick(), Node.IDLE)
+        self.assertEqual(throttle.reset(), Node.IDLE)
+        self.assertEqual(throttle.shutdown(), Node.SHUTDOWN)
+
+        magic_leaf = MockLeaf(name='magic_leaf',
+                              options={'output_type': int,
+                                       'state_values': [],
+                                       'output_values': []})
+        magic_leaf._do_tick = mock.MagicMock()
+        throttle.add_child(magic_leaf)
+        throttle.setup()
+
+        # Should tick its child and return its state
+        mock_time_now.return_value = Time.from_seconds(0.)
+        magic_leaf._do_tick.return_value = Node.FAILED
+        self.assertEqual(throttle.tick(), Node.FAILED)
+        magic_leaf._do_tick.assert_called()
+        magic_leaf._do_tick.reset_mock()
+
+        # Should not tick its child multiple times within tick_interval
+        mock_time_now.return_value = Time.from_seconds(50.)
+        self.assertEqual(throttle.tick(), Node.FAILED)
+        magic_leaf._do_tick.assert_not_called()
+        magic_leaf._do_tick.reset_mock()
+
+        # Should tick its child after tick interval
+        mock_time_now.return_value = Time.from_seconds(105.)
+        magic_leaf._do_tick.return_value = Node.SUCCEEDED
+        self.assertEqual(throttle.tick(), Node.SUCCEEDED)
+        magic_leaf._do_tick.assert_called()
+        magic_leaf._do_tick.reset_mock()
+
+        # Should not tick its child multiple times within tick_interval
+        mock_time_now.return_value = Time.from_seconds(150.)
+        magic_leaf._do_tick.return_value = Node.FAILED
+        self.assertEqual(throttle.tick(), Node.SUCCEEDED)
+        magic_leaf._do_tick.assert_not_called()
+        magic_leaf._do_tick.reset_mock()
+
+        self.assertEqual(throttle.shutdown(), Node.SHUTDOWN)
+
+    @mock.patch('ros_bt_py.nodes.decorators.rospy.Time.now')
+    def testThrottleSuccess(self, mock_time_now):
+        throttle_success = ThrottleSuccess(options={'tick_interval': 100.})
+        throttle_success.setup()
+        self.assertEqual(throttle_success.tick(), Node.FAILED)
+        self.assertEqual(throttle_success.untick(), Node.IDLE)
+        self.assertEqual(throttle_success.reset(), Node.IDLE)
+        self.assertEqual(throttle_success.shutdown(), Node.SHUTDOWN)
+
+        magic_leaf = MockLeaf(name='magic_leaf_2',
+                              options={'output_type': int,
+                                       'state_values': [],
+                                       'output_values': []})
+        magic_leaf._do_tick = mock.MagicMock()
+        throttle_success.add_child(magic_leaf)
+        throttle_success.setup()
+
+        # Should tick its child and return its state
+        mock_time_now.return_value = Time.from_seconds(0.)
+        magic_leaf._do_tick.return_value = Node.FAILED
+        self.assertEqual(throttle_success.tick(), Node.FAILED)
+        magic_leaf._do_tick.assert_called()
+        magic_leaf._do_tick.reset_mock()
+
+        # Should tick its child again as it did not succeed
+        mock_time_now.return_value = Time.from_seconds(1.)
+        magic_leaf._do_tick.return_value = Node.SUCCEEDED
+        self.assertEqual(throttle_success.tick(), Node.SUCCEEDED)
+        magic_leaf._do_tick.assert_called()
+        magic_leaf._do_tick.reset_mock()
+
+        # Should not tick its child multiple times within tick_interval and return FAILED
+        mock_time_now.return_value = Time.from_seconds(50.)
+        self.assertEqual(throttle_success.tick(), Node.FAILED)
+        magic_leaf._do_tick.assert_not_called()
+        magic_leaf._do_tick.reset_mock()
+
+        # Should tick its child after tick interval
+        mock_time_now.return_value = Time.from_seconds(105.)
+        magic_leaf._do_tick.return_value = Node.SUCCEEDED
+        self.assertEqual(throttle_success.tick(), Node.SUCCEEDED)
+        magic_leaf._do_tick.assert_called()
+        magic_leaf._do_tick.reset_mock()
+
+        self.assertEqual(throttle_success.shutdown(), Node.SHUTDOWN)

@@ -184,6 +184,59 @@ class GetDictItem(Decorator):
 
 @define_bt_node(NodeConfig(
     version='0.9.0',
+    options={'value_type': type,
+             'dict': dict,
+             'succeed_on_stale_data': bool},
+    inputs={'key': str},
+    outputs={'value': OptionRef('value_type')},
+    max_children=1))
+class GetDictItemFromKey(Decorator):
+    def _do_setup(self):
+        for child in self.children:
+            child.setup()
+            # We have a child, so set key to an empty string. We're avoiding an
+            # error this way because we know what we're doing, don't use this
+            # gratuitously!
+            self.inputs['key'] = ''
+            self.inputs.reset_updated()
+        return NodeMsg.IDLE
+
+    def _do_tick(self):
+        # Tick child (if any) so it can produce its output before we process it
+        for child in self.children:
+            child.tick()
+
+        if self.inputs.is_updated('key'):
+            try:
+                self.outputs['value'] = self.options['dict'][self.inputs['key']]
+                return NodeMsg.SUCCEEDED
+            except KeyError:
+                self.logerr('Key %s is not in dict %s'
+                            % (self.inputs['key'], str(self.options['dict'])))
+                return NodeMsg.FAILED
+        else:
+            if self.options['succeed_on_stale_data']:
+                return NodeMsg.SUCCEEDED
+            else:
+                self.loginfo('No new data since last tick!')
+                return NodeMsg.RUNNING
+
+    def _do_shutdown(self):
+        pass
+
+    def _do_reset(self):
+        self.outputs['value'] = None
+        self.outputs.reset_updated()
+        self._do_setup()
+        self.inputs.reset_updated()
+        return NodeMsg.IDLE
+
+    def _do_untick(self):
+        return NodeMsg.IDLE
+
+
+@define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'attr_type': type,
              'attr_name': str,
              'succeed_on_stale_data': bool},

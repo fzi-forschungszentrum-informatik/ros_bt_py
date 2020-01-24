@@ -3,6 +3,69 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig
 
+from string import Formatter
+
+
+class ExtendedFormatter(Formatter):
+    """An extended format string formatter
+
+    Formatter with extended conversion symbol
+    """
+    def convert_field(self, value, conversion):
+        """ Extend conversion symbol
+        Following additional symbol has been added
+        * l: convert to string and low case
+        * u: convert to string and up case
+
+        default are:
+        * s: convert with str()
+        * r: convert with repr()
+        * a: convert with ascii()
+        """
+
+        if conversion == "u":
+            return str(value).upper()
+        elif conversion == "l":
+            return str(value).lower()
+        elif conversion == "c":
+            return str(value).capitalize()
+
+        # Do the default conversion or raise error if no matching conversion found
+        super(ExtendedFormatter, self).convert_field(value, conversion)
+
+        # return for None case
+        return value
+
+
+myformatter = ExtendedFormatter()
+
+
+@define_bt_node(NodeConfig(
+    options={},
+    inputs={'a': str, 'b': str},
+    outputs={'formatted_string': str},
+    max_children=0))
+class StringConcatenation(Leaf):
+    """Concatenate strings a and b
+    """
+    def _do_setup(self):
+        return NodeMsg.IDLE
+
+    def _do_tick(self):
+        self.outputs['formatted_string'] = self.inputs['a'] + self.inputs['b']
+        return NodeMsg.SUCCEEDED
+
+    def _do_untick(self):
+        return NodeMsg.IDLE
+
+    def _do_shutdown(self):
+        pass
+
+    def _do_reset(self):
+        self.outputs['formatted_string'] = None
+        self.outputs.reset_updated()
+        return NodeMsg.IDLE
+
 
 @define_bt_node(NodeConfig(
     version='0.9.0',
@@ -26,8 +89,8 @@ class FormatOptionNode(Leaf):
 
     def _do_tick(self):
         try:
-            self.outputs['formatted_string'] = self.options['format_string'].format(
-                **self.inputs['dict'])
+            self.outputs['formatted_string'] = myformatter.format(self.options['format_string'],
+                                                                  **self.inputs['dict'])
         except Exception:
             return NodeMsg.FAILED
         return NodeMsg.SUCCEEDED
@@ -67,8 +130,8 @@ class FormatInputNode(Leaf):
 
     def _do_tick(self):
         try:
-            self.outputs['formatted_string'] = self.inputs['format_string'].format(
-                **self.inputs['dict'])
+            self.outputs['formatted_string'] = myformatter.format(self.inputs['format_string'],
+                                                                  **self.inputs['dict'])
         except Exception:
             return NodeMsg.FAILED
         return NodeMsg.SUCCEEDED
@@ -81,5 +144,88 @@ class FormatInputNode(Leaf):
 
     def _do_reset(self):
         self.outputs['formatted_string'] = None
+        self.outputs.reset_updated()
+        return NodeMsg.IDLE
+
+
+@define_bt_node(NodeConfig(
+    options={'format_strings': list},
+    inputs={'dict': dict},
+    outputs={'formatted_strings': list},
+    max_children=0))
+class FormatOptionListNode(Leaf):
+    """Accepts a dictionary as input and outputs a formatted strings in the list
+    based on the format string set in the options.
+
+    Example dict and format_string:
+    dict: {'first': 'bar', 'second': 'not_printed'}
+    format_strings: ['foo {first}', 'bar {first}']
+
+    results in the following output:
+    formatted_strings: ['foo bar', 'bar bar']
+    """
+    def _do_setup(self):
+        return NodeMsg.IDLE
+
+    def _do_tick(self):
+        try:
+            self.outputs['formatted_strings'] = [
+                myformatter.format(phrase, **self.inputs['dict'])
+                for phrase in self.options['format_strings']
+            ]
+        except Exception:
+            return NodeMsg.FAILED
+        return NodeMsg.SUCCEEDED
+
+    def _do_untick(self):
+        return NodeMsg.IDLE
+
+    def _do_shutdown(self):
+        pass
+
+    def _do_reset(self):
+        self.outputs['formatted_strings'] = None
+        self.outputs.reset_updated()
+        return NodeMsg.IDLE
+
+
+@define_bt_node(NodeConfig(
+    options={},
+    inputs={'dict': dict,
+            'format_strings': list},
+    outputs={'formatted_strings': list},
+    max_children=0))
+class FormatInputListNode(Leaf):
+    """Accepts a dictionary and a list of format strings as input and
+    outputs a list of formatted strings based on the format string
+
+    Example dict and format_string:
+    dict: {'first': 'bar', 'second': 'not_printed'}
+    format_strings: ['foo {first}', 'bar {first}']
+
+    results in the following output:
+    formatted_strings: ['foo bar', 'bar bar']
+    """
+    def _do_setup(self):
+        return NodeMsg.IDLE
+
+    def _do_tick(self):
+        try:
+            self.outputs['formatted_strings'] = [
+                myformatter.format(phrase, **self.inputs['dict'])
+                for phrase in self.inputs['format_strings']
+            ]
+        except Exception:
+            return NodeMsg.FAILED
+        return NodeMsg.SUCCEEDED
+
+    def _do_untick(self):
+        return NodeMsg.IDLE
+
+    def _do_shutdown(self):
+        pass
+
+    def _do_reset(self):
+        self.outputs['formatted_strings'] = None
         self.outputs.reset_updated()
         return NodeMsg.IDLE

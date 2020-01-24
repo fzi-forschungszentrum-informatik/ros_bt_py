@@ -9,7 +9,10 @@ setup_args = generate_distutils_setup(
     packages=['ros_bt_py',
               'ros_bt_py.nodes',
               'ros_bt_py.ros_nodes'],
-    package_dir={'': 'src'}
+    package_dir={'': 'src'},
+    install_requires=[
+        'requests'
+    ]
 )
 
 setup(**setup_args)
