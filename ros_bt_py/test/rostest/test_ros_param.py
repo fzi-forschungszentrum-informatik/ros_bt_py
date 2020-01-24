@@ -2,6 +2,11 @@
 from threading import Lock
 import unittest
 
+try:
+    import unittest.mock as mock
+except ImportError:
+    import mock
+
 import rospy
 
 from std_msgs.msg import Int32
@@ -71,6 +76,17 @@ class TestRosParamOption(unittest.TestCase):
 
         ros_param.inputs['default_value'] = 'default'
         self.assertEqual(ros_param.tick(), NodeMsg.FAILED)
+
+    def testROSException(self):
+        ros_param = RosParamOption(options={
+            'param_name': '/param_missing',
+            'param_type': int,
+        })
+
+        expected_bounds = UtilityBounds()
+        with mock.patch('rospy.get_param_names') as mocked_get_param_names:
+            mocked_get_param_names.side_effect = rospy.ROSException()
+            self.assertEqual(ros_param.calculate_utility(), expected_bounds)
 
 
 class TestRosParamInput(unittest.TestCase):
