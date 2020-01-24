@@ -5,6 +5,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'constant_type': type,
              'constant_value': OptionRef('constant_type')},
     inputs={},

@@ -9,9 +9,10 @@ from ros_bt_py_msgs.srv import (AddNode, AddNodeAtIndex, ControlTreeExecution, M
                                 SetOptions, Continue, LoadTree, LoadTreeFromPath, MoveNode,
                                 ReplaceNode, GetSubtree, ClearTree, MorphNode, SaveTree)
 from ros_bt_py_msgs.srv import (LoadTreeRequest, ControlTreeExecutionRequest, GetMessageFields,
-                                GetPackageStructure)
+                                GetPackageStructure, MigrateTree)
 from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message
 from ros_bt_py.debug_manager import DebugManager
+from ros_bt_py.migration import MigrationManager
 from ros_bt_py.package_manager import PackageManager
 
 
@@ -120,9 +121,9 @@ class TreeNode(object):
                                                LoadTree,
                                                self.tree_manager.load_tree)
 
-        self.load_tree_service = rospy.Service('~load_tree_from_path',
-                                               LoadTreeFromPath,
-                                               self.tree_manager.load_tree_from_path)
+        self.load_tree_from_path_service = rospy.Service('~load_tree_from_path',
+                                                         LoadTreeFromPath,
+                                                         self.tree_manager.load_tree_from_path)
 
         self.clear_service = rospy.Service('~clear',
                                            ClearTree,
@@ -146,6 +147,20 @@ class TreeNode(object):
                 if not control_tree_execution_response.success:
                     rospy.logerr("could not execute default tree: %s" %
                                  control_tree_execution_response.error_message)
+
+        rospy.loginfo("initializing migration manger ...")
+        self.migration_manager = MigrationManager(tree_manager=self.tree_manager)
+
+        self.check_node_versions_service = rospy.Service(
+            '~check_node_versions',
+            MigrateTree,
+            self.migration_manager.check_node_versions)
+
+        self.migrate_tree_service = rospy.Service(
+            '~migrate_tree',
+            MigrateTree,
+            self.migration_manager.migrate_tree)
+        rospy.loginfo("initialized migration manager")
 
         rospy.loginfo("initializing package manager...")
         self.message_list_pub = rospy.Publisher('~messages', Messages, latch=True, queue_size=1)

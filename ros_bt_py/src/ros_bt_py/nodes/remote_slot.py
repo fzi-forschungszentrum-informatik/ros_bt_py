@@ -14,6 +14,7 @@ from ros_bt_py.ros_helpers import AsyncServiceProxy
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'slot_namespace': str,
              'wait_for_service_seconds': float},
     inputs={},

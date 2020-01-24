@@ -5,6 +5,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'compare_type': type},
     inputs={
         'a': OptionRef('compare_type'),
@@ -53,6 +54,7 @@ class Compare(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'compare_type': type},
     inputs={
         'a': OptionRef('compare_type'),
@@ -94,6 +96,7 @@ updated this tick.
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'compare_type': type,
              'expected': OptionRef('compare_type')},
     inputs={
@@ -137,6 +140,7 @@ class CompareConstant(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={},
     inputs={
         'a': float,
@@ -185,6 +189,7 @@ class ALessThanB(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={
         'target': float
     },

@@ -6,6 +6,7 @@ from ros_bt_py.node_config import NodeConfig
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={},
     inputs={},
     outputs={},
@@ -84,6 +85,7 @@ class Fallback(FlowControl):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={},
     inputs={},
     outputs={},

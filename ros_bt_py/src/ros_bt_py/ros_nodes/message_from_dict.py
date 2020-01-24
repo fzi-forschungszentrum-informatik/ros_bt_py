@@ -8,6 +8,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'message_type': type},
     inputs={'dict': dict},
     outputs={'message': OptionRef('message_type')},
@@ -42,6 +43,7 @@ class MessageFromDict(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'message_type': type,
              'dict': dict},
     inputs={},

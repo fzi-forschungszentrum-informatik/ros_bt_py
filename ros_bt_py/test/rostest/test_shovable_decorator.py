@@ -14,6 +14,8 @@ from ros_bt_py.nodes.sequence import Sequence
 from ros_bt_py.nodes.shovable import Shovable
 from ros_bt_py.nodes.mock_nodes import MockLeaf
 
+from ros_bt_py.exceptions import BehaviorTreeException
+
 PKG = 'ros_bt_py'
 
 
@@ -59,6 +61,27 @@ class TestShovable(unittest.TestCase):
             options={
                 'passthrough_type': int
             })
+
+    def testWithoutChild(self):
+        shovable = make_shovable('has_no_child')
+
+        self.assertRaises(BehaviorTreeException, shovable.setup)
+
+    def testMissingActionServer(self):
+        shovable = make_shovable('missing_action_server')
+        shovable.add_child(self.immediate_success)
+
+        self.assertRaises(BehaviorTreeException, shovable.setup)
+
+    def testWaitForUtilityResponseTakesTooLong(self):
+        shovable = make_shovable('slow_evaluate_utility_local')
+        shovable.add_child(self.immediate_success)
+
+        shovable.setup()
+
+        self.assertEqual(shovable.tick(), NodeMsg.RUNNING)
+        rospy.sleep(3.0)
+        self.assertEqual(shovable.tick(), NodeMsg.FAILED)
 
     def testLocalExecution(self):
         shovable = make_shovable('evaluate_utility_local')

@@ -1,0 +1,64 @@
+name: ''
+path: ''
+root_name: ''
+nodes: 
+  - 
+    module: "ros_bt_py.nodes.shovable"
+    node_class: "Shovable"
+    version: ''
+    max_children: 1
+    name: "Shovable"
+    child_names: []
+    options: 
+      - 
+        key: "find_best_executor_timeout_seconds"
+        serialized_value: "1.2"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+      - 
+        key: "remote_tick_frequency_hz"
+        serialized_value: "1.2"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+      - 
+        key: "wait_for_find_best_executor_seconds"
+        serialized_value: "1.2"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+      - 
+        key: "wait_for_run_tree_seconds"
+        serialized_value: "1.2"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+      - 
+        key: "find_best_executor_action"
+        serialized_value: "\"foo\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "run_tree_action_timeout_seconds"
+        serialized_value: "1.2"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+    inputs: []
+    outputs: 
+      - 
+        key: "running_remotely"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+    option_wirings: []
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    version: ''
+    max_children: -1
+    name: "Sequence"
+    child_names: [Shovable]
+    options: []
+    inputs: []
+    outputs: []
+    option_wirings: []
+    state: "UNINITIALIZED"
+data_wirings: []
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: 
+  - 
+    node_name: "Shovable"
+    data_kind: "outputs"
+    data_key: "running_remotely"

@@ -10,6 +10,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'topic_type': type,
              'topic_name': str},
     inputs={},
@@ -71,6 +72,7 @@ class TopicSubscriber(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'topic_type': type,
              'topic_name': str},
     inputs={},
@@ -140,6 +142,7 @@ class TopicOnlineSubscriber(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'topic_type': type,
              'topic_name': str},
     inputs={'message': OptionRef('topic_type')},

@@ -10,6 +10,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'input_type': type},
     inputs={'in': OptionRef('input_type')},
     outputs={},
@@ -88,6 +89,7 @@ class MessageToFields(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'output_type': type},
     inputs={},
     outputs={'out': OptionRef('output_type')},

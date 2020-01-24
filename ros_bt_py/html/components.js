@@ -146,6 +146,12 @@ function getDefaultValue(typeName, options)
             value: {"py/reduce": [{"py/type": "collections.OrderedDict"}, {"py/tuple": [[]]}, null, null, null]}
     };
   }
+  else if (typeName === 'ros_bt_py.ros_helpers.LoggerLevel')
+  {
+    return {type: 'ros_bt_py.ros_helpers.LoggerLevel',
+            value: {"py/object": "ros_bt_py.ros_helpers.LoggerLevel", "logger_level": 1}
+    };
+  }
   else
   {
     return {type: '__' + typeName,
@@ -3170,6 +3176,18 @@ class FileBrowser extends Component{
       serviceType: 'ros_bt_py_msgs/GetPackageStructure'
     });
 
+    this.check_node_versions_service = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'check_node_versions',
+      serviceType: 'ros_bt_py_msgs/MigrateTree'
+    });
+
+    this.migrate_tree_service = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'migrate_tree',
+      serviceType: 'ros_bt_py_msgs/MigrateTree'
+    });
+
     this.load_service = new ROSLIB.Service({
       ros: this.props.ros,
       name: this.props.bt_namespace + 'load_tree',
@@ -3421,14 +3439,72 @@ class FileBrowser extends Component{
 
                     console.log("loading... ", msg.path);
 
-                    this.load_service.callService(
+                    // do a version check before loading
+                    this.check_node_versions_service.callService(
                       new ROSLIB.ServiceRequest({
                         tree: msg
                       }),
                       function(response) {
                         if (response.success) {
-                          console.log('called LoadTree service successfully');
-                          this.props.onChangeFileModal(null);
+                          console.log('called check version service successfully');
+                          if (response.migrated)
+                          {
+                            console.log("migration needed");
+                            if (window.confirm("The tree you want to load needs to be migrated, should this be tried?"))
+                            {
+                              this.migrate_tree_service.callService(
+                                new ROSLIB.ServiceRequest({
+                                  tree: msg
+                                }),
+                                function(response) {
+                                  if (response.success) {
+                                    console.log('called MigrateTree service successfully');
+                                    this.load_service.callService(
+                                      new ROSLIB.ServiceRequest({
+                                        tree: response.tree
+                                      }),
+                                      function(response) {
+                                        if (response.success) {
+                                          console.log('called LoadTree service successfully');
+                                          this.props.onChangeFileModal(null);
+                                        }
+                                        else {
+                                          this.setState({error_message: response.error_message});
+                                        }
+                                      }.bind(this),
+                                      function(failed) {
+                                        this.setState({error_message: 'Error loading tree, is your yaml file correct? '});
+                                      }.bind(this));
+                                  }
+                                  else {
+                                    this.setState({error_message: response.error_message});
+                                  }
+                                }.bind(this),
+                                function(failed) {
+                                  this.setState({error_message: 'Error loading tree, is your yaml file correct? '});
+                                }.bind(this));
+                            } else {
+                              this.setState({error_message: response.error_message});
+                            }
+
+                          } else {
+                            this.load_service.callService(
+                              new ROSLIB.ServiceRequest({
+                                tree: msg
+                              }),
+                              function(response) {
+                                if (response.success) {
+                                  console.log('called LoadTree service successfully');
+                                  this.props.onChangeFileModal(null);
+                                }
+                                else {
+                                  this.setState({error_message: response.error_message});
+                                }
+                              }.bind(this),
+                              function(failed) {
+                                this.setState({error_message: 'Error loading tree, is your yaml file correct? '});
+                              }.bind(this));
+                          }
                         }
                         else {
                           this.setState({error_message: response.error_message});
@@ -4565,6 +4641,21 @@ class EditableNode extends Component
         </div>
       );
     }
+    else if (valueType === 'ros_bt_py.ros_helpers.LoggerLevel')
+    {
+      console.log("valuetype: ", valueType);
+      console.log("value: ", paramItem.value.value);
+      return (
+        <div className="form-group">
+          <label className="d-block">{paramItem.key}
+            <DropDown json={paramItem.value.value}
+                      message_type={paramItem.value.type}
+                      onFocus={this.onFocus}
+                      onNewValue={onNewValue}/>
+          </label>
+        </div>
+      );
+    }
 
     else  // if (valueType === 'object')
     {
@@ -4783,7 +4874,39 @@ class BehaviorTreeEdge extends Component
   }
 }
 
+class DropDown extends Component
+{
+  constructor(props)
+  {
+    super(props);
+    this.state = {
+      json: props.json,
+      logger_level: props.json.logger_level,
+    };
+  }
 
+  handleChange = (event) => {
+    console.log(event.target.value);
+    var json = this.state.json;
+    json.logger_level = event.target.value;
+    this.setState({json:json, logger_level:event.target.value});
+
+    this.props.onNewValue(json);
+  };
+
+  render()
+  {
+    return (
+      <select value={this.state.logger_level} onChange={this.handleChange}>
+        <option value="debug">DEBUG</option>
+        <option value="info">INFO</option>
+        <option value="warning">WARNING</option>
+        <option value="error">ERROR</option>
+        <option value="fatal">FATAL</option>
+      </select>
+    );
+  }
+}
 
 class JSONInput extends Component
 {

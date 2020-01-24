@@ -8,6 +8,7 @@ from ros_bt_py.helpers import rgetattr
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'list_type': type,
              'index': int,
              'succeed_on_stale_data': bool},
@@ -69,6 +70,7 @@ class GetConstListItem(Decorator):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'list_type': type,
              'succeed_on_stale_data': bool},
     inputs={'list': list,
@@ -128,6 +130,7 @@ class GetListItem(Decorator):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'value_type': type,
              'key': str,
              'succeed_on_stale_data': bool},
@@ -180,6 +183,7 @@ class GetDictItem(Decorator):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'attr_type': type,
              'attr_name': str,
              'succeed_on_stale_data': bool},

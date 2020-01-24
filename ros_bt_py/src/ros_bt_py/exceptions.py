@@ -16,3 +16,7 @@ class TreeTopologyError(BehaviorTreeException):
 
 class MissingParentError(BehaviorTreeException):
     pass
+
+
+class MigrationException(BehaviorTreeException):
+    pass
