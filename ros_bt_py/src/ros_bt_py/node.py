@@ -315,7 +315,7 @@ class Node(object):
         """
         for input_name in self.inputs:
             if not self.inputs.is_updated(input_name):
-                self.logwarn('Running tick() with stale data!')
+                self.loginfo('Running tick() with stale data!')
             if self.inputs[input_name] is None:
                 raise ValueError('Trying to tick a node (%s) with an unset input (%s)!' %
                                  (self.name, input_name))

@@ -41,14 +41,21 @@ class TestRandomIntInputs(unittest.TestCase):
         random_int.inputs['max'] = 0
 
         self.assertEqual(random_int.state, NodeMsg.UNINITIALIZED)
-        self.assertRaises(BehaviorTreeException, random_int.setup)
+
+        random_int.setup()
+
+        self.assertEqual(random_int.state, NodeMsg.IDLE)
+        self.assertRaises(BehaviorTreeException, random_int.tick)
 
     def testMinGreaterMax(self):
         random_int = RandomIntInputs()
         random_int.inputs['min'] = 1
         random_int.inputs['max'] = 0
         self.assertEqual(random_int.state, NodeMsg.UNINITIALIZED)
-        self.assertRaises(BehaviorTreeException, random_int.setup)
+        random_int.setup()
+
+        self.assertEqual(random_int.state, NodeMsg.IDLE)
+        self.assertRaises(BehaviorTreeException, random_int.tick)
 
     def testMaxGreaterMin(self):
         random_int = RandomIntInputs()

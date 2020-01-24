@@ -48,132 +48,135 @@ class MigrationManager(object):
         # sort the list by module then name:
         available_nodes.sort(key=lambda node: (node.module, node.node_class))
         for node in available_nodes:
-            # check if a migration for this node exists
-            index = node.module.rindex('.')
-            migrations_module = node.module[:index] + '.migrations' + node.module[index:]
-            migrations_module_name = migrations_module + '.' + node.node_class
-            node_module_migrations = load_migration_module(migrations_module)
-            module_name = node.module + '.' + node.node_class
+            self.check_for_available_migration(node)
 
-            if node_module_migrations is None:
+    def check_for_available_migration(self, node, old_node=False):
+        # check if a migration for this node exists
+        index = node.module.rindex('.')
+        migrations_module = node.module[:index] + '.migrations' + node.module[index:]
+        migrations_module_name = migrations_module + '.' + node.node_class
+        node_module_migrations = load_migration_module(migrations_module)
+        module_name = node.module + '.' + node.node_class
+
+        if node_module_migrations is None:
+            if node.version == '':
+                rospy.logwarn(
+                    '%s has no version information, please add a version '
+                    'and a migration to that version!' % (
+                        module_name))
+                Migration.migration_info.setdefault(
+                    migrations_module_name, MigrationInfoCollection(valid=True))
+            else:
+                rospy.logerr(
+                    '%s has a version (%s) but no migration, '
+                    'please add the missing migration "%s"!' % (
+                        module_name, node.version, migrations_module))
+        else:
+            # check if a migrations class is available
+            migrations_class = getattr(node_module_migrations, node.node_class, None)
+            if migrations_class is None and not old_node:
                 if node.version == '':
                     rospy.logwarn(
                         '%s has no version information, please add a version '
                         'and a migration to that version!' % (
                             module_name))
-                    Migration.migration_info.setdefault(
-                        migrations_module_name, MigrationInfoCollection(valid=True))
                 else:
-                    rospy.logerr(
+                    rospy.logwarn(
                         '%s has a version (%s) but no migration, '
                         'please add the missing migration "%s"!' % (
                             module_name, node.version, migrations_module))
             else:
-                # check if a migrations class is available
-                migrations_class = getattr(node_module_migrations, node.node_class, None)
-                if migrations_class is None:
-                    if node.version == '':
+                try:
+                    m = migrations_class(node, Tree())
+                    self.migrations_classes[migrations_module_name] = m
+                    if (not m.migration_info
+                            or migrations_module_name not in m.migration_info):
                         rospy.logwarn(
-                            '%s has no version information, please add a version '
-                            'and a migration to that version!' % (
-                                module_name))
+                            '%s has a migration class (%s) but no migration functions, '
+                            'please fix this!' % (
+                                module_name,
+                                migrations_module_name))
                     else:
-                        rospy.logwarn(
-                            '%s has a version (%s) but no migration, '
-                            'please add the missing migration "%s"!' % (
-                                module_name, node.version, migrations_module))
-                else:
-                    try:
-                        m = migrations_class(node, Tree())
-                        self.migrations_classes[migrations_module_name] = m
-                        if (not m.migration_info
-                                or migrations_module_name not in m.migration_info):
+                        module_migration_info = m.migration_info[migrations_module_name].info
+                        valid = True
+                        # check if the first migration is not from "" to some version number
+                        if module_migration_info[0].from_version != '':
                             rospy.logwarn(
-                                '%s has a migration class (%s) but no migration functions, '
-                                'please fix this!' % (
+                                '%s has no migration from "" to the first version, '
+                                'consider adding one. The first migration is "%s" => "%s".' % (
                                     module_name,
-                                    migrations_module_name))
+                                    module_migration_info[0].from_version,
+                                    module_migration_info[0].to_version)
+                            )
+                            valid = False
                         else:
-                            module_migration_info = m.migration_info[migrations_module_name].info
-                            valid = True
-                            # check if the first migration is not from "" to some version number
-                            if module_migration_info[0].from_version != '':
+                            if node.version == '' and not old_node:
                                 rospy.logwarn(
-                                    '%s has no migration from "" to the first version, '
-                                    'consider adding one. The first migration is "%s" => "%s".' % (
+                                    '%s has no version information, but a migration "%s" '
+                                    'to a first version ("%s" => "%s") please add a version '
+                                    'and a migration to that version!' % (
                                         module_name,
+                                        module_migration_info[0].function,
                                         module_migration_info[0].from_version,
                                         module_migration_info[0].to_version)
                                 )
                                 valid = False
+                        migration_path = []
+                        for migration_info in module_migration_info:
+                            # error if the from_version and to_version are identical
+                            # this most certainly is a bug
+                            if migration_info.from_version == migration_info.to_version:
+                                rospy.logerr(
+                                    '%s has a broken migration "%s": '
+                                    'from_version: "%s" AND to_version: "%s" '
+                                    'ARE IDENTICAL! This is a bug, please fix it!' % (
+                                        module_name,
+                                        migration_info.function,
+                                        migration_info.from_version,
+                                        migration_info.to_version)
+                                )
+                                valid = False
+                            migration_path.append(migration_info.from_version)
+                            migration_path.append(migration_info.to_version)
+
+                        # check if a complete migration path exists
+                        current_version = migration_path[0]
+                        paths = iter(migration_path)
+                        for first, second in izip(paths, paths):
+                            if first == current_version:
+                                current_version = second
                             else:
-                                if node.version == '':
-                                    rospy.logwarn(
-                                        '%s has no version information, but a migration "%s" '
-                                        'to a first version ("%s" => "%s") please add a version '
-                                        'and a migration to that version!' % (
-                                            module_name,
-                                            module_migration_info[0].function,
-                                            module_migration_info[0].from_version,
-                                            module_migration_info[0].to_version)
-                                    )
-                                    valid = False
-                            migration_path = []
-                            for migration_info in module_migration_info:
-                                # error if the from_version and to_version are identical
-                                # this most certainly is a bug
-                                if migration_info.from_version == migration_info.to_version:
-                                    rospy.logerr(
-                                        '%s has a broken migration "%s": '
-                                        'from_version: "%s" AND to_version: "%s" '
-                                        'ARE IDENTICAL! This is a bug, please fix it!' % (
-                                            module_name,
-                                            migration_info.function,
-                                            migration_info.from_version,
-                                            migration_info.to_version)
-                                    )
-                                    valid = False
-                                migration_path.append(migration_info.from_version)
-                                migration_path.append(migration_info.to_version)
+                                rospy.logerr(
+                                    '%s has a broken migration! '
+                                    '"%s" => "%s" is NOT AVAILABLE! '
+                                    'This is a bug, please fix it!' % (
+                                        module_name,
+                                        current_version,
+                                        first)
+                                )
+                                valid = False
+                                break
 
-                            # check if a complete migration path exists
-                            current_version = migration_path[0]
-                            paths = iter(migration_path)
-                            for first, second in izip(paths, paths):
-                                if first == current_version:
-                                    current_version = second
-                                else:
-                                    rospy.logerr(
-                                        '%s has a broken migration! '
-                                        '"%s" => "%s" is NOT AVAILABLE! '
-                                        'This is a bug, please fix it!' % (
-                                            module_name,
-                                            current_version,
-                                            first)
-                                    )
-                                    valid = False
-                                    break
-
-                            # check if the last migration leads to the current version of the node
-                            if len(migration_path) >= 2:
-                                if migration_path[-1] != node.version:
-                                    rospy.logerr(
-                                        '%s has a broken migration "%s": '
-                                        'last migration ("%s" => "%s") DOES NOT lead to '
-                                        'current node version "%s"! '
-                                        'This is a bug, please fix it!' % (
-                                            module_name,
-                                            module_migration_info[-1].function,
-                                            module_migration_info[-1].from_version,
-                                            module_migration_info[-1].to_version,
-                                            node.version)
-                                    )
-                                    valid = False
-                            m.migration_info[migrations_module_name].valid = valid
-                    except TypeError as e:
-                        rospy.logerr(traceback.format_exc())
-                        rospy.logwarn('%s: no migration available' % (
-                            module_name))
+                        # check if the last migration leads to the current version of the node
+                        if len(migration_path) >= 2:
+                            if migration_path[-1] != node.version and not old_node:
+                                rospy.logerr(
+                                    '%s has a broken migration "%s": '
+                                    'last migration ("%s" => "%s") DOES NOT lead to '
+                                    'current node version "%s"! '
+                                    'This is a bug, please fix it!' % (
+                                        module_name,
+                                        module_migration_info[-1].function,
+                                        module_migration_info[-1].from_version,
+                                        module_migration_info[-1].to_version,
+                                        node.version)
+                                )
+                                valid = False
+                        m.migration_info[migrations_module_name].valid = valid
+                except TypeError as e:
+                    rospy.logerr(traceback.format_exc())
+                    rospy.logwarn('%s: no migration available' % (
+                        module_name))
 
     def check_node_versions(self, request):
         load_response = self.tree_manager.load_tree_from_file(request)
@@ -189,11 +192,14 @@ class MigrationManager(object):
             m = load_node_module(msg.module)
             c = getattr(m, msg.node_class, None)
 
-            rospy.loginfo(
-                'version in tree: "%s", loaded: "%s"', msg.version, c._node_config.version)
-
-            if msg.version != c._node_config.version:
+            if c is None:
                 perform_migration = True
+            else:
+                rospy.loginfo(
+                    'version in tree: "%s", loaded: "%s"', msg.version, c._node_config.version)
+
+                if msg.version != c._node_config.version:
+                    perform_migration = True
 
         return MigrateTreeResponse(migrated=perform_migration, success=True)
 
@@ -215,6 +221,11 @@ class MigrationManager(object):
 
             node_module_migrations = load_node_module(migrations_module)
 
+            if migrations_module_name not in self.migrations_classes:
+                # FIXME: this is important for nodes that changed node_class or module
+                # this could probably be avoided if all migrations were loaded at startup,
+                # not depending on node availability
+                self.check_for_available_migration(node=msg, old_node=True)
             if migrations_module_name in self.migrations_classes:
                 old_version = msg.version
                 migrations_class = getattr(node_module_migrations, msg.node_class, None)

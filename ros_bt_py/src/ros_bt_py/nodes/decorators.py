@@ -55,6 +55,49 @@ class IgnoreFailure(Decorator):
 
 @define_bt_node(NodeConfig(
     version='0.9.0',
+    options={'running_is_success': bool},
+    inputs={},
+    outputs={},
+    max_children=1))
+class IgnoreRunning(Decorator):
+    """Return SUCCESS or FAILURE when the child returns RUNNING
+
+    """
+    def _do_setup(self):
+        for child in self.children:
+            child.setup()
+        if self.options['running_is_success']:
+            self.result = NodeMsg.SUCCEEDED
+        else:
+            self.result = NodeMsg.FAILED
+
+    def _do_tick(self):
+        for child in self.children:
+            result = child.tick()
+            if result == NodeMsg.RUNNING:
+                return self.result
+            return result
+
+        # Fails if we have no children
+        return NodeMsg.FAILED
+
+    def _do_shutdown(self):
+        for child in self.children:
+            return child.shutdown()
+
+    def _do_reset(self):
+        for child in self.children:
+            return child.reset()
+        return NodeMsg.IDLE
+
+    def _do_untick(self):
+        for child in self.children:
+            return child.untick()
+        return NodeMsg.IDLE
+
+
+@define_bt_node(NodeConfig(
+    version='0.9.0',
     options={},
     inputs={},
     outputs={},
@@ -402,6 +445,100 @@ class RepeatUntilFail(Decorator):
     #
     # def _do_calculate_utility(self):
     #     pass
+
+
+@define_bt_node(NodeConfig(
+    version='0.9.0',
+    options={'tick_interval': float},
+    inputs={},
+    outputs={},
+    max_children=1))
+class Throttle(Decorator):
+    """Wraps a child that stores its success and failures for tick_interval seconds
+
+    A child that SUCCEEDED or FAILED less than tick_interval seconds will not be ticked.
+    This decorator will return the last result until tick_interval seconds elapsed.
+
+    """
+    def _do_setup(self):
+        self._last_tick = None
+        self._last_result = NodeMsg.FAILED
+        for child in self.children:
+            child.setup()
+
+    def _do_tick(self):
+        current_time = rospy.Time.now()
+        if (self._last_tick is None or
+                (current_time - self._last_tick).to_sec() > self.options['tick_interval']):
+            for child in self.children:
+                result = child.tick()
+                if result == NodeMsg.RUNNING:
+                    return result
+                self._last_result = result
+                self._last_tick = current_time
+                child.reset()
+        return self._last_result
+
+    def _do_shutdown(self):
+        for child in self.children:
+            return child.shutdown()
+
+    def _do_reset(self):
+        for child in self.children:
+            return child.reset()
+        return NodeMsg.IDLE
+
+    def _do_untick(self):
+        for child in self.children:
+            return child.untick()
+        return NodeMsg.IDLE
+
+
+@define_bt_node(NodeConfig(
+    version='0.9.0',
+    options={'tick_interval': float},
+    inputs={},
+    outputs={},
+    max_children=1))
+class ThrottleSuccess(Decorator):
+    """Wraps a child that is prevented to SUCCEEDED multiple times in tick_interval seconds
+
+    A child that SUCCEEDED less than tick_interval seconds will not be ticked.
+    This decorator will return SUCCEEDED once then FAILED until tick_interval seconds elapsed.
+
+    """
+    def _do_setup(self):
+        self._last_success_tick = None
+        for child in self.children:
+            child.setup()
+
+    def _do_tick(self):
+        current_time = rospy.Time.now()
+        if (self._last_success_tick is None or
+                (current_time - self._last_success_tick).to_sec() > self.options['tick_interval']):
+            for child in self.children:
+                result = child.tick()
+                if result == NodeMsg.RUNNING:
+                    return result
+                if result == NodeMsg.SUCCEEDED:
+                    self._last_success_tick = current_time
+                    return result
+        return NodeMsg.FAILED
+
+    def _do_shutdown(self):
+        self._last_success_tick = None
+        for child in self.children:
+            return child.shutdown()
+
+    def _do_reset(self):
+        for child in self.children:
+            return child.reset()
+        return NodeMsg.IDLE
+
+    def _do_untick(self):
+        for child in self.children:
+            return child.untick()
+        return NodeMsg.IDLE
 
 
 @define_bt_node(NodeConfig(
