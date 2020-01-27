@@ -319,6 +319,11 @@ div.jsoneditor-menu {
   color: #ff0000;
 }
 
+.cm_available {
+  padding: 0.25rem;
+  color: #007bff;
+}
+
 .filebrowser-bar:hover {
   background-color: #007bff;
   color: #ffffff;

@@ -62,6 +62,7 @@ class App extends Component
       publishing_subtrees: false,
       last_selected_package: '',
       show_file_modal: null,
+      cm_available: false,
     };
 
     ros.on("connection", function(e) {
@@ -296,6 +297,8 @@ class App extends Component
       ]
     };
     this.capabilitiesFuse = new Fuse(this.capabilities, options);
+
+    this.setState({cm_available: true});
   }
 
   changeSkin(skin)
@@ -748,6 +751,7 @@ class App extends Component
           ros={this.state.ros}
           bt_namespace={this.state.bt_namespace}
           cm_namespace={this.state.cm_namespace}
+          cm_available={this.state.cm_available}
           packages={this.packages}
           last_selected_package={this.state.last_selected_package}
           selectedNodeNames={this.state.selected_node_names}
@@ -839,6 +843,7 @@ class App extends Component
         <ExecutionBar key={this.state.bt_namespace}
                       ros={this.state.ros}
                       connected={this.state.connected}
+                      cm_available={this.state.cm_available}
                       subtreeNames={this.state.subtree_names}
                       currentNamespace={this.state.bt_namespace}
                       tree_message={this.state.last_tree_msg}

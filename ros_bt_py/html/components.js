@@ -509,6 +509,7 @@ function ExecutionBar(props)
       <NamespaceSelect
         ros={props.ros}
         connected={props.connected}
+        cm_available={props.cm_available}
         currentNamespace={props.currentNamespace}
         onNamespaceChange={props.onNamespaceChange}
         onError={props.onError}/>
@@ -669,6 +670,13 @@ class NamespaceSelect extends Component
       connected_class = "fas fa-wifi disconnected";
       connected_title = "Disconnected";
     }
+
+    if (this.props.cm_available && this.props.connected)
+    {
+      connected_class = "fas fa-wifi cm_available"
+      connected_title = "Connected, Capability Manager available"
+    }
+
     return (
       <Fragment>
         <span aria-hidden="true" title={connected_title} className={connected_class} />
