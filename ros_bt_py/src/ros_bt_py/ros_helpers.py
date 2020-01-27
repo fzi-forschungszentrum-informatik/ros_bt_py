@@ -57,7 +57,10 @@ class AsyncServiceProxy(object):
         if self._process is not None:
             # kill -9 the stuck process - not clean, but reliable
             # Fire...
-            os.kill(self._process.pid, signal.SIGKILL)
+            try:
+                os.kill(self._process.pid, signal.SIGKILL)
+            except OSError as e:
+                pass
             # and forget!
             self._process = None
             self._data['state'] = AsyncServiceProxy.ABORTED
