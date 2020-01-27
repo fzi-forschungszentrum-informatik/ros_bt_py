@@ -50,6 +50,7 @@ add_service_files(
   ModifyBreakpoints.srv
   MorphNode.srv
   MoveNode.srv
+  ReloadTree.srv
   RemoveNode.srv
   ReplaceNode.srv
   SaveTree.srv

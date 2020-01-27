@@ -20,7 +20,7 @@ from ros_bt_py_msgs.srv import WireNodeDataRequest, MoveNodeResponse, ReplaceNod
 from ros_bt_py_msgs.srv import WireNodeDataResponse, AddNodeResponse, AddNodeAtIndexResponse
 from ros_bt_py_msgs.srv import RemoveNodeResponse, ContinueResponse, AddNodeAtIndexRequest
 from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, ControlTreeExecutionResponse
-from ros_bt_py_msgs.srv import GetAvailableNodesResponse
+from ros_bt_py_msgs.srv import GetAvailableNodesResponse, ReloadTreeResponse
 from ros_bt_py_msgs.srv import GenerateSubtreeResponse
 from ros_bt_py_msgs.srv import GetSubtreeResponse
 from ros_bt_py_msgs.srv import SetExecutionModeResponse
@@ -923,6 +923,19 @@ class TreeManager(object):
                                                remove_children=False))
             return response
         self.publish_info(self.debug_manager.get_debug_info_msg())
+        return response
+
+    @is_edit_service
+    def reload_tree(self, request):
+        """Reloads the currently loaded tree
+        """
+        load_response = self.load_tree(
+            request=LoadTreeRequest(tree=self.tree_msg))
+
+        response = ReloadTreeResponse()
+        response.success = load_response.success
+        response.error_message = load_response.error_message
+
         return response
 
     @is_edit_service
