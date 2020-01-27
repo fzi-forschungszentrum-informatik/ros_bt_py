@@ -3944,6 +3944,7 @@ class MultipleSelection extends Component
     this.setFilename = this.setFilename.bind(this);
     this.searchPackageName = this.searchPackageName.bind(this);
     this.selectPackageSearchResult = this.selectPackageSearchResult.bind(this);
+    this.onClickCreateCoordinatorTree = this.onClickCreateCoordinatorTree.bind(this);
     this.onClickCreateSubtree = this.onClickCreateSubtree.bind(this);
 
     var name = this.props.selectedNodeNames.join('_');
@@ -3956,7 +3957,14 @@ class MultipleSelection extends Component
                   filename: 'subtree.yaml',
                   package: this.props.last_selected_package,
                   package_results:[],
-                  capability: '',};
+                  capability: '',
+                  preconditions: []};
+
+    this.create_coordinator_tree_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.cm_namespace + 'create_coordinator_tree',
+      serviceType: 'ros_ta_msgs/CreateCoordinatorTree'
+    });
 
     this.save_capability_service = new ROSLIB.Service({
       ros: props.ros,
@@ -4091,6 +4099,7 @@ class MultipleSelection extends Component
 
                 // now add it to the tree
                 var msg = this.buildNodeMessage();
+                console.log("aha...", msg)
                 this.add_node_service.callService(
                   new ROSLIB.ServiceRequest({
                     parent_name: coordinator.root_name,
@@ -4304,20 +4313,27 @@ class MultipleSelection extends Component
 
   render()
   {
-    var create_text = "Create subtree from selected ";
+    var create_subtree_text = "Create subtree from selected ";
+    var create_capability_text = "Create capability from selected ";
     if (this.props.selectedNodeNames.length > 1)
     {
-      create_text += "nodes";
+      create_subtree_text += "nodes";
+      create_capability_text += "nodes";
     } else {
-      create_text += "node";
+      create_subtree_text += "node";
+      create_capability_text += "node";
     }
 
     return (
       <div className="d-flex flex-column">
         <div className="btn-group d-flex mb-2" role="group">
-          <button className="btn btn-primary w-30"
+        <button className="btn btn-primary w-30"
                   onClick={this.onClickCreateSubtree}>
-            {create_text}
+            {create_subtree_text}
+          </button>
+          <button className="btn btn-primary w-30"
+                  onClick={this.onClickCreateCoordinatorTree}>
+            {create_capability_text}
           </button>
         </div>
         <div className="d-flex flex-column">
