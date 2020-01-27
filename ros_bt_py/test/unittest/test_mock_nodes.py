@@ -3,7 +3,7 @@ import unittest
 from ros_bt_py.exceptions import NodeConfigError
 from ros_bt_py_msgs.msg import Node
 
-from ros_bt_py.nodes.mock_nodes import MockLeaf
+from ros_bt_py.nodes.mock_nodes import MockLeaf, MockUtilityLeaf
 
 
 class TestMockLeaf(unittest.TestCase):
@@ -68,3 +68,36 @@ class TestMockLeaf(unittest.TestCase):
         self.leaf.tick()
         self.assertEqual(self.leaf.state, self.state_output_pairs[0][0])
         self.assertEqual(self.leaf.outputs['out'], self.state_output_pairs[0][1])
+
+
+class TestMockUtilityLeaf(unittest.TestCase):
+    def setUp(self):
+        self.state_output_pairs = [(Node.RUNNING, 1),
+                                   (Node.SUCCEEDED, 2),
+                                   (Node.FAILED, 3)]
+        self.leaf = MockUtilityLeaf(
+            name='leaf',
+            options={
+                'can_execute': True,
+                'utility_lower_bound_success': 5.0,
+                'utility_upper_bound_success': 10.0,
+                'utility_lower_bound_failure': 1.0,
+                'utility_upper_bound_failure': 2.0})
+        self.leaf.setup()
+
+    def testLeaf(self):
+        self.assertEqual(self.leaf.tick_count, 0)
+        self.assertEqual(self.leaf.tick(), Node.SUCCEEDED)
+        self.assertEqual(self.leaf.tick_count, 1)
+
+        self.assertEqual(self.leaf.untick_count, 0)
+        self.assertEqual(self.leaf.untick(), Node.IDLE)
+        self.assertEqual(self.leaf.untick_count, 1)
+
+        self.assertEqual(self.leaf.reset_count, 0)
+        self.assertEqual(self.leaf.reset(), Node.IDLE)
+        self.assertEqual(self.leaf.reset_count, 1)
+
+        self.assertEqual(self.leaf.shutdown_count, 0)
+        self.assertEqual(self.leaf.shutdown(), Node.SHUTDOWN)
+        self.assertEqual(self.leaf.shutdown_count, 1)

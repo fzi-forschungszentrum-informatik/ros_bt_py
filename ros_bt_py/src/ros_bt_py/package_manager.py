@@ -7,7 +7,7 @@ import rospy
 import genpy
 
 import catkin
-from catkin.find_in_workspaces import find_in_workspaces # we need catkin in exec_depend!
+from catkin.find_in_workspaces import find_in_workspaces
 from ros_bt_py_msgs.msg import Message, Messages, Package, Packages
 from ros_bt_py_msgs.srv import GetMessageFields, GetMessageFieldsResponse, SaveTreeResponse
 from ros_bt_py_msgs.srv import GetPackageStructureResponse
@@ -22,7 +22,7 @@ class PackageManager(object):
                  publish_packages_list_callback=None):
         # using rospkg is nice because it provides path resolution and honors CATKIN_IGNORE file
         # so we do not have to do this manually
-        self.rp = rospkg.RosPack()
+        self.rospack = rospkg.RosPack()
         self.item_id = 0
 
         self.message_list_pub = publish_message_list_callback
@@ -35,7 +35,7 @@ class PackageManager(object):
             rospy.loginfo('No callback for publishing packages list data provided.')
         else:
             self.publish_packages_list()
-    
+
     def _get_package_paths(self, pkgname, rospack):
         _catkin_workspace_to_source_spaces = {}
         _catkin_source_path_to_packages = {}
@@ -66,7 +66,8 @@ class PackageManager(object):
                 path = package_path + "/msg"
                 resources = []
                 if os.path.isdir(path):
-                    resources = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+                    resources = [f for f in os.listdir(path)
+                                 if os.path.isfile(os.path.join(path, f))]
                 result = [x[:-len(".msg")] for x in resources]
                 result.sort()
                 for msg_type in result:
@@ -74,18 +75,20 @@ class PackageManager(object):
                         actions.append(msg_type)
                     append_msg = True
                     for action in actions:
-                        if msg_type == action+"Feedback" or msg_type == action+"Goal" or msg_type == action+"Result":
+                        if (msg_type == action + "Feedback" or msg_type == action + "Goal" or
+                                msg_type == action + "Result"):
                             append_msg = False
                     if append_msg:
-                        messages.append(Message(msg=package+"/"+msg_type, service=False))
+                        messages.append(Message(msg=package + "/" + msg_type, service=False))
                 path = package_path + "/srv"
                 resources = []
                 if os.path.isdir(path):
-                    resources = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
+                    resources = [f for f in os.listdir(path)
+                                 if os.path.isfile(os.path.join(path, f))]
                 result = [x[:-len(".srv")] for x in resources]
                 result.sort()
                 for srv_type in result:
-                    messages.append(Message(msg=package+"/"+srv_type, service=True))
+                    messages.append(Message(msg=package + "/" + srv_type, service=True))
 
         msg = Messages()
         msg.messages = messages
@@ -107,17 +110,19 @@ class PackageManager(object):
             response.success = True
         except Exception as e:
             response.success = False
-            response.error_message = "Could not get message fields for {}: {}".format(request.message_type, e)
+            response.error_message = "Could not get message fields for {}: {}".format(
+                request.message_type, e)
         return response
-    
+
     def publish_packages_list(self):
-        # get source_paths, which allows us to restrict the package list only to packages within the source space
+        # get source_paths, which allows us to restrict the package list to packages
+        # within the source space
         # this is needed because we should only ever add files to packages in the source space
         source_paths = []
         for ws in catkin.workspace.get_workspaces():
             source_paths += catkin.workspace.get_source_paths(ws)
 
-        packages = self.rp.list()
+        packages = self.rospack.list()
 
         self.package_paths = []
 
@@ -126,10 +131,10 @@ class PackageManager(object):
 
         for package in packages:
             # add all paths to the package path to be able to load installed capabilities
-            package_path = self.rp.get_path(package)
+            package_path = self.rospack.get_path(package)
             self.package_paths.append(package_path)
 
-            # filter the published packages to only include packages in the source space (because we can edit those)
+            # filter the published packages to only include packages in the source space
             for source_path in source_paths:
                 if package_path.startswith(source_path):
                     package_msg = Package()
@@ -167,10 +172,9 @@ class PackageManager(object):
         """
 
         # get a list of all packages
-        self.rospack = rospkg.RosPack()
         packages = self.rospack.list()
 
-        self.list_of_packages = []
+        list_of_packages = []
 
         for package in packages:
             # add all paths to the package path to be able to load installed capabilities
@@ -178,10 +182,7 @@ class PackageManager(object):
             package_msg = {}
             package_msg["name"] = package
             package_msg["path"] = package_path
-            self.list_of_packages.append(package_msg)
-
-        # get source_paths, which allows us to restrict the package list only to packages within the source space
-        # this is needed because we should only ever add files to packages in the source space
+            list_of_packages.append(package_msg)
 
         workspace_tree = self._root()
         for ws in catkin.workspace.get_workspaces():
@@ -197,9 +198,9 @@ class PackageManager(object):
 
             workspace = self._workspace(absolute_path=source_path)
 
-            # filter the packages to only include packages in the source space (because we can edit those)
+            # filter the packages to only include packages in the source space
             for source_path in source_paths:
-                for package in self.list_of_packages:
+                for package in list_of_packages:
                     if package["path"].startswith(source_path):
                         workspace["children"].append(self._package(name=package["name"]))
 
@@ -210,7 +211,7 @@ class PackageManager(object):
     def get_id(self):
         self.item_id += 1
         return self.item_id
-    
+
     def reset_id(self):
         self.item_id = 0
 
@@ -222,8 +223,9 @@ class PackageManager(object):
         d['parent'] = parent
         if os.path.isdir(path):
             d['type'] = "directory"
-            d['children'] = [self.path_to_dict(os.path.join(path, f), show_hidden=show_hidden, parent=d['item_id']) \
-                for f in os.listdir(path) if (show_hidden or not f.startswith("."))]
+            d['children'] = [self.path_to_dict(os.path.join(path, f),
+                                               show_hidden=show_hidden, parent=d['item_id'])
+                             for f in os.listdir(path) if (show_hidden or not f.startswith("."))]
         else:
             d['type'] = "file"
         return d
@@ -235,15 +237,16 @@ class PackageManager(object):
         """
         response = GetPackageStructureResponse()
         try:
-            package_path = self.rp.get_path(request.package)
+            package_path = self.rospack.get_path(request.package)
             if not os.path.isdir(package_path):
                 response.success = False
                 response.error_message = 'Package path "{}" does not exist'.format(package_path)
             else:
 
                 self.reset_id()
-                package_structure = self.path_to_dict(path=package_path, show_hidden=request.show_hidden)
-                
+                package_structure = self.path_to_dict(
+                    path=package_path, show_hidden=request.show_hidden)
+
                 response.success = True
                 response.package_structure = jsonpickle.encode(package_structure)
 
@@ -255,9 +258,9 @@ class PackageManager(object):
 
     def make_filepath_unique(self, filepath):
         name, extension = os.path.splitext(filepath)
-        while os.path.exists(name+extension):
+        while os.path.exists(name + extension):
             name = increment_name(name)
-        return name+extension
+        return name + extension
 
     def save_tree(self, request):
         """Saves a tree message in the given package
@@ -265,31 +268,34 @@ class PackageManager(object):
         :param ros_bt_py_msgs.srv.SaveTree request:
 
         If `request.filename` contains forward slashes, treat it as a relative path.
-        If `request.allow_overwrite` is True, the file will be overwritten, otherwise service call will fail.
-        If `request.allow_rename` is True files will never be overwritten, the new file will always be renamed.
+        If `request.allow_overwrite` is True, the file is overwritten, otherwise service call fails
+        If `request.allow_rename` is True files will no be overwritten,
+            the new file will always be renamed.
 
         :returns: :class:`ros_bt_py_msgs.src.SaveTreeResponse` or `None`
 
-        Always returns the path under which the tree was save in response.file_path in the package:// style
+        Always returns the path under which the tree was saved
+        in response.file_path in the package:// style
         """
         response = SaveTreeResponse()
 
         try:
-            package_path = self.rp.get_path(request.package)
+            package_path = self.rospack.get_path(request.package)
             if not os.path.isdir(package_path):
                 response.success = False
                 response.error_message = 'Package path "{}" does not exist'.format(package_path)
             else:
                 save_path = os.path.join(package_path, request.filename)
 
-                if os.path.commonprefix((os.path.realpath(save_path), package_path)) != package_path:
+                if os.path.commonprefix(
+                        [os.path.realpath(save_path), package_path]) != package_path:
                     response.success = False
                     response.error_message = 'Path outside package path'
                     return response
-                save_path = save_path.rstrip(os.sep) # split trailing /
+                save_path = save_path.rstrip(os.sep)  # split trailing /
                 path, filename = os.path.split(save_path)
 
-                try: 
+                try:
                     os.makedirs(path)
                 except OSError:
                     if not os.path.isdir(path):
@@ -318,7 +324,6 @@ class PackageManager(object):
                 with open(save_path, 'w') as save_file:
                     msg = genpy.message.strify_message(request.tree)
                     save_file.write(msg)
-                
                 response.success = True
                 return response
 

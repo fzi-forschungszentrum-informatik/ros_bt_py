@@ -1,0 +1,39 @@
+name: ''
+path: ''
+root_name: ''
+nodes: 
+  - 
+    module: "ros_bt_py.ros_nodes.message_from_dict"
+    node_class: "MessageFromConstDict"
+    version: ''
+    max_children: 0
+    name: "MessageFromConstDict"
+    child_names: []
+    options: 
+      - 
+        key: "message_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "dict"
+        serialized_value: "{}"
+        serialized_type: "{\"py/type\": \"__builtin__.dict\"}"
+    inputs: []
+    outputs: 
+      - 
+        key: "message"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    option_wirings: 
+      - 
+        source: "message_type"
+        target: "dict"
+    state: "UNINITIALIZED"
+data_wirings: []
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: 
+  - 
+    node_name: "MessageFromConstDict"
+    data_kind: "outputs"
+    data_key: "message"

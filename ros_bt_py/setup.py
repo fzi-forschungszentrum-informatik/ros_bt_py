@@ -1,8 +1,18 @@
-from distutils.core import setup
+#!/usr/bin/env python
 
-setup(
+from distutils.core import setup
+from catkin_pkg.python_setup import generate_distutils_setup
+
+setup_args = generate_distutils_setup(
     version='0.0.0',
     scripts=[],
-    packages=['ros_bt_py'],
-    package_dir={'': 'src'}
+    packages=['ros_bt_py',
+              'ros_bt_py.nodes',
+              'ros_bt_py.ros_nodes'],
+    package_dir={'': 'src'},
+    install_requires=[
+        'requests'
+    ]
 )
+
+setup(**setup_args)

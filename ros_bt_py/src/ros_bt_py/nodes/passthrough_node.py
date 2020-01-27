@@ -5,6 +5,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'passthrough_type': type},
     inputs={'in': OptionRef('passthrough_type')},
     outputs={'out': OptionRef('passthrough_type')},

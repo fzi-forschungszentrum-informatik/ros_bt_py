@@ -7,6 +7,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'output_type': type,
              'state_values': list,
              'output_values': list},
@@ -82,6 +83,7 @@ class MockLeaf(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'can_execute': bool,
              'utility_lower_bound_success': float,
              'utility_upper_bound_success': float,

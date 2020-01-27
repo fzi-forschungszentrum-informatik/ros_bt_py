@@ -17,6 +17,7 @@ add_message_files(
      NodeDataLocation.msg
      NodeData.msg
      NodeDataWiring.msg
+     NodeDiagnostics.msg
      NodeOptionWiring.msg
      Node.msg
      Package.msg
@@ -44,6 +45,8 @@ add_service_files(
   GetSubtree.srv
   InsertNode.srv
   LoadTree.srv
+  LoadTreeFromPath.srv
+  MigrateTree.srv
   ModifyBreakpoints.srv
   MorphNode.srv
   MoveNode.srv

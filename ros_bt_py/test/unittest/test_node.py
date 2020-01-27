@@ -2,14 +2,18 @@ from copy import deepcopy
 import jsonpickle
 import random
 import unittest
+import types
 
-from ros_bt_py_msgs.msg import Node as NodeMsg
+from ros_bt_py_msgs.msg import Node as NodeMsg, UtilityBounds
 from ros_bt_py_msgs.msg import NodeData, NodeDataLocation
 
-from ros_bt_py.exceptions import BehaviorTreeException, NodeConfigError
-from ros_bt_py.node import Node, load_node_module, increment_name
+from ros_bt_py.exceptions import BehaviorTreeException, NodeConfigError, NodeStateError
+from ros_bt_py.node import Node, Leaf, load_node_module, increment_name, define_bt_node
+from ros_bt_py.node import FlowControl, Decorator
 from ros_bt_py.node_config import NodeConfig, OptionRef
 from ros_bt_py.nodes.passthrough_node import PassthroughNode
+from ros_bt_py.nodes.mock_nodes import MockUtilityLeaf
+from ros_bt_py.node_data import NodeDataMap, NodeData as NodeDataObj
 
 
 class TestLoadModule(unittest.TestCase):
@@ -55,6 +59,291 @@ class TestNode(unittest.TestCase):
             PassthroughNode({'passthrough_type': int,
                              'foo': 42})
 
+    def testNotImplementedEverything(self):
+        @define_bt_node(NodeConfig(
+            options={},
+            inputs={},
+            outputs={},
+            max_children=0))
+        class NotImplementedNode(Leaf):
+            pass
+
+        node = NotImplementedNode()
+        self.assertRaises(NotImplementedError, node.setup)
+        self.assertRaises(BehaviorTreeException, node.tick)
+
+    def testNotImplementedTickUntickResetShutdown(self):
+        @define_bt_node(NodeConfig(
+            options={},
+            inputs={},
+            outputs={},
+            max_children=0))
+        class NotImplementedNode(Leaf):
+            def _do_setup(self):
+                pass
+
+        node = NotImplementedNode()
+        node.setup()
+        self.assertEqual(node.state, NodeMsg.IDLE)
+        self.assertRaises(NotImplementedError, node.tick)
+        self.assertRaises(NotImplementedError, node.untick)
+        self.assertRaises(NotImplementedError, node.reset)
+        self.assertRaises(NotImplementedError, node.shutdown)
+
+    def testUnsetOption(self):
+        @define_bt_node(NodeConfig(
+            options={'missing': type},
+            inputs={},
+            outputs={},
+            max_children=0))
+        class MissingOptionsNode(Leaf):
+            def _do_setup(self):
+                pass
+
+            def _do_tick(self):
+                return NodeMsg.SUCCEEDED
+
+            def _do_shutdown(self):
+                pass
+
+            def _do_reset(self):
+                return NodeMsg.IDLE
+
+            def _do_untick(self):
+                return NodeMsg.IDLE
+
+        node = MissingOptionsNode({'missing': int})
+        node.setup()
+        node.options.reset_updated()
+        self.assertRaises(BehaviorTreeException, node.tick)
+
+    def testRegisterNodeData(self):
+        @define_bt_node(NodeConfig(
+            options={},
+            inputs={},
+            outputs={},
+            max_children=0))
+        class MinimalNode(Leaf):
+            def _do_setup(self):
+                pass
+
+        source = {'test': int}
+
+        target = NodeDataMap(name='options')
+        target.add(key='test', value=NodeDataObj(data_type=int))
+
+        minimal_node = MinimalNode()
+        with self.assertRaises(NodeConfigError):
+            minimal_node._register_node_data(source_map=source,
+                                             target_map=target)
+
+    def testRegisterNodeDataDuplicateOptionRef(self):
+        @define_bt_node(NodeConfig(
+            options={},
+            inputs={},
+            outputs={},
+            max_children=0))
+        class MinimalNode(Leaf):
+            def _do_setup(self):
+                pass
+
+        source = {'test': OptionRef('test_target')}
+
+        target = NodeDataMap(name='options')
+        target.add(key='test_target', value=NodeDataObj(data_type=int))
+        target.add(key='test', value=NodeDataObj(data_type=OptionRef('test_target')))
+
+        minimal_node = MinimalNode()
+        with self.assertRaises(NodeConfigError):
+            minimal_node._register_node_data(source_map=source,
+                                             target_map=target)
+
+    def testRegisterNodeDataOptionRefInvalidOptionKey(self):
+        @define_bt_node(NodeConfig(
+            options={'invalid': OptionRef('missing')},
+            inputs={},
+            outputs={},
+            max_children=0))
+        class MinimalNode(Leaf):
+            def _do_setup(self):
+                pass
+
+        with self.assertRaises(NodeConfigError):
+            minimal_node = MinimalNode()
+
+    def testRegisterNodeDataOptionRefUnwrittenOptionKey(self):
+        @define_bt_node(NodeConfig(
+            options={'unwritten': type,
+                     'invalid': OptionRef('unwritten')},
+            inputs={},
+            outputs={},
+            max_children=0))
+        class MinimalNode(Leaf):
+            def _do_setup(self):
+                pass
+
+        with self.assertRaises(NodeConfigError):
+            minimal_node = MinimalNode()
+
+    def testRegisterNodeDataOptionRefToNoType(self):
+        def func():
+            pass
+
+        @define_bt_node(NodeConfig(
+            options={'function': types.FunctionType,
+                     'invalid': OptionRef('function')},
+            inputs={},
+            outputs={},
+            max_children=0))
+        class MinimalNode(Leaf):
+            def _do_setup(self):
+                pass
+
+        with self.assertRaises(NodeConfigError):
+            minimal_node = MinimalNode({'function': func})
+
+    def testNodeNotEqual(self):
+        @define_bt_node(NodeConfig(
+            options={},
+            inputs={},
+            outputs={},
+            max_children=0))
+        class MinimalNode(Leaf):
+            def _do_setup(self):
+                pass
+
+        first = MinimalNode(name='first')
+        second = MinimalNode(name='second')
+
+        self.assertNotEqual(first, second)
+
+    def testNodeImplementationWithInvalidState(self):
+        @define_bt_node(NodeConfig(
+            options={},
+            inputs={},
+            outputs={},
+            max_children=0))
+        class InvalidStateNode(Leaf):
+            def _do_setup(self):
+                pass
+
+            def _do_tick(self):
+                return NodeMsg.IDLE  # this is wrong
+
+            def _do_shutdown(self):
+                pass
+
+            def _do_reset(self):
+                return NodeMsg.IDLE
+
+            def _do_untick(self):
+                return NodeMsg.IDLE
+
+        node = InvalidStateNode()
+        node.setup()
+        self.assertRaises(NodeStateError, node.tick)
+
+    def testNodeImplementationMultipleChildrenWithSameName(self):
+        @define_bt_node(NodeConfig(
+            options={},
+            inputs={},
+            outputs={},
+            max_children=None))
+        class FlowControlNode(FlowControl):
+            def _do_setup(self):
+                pass
+
+            def _do_tick(self):
+                return NodeMsg.SUCCEEDED
+
+            def _do_shutdown(self):
+                pass
+
+            def _do_reset(self):
+                return NodeMsg.IDLE
+
+            def _do_untick(self):
+                return NodeMsg.IDLE
+
+        node = FlowControlNode()
+        node.add_child(FlowControlNode(name='foo'))
+        with self.assertRaises(KeyError):
+            node.add_child(FlowControlNode(name='foo'))
+
+    def testDecoratorWithoutChild(self):
+        decorator = Decorator()
+        expected_bounds = UtilityBounds(can_execute=True,
+                                        has_lower_bound_success=True,
+                                        has_upper_bound_success=True,
+                                        has_lower_bound_failure=True,
+                                        has_upper_bound_failure=True)
+
+        self.assertEqual(decorator.calculate_utility(), expected_bounds)
+
+    def testDecoratorWithChild(self):
+        decorator = Decorator()
+        cannot_exec = MockUtilityLeaf(
+            name='cannot_exec',
+            options={
+                'can_execute': False,
+                'utility_lower_bound_success': 1.0,
+                'utility_upper_bound_success': 2.0,
+                'utility_lower_bound_failure': 5.0,
+                'utility_upper_bound_failure': 10.0})
+        decorator.add_child(cannot_exec)
+        expected_bounds = UtilityBounds(can_execute=False,
+                                        has_lower_bound_success=True,
+                                        has_upper_bound_success=True,
+                                        has_lower_bound_failure=True,
+                                        has_upper_bound_failure=True,
+                                        lower_bound_success=1.0,
+                                        upper_bound_success=2.0,
+                                        lower_bound_failure=5.0,
+                                        upper_bound_failure=10.0,)
+
+        self.assertEqual(decorator.calculate_utility(), expected_bounds)
+
+    def testNodeImplementsLoggingMethods(self):
+        @define_bt_node(NodeConfig(
+            options={},
+            inputs={},
+            outputs={},
+            max_children=0))
+        class MinimalNode(Leaf):
+            def _do_setup(self):
+                pass
+
+        node = MinimalNode()
+        node.logdebug('')
+        node.loginfo('')
+        node.logwarn('')
+        node.logerr('')
+        node.logfatal('')
+
+
+class TestDefineBTNodeDecoratorOnNonSubclass(unittest.TestCase):
+    def testDecorator(self):
+        with self.assertRaises(TypeError):
+            @define_bt_node(NodeConfig(
+                options={},
+                inputs={},
+                outputs={},
+                max_children=0))
+            class ShouldNotWork(object):
+                pass
+
+
+class TestOptionRef(unittest.TestCase):
+    def testOptionRefImplementation(self):
+        first = OptionRef('first')
+        second = OptionRef('second')
+
+        self.assertEqual(first, first)
+        self.assertNotEqual(first, second)
+
+        self.assertEqual("OptionRef(option_key='first')", repr(first))
+        self.assertEqual("OptionRef(option_key='first')", first.__name__())
+
 
 class TestNodeConfig(unittest.TestCase):
     def setUp(self):
@@ -96,6 +385,23 @@ class TestNodeConfig(unittest.TestCase):
         self.assertRaises(ValueError, self.conf.extend, wrong_num_children)
         self.assertEqual(self.conf, conf_original)
 
+    def testExtend(self):
+        additional_option = NodeConfig(options={'new_option': int},
+                                       inputs={},
+                                       outputs={},
+                                       max_children=42)
+
+        conf_original = deepcopy(self.conf)
+        self.conf.extend(additional_option)
+        self.assertNotEqual(self.conf, conf_original)
+
+    def testRepr(self):
+        expected = "NodeConfig(inputs={'int_input': <type 'int'>}," \
+                   " outputs={'str_output': <type 'str'>}," \
+                   " options={'float_option': <type 'float'>}," \
+                   " max_children=42, option_wirings=[], optional_options=[], version=)"
+        self.assertEqual(expected, repr(self.conf))
+
 
 class TestPassthroughNode(unittest.TestCase):
     def testPassthroughNodeRegistered(self):
@@ -107,6 +413,7 @@ class TestPassthroughNode(unittest.TestCase):
     def testPassthroughNodeConfig(self):
         self.assertEqual(PassthroughNode._node_config,
                          NodeConfig(
+                             version='0.9.0',
                              options={'passthrough_type': type},
                              inputs={'in': OptionRef('passthrough_type')},
                              outputs={'out': OptionRef('passthrough_type')},
@@ -125,6 +432,9 @@ class TestPassthroughNode(unittest.TestCase):
         passthrough = PassthroughNode({'passthrough_type': int})
         self.assertEqual(passthrough.name, 'PassthroughNode')
         self.assertEqual(passthrough.state, NodeMsg.UNINITIALIZED)
+
+        self.assertRaises(BehaviorTreeException, passthrough.untick)
+        self.assertRaises(BehaviorTreeException, passthrough.reset)
 
         passthrough.setup()
 
@@ -157,6 +467,14 @@ class TestPassthroughNode(unittest.TestCase):
                          fresh_passthrough.inputs.is_updated('in'))
         self.assertEqual(passthrough.outputs.is_updated('out'),
                          fresh_passthrough.outputs.is_updated('out'))
+
+        expected_bounds = UtilityBounds(can_execute=True,
+                                        has_lower_bound_success=True,
+                                        has_upper_bound_success=True,
+                                        has_lower_bound_failure=True,
+                                        has_upper_bound_failure=True)
+
+        self.assertEqual(fresh_passthrough.calculate_utility(), expected_bounds)
 
     def testPassthroughNodeSetupAfterShutdown(self):
         passthrough = PassthroughNode({'passthrough_type': int})
@@ -259,6 +577,17 @@ class TestPassthroughNode(unittest.TestCase):
                               serialized_value=jsonpickle.encode(int))])
         self.assertRaises(BehaviorTreeException, Node.from_msg, msg)
 
+    def testNodeFromMsgInvalidOutput(self):
+        msg = NodeMsg(
+            module="ros_bt_py.nodes.passthrough_node",
+            node_class="PassthroughNode",
+            inputs=[NodeData(key="in",
+                             serialized_value=jsonpickle.encode(42))],
+            outputs=[NodeData(key="out", serialized_value='nope')],
+            options=[NodeData(key="passthrough_type",
+                              serialized_value=jsonpickle.encode(int))])
+        self.assertRaises(BehaviorTreeException, Node.from_msg, msg)
+
     def testNodeToMsg(self):
         node = PassthroughNode(options={'passthrough_type': int})
 
@@ -285,6 +614,7 @@ class TestPassthroughNode(unittest.TestCase):
             name='Test Node',
             module="ros_bt_py.nodes.passthrough_node",
             node_class="PassthroughNode",
+            version="0.9.0",
             options=[NodeData(key='passthrough_type',
                               serialized_value=jsonpickle.encode(int),
                               serialized_type=jsonpickle.encode(type))])

@@ -1,0 +1,6 @@
+<launch>
+  <param name="param_int" value="42" />
+  <test test-name="test_ros_param"
+        pkg="ros_bt_py"
+        type="test_ros_param.py" />
+</launch>

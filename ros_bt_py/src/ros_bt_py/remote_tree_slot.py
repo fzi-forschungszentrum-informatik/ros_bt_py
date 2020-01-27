@@ -81,6 +81,7 @@ class RemoteTreeSlot(object):
         res = self.tree_manager.load_tree(LoadTreeRequest(tree=request.tree))
         if not get_success(res):
             rospy.logerr(get_error_message(res))
+            return EvaluateUtilityResponse()
 
         return EvaluateUtilityResponse(
             utility=self.tree_manager.find_root().calculate_utility())

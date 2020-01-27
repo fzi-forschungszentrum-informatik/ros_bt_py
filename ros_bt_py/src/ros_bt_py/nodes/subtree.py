@@ -9,6 +9,7 @@ from ros_bt_py.node_config import NodeConfig
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'subtree_path': str,
              'use_io_nodes': bool},
     inputs={},
@@ -83,19 +84,11 @@ class Subtree(Leaf):
                 node_name = node_name[len(self.prefix):]
 
             if node_data.data_kind == NodeDataLocation.INPUT_DATA:
-                if options.get('use_io_nodes') and node_data.node_name not in io_inputs:
-                    pass
-                else:
-                    subtree_inputs['%s.%s' % (node_name, node_data.data_key)] = \
-                        self.manager.nodes[node_data.node_name].inputs.get_type(node_data.data_key)
+                subtree_inputs['%s.%s' % (node_name, node_data.data_key)] = \
+                    self.manager.nodes[node_data.node_name].inputs.get_type(node_data.data_key)
             elif node_data.data_kind == NodeDataLocation.OUTPUT_DATA:
-                if options.get('use_io_nodes') and node_data.node_name not in io_outputs:
-                    pass
-                else:
-                    subtree_outputs['%s.%s' % (node_name, node_data.data_key)] = \
-                        self.manager.nodes[node_data.node_name].outputs.get_type(node_data.data_key)
-            elif node_data.data_kind == NodeDataLocation.OPTION_DATA:
-                raise BehaviorTreeException('Option values cannot be public!')
+                subtree_outputs['%s.%s' % (node_name, node_data.data_key)] = \
+                    self.manager.nodes[node_data.node_name].outputs.get_type(node_data.data_key)
 
         # merge subtree input and option dicts, so we can receive
         # option updates between ticks
@@ -139,8 +132,9 @@ class Subtree(Leaf):
     def _do_setup(self):
         self.root = self.manager.find_root()
         if self.root is None:
-            raise BehaviorTreeException('Cannot find root in subtree, does the subtree {} exist?'.format(
-                                        self.options['subtree_path']))
+            raise BehaviorTreeException(
+                'Cannot find root in subtree, does the subtree {} exist?'.format(
+                    self.options['subtree_path']))
         self.root.setup()
         if self.debug_manager and self.debug_manager.get_publish_subtrees():
             self.debug_manager.add_subtree_info(

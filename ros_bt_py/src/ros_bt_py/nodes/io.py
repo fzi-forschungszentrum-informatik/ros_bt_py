@@ -5,10 +5,11 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 
 from rosbridge_library.internal.message_conversion import populate_instance, extract_values
 from rosbridge_library.internal.message_conversion import InvalidMessageException
-# FIXME: right now input/output are exact copies of each other, move this code to a common implementation
+# FIXME: input/output are exact copies of each other, move this code to a common implementation
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'io_type': type,
              'default': OptionRef('io_type')},
     inputs={'in': OptionRef('io_type')},
@@ -34,28 +35,14 @@ class IOInputOption(IO):
             else:
                 if not self.inputs.is_updated(input_name):
                     self.logwarn('Running tick() with stale data!')
-                if self.inputs[input_name] is None:
-                    raise ValueError('Trying to tick a node with an unset input (%s)!' %
-                                     input_name)
         self.inputs.handle_subscriptions()
 
     def _do_tick(self):
-        try:
-            if self.inputs['in'] and self.inputs.is_updated('in'):
-                self.outputs['out'] = self.inputs['in']
-            else:
-                try:
-                    values = extract_values(self.options['default'])
-                    message = self.options['io_type']()
-                    populate_instance(values, message)
-                    self.outputs['out'] = message
-                except InvalidMessageException:
-                    # this means it is a "primitive" type such as int
-                    self.outputs['out'] = self.options['default']
-            return NodeMsg.SUCCEEDED
-        except Exception as e:
-            self.logerr("Input Exception: %s" % e)
-            return NodeMsg.FAILED
+        if self.inputs['in'] is not None:
+            self.outputs['out'] = self.inputs['in']
+        else:
+            self.outputs['out'] = self.options['default']
+        return NodeMsg.SUCCEEDED
 
     def _do_untick(self):
         return NodeMsg.IDLE
@@ -70,6 +57,7 @@ class IOInputOption(IO):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'io_type': type},
     inputs={'in': OptionRef('io_type'),
             'default': OptionRef('io_type')},
@@ -88,7 +76,6 @@ class IOInput(IO):
 
         But only if an input has been updated since the last tick.
         """
-        self.logerr('OVERWRITTEN _handle_inputs')
         for input_name in self.inputs:
             if input_name == 'in' and self.inputs[input_name] is None:
                 self.logwarn('ignoring unset "in" input and using default value')
@@ -101,7 +88,7 @@ class IOInput(IO):
         self.inputs.handle_subscriptions()
 
     def _do_tick(self):
-        if self.inputs['in'] and self.inputs.is_updated('in'):
+        if self.inputs['in'] is not None:
             self.outputs['out'] = self.inputs['in']
         else:
             self.outputs['out'] = self.inputs['default']
@@ -120,6 +107,7 @@ class IOInput(IO):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'io_type': type,
              'default': OptionRef('io_type')},
     inputs={'in': OptionRef('io_type')},
@@ -145,28 +133,14 @@ class IOOutputOption(IO):
             else:
                 if not self.inputs.is_updated(input_name):
                     self.logwarn('Running tick() with stale data!')
-                if self.inputs[input_name] is None:
-                    raise ValueError('Trying to tick a node with an unset input (%s)!' %
-                                     input_name)
         self.inputs.handle_subscriptions()
 
     def _do_tick(self):
-        try:
-            if self.inputs['in'] and self.inputs.is_updated('in'):
-                self.outputs['out'] = self.inputs['in']
-            else:
-                try:
-                    values = extract_values(self.options['default'])
-                    message = self.options['io_type']()
-                    populate_instance(values, message)
-                    self.outputs['out'] = message
-                except InvalidMessageException:
-                    # this means it is a "primitive" type such as int
-                    self.outputs['out'] = self.options['default']
-            return NodeMsg.SUCCEEDED
-        except Exception as e:
-            self.logerr("Output Exception: %s" % e)
-            return NodeMsg.FAILED
+        if self.inputs['in'] is not None:
+            self.outputs['out'] = self.inputs['in']
+        else:
+            self.outputs['out'] = self.options['default']
+        return NodeMsg.SUCCEEDED
 
     def _do_untick(self):
         return NodeMsg.IDLE
@@ -181,6 +155,7 @@ class IOOutputOption(IO):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'io_type': type},
     inputs={'in': OptionRef('io_type'),
             'default': OptionRef('io_type')},
@@ -211,7 +186,7 @@ class IOOutput(IO):
         self.inputs.handle_subscriptions()
 
     def _do_tick(self):
-        if self.inputs['in'] and self.inputs.is_updated('in'):
+        if self.inputs['in'] is not None:
             self.outputs['out'] = self.inputs['in']
         else:
             self.outputs['out'] = self.inputs['default']

@@ -6,6 +6,7 @@ from ros_bt_py.node_config import NodeConfig
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={},
     inputs={},
     outputs={},
@@ -84,6 +85,7 @@ class Fallback(FlowControl):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={},
     inputs={},
     outputs={},
@@ -133,7 +135,6 @@ class MemoryFallback(FlowControl):
             self.logwarn('Ticking without children. Is this really what you want?')
             return NodeMsg.FAILED
 
-        self.logerr(self.state)
         # If we've previously succeeded or failed, reset
         # last_running_child and untick all children
         if self.state in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
@@ -241,7 +242,7 @@ def calculate_utility_fallback(children):
             success_bounds[index].has_upper_bound_success &= child_bounds.has_upper_bound_success
             # Range returns an empty range if the first parameter is larger
             # than the second, so no bounds checking necessary
-            for i in range(index+1, len(success_bounds)):
+            for i in range(index + 1, len(success_bounds)):
                 success_bounds[i].lower_bound_success += child_bounds.lower_bound_failure
                 success_bounds[i].has_lower_bound_success &= child_bounds.has_lower_bound_failure
                 success_bounds[i].upper_bound_success += child_bounds.upper_bound_failure

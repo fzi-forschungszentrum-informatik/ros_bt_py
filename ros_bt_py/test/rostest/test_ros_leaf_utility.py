@@ -8,7 +8,8 @@ import rospy
 from actionlib_msgs.msg import GoalStatus
 from std_msgs.msg import Int32
 from std_srvs.srv import SetBool, SetBoolRequest, SetBoolResponse
-from actionlib_tutorials.msg import FibonacciAction, FibonacciGoal, FibonacciResult, FibonacciFeedback
+from actionlib_tutorials.msg import (FibonacciAction, FibonacciGoal, FibonacciResult,
+                                     FibonacciFeedback)
 
 from ros_bt_py_msgs.msg import FindBestExecutorAction, FindBestExecutorGoal
 

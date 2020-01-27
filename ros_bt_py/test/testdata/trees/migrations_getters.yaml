@@ -1,0 +1,216 @@
+name: ''
+path: ''
+root_name: ''
+nodes: 
+  - 
+    module: "ros_bt_py.nodes.getters"
+    node_class: "GetConstListItem"
+    version: ""
+    max_children: 1
+    name: "GetConstListItem"
+    child_names: []
+    options: 
+      - 
+        key: "succeed_on_stale_data"
+        serialized_value: "true"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+      - 
+        key: "index"
+        serialized_value: "0"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      - 
+        key: "list_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "list"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.list\"}"
+    outputs: 
+      - 
+        key: "item"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    option_wirings: []
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.nodes.getters"
+    node_class: "GetAttr"
+    version: ""
+    max_children: 1
+    name: "GetAttr"
+    child_names: []
+    options: 
+      - 
+        key: "succeed_on_stale_data"
+        serialized_value: "true"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+      - 
+        key: "attr_name"
+        serialized_value: "\"foo\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "attr_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "object"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.object\"}"
+    outputs: 
+      - 
+        key: "attr"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    option_wirings: []
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.nodes.getters"
+    node_class: "GetDictItem"
+    version: ""
+    max_children: 1
+    name: "GetDictItem"
+    child_names: []
+    options: 
+      - 
+        key: "succeed_on_stale_data"
+        serialized_value: "true"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+      - 
+        key: "value_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "key"
+        serialized_value: "\"foo\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+    inputs: 
+      - 
+        key: "dict"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.dict\"}"
+    outputs: 
+      - 
+        key: "value"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    option_wirings: []
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.nodes.getters"
+    node_class: "GetListItem"
+    version: ""
+    max_children: 1
+    name: "GetListItem"
+    child_names: []
+    options: 
+      - 
+        key: "succeed_on_stale_data"
+        serialized_value: "true"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+      - 
+        key: "list_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "index"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      - 
+        key: "list"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.list\"}"
+    outputs: 
+      - 
+        key: "item"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    option_wirings: []
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.nodes.getters"
+    node_class: "GetDictItemFromKey"
+    version: ""
+    max_children: 1
+    name: "GetDictItemFromKey"
+    child_names: []
+    options: 
+      - 
+        key: "succeed_on_stale_data"
+        serialized_value: "true"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+      - 
+        key: "value_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "dict"
+        serialized_value: "{}"
+        serialized_type: "{\"py/type\": \"__builtin__.dict\"}"
+    inputs: 
+      - 
+        key: "key"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+    outputs: 
+      - 
+        key: "value"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    option_wirings: []
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    version: "0.9.0"
+    max_children: -1
+    name: "Sequence"
+    child_names: [GetAttr, GetConstListItem, GetDictItem, GetListItem, GetDictItemFromKey]
+    options: []
+    inputs: []
+    outputs: []
+    option_wirings: []
+    state: "UNINITIALIZED"
+data_wirings: []
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: 
+  - 
+    node_name: "GetAttr"
+    data_kind: "inputs"
+    data_key: "object"
+  - 
+    node_name: "GetAttr"
+    data_kind: "outputs"
+    data_key: "attr"
+  - 
+    node_name: "GetConstListItem"
+    data_kind: "inputs"
+    data_key: "list"
+  - 
+    node_name: "GetConstListItem"
+    data_kind: "outputs"
+    data_key: "item"
+  - 
+    node_name: "GetDictItem"
+    data_kind: "inputs"
+    data_key: "dict"
+  - 
+    node_name: "GetDictItem"
+    data_kind: "outputs"
+    data_key: "value"
+  - 
+    node_name: "GetListItem"
+    data_kind: "inputs"
+    data_key: "index"
+  - 
+    node_name: "GetListItem"
+    data_kind: "inputs"
+    data_key: "list"
+  - 
+    node_name: "GetListItem"
+    data_kind: "outputs"
+    data_key: "item"

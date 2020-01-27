@@ -2,6 +2,8 @@
 string module
 # The python class name of the node
 string node_class
+# The version of this node
+string version
 
 # The maximum amount of children this node supports, where -1 means
 # infinite children

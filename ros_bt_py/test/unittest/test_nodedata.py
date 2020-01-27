@@ -76,3 +76,32 @@ class TestNodeData(unittest.TestCase):
         data.get().append(1)
 
         self.assertEqual([1], data.get())
+
+    def testEqualNotEqual(self):
+        first = NodeData(data_type=int, initial_value=42)
+        second = NodeData(data_type=int, initial_value=23)
+
+        self.assertEqual(first, first)
+        self.assertNotEqual(first, second)
+
+    def testTakes(self):
+        static_data = NodeData(data_type=int, initial_value=42, static=True)
+        # static data can not take a new value:
+        self.assertEqual(static_data.takes(23), False)
+
+        # float can take an int
+        data = NodeData(data_type=float, initial_value=42.0)
+        self.assertEqual(data.takes(23), True)
+
+    def testFailedJsonpickleDecode(self):
+        data = NodeData(data_type=int)
+        self.assertRaises(TypeError, data.set, {"py/type": "__builtin__.dict"})
+
+    def testSerializedValueNone(self):
+        data = NodeData(data_type=None)
+        self.assertNotEqual(data.get_serialized(), None)
+        self.assertEqual(data.get_serialized(), 'null')
+
+        # this should always return null, even after setting the member variable to None
+        data._serialized_value = None
+        self.assertEqual(data.get_serialized(), 'null')

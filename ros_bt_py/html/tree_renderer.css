@@ -323,3 +323,21 @@ div.jsoneditor-menu {
   background-color: #007bff;
   color: #ffffff;
 }
+
+@media screen and (max-width: 1910px){
+  .hide-button-text {
+    display: none;
+  }
+  .show-button-icon {
+    visibility: visible;
+  }
+}
+
+@media screen and (max-width: 1640px){
+  .hide-button-text-control {
+    display: none;
+  }
+  .show-button-icon {
+    visibility: visible;
+  }
+}

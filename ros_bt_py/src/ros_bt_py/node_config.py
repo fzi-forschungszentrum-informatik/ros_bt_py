@@ -2,7 +2,7 @@ class OptionRef(object):
     """Marks an input or output type as dependent on an option value.
 
     Can be used instead of an actual type in the maps passed to a
-    :class:Nodefonfig
+    :class:NodeConfig
     """
     def __init__(self, option_key):
         self.option_key = option_key
@@ -21,7 +21,8 @@ class OptionRef(object):
 
 
 class NodeConfig(object):
-    def __init__(self, options, inputs, outputs, max_children, option_wirings=[], optional_options=[]):
+    def __init__(self, options, inputs, outputs, max_children, option_wirings=[],
+                 optional_options=[], version=''):
         """Describes the interface of a :class:ros_bt_py.node.Node
 
         :param dict(str, type) options
@@ -52,16 +53,19 @@ class NodeConfig(object):
         self.max_children = max_children
         self.option_wirings = option_wirings
         self.optional_options = optional_options
+        self.version = version
 
     def __repr__(self):
         return \
-            'NodeConfig(inputs=%r, outputs=%r, options=%r, max_children=%r, option_wirings=%r, optional_options=%s)' % (
+            'NodeConfig(inputs=%r, outputs=%r, options=%r, max_children=%r, option_wirings=%r,' \
+            ' optional_options=%s, version=%s)' % (
                 self.inputs,
                 self.outputs,
                 self.options,
                 self.max_children,
                 self.option_wirings,
-                self.optional_options)
+                self.optional_options,
+                self.version)
 
     def __eq__(self, other):
         return (self.inputs == other.inputs and
@@ -69,7 +73,8 @@ class NodeConfig(object):
                 self.options == other.options and
                 self.max_children == other.max_children and
                 self.option_wirings == other.option_wirings and
-                self.optional_options == other.optional_options)
+                self.optional_options == other.optional_options and
+                self.version == other.version)
 
     def __ne__(self, other):
         return not self == other

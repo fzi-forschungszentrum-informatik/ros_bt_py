@@ -156,6 +156,12 @@ function getDefaultValue(typeName, options)
     return {type: 'ros_ta.nodes.capability.CapabilityType',
             value: {"capability_type": ""}};
   }
+  else if (typeName === 'ros_bt_py.ros_helpers.LoggerLevel')
+  {
+    return {type: 'ros_bt_py.ros_helpers.LoggerLevel',
+            value: {"py/object": "ros_bt_py.ros_helpers.LoggerLevel", "logger_level": 1}
+    };
+  }
   else
   {
     return {type: '__' + typeName,
@@ -667,7 +673,7 @@ class NamespaceSelect extends Component
       <Fragment>
         <span aria-hidden="true" title={connected_title} className={connected_class} />
         <div className="form-inline">
-          <label className="ml-1">BT Namespace:
+          <label className="ml-1">Namespace:
             <select className="custom-select ml-1"
                     value={this.props.currentNamespace}
                     onChange={this.handleNamespaceChange}>
@@ -825,28 +831,40 @@ class TickControls extends Component
     return (
       <Fragment>
         <button onClick={this.controlExec.bind(this, 1)}
-                className="btn btn-primary m-1">
-          Tick Once
+                className="btn btn-primary ml-1"
+                title="Tick Once">
+          <i class="fas fa-check show-button-icon"></i>
+          <span className="ml-1 hide-button-text-control">Tick Once</span>
         </button>
         <button onClick={this.controlExec.bind(this, 2)}
-                className="btn btn-primary m-1">
-          Tick Periodically
+                className="btn btn-primary ml-1"
+                title="Tick Periodically">
+          <i class="fas fa-sync show-button-icon"></i>
+          <span className="ml-1 hide-button-text-control">Tick Periodically</span>
         </button>
         <button onClick={this.controlExec.bind(this, 3)}
-                className="btn btn-primary m-1">
-          Tick Until Result
+                className="btn btn-primary ml-1"
+                title="Tick Until Result">
+          <i class="fas fa-play show-button-icon"></i>
+          <span className="ml-1 hide-button-text-control">Tick Until Result</span>
         </button>
         <button onClick={this.controlExec.bind(this, 4)}
-                className="btn btn-primary m-1">
-          Stop
+                className="btn btn-primary ml-1"
+                title="Stop">
+          <i class="fas fa-stop show-button-icon"></i>
+          <span className="ml-1 hide-button-text-control">Stop</span>
         </button>
         <button onClick={this.controlExec.bind(this, 5)}
-                className="btn btn-primary m-1">
-          Reset
+                className="btn btn-primary ml-1"
+                title="Reset">
+          <i class="fas fa-undo show-button-icon"></i>
+          <span className="ml-1 hide-button-text-control">Reset</span>
         </button>
         <button onClick={this.controlExec.bind(this, 6)}
-                className="btn btn-primary m-1">
-          Shutdown
+                className="btn btn-primary ml-1"
+                title="Shutdown">
+          <i class="fas fa-power-off show-button-icon"></i>
+          <span className="ml-1 hide-button-text-control">Shutdown</span>
         </button>
       </Fragment>
     );
@@ -972,8 +990,22 @@ class LoadSaveControls extends Component
     return (
       <Fragment>
         <button onClick={this.newTree.bind(this)}
-                className="btn btn-primary m-1">
-          New
+                className="btn btn-primary ml-1"
+                title="New tree">
+          <i class="fas fa-file show-button-icon"></i>
+          <span className="ml-1 hide-button-text">New</span>
+        </button>
+        <button onClick={this.loadFromPackage.bind(this)}
+                className="btn btn-primary ml-1"
+                title="Load from package">
+          <i class="fas fa-folder show-button-icon"></i>
+          <span className="ml-1 hide-button-text">Load</span>
+        </button>
+        <button onClick={this.saveToPackage.bind(this)}
+                className="btn btn-primary ml-1"
+                title="Save to package">
+          <i class="fas fa-save show-button-icon"></i>
+          <span className="ml-1 hide-button-text">Save</span>
         </button>
         <button onClick={this.loadFromPackage.bind(this)}
                 className="btn btn-primary m-1">
@@ -986,13 +1018,17 @@ class LoadSaveControls extends Component
         <div>
           <input ref={this.fileref} type="file" style={{display:"none"}} onChange={this.loadTree.bind(this)}/>
           <button onClick={this.openFileDialog.bind(this)}
-                  className="btn btn-primary m-1">
-            Upload
+                  className="btn btn-primary ml-1"
+                  title="Upload">
+            <i class="fas fa-file-upload show-button-icon"></i>
+            <span className="ml-1 hide-button-text">Upload</span>
           </button>
         </div>
         <button onClick={this.saveTree.bind(this)}
-                className="btn btn-primary m-1">
-          Download
+                className="btn btn-primary m-1"
+                title="Download">
+          <i class="fas fa-file-download show-button-icon"></i>
+          <span className="ml-1 hide-button-text">Download</span>
         </button>
       </Fragment>
     );
@@ -1110,6 +1146,17 @@ class DebugControls extends Component
 
   render()
   {
+    var debug_controls = null;
+    if (this.state.debugging)
+    {
+      debug_controls = (
+        <button onClick={this.onClickStep}
+                className="btn btn-primary ml-1">
+          <i class="fas fa-step-forward show-button-icon"></i>
+          <span className="ml-1 hide-button-text-control">Step</span>
+        </button>
+      );
+    }
     return (
       <Fragment>
         <div className="custom-control custom-checkbox m-1">
@@ -1130,10 +1177,7 @@ class DebugControls extends Component
           <label className="custom-control-label"
                  htmlFor={this.publishSubtreesID}>Publish Subtrees</label>
         </div>
-        <button onClick={this.onClickStep}
-                className="btn btn-primary m-1">
-          Step
-        </button>
+        {debug_controls}
       </Fragment>
     );
   }
@@ -3270,7 +3314,7 @@ class FileBrowser extends Component{
       file_type_filter: ".yaml",
       highlighted: null,
       highlighted_package: null,
-      write_mode: "overwrite",
+      write_mode: "ask",
       error_message: null,
     };
 
@@ -3285,6 +3329,18 @@ class FileBrowser extends Component{
       ros: this.props.ros,
       name: this.props.bt_namespace + 'get_package_structure',
       serviceType: 'ros_bt_py_msgs/GetPackageStructure'
+    });
+
+    this.check_node_versions_service = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'check_node_versions',
+      serviceType: 'ros_bt_py_msgs/MigrateTree'
+    });
+
+    this.migrate_tree_service = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'migrate_tree',
+      serviceType: 'ros_bt_py_msgs/MigrateTree'
     });
 
     this.load_service = new ROSLIB.Service({
@@ -3414,7 +3470,6 @@ class FileBrowser extends Component{
     }
   }
 
-  // FIXME: make this code nice 
   search (item_id, parent) {
     const stack = [ parent ];
     while (stack.length) {
@@ -3539,14 +3594,72 @@ class FileBrowser extends Component{
 
                     console.log("loading... ", msg.path);
 
-                    this.load_service.callService(
+                    // do a version check before loading
+                    this.check_node_versions_service.callService(
                       new ROSLIB.ServiceRequest({
                         tree: msg
                       }),
                       function(response) {
                         if (response.success) {
-                          console.log('called LoadTree service successfully');
-                          this.props.onChangeFileModal(null);
+                          console.log('called check version service successfully');
+                          if (response.migrated)
+                          {
+                            console.log("migration needed");
+                            if (window.confirm("The tree you want to load needs to be migrated, should this be tried?"))
+                            {
+                              this.migrate_tree_service.callService(
+                                new ROSLIB.ServiceRequest({
+                                  tree: msg
+                                }),
+                                function(response) {
+                                  if (response.success) {
+                                    console.log('called MigrateTree service successfully');
+                                    this.load_service.callService(
+                                      new ROSLIB.ServiceRequest({
+                                        tree: response.tree
+                                      }),
+                                      function(response) {
+                                        if (response.success) {
+                                          console.log('called LoadTree service successfully');
+                                          this.props.onChangeFileModal(null);
+                                        }
+                                        else {
+                                          this.setState({error_message: response.error_message});
+                                        }
+                                      }.bind(this),
+                                      function(failed) {
+                                        this.setState({error_message: 'Error loading tree, is your yaml file correct? '});
+                                      }.bind(this));
+                                  }
+                                  else {
+                                    this.setState({error_message: response.error_message});
+                                  }
+                                }.bind(this),
+                                function(failed) {
+                                  this.setState({error_message: 'Error loading tree, is your yaml file correct? '});
+                                }.bind(this));
+                            } else {
+                              this.setState({error_message: response.error_message});
+                            }
+
+                          } else {
+                            this.load_service.callService(
+                              new ROSLIB.ServiceRequest({
+                                tree: msg
+                              }),
+                              function(response) {
+                                if (response.success) {
+                                  console.log('called LoadTree service successfully');
+                                  this.props.onChangeFileModal(null);
+                                }
+                                else {
+                                  this.setState({error_message: response.error_message});
+                                }
+                              }.bind(this),
+                              function(failed) {
+                                this.setState({error_message: 'Error loading tree, is your yaml file correct? '});
+                              }.bind(this));
+                          }
                         }
                         else {
                           this.setState({error_message: response.error_message});
@@ -3566,6 +3679,7 @@ class FileBrowser extends Component{
                   onChange={ event => {
                     this.setState({write_mode: event.target.value})
                   }}>
+            <option value="ask">ask before overwrite</option>
             <option value="overwrite">overwrite file</option>
             <option value="rename">rename file</option>
           </select>
@@ -3598,23 +3712,52 @@ class FileBrowser extends Component{
                     {
                       overwrite = false;
                       rename = true;
+                    } else if (this.state.write_mode === "ask") {
+                      overwrite = false;
+                      rename = false;
                     }
 
+                    var request = {
+                      filename: save_file_path,
+                      package: this.state.package,
+                      tree: this.props.tree_message,
+                      allow_overwrite: overwrite,
+                      allow_rename: rename,
+                    };
+
                     this.save_service.callService(
-                      new ROSLIB.ServiceRequest({
-                        filename: save_file_path,
-                        package: this.state.package,
-                        tree: this.props.tree_message,
-                        allow_overwrite: overwrite,
-                        allow_rename: rename,
-                      }),
+                      new ROSLIB.ServiceRequest(request),
                       function(response) {
                         if (response.success) {
                           console.log('called SaveTree service successfully');
                           this.props.onChangeFileModal(null);
                         }
                         else {
-                          this.setState({error_message: response.error_message});
+                          if (this.state.write_mode === "ask" && response.error_message === "Overwrite not allowed")
+                          {
+                            if (window.confirm("Do you want to overwrite " + save_file_path + "?"))
+                            {
+                              request.allow_overwrite = true;
+                              this.save_service.callService(
+                                new ROSLIB.ServiceRequest(request),
+                                function(response) {
+                                  if (response.success) {
+                                    console.log('called SaveTree service successfully');
+                                    this.props.onChangeFileModal(null);
+                                  }
+                                  else {
+                                    this.setState({error_message: response.error_message});
+                                  }
+                                }.bind(this),
+                                function(failed) {
+                                  this.setState({error_message: 'Error saving tree'});
+                                }.bind(this));
+                            } else {
+                              this.setState({error_message: response.error_message});
+                            }
+                          } else {
+                            this.setState({error_message: response.error_message});
+                          }
                         }
                       }.bind(this),
                       function(failed) {
@@ -3672,7 +3815,7 @@ class FileBrowser extends Component{
                       this.setState({
                         file_path: relative_path,
                         selected_file: event.target.value,
-                      });                      
+                      });
                      }}
                      disabled={this.props.mode !== "save"}
                      value={this.state.selected_file}/>
@@ -3728,7 +3871,6 @@ class FileBrowser extends Component{
                       selected_file: child.name,
                       highlighted: child.item_id,
                     });
-                    
                   } else {
                     if (child.type === "directory")
                     {
@@ -4677,7 +4819,37 @@ class EditableNode extends Component
       var result_rows = results.map(x => {
         return (
           <div className="list-group-item search-result"
-               onClick={ () => { this.selectMessageResult(x); onNewValue(x.msg);}}>
+               onClick={ () => {
+                 if (this.props.nodeClass === 'Action' && this.props.module === 'ros_bt_py.nodes.action')
+                 {
+                   var action_types = {action_type: 'Action', feedback_type: 'Feedback', goal_type: 'Goal', result_type: 'Result'};
+                   var type_name = x.msg.split('.').pop();
+                   var action_name = type_name.replace(action_types[key], '');
+                   var replace_regex = new RegExp(type_name, 'g');
+                   for (var action_type in action_types)
+                   {
+                     if (key !== action_type)
+                     {
+                       this.updateValue('options', action_type, x.msg.replace(replace_regex, action_name+action_types[action_type]));
+                     }
+                   }
+                 } else if (this.props.nodeClass === 'Service' && this.props.module === 'ros_bt_py.nodes.service')
+                 {
+                   var service_types = {service_type: '', request_type: 'Request', response_type: 'Response'};
+                   var type_name = x.msg.split('.').pop();
+                   var service_name = type_name.replace(service_types[key], '');
+                   var replace_regex = new RegExp(type_name + '$');
+                   for (var service_type in service_types)
+                   {
+                     if (key !== service_type)
+                     {
+                       this.updateValue('options', service_type, x.msg.replace(replace_regex, service_name+service_types[service_type]));
+                     }
+                   }
+                 }
+                 this.selectMessageResult(x);
+                 onNewValue(x.msg);
+               }}>
             {x.msg}
           </div>
         );
@@ -5046,9 +5218,21 @@ class EditableNode extends Component
         </div>
       );
     }
+    else if (valueType === 'ros_bt_py.ros_helpers.LoggerLevel')
+    {
+      return (
+        <div className="form-group">
+          <label className="d-block">{paramItem.key}
+            <DropDown json={paramItem.value.value}
+                      message_type={paramItem.value.type}
+                      onFocus={this.onFocus}
+                      onNewValue={onNewValue}/>
+          </label>
+        </div>
+      );
+    }
     else  // if (valueType === 'object')
     {
-      console.log("OBJECT", paramItem.value.value);
       return (
         <div className="form-group">
           <label className="d-block">{paramItem.key}
@@ -5298,7 +5482,6 @@ class CapabilityTypeInput extends Component
   constructor(props)
   {
     super(props);
-
     this.state = {name: props.capability_type.capability_type,
       capabilities_results: [],
       capability: '',
@@ -5389,6 +5572,40 @@ class CapabilityTypeInput extends Component
               onChange={this.searchCapability}/>
         {this.renderCapabilitySearchResults(this.state.capabilities_results)}
       </div>
+    );
+    }
+}
+class DropDown extends Component
+{
+  constructor(props)
+  {
+    super(props);
+
+    this.state = {
+      json: props.json,
+      logger_level: props.json.logger_level,
+    };
+  }
+
+  handleChange = (event) => {
+    console.log(event.target.value);
+    var json = this.state.json;
+    json.logger_level = event.target.value;
+    this.setState({json:json, logger_level:event.target.value});
+
+    this.props.onNewValue(json);
+  };
+
+  render()
+  {
+    return (
+      <select value={this.state.logger_level} onChange={this.handleChange}>
+        <option value="debug">DEBUG</option>
+        <option value="info">INFO</option>
+        <option value="warning">WARNING</option>
+        <option value="error">ERROR</option>
+        <option value="fatal">FATAL</option>
+      </select>
     );
   }
 }

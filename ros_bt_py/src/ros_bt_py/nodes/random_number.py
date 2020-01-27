@@ -1,12 +1,15 @@
+import random
+
 from ros_bt_py_msgs.msg import Node as NodeMsg
+
+from ros_bt_py.exceptions import BehaviorTreeException
 
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
-import random
-
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'min': int,
              'max': int},
     inputs={},
@@ -17,9 +20,10 @@ class RandomInt(Leaf):
     """Provides a pseudo-random integer in range min <= random_number < max
     """
     def _do_setup(self):
-        pass
+        validate_range(self.options['min'], self.options['max'])
 
     def _do_tick(self):
+        validate_range(self.options['min'], self.options['max'])
         self.outputs['random_number'] = random.randrange(self.options['min'], self.options['max'])
         return NodeMsg.SUCCEEDED
 
@@ -39,6 +43,7 @@ class RandomInt(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={},
     inputs={'min': int,
             'max': int},
@@ -52,6 +57,7 @@ class RandomIntInputs(Leaf):
         pass
 
     def _do_tick(self):
+        validate_range(self.inputs['min'], self.inputs['max'])
         self.outputs['random_number'] = random.randrange(self.inputs['min'], self.inputs['max'])
         return NodeMsg.SUCCEEDED
 
@@ -68,3 +74,13 @@ class RandomIntInputs(Leaf):
     #
     # def _do_calculate_utility(self):
     #     pass
+
+
+def validate_range(minimum, maximum):
+    """checks if `minimum` < `maximum` and raises a BehaviorTreeException if not"""
+    if minimum == maximum:
+        raise BehaviorTreeException(
+            'minimum ({}) cannot be equal to maximum ({})'.format(minimum, maximum))
+    if minimum > maximum:
+        raise BehaviorTreeException(
+            'minimum ({}) cannot be greater that maximum ({})'.format(minimum, maximum))

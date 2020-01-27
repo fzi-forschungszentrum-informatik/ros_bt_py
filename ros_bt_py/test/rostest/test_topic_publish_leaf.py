@@ -23,7 +23,7 @@ class TestTopicPublisherLeaf(unittest.TestCase):
         self.publisher_leaf = TopicPublisher(options={
             'topic_name': '/numbers_in',
             'topic_type': Int32
-            })
+        })
         self.publisher_leaf.setup()
         self._lock = Lock()
         self.msg = None
@@ -57,6 +57,8 @@ class TestTopicPublisherLeaf(unittest.TestCase):
 
         rospy.sleep(0.1)
         self.assertEqual(self.msg.data, 42)
+
+        self.assertEqual(self.publisher_leaf.untick(), NodeMsg.IDLE)
 
         self.publisher_leaf.reset()
         self.publisher_leaf.inputs['message'] = Int32(data=23)

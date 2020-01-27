@@ -4,11 +4,14 @@ import unittest
 import rospy
 
 from actionlib_msgs.msg import GoalStatus
-from actionlib_tutorials.msg import FibonacciAction, FibonacciGoal, FibonacciFeedback, FibonacciResult
-from ros_bt_py_msgs.msg import Node as NodeMsg
+from actionlib_tutorials.msg import (FibonacciAction, FibonacciGoal, FibonacciFeedback,
+                                     FibonacciResult)
+from ros_bt_py_msgs.msg import Node as NodeMsg, UtilityBounds
 
 from ros_bt_py.node_config import NodeConfig
 from ros_bt_py.nodes.action import Action
+
+from ros_bt_py.exceptions import BehaviorTreeException
 
 PKG = 'ros_bt_py'
 
@@ -25,7 +28,7 @@ class TestActionLeaf(unittest.TestCase):
             # time out slightly before the server sends a second piece of
             # feedback
             'timeout_seconds': 0.8
-            })
+        })
         self.action_leaf.setup()
 
     def tearDown(self):
@@ -58,7 +61,19 @@ class TestActionLeaf(unittest.TestCase):
         self.assertEqual(self.action_leaf.outputs['goal_status'], GoalStatus.ACTIVE)
         self.assertSequenceEqual(self.action_leaf.outputs['feedback'].sequence, [0, 1, 1])
 
+        self.action_leaf.inputs['goal'] = FibonacciGoal(order=0)
+        self.action_leaf.tick()
+        self.assertEqual(self.action_leaf.state, NodeMsg.RUNNING)
+
         self.action_leaf.untick()
+
+    def testUtility(self):
+        expected_bounds = UtilityBounds(can_execute=True,
+                                        has_lower_bound_success=True,
+                                        has_upper_bound_success=True,
+                                        has_lower_bound_failure=True,
+                                        has_upper_bound_failure=True)
+        self.assertEqual(self.action_leaf.calculate_utility(), expected_bounds)
 
     def testTimeout(self):
         # The Fibonacci server sleeps for a second after generating each
@@ -78,9 +93,69 @@ class TestActionLeaf(unittest.TestCase):
         self.assertEqual(self.action_leaf.outputs['goal_status'], GoalStatus.LOST)
         self.assertIsNone(self.action_leaf.outputs['result'])
 
+    def testActionNotAvailable(self):
+        action = Action(options={
+            'action_type': FibonacciAction,
+            'goal_type': FibonacciGoal,
+            'feedback_type': FibonacciFeedback,
+            'result_type': FibonacciResult,
+            'action_name': '/this_action_does_not_exist',
+            'wait_for_action_server_seconds': 0.1,
+            'timeout_seconds': 0.8,
+            'fail_if_not_available': False
+        })
+
+        self.assertRaises(BehaviorTreeException, action.setup)
+
+        action = Action(options={
+            'action_type': FibonacciAction,
+            'goal_type': FibonacciGoal,
+            'feedback_type': FibonacciFeedback,
+            'result_type': FibonacciResult,
+            'action_name': '/this_action_does_not_exist',
+            'wait_for_action_server_seconds': 0.1,
+            'timeout_seconds': 0.8,
+            'fail_if_not_available': True
+        })
+
+        action.inputs['goal'] = FibonacciGoal(order=0)
+
+        self.assertEqual(action.state, NodeMsg.UNINITIALIZED)
+        action.setup()
+        self.assertEqual(action.state, NodeMsg.IDLE)
+        action.tick()
+        self.assertEqual(action.state, NodeMsg.FAILED)
+
+        expected_bounds = UtilityBounds()
+        self.assertEqual(action.calculate_utility(), expected_bounds)
+
+    def testFailingAction(self):
+        action = Action(options={
+            'action_type': FibonacciAction,
+            'goal_type': FibonacciGoal,
+            'feedback_type': FibonacciFeedback,
+            'result_type': FibonacciResult,
+            'action_name': 'fibonacci_fail',
+            'wait_for_action_server_seconds': 0.1,
+            'timeout_seconds': 0.8,
+            'fail_if_not_available': False
+        })
+
+        action.inputs['goal'] = FibonacciGoal(order=0)
+
+        self.assertEqual(action.state, NodeMsg.UNINITIALIZED)
+        action.setup()
+        self.assertEqual(action.state, NodeMsg.IDLE)
+        action.tick()
+        self.assertEqual(action.state, NodeMsg.RUNNING)
+
+        rospy.sleep(0.1)
+        action.tick()
+        self.assertEqual(action.state, NodeMsg.FAILED)
+
 
 if __name__ == '__main__':
-    rospy.init_node('test_action_leaf')
+    rospy.init_node('test_action_leaf', log_level=rospy.DEBUG)
     import rostest
     import sys
     import os

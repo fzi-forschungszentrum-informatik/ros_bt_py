@@ -1,16 +1,49 @@
 import unittest
 
 import jsonpickle
+import sys
+import time
 
-from ros_bt_py_msgs.msg import Node as NodeMsg
+from ros_bt_py_msgs.msg import Node as NodeMsg, Message, Package
 from ros_bt_py_msgs.msg import NodeData, NodeDataWiring, NodeDataLocation, Tree
-from ros_bt_py_msgs.srv import WireNodeDataRequest, AddNodeRequest, RemoveNodeRequest, \
-     ControlTreeExecutionRequest, GetAvailableNodesRequest, SetExecutionModeRequest, \
-     SetOptionsRequest, ContinueRequest, LoadTreeRequest, MoveNodeRequest, ReplaceNodeRequest
+from ros_bt_py_msgs.srv import (WireNodeDataRequest, AddNodeRequest, RemoveNodeRequest,
+                                ControlTreeExecutionRequest, GetAvailableNodesRequest,
+                                SetExecutionModeRequest, SetOptionsRequest, ContinueRequest,
+                                LoadTreeRequest, MoveNodeRequest, ReplaceNodeRequest,
+                                MorphNodeRequest, ClearTreeRequest, LoadTreeFromPathRequest,
+                                SetExecutionModeResponse, ModifyBreakpointsRequest,
+                                GetSubtreeRequest)
 
-from ros_bt_py.node import Node
+from ros_bt_py.node import Node, Leaf, FlowControl, define_bt_node
+from ros_bt_py.node_config import NodeConfig
 from ros_bt_py.nodes.sequence import Sequence
+from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, TreeTopologyError
 from ros_bt_py.tree_manager import TreeManager
+from ros_bt_py.tree_manager import (get_success as tm_get_success,
+                                    get_error_message as tm_get_error_message)
+
+
+@define_bt_node(NodeConfig(
+    options={},
+    inputs={},
+    outputs={},
+    max_children=0))
+class LongRunningNode(Leaf):
+    def _do_setup(self):
+        pass
+
+    def _do_tick(self):
+        time.sleep(1.0)
+        return NodeMsg.SUCCEEDED
+
+    def _do_shutdown(self):
+        pass
+
+    def _do_reset(self):
+        return NodeMsg.IDLE
+
+    def _do_untick(self):
+        return NodeMsg.IDLE
 
 
 class TestTreeManager(unittest.TestCase):
@@ -46,6 +79,10 @@ class TestTreeManager(unittest.TestCase):
             module='ros_bt_py.nodes.sequence',
             node_class='Sequence')
 
+        self.memory_sequence_msg = NodeMsg(
+            module='ros_bt_py.nodes.sequence',
+            node_class='MemorySequence')
+
         self.succeeder_msg = NodeMsg(
             module='ros_bt_py.nodes.mock_nodes',
             node_class='MockLeaf',
@@ -55,6 +92,256 @@ class TestTreeManager(unittest.TestCase):
                               serialized_value=jsonpickle.encode([NodeMsg.SUCCEEDED])),
                      NodeData(key='output_values',
                               serialized_value=jsonpickle.encode(['Yay!']))])
+
+    def testEnsureTickFrequencyGreaterZero(self):
+        manager = TreeManager(tick_frequency_hz=0)
+        self.assertNotEquals(manager.tree_msg.tick_frequency_hz, 0)
+
+    def testTickFrequencyTooHigh(self):
+        tick_frequency_hz = 10000000000000.0
+        sleep_duration_sec = (1.0 / tick_frequency_hz)
+        manager = TreeManager(tick_frequency_hz=tick_frequency_hz)
+        add_request = AddNodeRequest(node=self.node_msg,
+                                     allow_rename=True)
+        self.assertTrue(manager.add_node(add_request).success)
+
+        execution_request = ControlTreeExecutionRequest()
+        execution_request.command = ControlTreeExecutionRequest.TICK_PERIODICALLY
+
+        start_time = time.time()
+        self.assertTrue(get_success(manager.control_execution(execution_request)))
+        tick_duration = time.time() - start_time
+        self.assertGreater(tick_duration, sleep_duration_sec)
+
+        time.sleep(0.1)
+
+        manager.tree_msg.state = Tree.STOP_REQUESTED
+        manager._tick_thread.join(0.1)
+        self.assertFalse(manager._tick_thread.is_alive())
+
+    def testLoadNodeModule(self):
+        manager = TreeManager(module_list=['ros_bt_py.nodes.sequence'])
+        self.assertIn('ros_bt_py.nodes.sequence', sys.modules)
+
+    def testCycle(self):
+        node = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
+        self.manager.nodes[node.name].parent = node.name
+
+        self.assertRaises(TreeTopologyError, self.manager.find_root)
+
+    def testOrphan(self):
+        node = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
+        node2 = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
+        self.manager.nodes[node.name].parent = node2
+        self.manager.remove_node(RemoveNodeRequest(node_name=node2.name,
+                                                   remove_children=False))
+
+        self.assertRaises(MissingParentError, self.manager.tick, True)
+
+    def testNoNodes(self):
+        self.manager.tick(once=True)
+        self.assertEqual(self.manager.tree_msg.state, Tree.EDITABLE)
+
+    def testGetSuccessErrorMessageDict(self):
+        message = {'success': False,
+                   'error_message': 'error'}
+        self.assertFalse(tm_get_success(message))
+        self.assertEqual(tm_get_error_message(message), 'error')
+
+    def testGetSubtreeService(self):
+        add_request = AddNodeRequest(node=self.sequence_msg,
+                                     allow_rename=True)
+
+        response = self.manager.add_node(add_request)
+
+        self.assertEqual(len(self.manager.nodes), 1)
+        self.assertTrue(get_success(response))
+
+        add_request = AddNodeRequest(node=self.sequence_msg,
+                                     allow_rename=True,
+                                     parent_name=response.actual_node_name)
+        response = self.manager.add_node(add_request)
+
+        self.assertEqual(len(self.manager.nodes), 2)
+        self.assertTrue(get_success(response))
+
+        seq_2_name = response.actual_node_name
+
+        add_request = AddNodeRequest(node=self.succeeder_msg,
+                                     allow_rename=True,
+                                     parent_name=seq_2_name)
+        response = self.manager.add_node(add_request)
+
+        self.assertEqual(len(self.manager.nodes), 3)
+        self.assertTrue(get_success(response))
+
+        add_request = AddNodeRequest(node=self.succeeder_msg,
+                                     allow_rename=True,
+                                     parent_name=seq_2_name)
+        response = self.manager.add_node(add_request)
+
+        self.assertEqual(len(self.manager.nodes), 4)
+        self.assertTrue(get_success(response))
+
+        subtree_request = GetSubtreeRequest(subtree_root_name=seq_2_name)
+        subtree_response = self.manager.get_subtree(subtree_request)
+
+        self.assertTrue(get_success(subtree_response))
+        self.assertEqual(len(subtree_response.subtree.nodes), 3)
+
+        subtree_request = GetSubtreeRequest(subtree_root_name='not_in_tree')
+        subtree_response = self.manager.get_subtree(subtree_request)
+
+        self.assertFalse(get_success(subtree_response))
+
+    def testGetSubtreeServiceWirings(self):
+        load_request = LoadTreeRequest(tree=Tree(
+            name='from_file',
+            path='package://ros_bt_py/test/testdata/trees/get_subtree.yaml'))
+        self.assertTrue(get_success(self.manager.load_tree(load_request)))
+
+        wire_request = WireNodeDataRequest()
+        wire_request.wirings.append(NodeDataWiring(
+            source=NodeDataLocation(node_name='PassthroughNode_2',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA),
+            target=NodeDataLocation(node_name='PassthroughNode',
+                                    data_key='in',
+                                    data_kind=NodeDataLocation.INPUT_DATA)))
+        wire_request.wirings.append(NodeDataWiring(
+            source=NodeDataLocation(node_name='PassthroughNode_2',
+                                    data_key='in',
+                                    data_kind=NodeDataLocation.INPUT_DATA),
+            target=NodeDataLocation(node_name='PassthroughNode',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA)))
+        wire_request.wirings.append(NodeDataWiring(
+            source=NodeDataLocation(node_name='PassthroughNode_2',
+                                    data_key='in',
+                                    data_kind=NodeDataLocation.INPUT_DATA),
+            target=NodeDataLocation(node_name='PassthroughNode',
+                                    data_key='in',
+                                    data_kind=NodeDataLocation.INPUT_DATA)))
+        wire_request.wirings.append(NodeDataWiring(
+            source=NodeDataLocation(node_name='PassthroughNode_2',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA),
+            target=NodeDataLocation(node_name='PassthroughNode',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA)))
+
+        wire_request.wirings.append(NodeDataWiring(
+            source=NodeDataLocation(node_name='PassthroughNode',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA),
+            target=NodeDataLocation(node_name='PassthroughNode_2',
+                                    data_key='in',
+                                    data_kind=NodeDataLocation.INPUT_DATA)))
+        wire_request.wirings.append(NodeDataWiring(
+            source=NodeDataLocation(node_name='PassthroughNode',
+                                    data_key='in',
+                                    data_kind=NodeDataLocation.INPUT_DATA),
+            target=NodeDataLocation(node_name='PassthroughNode_2',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA)))
+        wire_request.wirings.append(NodeDataWiring(
+            source=NodeDataLocation(node_name='PassthroughNode',
+                                    data_key='in',
+                                    data_kind=NodeDataLocation.INPUT_DATA),
+            target=NodeDataLocation(node_name='PassthroughNode_2',
+                                    data_key='in',
+                                    data_kind=NodeDataLocation.INPUT_DATA)))
+        wire_request.wirings.append(NodeDataWiring(
+            source=NodeDataLocation(node_name='PassthroughNode',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA),
+            target=NodeDataLocation(node_name='PassthroughNode_2',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA)))
+
+        response = self.manager.wire_data(wire_request)
+        self.assertTrue(get_success(response), get_error_message(response))
+
+        subtree_request = GetSubtreeRequest(subtree_root_name='Sequence')
+        subtree_response = self.manager.get_subtree(subtree_request)
+
+        self.assertTrue(get_success(subtree_response))
+        self.assertEqual(len(subtree_response.subtree.nodes), 4)
+
+        response = self.manager.unwire_data(wire_request)
+        self.assertTrue(get_success(response), get_error_message(response))
+
+    def testGetSubtreeServiceSubscriptions(self):
+        add_request = AddNodeRequest(node=self.sequence_msg,
+                                     allow_rename=True)
+
+        response = self.manager.add_node(add_request)
+
+        self.assertEqual(len(self.manager.nodes), 1)
+        self.assertTrue(get_success(response))
+
+        node = self.manager.nodes[response.actual_node_name]
+
+        node.subscriptions.append(NodeDataWiring(
+            source=NodeDataLocation(node_name=node.name,
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA),
+            target=NodeDataLocation(node_name='also_missing',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA)))
+
+        subtree_request = GetSubtreeRequest(subtree_root_name=response.actual_node_name)
+        subtree_response = self.manager.get_subtree(subtree_request)
+
+        self.assertTrue(get_success(subtree_response))
+
+        node.subscriptions.append(NodeDataWiring(
+            source=NodeDataLocation(node_name='missing',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA),
+            target=NodeDataLocation(node_name='also_missing',
+                                    data_key='out',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA)))
+
+        subtree_request = GetSubtreeRequest(subtree_root_name=response.actual_node_name)
+        subtree_response = self.manager.get_subtree(subtree_request)
+
+        self.assertFalse(get_success(subtree_response))
+
+    def testTickExceptionHandling(self):
+        @define_bt_node(NodeConfig(
+            options={},
+            inputs={},
+            outputs={},
+            max_children=0))
+        class ExceptionNode(Leaf):
+            def _do_setup(self):
+                pass
+
+            def _do_tick(self):
+                raise BehaviorTreeException
+
+            def _do_shutdown(self):
+                pass
+
+            def _do_reset(self):
+                return NodeMsg.IDLE
+
+            def _do_untick(self):
+                return NodeMsg.IDLE
+
+        node = ExceptionNode()
+        manager = TreeManager(show_traceback_on_exception=False)
+        manager.nodes[node.name] = node
+        self.assertEqual(manager.tree_msg.state, Tree.EDITABLE)
+        manager.tick_report_exceptions()
+        self.assertEqual(manager.tree_msg.state, Tree.ERROR)
+
+        manager = TreeManager(show_traceback_on_exception=True)
+        manager.nodes[node.name] = node
+        self.assertEqual(manager.tree_msg.state, Tree.EDITABLE)
+        manager.tick_report_exceptions()
+        self.assertEqual(manager.tree_msg.state, Tree.ERROR)
 
     def testLoadNode(self):
         _ = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
@@ -212,7 +499,9 @@ class TestTreeManager(unittest.TestCase):
         # The nodes and keys exist. There aren't any callbacks to remove, but
         # the unwire operation still succeeds (after running it, the two data
         # values are unconnected).
-        self.assertTrue(get_success(response), get_error_message(response) + "\n" + str(self.manager.nodes))
+        self.assertTrue(
+            get_success(response),
+            get_error_message(response) + "\n" + str(self.manager.nodes))
 
         response = self.manager.wire_data(wire_request)
         self.assertTrue(get_success(response))
@@ -221,6 +510,48 @@ class TestTreeManager(unittest.TestCase):
         response = self.manager.unwire_data(wire_request)
         self.assertTrue(get_success(response))
         self.assertEqual(len(self.manager.tree_msg.data_wirings), 0)
+
+    def testClearTree(self):
+        # Adding a node to the tree and ticking it once
+        add_request = AddNodeRequest(node=self.succeeder_msg)
+
+        response = self.manager.add_node(add_request)
+
+        self.assertEqual(len(self.manager.nodes), 1)
+        self.assertTrue(get_success(response))
+
+        self.manager.nodes['MockLeaf'].state = NodeMsg.RUNNING
+
+        # Clear will fail until the tree is shutdown
+        clear_request = ClearTreeRequest()
+        response = self.manager.clear(clear_request)
+        self.assertFalse(get_success(response))
+        self.assertEqual(len(self.manager.nodes), 1)
+
+        execution_request = ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.TICK_ONCE)
+        execution_request.command = ControlTreeExecutionRequest.SHUTDOWN
+        self.assertTrue(self.manager.control_execution(execution_request).success)
+
+        # after shutdown clear works again
+        response = self.manager.clear(clear_request)
+        self.assertTrue(get_success(response))
+        self.assertEqual(len(self.manager.nodes), 0)
+
+        # even a tree with multiple nodes (and no root) is cleared
+        add_request = AddNodeRequest(node=self.succeeder_msg, allow_rename=True)
+        response = self.manager.add_node(add_request)
+
+        self.assertEqual(len(self.manager.nodes), 1)
+        self.assertTrue(get_success(response))
+        response = self.manager.add_node(add_request)
+
+        self.assertEqual(len(self.manager.nodes), 2)
+        self.assertTrue(get_success(response))
+
+        response = self.manager.clear(clear_request)
+        self.assertTrue(get_success(response))
+        self.assertEqual(len(self.manager.nodes), 0)
 
     def testAddNode(self):
         add_request = AddNodeRequest(node=self.node_msg)
@@ -387,6 +718,97 @@ class TestTreeManager(unittest.TestCase):
         self.assertTrue(get_success(remove_response), get_error_message(remove_response))
         self.assertEqual(len(self.manager.nodes), 0)
 
+    def testRemoveParentAndChildrenWithBrokenChildren(self):
+        add_response = self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg))
+
+        child_response = self.manager.add_node(
+            AddNodeRequest(node=self.node_msg,
+                           parent_name=add_response.actual_node_name))
+
+        self.assertEqual(len(self.manager.nodes), 2)
+
+        self.manager.nodes[child_response.actual_node_name].children.append(
+            Sequence(name='not_in_tree'))
+
+        remove_response = self.manager.remove_node(
+            RemoveNodeRequest(node_name=add_response.actual_node_name,
+                              remove_children=True))
+
+        self.assertFalse(get_success(remove_response), get_error_message(remove_response))
+        self.assertEqual(len(self.manager.nodes), 2)
+
+    def testRemoveParentAndChildrenWithIdenticalChildren(self):
+        add_response = self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg))
+
+        child_response = self.manager.add_node(
+            AddNodeRequest(node=self.succeeder_msg,
+                           parent_name=add_response.actual_node_name))
+
+        first_child_name = child_response.actual_node_name
+
+        child_response = self.manager.add_node(
+            AddNodeRequest(node=self.succeeder_msg,
+                           parent_name=add_response.actual_node_name,
+                           allow_rename=True))
+
+        self.assertEqual(len(self.manager.nodes), 3)
+
+        self.manager.nodes[add_response.actual_node_name].children[1].name = first_child_name
+
+        remove_response = self.manager.remove_node(
+            RemoveNodeRequest(node_name=add_response.actual_node_name,
+                              remove_children=True))
+
+        self.assertTrue(get_success(remove_response))
+        self.assertEqual(len(self.manager.nodes), 1)
+
+    def testRemoveParentAndChildrenWithParentThatDoesNotShutdownItsChildren(self):
+        @define_bt_node(NodeConfig(
+            options={},
+            inputs={},
+            outputs={},
+            max_children=None))
+        class FlowControlNode(FlowControl):
+            def _do_setup(self):
+                for child in self.children:
+                    child.setup()
+
+            def _do_tick(self):
+                return NodeMsg.SUCCEEDED
+
+            def _do_shutdown(self):
+                pass
+
+            def _do_reset(self):
+                return NodeMsg.IDLE
+
+            def _do_untick(self):
+                return NodeMsg.IDLE
+
+        parent = FlowControlNode()
+        self.manager.nodes[parent.name] = parent
+
+        child = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
+
+        parent.add_child(child)
+
+        self.assertEqual(self.manager.nodes[parent.name].state, NodeMsg.UNINITIALIZED)
+        self.assertEqual(self.manager.nodes[child.name].state, NodeMsg.UNINITIALIZED)
+
+        self.manager.nodes[parent.name].setup()
+
+        self.assertEqual(self.manager.nodes[parent.name].state, NodeMsg.IDLE)
+        self.assertEqual(self.manager.nodes[child.name].state, NodeMsg.IDLE)
+
+        remove_response = self.manager.remove_node(
+            RemoveNodeRequest(node_name=parent.name,
+                              remove_children=True))
+
+        self.assertTrue(get_success(remove_response))
+        self.assertEqual(len(self.manager.nodes), 0)
+
     def testMoveNode(self):
         self.sequence_msg.name = 'outer_seq'
         self.assertTrue(get_success(self.manager.add_node(
@@ -421,6 +843,13 @@ class TestTreeManager(unittest.TestCase):
             MoveNodeRequest(
                 node_name='B',
                 new_parent_name='asdf',
+                new_child_index=0))))
+
+        # Should fail, since "asdf" is not in the tree
+        self.assertFalse(get_success(self.manager.move_node(
+            MoveNodeRequest(
+                node_name='asdf',
+                new_parent_name='outer_seq',
                 new_child_index=0))))
 
         # Should succeed and put "A" after "B" (-1 means
@@ -535,6 +964,123 @@ class TestTreeManager(unittest.TestCase):
                 new_child_index=0
             ))))
 
+    def testMorphNode(self):
+        self.sequence_msg.name = 'seq'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg))))
+
+        self.succeeder_msg.name = 'A'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.succeeder_msg,
+                           parent_name='seq'))))
+
+        self.succeeder_msg.name = 'B'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.succeeder_msg,
+                           parent_name='seq'))))
+
+        self.assertEqual(len(self.tree_msg.nodes), 3)
+
+        self.assertFalse(get_success(self.manager.morph_node(
+            MorphNodeRequest(node_name='node_not_in_tree',
+                             new_node=self.memory_sequence_msg)
+        )))
+
+        self.assertTrue(get_success(self.manager.morph_node(
+            MorphNodeRequest(node_name='seq',
+                             new_node=self.memory_sequence_msg)
+        )))
+
+    def testMorphNodeWithParent(self):
+        self.sequence_msg.name = 'outer_seq'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg))))
+
+        self.sequence_msg.name = "inner_seq"
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg,
+                           parent_name='outer_seq'))))
+
+        self.assertTrue(get_success(self.manager.morph_node(
+            MorphNodeRequest(node_name='inner_seq',
+                             new_node=self.memory_sequence_msg)
+        )))
+
+    def testMorphNodeWithBrokenParent(self):
+        self.sequence_msg.name = 'outer_seq'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg))))
+
+        self.sequence_msg.name = "inner_seq"
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg,
+                           parent_name='outer_seq'))))
+
+        # break parent node
+        self.manager.nodes['outer_seq'].node_config.max_children = 0
+
+        self.assertFalse(get_success(self.manager.morph_node(
+            MorphNodeRequest(node_name='inner_seq',
+                             new_node=self.memory_sequence_msg)
+        )))
+
+        self.manager.nodes['outer_seq'].node_config.max_children = None
+        self.manager.nodes['outer_seq'].children = []
+
+        self.assertFalse(get_success(self.manager.morph_node(
+            MorphNodeRequest(node_name='inner_seq',
+                             new_node=self.memory_sequence_msg)
+        )))
+
+    def testMorphNodeWithAnotherBrokenParent(self):
+        self.sequence_msg.name = 'outer_seq'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg))))
+
+        self.sequence_msg.name = "inner_seq"
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg,
+                           parent_name='outer_seq'))))
+
+        # break parent node
+        self.manager.nodes['outer_seq'].children = []
+
+        self.assertFalse(get_success(self.manager.morph_node(
+            MorphNodeRequest(node_name='inner_seq',
+                             new_node=self.memory_sequence_msg)
+        )))
+
+    def testMorphNodeBrokenMessage(self):
+        self.sequence_msg.name = 'seq'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg))))
+
+        msg = NodeMsg(
+            module="ros_bt_py.nodes.passthrough_node",
+            node_class="PassthroughNode",
+            options=[NodeData(key='passthrough_type',
+                              serialized_value='definitely_not_a_type')])
+
+        self.assertFalse(get_success(self.manager.morph_node(
+            MorphNodeRequest(node_name='seq',
+                             new_node=msg)
+        )))
+
+        # intentionally break wiring
+        self.manager.tree_msg.data_wirings.append(
+            NodeDataWiring(
+                source=NodeDataLocation(
+                    node_name='seq'
+                ),
+                target=NodeDataLocation(
+                    node_name='missing'
+                )
+            ))
+        self.assertFalse(get_success(self.manager.morph_node(
+            MorphNodeRequest(node_name='seq',
+                             new_node=self.memory_sequence_msg)
+        )))
+
     def testReplaceNode(self):
         self.sequence_msg.name = 'seq'
         self.assertTrue(get_success(self.manager.add_node(
@@ -551,6 +1097,16 @@ class TestTreeManager(unittest.TestCase):
                            parent_name='seq'))))
 
         self.assertEqual(len(self.tree_msg.nodes), 3)
+
+        self.assertFalse(get_success(self.manager.replace_node(
+            ReplaceNodeRequest(
+                old_node_name="asdf",
+                new_node_name="A"))))
+
+        self.assertFalse(get_success(self.manager.replace_node(
+            ReplaceNodeRequest(
+                old_node_name="B",
+                new_node_name="asdf"))))
 
         self.assertTrue(get_success(self.manager.replace_node(
             ReplaceNodeRequest(
@@ -648,6 +1204,25 @@ class TestTreeManager(unittest.TestCase):
         self.assertIsNotNone(seq_msg, 'Failed to find sequence in tree message')
         self.assertEqual(seq_msg.child_names, ['A', 'C'])
 
+    def testReplaceBrokenNode(self):
+        self.succeeder_msg.name = 'A'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.succeeder_msg))))
+
+        self.succeeder_msg.name = 'B'
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.succeeder_msg))))
+
+        self.assertEqual(len(self.tree_msg.nodes), 2)
+
+        # Break the node
+        node = self.manager.nodes['A'].children = [self.manager.nodes['B']]
+
+        self.assertFalse(get_success(self.manager.replace_node(
+            ReplaceNodeRequest(
+                old_node_name="A",
+                new_node_name="B"))))
+
     def testTick(self):
         add_request = AddNodeRequest(node=self.node_msg)
         add_request.node.inputs.append(NodeData(key='in',
@@ -698,6 +1273,8 @@ class TestTreeManager(unittest.TestCase):
 
         # Trying to start ticking while the tree already is ticking should fail
         self.assertFalse(self.manager.control_execution(execution_request).success)
+        execution_request.command = ControlTreeExecutionRequest.TICK_ONCE
+        self.assertFalse(self.manager.control_execution(execution_request).success)
 
         # Stopping should put the tree back in the IDLE state
         execution_request.command = ControlTreeExecutionRequest.STOP
@@ -718,6 +1295,13 @@ class TestTreeManager(unittest.TestCase):
         self.assertTrue(self.manager.control_execution(execution_request).success)
         self.assertEqual(self.manager.nodes['passthrough'].state, NodeMsg.SHUTDOWN)
 
+        # test DO_NOTHING and an unknown command
+        execution_request.command = ControlTreeExecutionRequest.DO_NOTHING
+        self.assertTrue(self.manager.control_execution(execution_request).success)
+
+        execution_request.command = 42
+        self.assertFalse(self.manager.control_execution(execution_request).success)
+
     def testControlBrokenTree(self):
         add_request = AddNodeRequest(node=self.node_msg,
                                      allow_rename=True)
@@ -736,6 +1320,291 @@ class TestTreeManager(unittest.TestCase):
         execution_request.command = ControlTreeExecutionRequest.RESET
         self.assertFalse(get_success(self.manager.control_execution(execution_request)))
 
+    def testControlTreeWithUnsetInputNode(self):
+        load_request = LoadTreeRequest(tree=Tree(
+            name='from_file',
+            path='package://ros_bt_py/test/testdata/trees/subtree_compare.yaml'))
+        self.assertTrue(get_success(self.manager.load_tree(load_request)))
+
+        execution_request = ControlTreeExecutionRequest()
+        execution_request.command = ControlTreeExecutionRequest.TICK_ONCE
+        self.assertFalse(get_success(self.manager.control_execution(execution_request)))
+        self.assertFalse(get_success(self.manager.control_execution(execution_request)))
+
+    def testControlSetupAndShutdown(self):
+        add_request = AddNodeRequest(node=self.node_msg,
+                                     allow_rename=True)
+        self.assertTrue(self.manager.add_node(add_request).success)
+
+        execution_request = ControlTreeExecutionRequest()
+
+        # SETUP_AND_SHUTDOWN does not work when ticking
+        execution_request.command = ControlTreeExecutionRequest.TICK_PERIODICALLY
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+        execution_request.command = ControlTreeExecutionRequest.SETUP_AND_SHUTDOWN
+        self.assertFalse(get_success(self.manager.control_execution(execution_request)))
+
+        execution_request.command = ControlTreeExecutionRequest.SHUTDOWN
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+        execution_request.command = ControlTreeExecutionRequest.SETUP_AND_SHUTDOWN
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+        # SETUP fails on a TreeTopologyError
+        self.assertTrue(self.manager.add_node(add_request).success)
+
+        execution_request.command = ControlTreeExecutionRequest.SETUP_AND_SHUTDOWN
+        self.assertFalse(get_success(self.manager.control_execution(execution_request)))
+
+    def testControlSetupAndShutdownFails(self):
+        random_int_msg = NodeMsg(
+            module='ros_bt_py.nodes.random_number',
+            node_class='RandomInt',
+            options=[NodeData(key='min',
+                              serialized_value=jsonpickle.encode(1)),
+                     NodeData(key='max',
+                              serialized_value=jsonpickle.encode(0))])
+        add_request = AddNodeRequest(node=random_int_msg,
+                                     allow_rename=True)
+        self.assertTrue(self.manager.add_node(add_request).success)
+
+        execution_request = ControlTreeExecutionRequest()
+
+        # Fails because of the nodes BehaviorTreeException
+        execution_request.command = ControlTreeExecutionRequest.SETUP_AND_SHUTDOWN
+        self.assertFalse(get_success(self.manager.control_execution(execution_request)))
+
+    def testControlTickPeriodicallyNoNodes(self):
+        execution_request = ControlTreeExecutionRequest()
+
+        execution_request.command = ControlTreeExecutionRequest.TICK_PERIODICALLY
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+        execution_request.command = ControlTreeExecutionRequest.SHUTDOWN
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+        execution_request.command = ControlTreeExecutionRequest.RESET
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+    def testControlTickPeriodically0Hz(self):
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.sequence_msg))))
+
+        self.manager.tree_msg.tick_frequency_hz = 0
+
+        execution_request = ControlTreeExecutionRequest()
+
+        execution_request.command = ControlTreeExecutionRequest.RESET
+        self.assertFalse(get_success(self.manager.control_execution(execution_request)))
+
+        execution_request.command = ControlTreeExecutionRequest.TICK_PERIODICALLY
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+        time.sleep(0.01)
+
+        execution_request.command = ControlTreeExecutionRequest.RESET
+        self.assertFalse(get_success(self.manager.control_execution(execution_request)))
+
+        execution_request.command = ControlTreeExecutionRequest.SHUTDOWN
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+    def testControlLongRunningTreeNode(self):
+        node = LongRunningNode()
+        self.manager.nodes[node.name] = node
+
+        execution_request = ControlTreeExecutionRequest()
+
+        execution_request.command = ControlTreeExecutionRequest.TICK_PERIODICALLY
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+        time.sleep(0.1)
+
+        execution_request.command = ControlTreeExecutionRequest.STOP
+        self.assertRaises(BehaviorTreeException,
+                          self.manager.control_execution, execution_request)
+
+    def testControlLongRunningTreeNodetickOnce(self):
+        node = LongRunningNode()
+        self.manager.nodes[node.name] = node
+
+        execution_request = ControlTreeExecutionRequest()
+
+        execution_request.command = ControlTreeExecutionRequest.TICK_ONCE
+        self.assertRaises(BehaviorTreeException,
+                          self.manager.control_execution, execution_request)
+
+        time.sleep(0.1)
+
+        execution_request.command = ControlTreeExecutionRequest.STOP
+        self.assertRaises(BehaviorTreeException,
+                          self.manager.control_execution, execution_request)
+
+    def testControlLongRunningTreeNodeDebugging(self):
+        node = LongRunningNode()
+        self.manager.nodes[node.name] = node
+        request = SetExecutionModeRequest(single_step=True,
+                                          collect_performance_data=False, publish_subtrees=False)
+        self.assertEqual(self.manager.set_execution_mode(request), SetExecutionModeResponse())
+
+        execution_request = ControlTreeExecutionRequest()
+        execution_request.command = ControlTreeExecutionRequest.TICK_PERIODICALLY
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+        time.sleep(0.1)
+
+        execution_request.command = ControlTreeExecutionRequest.STOP
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+    def testControlLongRunningTreeNodeDebuggingTickOnce(self):
+        node = LongRunningNode()
+        self.manager.nodes[node.name] = node
+        request = SetExecutionModeRequest(single_step=True,
+                                          collect_performance_data=False, publish_subtrees=False)
+        self.assertEqual(self.manager.set_execution_mode(request), SetExecutionModeResponse())
+
+        execution_request = ControlTreeExecutionRequest()
+        execution_request.command = ControlTreeExecutionRequest.TICK_ONCE
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+        time.sleep(0.1)
+
+        execution_request.command = ControlTreeExecutionRequest.STOP
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+    def testControlDebugRaceCondition(self):
+        self.assertTrue(get_success(self.manager.add_node(
+            AddNodeRequest(node=self.constant_msg))))
+
+        execution_request = ControlTreeExecutionRequest()
+        execution_request.command = ControlTreeExecutionRequest.TICK_PERIODICALLY
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+        debug_request = SetExecutionModeRequest(single_step=True,
+                                                collect_performance_data=False,
+                                                publish_subtrees=False)
+        self.assertEqual(self.manager.set_execution_mode(debug_request),
+                         SetExecutionModeResponse())
+
+        debug_request = SetExecutionModeRequest(single_step=False,
+                                                collect_performance_data=False,
+                                                publish_subtrees=False)
+        self.assertEqual(self.manager.set_execution_mode(debug_request),
+                         SetExecutionModeResponse())
+
+        execution_request = ControlTreeExecutionRequest()
+        execution_request.command = ControlTreeExecutionRequest.SHUTDOWN
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+    def testControlTickExceptionNode(self):
+        @define_bt_node(NodeConfig(
+            options={},
+            inputs={},
+            outputs={},
+            max_children=0))
+        class ExceptionNode(Leaf):
+            def _do_setup(self):
+                pass
+
+            def _do_tick(self):
+                raise BehaviorTreeException
+
+            def _do_shutdown(self):
+                pass
+
+            def _do_reset(self):
+                return NodeMsg.IDLE
+
+            def _do_untick(self):
+                return NodeMsg.IDLE
+
+        node = ExceptionNode()
+        self.manager.nodes[node.name] = node
+
+        execution_request = ControlTreeExecutionRequest()
+
+        execution_request.command = ControlTreeExecutionRequest.TICK_PERIODICALLY
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+        time.sleep(0.1)
+
+        execution_request.command = ControlTreeExecutionRequest.STOP
+        self.assertFalse(get_success(self.manager.control_execution(execution_request)))
+
+    def testControlUntickExceptionNode(self):
+        @define_bt_node(NodeConfig(
+            options={},
+            inputs={},
+            outputs={},
+            max_children=0))
+        class ExceptionNode(Leaf):
+            def _do_setup(self):
+                pass
+
+            def _do_tick(self):
+                return NodeMsg.SUCCEEDED
+
+            def _do_shutdown(self):
+                pass
+
+            def _do_reset(self):
+                return NodeMsg.IDLE
+
+            def _do_untick(self):
+                raise BehaviorTreeException
+
+        node = ExceptionNode()
+        self.manager.nodes[node.name] = node
+
+        execution_request = ControlTreeExecutionRequest()
+
+        execution_request.command = ControlTreeExecutionRequest.TICK_PERIODICALLY
+        self.assertTrue(get_success(self.manager.control_execution(execution_request)))
+
+        time.sleep(0.1)
+
+        execution_request.command = ControlTreeExecutionRequest.STOP
+        self.assertFalse(get_success(self.manager.control_execution(execution_request)))
+
+    def testControlUntickNoNodes(self):
+        self.manager.tree_msg.state = Tree.WAITING_FOR_TICK
+        execution_request = ControlTreeExecutionRequest()
+
+        execution_request.command = ControlTreeExecutionRequest.STOP
+        response = self.manager.control_execution(execution_request)
+        self.assertTrue(get_success(response))
+        self.assertEqual(response.tree_state, Tree.IDLE)
+
+    def testControlStopTopologyError(self):
+        # build a cycle
+        node = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
+        self.manager.nodes[node.name].parent = node.name
+
+        self.manager.tree_msg.state = Tree.WAITING_FOR_TICK
+        execution_request = ControlTreeExecutionRequest()
+
+        execution_request.command = ControlTreeExecutionRequest.STOP
+        response = self.manager.control_execution(execution_request)
+        self.assertFalse(get_success(response))
+
+    def testControlShutdownNotRunningTopologyError(self):
+        # build a cycle
+        node = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
+        self.manager.nodes[node.name].parent = node.name
+
+        execution_request = ControlTreeExecutionRequest()
+
+        execution_request.command = ControlTreeExecutionRequest.SHUTDOWN
+        response = self.manager.control_execution(execution_request)
+        self.assertFalse(get_success(response))
+
+    def testControlTickNoNodes(self):
+        execution_request = ControlTreeExecutionRequest()
+
+        execution_request.command = ControlTreeExecutionRequest.TICK_ONCE
+        response = self.manager.control_execution(execution_request)
+        self.assertTrue(get_success(response))
+
     def testGetAvailableNodes(self):
         request = GetAvailableNodesRequest(node_modules=['ros_bt_py.nodes.passthrough_node'])
 
@@ -745,6 +1614,11 @@ class TestTreeManager(unittest.TestCase):
 
         self.assertIn("PassthroughNode", [node.node_class for node in response.available_nodes])
 
+        request = GetAvailableNodesRequest(node_modules=['ros_bt_py.tests.node_does_not_exist'])
+
+        response = self.manager.get_available_nodes(request)
+        self.assertFalse(get_success(response))
+
     def testSetOptions(self):
         self.assertTrue(get_success(self.manager.add_node(
             AddNodeRequest(node=self.node_msg))))
@@ -752,6 +1626,13 @@ class TestTreeManager(unittest.TestCase):
         node = self.tree_msg.nodes[0]
         # and it only has one option
         self.assertEqual(node.options[0].serialized_value, jsonpickle.encode(int))
+
+        # a node that is not in the tree should fail
+        self.assertFalse(get_success(self.manager.set_options(
+            SetOptionsRequest(node_name='not_in_tree',
+                              rename_node=False,
+                              options=[NodeData(key='passthrough_type',
+                                                serialized_value=jsonpickle.encode(str))]))))
 
         # unparseable values should fail
         self.assertFalse(get_success(self.manager.set_options(
@@ -773,7 +1654,7 @@ class TestTreeManager(unittest.TestCase):
                               rename_node=False,
                               options=[NodeData(key='passthrough_type',
                                                 serialized_value=jsonpickle.encode(
-                                                   'I am not a type, but a string!'))]))))
+                                                    'I am not a type, but a string!'))]))))
 
         # finally, this is valid :)
         self.assertTrue(get_success(self.manager.set_options(
@@ -874,6 +1755,146 @@ class TestTreeManager(unittest.TestCase):
                               serialized_value=jsonpickle.encode(int))]))
         self.assertTrue(get_success(retry_res), get_error_message(retry_res))
 
+        # Renaming should work
+        rename_res = self.manager.set_options(SetOptionsRequest(
+            node_name='child1',
+            rename_node=True,
+            new_name='child_new_name1'))
+        self.assertTrue(get_success(rename_res), get_error_message(rename_res))
+
+        rename_res = self.manager.set_options(SetOptionsRequest(
+            node_name='child2',
+            rename_node=True,
+            new_name='child_new_name2'))
+        self.assertTrue(get_success(rename_res), get_error_message(rename_res))
+
+        rename_res = self.manager.set_options(SetOptionsRequest(
+            node_name='Sequence',
+            rename_node=True,
+            new_name='Sequence_new_name'))
+        self.assertTrue(get_success(rename_res), get_error_message(rename_res))
+
+    def testSetOptionsChangeTypeWithOptionWirings(self):
+        # OptionWirings allow a semantic relationship between option fields
+        # For example the constant_type and constant_value options of the Constant node
+        # have a wiring where the constant_type is the source and the constant_value the target
+        add_response = self.manager.add_node(AddNodeRequest(node=self.constant_msg))
+
+        self.assertTrue(get_success(add_response))
+
+        node = self.manager.nodes[add_response.actual_node_name]
+
+        self.assertEqual(node.options.get_serialized('constant_value'), jsonpickle.encode(42))
+
+        self.assertEqual(node.options.get_serialized('constant_type'), jsonpickle.encode(int))
+
+        # Changing type and value at the same time should work
+        set_options_response = self.manager.set_options(SetOptionsRequest(
+            node_name=add_response.actual_node_name,
+            options=[NodeData(key='constant_value',
+                              serialized_value=jsonpickle.encode('foo')),
+                     NodeData(key='constant_type',
+                              serialized_value=jsonpickle.encode(str))]))
+
+        self.assertTrue(get_success(set_options_response))
+
+        # The node has been replaced, so we need an updated reference
+        node = self.manager.nodes[add_response.actual_node_name]
+
+        self.assertEqual(node.options.get_serialized('constant_value'), jsonpickle.encode('foo'))
+
+        self.assertEqual(node.options.get_serialized('constant_type'), jsonpickle.encode(str))
+
+        # Changing type and value at the same time should work
+        # str and unicode are considered equal
+        set_options_response = self.manager.set_options(SetOptionsRequest(
+            node_name=add_response.actual_node_name,
+            options=[NodeData(key='constant_value',
+                              serialized_value=jsonpickle.encode('bar')),
+                     NodeData(key='constant_type',
+                              serialized_value=jsonpickle.encode(unicode))]))
+
+        self.assertTrue(get_success(set_options_response))
+
+        # The node has been replaced, so we need an updated reference
+        node = self.manager.nodes[add_response.actual_node_name]
+
+        self.assertEqual(node.options.get_serialized('constant_value'), jsonpickle.encode('bar'))
+
+        self.assertEqual(node.options.get_serialized('constant_type'), jsonpickle.encode(unicode))
+
+        # Changing type and value also works with ROS Messages
+        tree_msg = Tree(name='test')
+        set_options_response = self.manager.set_options(SetOptionsRequest(
+            node_name=add_response.actual_node_name,
+            options=[NodeData(key='constant_value',
+                              serialized_value=jsonpickle.encode(tree_msg)),
+                     NodeData(key='constant_type',
+                              serialized_value=jsonpickle.encode(Tree))]))
+
+        self.assertTrue(get_success(set_options_response))
+
+        # The node has been replaced, so we need an updated reference
+        node = self.manager.nodes[add_response.actual_node_name]
+
+        self.assertEqual(node.options.get_serialized('constant_value'),
+                         jsonpickle.encode(tree_msg))
+
+        self.assertEqual(node.options.get_serialized('constant_type'), jsonpickle.encode(Tree))
+
+    def testSetOptionsChangeTypeWithOptionWiringsBroken(self):
+        add_response = self.manager.add_node(AddNodeRequest(node=self.constant_msg))
+
+        self.assertTrue(get_success(add_response))
+
+        node = self.manager.nodes[add_response.actual_node_name]
+
+        # intentionally break wiring
+        self.manager.tree_msg.data_wirings.append(
+            NodeDataWiring(
+                source=NodeDataLocation(
+                    node_name='Constant'
+                ),
+                target=NodeDataLocation(
+                    node_name='missing'
+                )
+            ))
+
+        # with broken wirings changing options should not work
+        set_options_response = self.manager.set_options(SetOptionsRequest(
+            node_name=add_response.actual_node_name,
+            options=[NodeData(key='constant_value',
+                              serialized_value=jsonpickle.encode('foo')),
+                     NodeData(key='constant_type',
+                              serialized_value=jsonpickle.encode(str))]))
+
+        self.assertFalse(get_success(set_options_response))
+
+    def testSetOptionsBrokenNodes(self):
+        add_response = self.manager.add_node(AddNodeRequest(node=self.constant_msg))
+
+        self.assertTrue(get_success(add_response))
+
+        constant_node = self.manager.nodes[add_response.actual_node_name]
+
+        add_response = self.manager.add_node(AddNodeRequest(node=self.sequence_msg))
+
+        self.assertTrue(get_success(add_response))
+
+        sequence_node = self.manager.nodes[add_response.actual_node_name]
+
+        self.assertIsNone(constant_node.parent)
+        self.assertEqual(len(sequence_node.children), 0)
+
+        # now deliberately break the constant node by claiming to have a parent
+        constant_node.parent = sequence_node
+
+        self.assertFalse(get_success(self.manager.set_options(
+            SetOptionsRequest(node_name='Constant',
+                              rename_node=False,
+                              options=[NodeData(key='constant_value',
+                                                serialized_value=jsonpickle.encode(23))]))))
+
     def testEnforceEditable(self):
         add_request = AddNodeRequest(node=self.node_msg)
         add_request.node.name = 'first'
@@ -907,10 +1928,20 @@ class TestTreeManager(unittest.TestCase):
             RemoveNodeRequest(node_name='first',
                               remove_children=False))))
 
+    def testLoadTreeFromPath(self):
+        load_request = LoadTreeFromPathRequest(
+            path='package://ros_bt_py/test/testdata/trees/subtree_constant.yaml')
+        self.assertTrue(get_success(self.manager.load_tree_from_path(load_request)))
+
     def testLoadFromInvalidFiles(self):
         load_request = LoadTreeRequest(tree=Tree(
             name='from_file',
             path='/notareal.file'))
+        self.assertFalse(get_success(self.manager.load_tree(load_request)))
+
+        load_request = LoadTreeRequest(tree=Tree(
+            name='from_file',
+            path='file://'))
         self.assertFalse(get_success(self.manager.load_tree(load_request)))
 
         load_request = LoadTreeRequest(tree=Tree(
@@ -928,6 +1959,21 @@ class TestTreeManager(unittest.TestCase):
             path='package://ros_bt_py/etc/trees/empty.yaml'))
         self.assertFalse(get_success(self.manager.load_tree(load_request)))
 
+        load_request = LoadTreeRequest(tree=Tree(
+            name='from_file',
+            path='package://ros_bt_py/test/testdata/trees/broken_node_with_child.yaml'))
+        self.assertFalse(get_success(self.manager.load_tree(load_request)))
+
+        load_request = LoadTreeRequest(tree=Tree(
+            name='from_file',
+            path='package://ros_bt_py/test/testdata/trees/broken_node_with_missing_child.yaml'))
+        self.assertFalse(get_success(self.manager.load_tree(load_request)))
+
+        load_request = LoadTreeRequest(tree=Tree(
+            name='from_file',
+            path='package://ros_bt_py/test/testdata/trees/broken_wiring.yaml'))
+        self.assertFalse(get_success(self.manager.load_tree(load_request)))
+
     def testLoadFromValidFile(self):
         load_request = LoadTreeRequest(tree=Tree(name='from_file',
                                                  path='package://ros_bt_py/etc/trees/test.yaml'))
@@ -942,8 +1988,9 @@ class TestTreeManager(unittest.TestCase):
 
     def testLoadFromValidFileWithEmptyObject(self):
         """Load a tree from a rostopic echo file that has "---" at the end"""
-        load_request = LoadTreeRequest(tree=Tree(name='from_file',
-                                                 path='package://ros_bt_py/etc/trees/test_extra_empty.yaml'))
+        load_request = LoadTreeRequest(
+            tree=Tree(name='from_file',
+                      path='package://ros_bt_py/etc/trees/test_extra_empty.yaml'))
         response = self.manager.load_tree(load_request)
 
         self.assertTrue(get_success(response), get_error_message(response))
@@ -952,6 +1999,11 @@ class TestTreeManager(unittest.TestCase):
 
         self.assertTrue(get_success(self.manager.control_execution(ControlTreeExecutionRequest(
             command=ControlTreeExecutionRequest.TICK_ONCE))))
+
+    def testLoadWithoutNodesAndWithoutPath(self):
+        request = self.manager.load_tree(
+            LoadTreeRequest(tree=Tree(name='broken')))
+        self.assertFalse(get_success(request))
 
     def testLoadFromFileWithIndirection(self):
         request = self.manager.load_tree(
@@ -976,6 +2028,26 @@ class TestTreeManager(unittest.TestCase):
         load_request = LoadTreeRequest(tree=subtree)
         response = self.manager.load_tree(load_request)
         self.assertTrue(get_success(response), get_error_message(response))
+
+    def testSetExecutionMode(self):
+        request = SetExecutionModeRequest(single_step=False,
+                                          collect_performance_data=False, publish_subtrees=True)
+        self.assertEqual(self.manager.set_execution_mode(request), SetExecutionModeResponse())
+        self.assertEqual(self.manager.get_state(), Tree.EDITABLE)
+
+        request = SetExecutionModeRequest(single_step=False,
+                                          collect_performance_data=False, publish_subtrees=False)
+        self.assertEqual(self.manager.set_execution_mode(request), SetExecutionModeResponse())
+
+    def testDebugStep(self):
+        request = ContinueRequest()
+        self.assertTrue(self.manager.debug_step(request).success)
+
+    def testModifyBreakpoints(self):
+        breakpoints = ["first", "second", "third", "fourth"]
+        request = ModifyBreakpointsRequest(add=breakpoints)
+        self.assertEqual(self.manager.modify_breakpoints(request).current_breakpoints,
+                         breakpoints)
 
 
 class TestWiringServices(unittest.TestCase):
@@ -1088,7 +2160,7 @@ class TestWiringServices(unittest.TestCase):
                 source=NodeDataLocation(node_name=self.node_2_name,
                                         data_key='fake',
                                         data_kind=NodeDataLocation.OUTPUT_DATA),
-                target=NodeDataLocation(node_name=self.node_3_name,
+                target=NodeDataLocation(node_name='missing',
                                         data_key='invalid',
                                         data_kind=NodeDataLocation.INPUT_DATA)))
 
@@ -1097,9 +2169,31 @@ class TestWiringServices(unittest.TestCase):
         self.assertEqual(len(self.manager.tree_msg.data_wirings), 2)
 
         # Number of wirings should stay the same, since the unwire operation failed
-        unwire_response = self.manager.wire_data(unwire_request)
+        unwire_response = self.manager.unwire_data(unwire_request)
         self.assertFalse(get_success(unwire_response))
         self.assertEqual(len(self.manager.tree_msg.data_wirings), 2)
+
+        unwire_request = WireNodeDataRequest()
+        unwire_request.wirings.append(self.wiring(self.node_1_name, self.node_2_name))
+        unwire_request.wirings.append(
+            NodeDataWiring(
+                source=NodeDataLocation(node_name='missing',
+                                        data_key='fake',
+                                        data_kind=NodeDataLocation.OUTPUT_DATA),
+                target=NodeDataLocation(node_name=self.node_2_name,
+                                        data_key='invalid',
+                                        data_kind=NodeDataLocation.INPUT_DATA)))
+
+        # Number of wirings should stay the same, since the unwire operation failed
+        unwire_response = self.manager.unwire_data(unwire_request)
+        self.assertFalse(get_success(unwire_response))
+        self.assertEqual(len(self.manager.tree_msg.data_wirings), 2)
+
+    def testWiringWithoutNodes(self):
+        manager = TreeManager()
+        wire_request = WireNodeDataRequest()
+        wire_response = manager.wire_data(wire_request)
+        self.assertFalse(get_success(wire_response))
 
 
 def get_success(response):

@@ -38,7 +38,7 @@ class MockGoalHandle(object):
         self.state = MockGoalHandle.ACCEPTED
         self.result = result
 
-    def set_rejected(self, result=None):
+    def set_rejected(self, result=None, text=''):
         self.state = MockGoalHandle.REJECTED
         self.result = result
 
@@ -102,6 +102,12 @@ class TestRemoteTreeSlot(unittest.TestCase):
 
         self.assertEqual(res.utility, self.utility_root.calculate_utility())
 
+        # Try to evaluate utility of a tree that does not exist
+        utility_tree = Tree(path='package://ros_bt_py/etc/trees/notareal.file')
+        res = self.remote_slot.evaluate_utility_handler(EvaluateUtilityRequest(utility_tree))
+
+        self.assertEqual(res.utility.can_execute, False)
+
     def testLoadRemoteTree(self):
         execute_tree, _, _ = self.execute_root.get_subtree_msg()
 
@@ -140,8 +146,19 @@ class TestRemoteTreeSlot(unittest.TestCase):
         self.assertEqual(gh_2.state, MockGoalHandle.ACCEPTED)
         self.assertTrue(self.slot_state.tree_in_slot)
 
+        # Try to evaluate utility when another tree is already loaded
+        utility_tree, _, _ = self.utility_root.get_subtree_msg()
+        res = self.remote_slot.evaluate_utility_handler(EvaluateUtilityRequest(utility_tree))
+
+        self.assertEqual(res.utility.can_execute, False)
+
     def testExecuteRemoteTree(self):
         execute_tree, _, _ = self.execute_root.get_subtree_msg()
+
+        # Nothing to do, succeeding
+        res = self.remote_slot.control_tree_execution_handler(ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.STOP))
+        self.assertTrue(get_success(res), get_error_message(res))
 
         gh = MockGoalHandle(RunTreeGoal(tree=execute_tree), goal_id=1)
         self.assertEqual(gh.state, MockGoalHandle.INIT)
@@ -185,6 +202,17 @@ class TestRemoteTreeSlot(unittest.TestCase):
         self.assertFalse(self.slot_state.tree_running)
         self.assertTrue(self.slot_state.tree_finished)
 
+        # Try to run a tree that does not exist
+        not_available_tree = Tree(path='package://ros_bt_py/etc/trees/notareal.file')
+        gh = MockGoalHandle(RunTreeGoal(tree=not_available_tree), goal_id=1)
+        self.assertEqual(gh.state, MockGoalHandle.INIT)
+
+        self.remote_slot.run_tree_handler(gh)
+
+        self.assertEqual(gh.state, MockGoalHandle.REJECTED)
+        self.assertFalse(self.slot_state.tree_in_slot)
+        self.assertFalse(self.slot_state.tree_running)
+
     def testCancelBeforeDone(self):
         execute_tree, _, _ = self.execute_root.get_subtree_msg()
 
@@ -205,6 +233,9 @@ class TestRemoteTreeSlot(unittest.TestCase):
         # should now be running, but not finished yet
         self.assertTrue(self.slot_state.tree_running)
         self.assertFalse(self.slot_state.tree_finished)
+
+        self.remote_slot.cancel_run_tree_handler(gh)
+        self.assertEqual(gh.state, MockGoalHandle.CANCELED)
 
         self.remote_slot.cancel_run_tree_handler(gh)
         self.assertEqual(gh.state, MockGoalHandle.CANCELED)

@@ -1,4 +1,5 @@
 <launch>
+  <node name="test_actions" pkg="ros_bt_py" type="test_action_node.py" />
   <node name="test_services" pkg="ros_bt_py" type="test_service_node.py" />
   <node name="test_topics" pkg="ros_bt_py" type="test_topics_node.py" />
   <node name="fib" pkg="actionlib_tutorials" type="fibonacci_server" />

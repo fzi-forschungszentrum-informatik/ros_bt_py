@@ -94,7 +94,7 @@ class NodeData(object):
         if self._serialized_value is not None and new_value != self._value:
             self._serialized_value = jsonpickle.encode(new_value)
         self._value = new_value
-        self.updated = True
+        self.set_updated()
 
     def get(self):
         """Get the current value
@@ -238,7 +238,8 @@ class NodeDataMap(object):
         self._map[key] = value
 
     def is_updated(self, key):
-        """Check whether the data at the given key has been updated since the `updated` property was last reset
+        """Check whether the data at the given key has been updated since the `updated` property
+        was last reset
 
         :param basestring key: Key for the data object whose updated status we want to check
 

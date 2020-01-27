@@ -1,0 +1,59 @@
+name: ''
+path: ''
+root_name: ''
+nodes: 
+  - 
+    module: "ros_bt_py.nodes.subtree"
+    node_class: "Subtree"
+    max_children: 0
+    name: "Subtree"
+    child_names: []
+    options: 
+      - 
+        key: "subtree_path"
+        serialized_value: "\"package://ros_bt_py/test/testdata/trees/subtree_constant.yaml\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "use_io_nodes"
+        serialized_value: "false"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+    inputs: 
+      - 
+        key: "Compare.b"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      - 
+        key: "Compare.a"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    outputs: 
+      - 
+        key: "load_success"
+        serialized_value: "true"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+      - 
+        key: "load_error_msg"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+    option_wirings: []
+    state: "UNINITIALIZED"
+data_wirings: []
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: 
+  - 
+    node_name: "Subtree"
+    data_kind: "inputs"
+    data_key: "Compare.b"
+  - 
+    node_name: "Subtree"
+    data_kind: "inputs"
+    data_key: "Compare.a"
+  - 
+    node_name: "Subtree"
+    data_kind: "outputs"
+    data_key: "load_success"
+  - 
+    node_name: "Subtree"
+    data_kind: "outputs"
+    data_key: "load_error_msg"

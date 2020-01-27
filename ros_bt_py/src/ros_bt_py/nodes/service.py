@@ -11,6 +11,7 @@ from ros_bt_py.ros_helpers import AsyncServiceProxy
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'service_type': type,
              'request_type': type,
              'response_type': type,
@@ -97,6 +98,7 @@ class Service(Leaf):
                 self.outputs['response'] = self._service_proxy.get_response()
             if self._service_proxy.get_state() == AsyncServiceProxy.ERROR:
                 # TODO(nberg): Leave old response or set to None?
+                self._service_proxy.stop_call()
                 new_state = NodeMsg.FAILED
 
             self._reported_result = True
@@ -107,7 +109,7 @@ class Service(Leaf):
         return NodeMsg.IDLE
 
     def _do_shutdown(self):
-        self._service_proxy.stop_call()
+        self._service_proxy.shutdown()
 
     def _do_calculate_utility(self):
         resolved_service = rospy.resolve_name(self.options['service_name'])
@@ -134,3 +136,42 @@ class Service(Leaf):
 
         self.loginfo('Service %s is unavailable or has wrong type.' % resolved_service)
         return UtilityBounds()
+
+
+@define_bt_node(NodeConfig(
+    version='0.9.0',
+    options={'service_type': type,
+             'service_name': str,
+             'wait_for_service_seconds': float},
+    inputs={},
+    outputs={},
+    max_children=0,
+    optional_options=[]))
+class WaitForService(Leaf):
+    """Waits for a service to be available, fails if this wait times out
+    """
+    def _do_setup(self):
+        self._service_proxy = AsyncServiceProxy(self.options['service_name'],
+                                                self.options['service_type'])
+
+    def _do_tick(self):
+        if (self._service_proxy.get_state() == AsyncServiceProxy.IDLE or
+                self._service_proxy.get_state() == AsyncServiceProxy.ABORTED):
+            self._last_service_call_time = rospy.Time.now()
+            self._service_proxy.wait_for_service(self.options['wait_for_service_seconds'])
+        if self._service_proxy.get_state() == AsyncServiceProxy.WAITING:
+            return NodeMsg.RUNNING
+        if self._service_proxy.get_state() == AsyncServiceProxy.SERVICE_AVAILABLE:
+            return NodeMsg.SUCCEEDED
+        return NodeMsg.FAILED
+
+    def _do_untick(self):
+        self._service_proxy.stop_call()
+        return NodeMsg.IDLE
+
+    def _do_reset(self):
+        self._service_proxy.stop_call()
+        return NodeMsg.IDLE
+
+    def _do_shutdown(self):
+        self._service_proxy.shutdown()

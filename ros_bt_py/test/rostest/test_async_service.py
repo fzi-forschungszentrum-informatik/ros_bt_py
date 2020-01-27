@@ -1,10 +1,13 @@
 #!/usr/bin/env python2.7
 import unittest
 
+import os
+import signal
+
 import rospy
 from std_srvs.srv import SetBool, SetBoolRequest, SetBoolResponse
 
-from ros_bt_py.ros_helpers import AsyncServiceProxy
+from ros_bt_py.ros_helpers import AsyncServiceProxy, _call_service_impl, _wait_for_service_impl
 
 PKG = 'ros_bt_py'
 
@@ -89,6 +92,69 @@ class TestAsyncService(unittest.TestCase):
         rospy.sleep(0.1)
 
         self.assertEqual(crash_proxy.get_state(), AsyncServiceProxy.ERROR)
+
+        _call_service_impl(crash_proxy._data)
+
+        self.assertEqual(crash_proxy.get_state(), AsyncServiceProxy.ERROR)
+
+    def testCrashIfTrueService(self):
+        crash_proxy = AsyncServiceProxy('crash_if_true', SetBool)
+
+        crash_proxy.call_service(SetBoolRequest(data=True))
+        rospy.sleep(0.1)
+
+        self.assertEqual(crash_proxy.get_state(), AsyncServiceProxy.ERROR)
+
+        _call_service_impl(crash_proxy._data)
+
+        self.assertEqual(crash_proxy.get_state(), AsyncServiceProxy.ERROR)
+
+        crash_proxy.call_service(SetBoolRequest(data=False))
+        rospy.sleep(0.1)
+
+        self.assertEqual(crash_proxy.get_state(), AsyncServiceProxy.RESPONSE_READY)
+
+        _call_service_impl(crash_proxy._data)
+
+        self.assertEqual(crash_proxy.get_state(), AsyncServiceProxy.RESPONSE_READY)
+
+    def testCallServiceImpl(self):
+        self.async_proxy._data['req'] = SetBoolRequest()
+        _call_service_impl(self.async_proxy._data)
+
+        self.assertEqual(self.async_proxy.get_state(), AsyncServiceProxy.RESPONSE_READY)
+
+        self.async_proxy._data['proxy'] = None
+        _call_service_impl(self.async_proxy._data)
+
+        self.assertEqual(self.async_proxy.get_state(), AsyncServiceProxy.ERROR)
+
+    def testWaitForServiceImpl(self):
+        self.async_proxy._data['req'] = SetBoolRequest()
+        _wait_for_service_impl(self.async_proxy._data)
+
+        self.assertEqual(self.async_proxy.get_state(), AsyncServiceProxy.SERVICE_AVAILABLE)
+
+        self.async_proxy._data['proxy'] = None
+        _wait_for_service_impl(self.async_proxy._data)
+
+        self.assertEqual(self.async_proxy.get_state(), AsyncServiceProxy.ERROR)
+
+    def testWaitForServiceImplAfterCall(self):
+        self.async_proxy.call_service(SetBoolRequest(data=True))
+        self.async_proxy.wait_for_service(timeout=0.5)
+
+        self.assertEqual(self.async_proxy.get_state(), AsyncServiceProxy.WAITING)
+
+    def testWaitForServiceTwice(self):
+        self.async_proxy.wait_for_service(timeout=0.5)
+        self.async_proxy.wait_for_service(timeout=0.5)
+        self.assertEqual(self.async_proxy.get_state(), AsyncServiceProxy.WAITING)
+
+    def testWaitForServiceThenCall(self):
+        self.async_proxy.wait_for_service(timeout=0.5)
+        self.async_proxy.call_service(SetBoolRequest(data=True))
+        self.assertEqual(self.async_proxy.get_state(), AsyncServiceProxy.RUNNING)
 
 
 if __name__ == '__main__':

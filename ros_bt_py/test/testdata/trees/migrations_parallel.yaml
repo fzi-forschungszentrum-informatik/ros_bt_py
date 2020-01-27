@@ -1,0 +1,36 @@
+name: ''
+path: ''
+root_name: ''
+nodes: 
+  - 
+    module: "ros_bt_py.nodes.parallel"
+    node_class: "Parallel"
+    version: ''
+    max_children: -1
+    name: "Parallel"
+    child_names: []
+    options: 
+      - 
+        key: "needed_successes"
+        serialized_value: "0"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    inputs: []
+    outputs: []
+    option_wirings: []
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    version: ''
+    max_children: -1
+    name: "Sequence"
+    child_names: [Parallel]
+    options: []
+    inputs: []
+    outputs: []
+    option_wirings: []
+    state: "UNINITIALIZED"
+data_wirings: []
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: []

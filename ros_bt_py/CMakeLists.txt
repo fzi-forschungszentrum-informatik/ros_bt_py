@@ -70,13 +70,13 @@ install(PROGRAMS
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 install(DIRECTORY etc/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/etc/
   )
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
   )
 install(DIRECTORY html/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/html/
   )
 
 
@@ -98,5 +98,7 @@ if (CATKIN_ENABLE_TESTING)
   add_rostest(test/rostest/parallel_if_remote.test)
   add_rostest(test/rostest/ros_leaf_utility.test)
   add_rostest(test/rostest/ros_leaves.test)
+  add_rostest(test/rostest/ros_param.test)
   add_rostest(test/rostest/shovable.test)
+  add_rostest(test/rostest/shove_tree.test)
 endif()

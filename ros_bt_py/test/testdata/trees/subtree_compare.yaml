@@ -1,0 +1,39 @@
+name: ''
+path: ''
+root_name: ''
+nodes: 
+  - 
+    module: "ros_bt_py.nodes.compare"
+    node_class: "Compare"
+    max_children: 0
+    name: "Compare"
+    child_names: []
+    options: 
+      - 
+        key: "compare_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "a"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      - 
+        key: "b"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    outputs: []
+    option_wirings: []
+    state: "UNINITIALIZED"
+data_wirings: []
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: 
+  - 
+    node_name: "Compare"
+    data_kind: "inputs"
+    data_key: "a"
+  - 
+    node_name: "Compare"
+    data_kind: "inputs"
+    data_key: "b"
