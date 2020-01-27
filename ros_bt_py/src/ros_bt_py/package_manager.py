@@ -14,6 +14,7 @@ from ros_bt_py_msgs.srv import GetPackageStructureResponse
 
 from ros_bt_py.node import increment_name
 
+
 class PackageManager(object):
     """Provides functionality to interact with ROS messages and catkin packages
     """
