@@ -4394,7 +4394,8 @@ class MultipleSelection extends Component
         <div className="d-flex flex-column">
           <div className="btn-group d-flex mb-2" role="group">
             <button className="btn btn-primary w-30"
-                    onClick={this.onClickCreateSubtree}>
+                    onClick={this.onClickCreateSubtree}
+                    disabled={true}>
               {create_subtree_text}
             </button>
           </div>
@@ -4403,12 +4404,14 @@ class MultipleSelection extends Component
             <input className="form-control-lg mb-2"
                    type="text"
                    value={this.state.filename}
-                   onChange={this.setFilename}/>
+                   onChange={this.setFilename}
+                   disabled={true}/>
             <h5>Package <i title="The ROS package in which the newly created subtree will be saved in" class="fas fa-question-circle"></i></h5>
             <input className="form-control-lg mb-2"
                    type="text"
                    value={this.state.package}
-                   onChange={this.searchPackageName}/>
+                   onChange={this.searchPackageName}
+                   disabled={true}/>
             {this.renderPackageSearchResults(this.state.package_results)}
           </div>
         </div>
