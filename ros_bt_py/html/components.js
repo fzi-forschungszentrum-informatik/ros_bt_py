@@ -1007,14 +1007,6 @@ class LoadSaveControls extends Component
           <i class="fas fa-save show-button-icon"></i>
           <span className="ml-1 hide-button-text">Save</span>
         </button>
-        <button onClick={this.loadFromPackage.bind(this)}
-                className="btn btn-primary m-1">
-          Load
-        </button>
-        <button onClick={this.saveToPackage.bind(this)}
-                className="btn btn-primary m-1">
-          Save
-        </button>
         <div>
           <input ref={this.fileref} type="file" style={{display:"none"}} onChange={this.loadTree.bind(this)}/>
           <button onClick={this.openFileDialog.bind(this)}
