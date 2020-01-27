@@ -3950,6 +3950,9 @@ class MultipleSelection extends Component
     super(props);
 
     this.setFilename = this.setFilename.bind(this);
+    this.setCapabilityName = this.setCapabilityName.bind(this);
+    this.setDescription = this.setDescription.bind(this);
+    this.setTarget = this.setTarget.bind(this);
     this.searchPackageName = this.searchPackageName.bind(this);
     this.selectPackageSearchResult = this.selectPackageSearchResult.bind(this);
     this.onClickCreateCoordinatorTree = this.onClickCreateCoordinatorTree.bind(this);
@@ -3962,6 +3965,8 @@ class MultipleSelection extends Component
     }
 
     this.state = {name: name,
+                  target: '',
+                  description: '',
                   filename: 'subtree.yaml',
                   package: this.props.last_selected_package,
                   package_results:[],
@@ -4319,6 +4324,21 @@ class MultipleSelection extends Component
     this.setState({filename: event.target.value});
   }
 
+  setCapabilityName(event)
+  {
+    this.setState({name: event.target.value});
+  }
+
+  setDescription(event)
+  {
+    this.setState({description: event.target.value});
+  }
+
+  setTarget(event)
+  {
+    this.setState({target: event.target.value});
+  }
+
   render()
   {
     var create_subtree_text = "Create subtree from selected ";
@@ -4332,33 +4352,68 @@ class MultipleSelection extends Component
       create_capability_text += "node";
     }
 
-    return (
-      <div className="d-flex flex-column">
-        <div className="btn-group d-flex mb-2" role="group">
-        <button className="btn btn-primary w-30"
-                  onClick={this.onClickCreateSubtree}>
-            {create_subtree_text}
-          </button>
-          <button className="btn btn-primary w-30"
-                  onClick={this.onClickCreateCoordinatorTree}>
-            {create_capability_text}
-          </button>
-        </div>
+    // show a different ui depending on the availability of the capability manager
+    if (this.props.cm_available)
+    {
+      return (
         <div className="d-flex flex-column">
-          <h5>Filename <i title="Filename/Path of the subtree TODO" class="fas fa-question-circle"></i></h5>
-          <input className="form-control-lg mb-2"
-                 type="text"
-                 value={this.state.filename}
-                 onChange={this.setFilename}/>
-          <h5>Package <i title="The ROS package in which the newly created subtree will be saved in" class="fas fa-question-circle"></i></h5>
-          <input className="form-control-lg mb-2"
-                 type="text"
-                 value={this.state.package}
-                 onChange={this.searchPackageName}/>
-          {this.renderPackageSearchResults(this.state.package_results)}
+          <div className="btn-group d-flex mb-2" role="group">
+            <button className="btn btn-primary w-30"
+                    onClick={this.onClickCreateCoordinatorTree}>
+              {create_capability_text}
+            </button>
+          </div>
+          <div className="d-flex flex-column">
+            <h5>Capability Name <i title="Capability name" class="fas fa-question-circle"></i></h5>
+            <input className="form-control-lg mb-2"
+                   type="text"
+                   value={this.state.name}
+                   onChange={this.setCapabilityName}/>
+            <h5>Package <i title="The ROS package in which the newly created subtree will be saved in" class="fas fa-question-circle"></i></h5>
+            <input className="form-control-lg mb-2"
+                   type="text"
+                   value={this.state.package}
+                   onChange={this.searchPackageName}/>
+            {this.renderPackageSearchResults(this.state.package_results)}
+            <h5>Description <i title="Description" class="fas fa-question-circle"></i></h5>
+            <input className="form-control-lg mb-2"
+                   type="text"
+                   value={this.state.description}
+                   onChange={this.setDescription}/>
+            <h5>Target <i title="The target robot, leave empty if this is a capability for generic robots" class="fas fa-question-circle"></i></h5>
+            <input className="form-control-lg mb-2"
+                   type="text"
+                   value={this.state.target}
+                   onChange={this.setTarget}/>
+          </div>
         </div>
-      </div>
-    );
+      ); 
+    } else {
+      // show createsubtree
+      return (
+        <div className="d-flex flex-column">
+          <div className="btn-group d-flex mb-2" role="group">
+            <button className="btn btn-primary w-30"
+                    onClick={this.onClickCreateSubtree}>
+              {create_subtree_text}
+            </button>
+          </div>
+          <div className="d-flex flex-column">
+            <h5>Filename <i title="Filename/Path of the subtree TODO" class="fas fa-question-circle"></i></h5>
+            <input className="form-control-lg mb-2"
+                   type="text"
+                   value={this.state.filename}
+                   onChange={this.setFilename}/>
+            <h5>Package <i title="The ROS package in which the newly created subtree will be saved in" class="fas fa-question-circle"></i></h5>
+            <input className="form-control-lg mb-2"
+                   type="text"
+                   value={this.state.package}
+                   onChange={this.searchPackageName}/>
+            {this.renderPackageSearchResults(this.state.package_results)}
+          </div>
+        </div>
+      );
+    }
   }
 }
 
