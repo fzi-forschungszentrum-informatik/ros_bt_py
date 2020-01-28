@@ -325,7 +325,6 @@ class PackageManager(object):
                 with open(save_path, 'w') as save_file:
                     msg = genpy.message.strify_message(request.tree)
                     save_file.write(msg)
-
                 response.success = True
                 return response
 

@@ -54,6 +54,11 @@ function prettyprint_type(jsonpickled_type) {
   var json_type = JSON.parse(jsonpickled_type);
   if (json_type['py/type'] !== undefined)
   {
+    // shorten the CapabilityType
+    if (json_type['py/type'] === 'ros_ta.nodes.capability.CapabilityType')
+    {
+      return 'CapabilityType';
+    }
     // Remove the "builtin" prefix jsonpickle adds
     return json_type['py/type']
       .replace('__builtin__.', '')
@@ -145,6 +150,11 @@ function getDefaultValue(typeName, options)
     return {type: 'collections.OrderedDict',
             value: {"py/reduce": [{"py/type": "collections.OrderedDict"}, {"py/tuple": [[]]}, null, null, null]}
     };
+  }
+  else if (typeName === 'CapabilityType')
+  {
+    return {type: 'ros_ta.nodes.capability.CapabilityType',
+            value: {"capability_type": ""}};
   }
   else if (typeName === 'ros_bt_py.ros_helpers.LoggerLevel')
   {
@@ -499,6 +509,7 @@ function ExecutionBar(props)
       <NamespaceSelect
         ros={props.ros}
         connected={props.connected}
+        cm_available={props.cm_available}
         currentNamespace={props.currentNamespace}
         onNamespaceChange={props.onNamespaceChange}
         onError={props.onError}/>
@@ -659,6 +670,13 @@ class NamespaceSelect extends Component
       connected_class = "fas fa-wifi disconnected";
       connected_title = "Disconnected";
     }
+
+    if (this.props.cm_available && this.props.connected)
+    {
+      connected_class = "fas fa-wifi cm_available"
+      connected_title = "Connected, Capability Manager available"
+    }
+
     return (
       <Fragment>
         <span aria-hidden="true" title={connected_title} className={connected_class} />
@@ -883,6 +901,12 @@ class LoadSaveControls extends Component
       name: this.props.bt_namespace + 'clear',
       serviceType: 'ros_bt_py_msgs/ClearTree'
     });
+
+    this.save_tree_service = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'save_tree',
+      serviceType: 'ros_bt_py_msgs/SaveTree'
+    });   
   }
 
   openFileDialog()
@@ -1234,9 +1258,20 @@ class D3BehaviorTreeEditor extends Component
     var viewport = d3.select(this.viewport_ref.current);
     var width = viewport.node().getBoundingClientRect().width;
     var height = viewport.node().getBoundingClientRect().height;
+    var viewport_x = viewport.node().getBoundingClientRect().x;
+    var viewport_y = viewport.node().getBoundingClientRect().y;
+
+    viewport
+      .on("mouseup", () => {
+        console.log("mouseup before zoom");
+      });
 
     this.zoomObject = d3.zoom();
     var container = d3.select(this.svg_ref.current);
+
+    this.zoomObject.filter(function () {
+      return !d3.event.shiftKey
+    });
 
     // SVG MOUSEUP FOR NODE DRAG/DROP
     var svg_viewport = d3.select(this.svg_ref.current);
@@ -1289,10 +1324,119 @@ class D3BehaviorTreeEditor extends Component
     viewport.on("mousemove.pan_if_drag", this.canvasMousemovePanHandler.bind(this));
     viewport
       .on("click", () => {
-        // Deselect any selected node if the user clicks on the background
-        this.props.onSelectionChange(null);
-        this.props.onSelectedEdgeChange(null);
+        // Deselect any selected node if the user clicks on the background and does not perform multi-selection right now
+        if (!d3.event.shiftKey)
+        {
+          this.props.onSelectionChange(null);
+          this.props.onSelectedEdgeChange(null);
+        }
       });
+    
+    // multi selection
+    this.selection = false;
+    this.mouse_moved = false;
+
+    this.start_y = 0;
+
+    // selection rectangle
+    viewport.append("rect")
+            .attr("class", "selection")
+            .attr("width", 0)
+            .attr("height", 0)
+            .attr("x", 0)
+            .attr("y", 0);
+    
+    // start the selection
+    viewport
+      .on("mousedown", () => {
+        if (d3.event.shiftKey)
+        {
+          this.selection = true; // indicates a shift-mousedown enabled selection rectangle
+          
+          var s = viewport.select( "rect.selection");
+
+          if( !s.empty()) {
+            s.attr("x", d3.event.pageX - viewport_x)
+            .attr("y", d3.event.pageY - viewport_y);
+            this.start_x = s.attr("x");
+            this.start_y = s.attr("y");
+          }
+        }
+      });
+    
+    // show the selection rectangle on mousemove
+    viewport
+      .on("mousemove", () => {
+        if(d3.event.shiftKey && this.selection)
+        {
+          this.mouse_moved = true;
+
+          var s = viewport.select( "rect.selection");
+  
+          if( !s.empty()) {
+            var start_x = this.start_x;
+            var start_y = this.start_y;
+            var end_x = d3.event.pageX - viewport_x;
+            var end_y = d3.event.pageY - viewport_y;
+  
+            // flip the selection rectangle if the user moves in a negative direction from the start point
+            if (d3.event.pageX - viewport_x < start_x)
+            {
+              start_x = d3.event.pageX - viewport_x;
+              end_x = this.start_x;
+              s.attr("x", start_x);
+            }
+  
+            if (d3.event.pageY - viewport_y < start_y)
+            {
+              start_y = d3.event.pageY - viewport_y;
+              end_y = this.start_y;
+              s.attr("y", start_y);
+            }
+  
+            s.attr("width", end_x - start_x)
+            .attr("height", Math.abs(end_y - start_y));
+              
+            viewport.selectAll( 'foreignObject').each( function( data, i) {
+              var bbox = this.getBoundingClientRect();
+              var x = bbox.x - viewport_x;
+              var y = bbox.y - viewport_y;
+  
+              if (x >= start_x && x + bbox.width <= end_x && y >= start_y && y + bbox.height <= end_y) {
+                d3.select(this).select("body").classed('node-selected', true);            
+              } else {
+                d3.select(this).select("body").classed('node-selected', false);
+              }
+            });
+          }
+        }
+      });
+    
+    // detect the selected nodes on mouseup
+    viewport
+      .on("mouseup", () => {
+        if (this.selection && this.mouse_moved)
+        {
+          this.selection = false; // hide the selection rectangle
+          this.mouse_moved = false;
+          var s = viewport.select( "rect.selection");
+          s.attr("width", 0)
+           .attr("height", 0);
+
+          var selected_nodes = new Set();
+          var selected_node_names = new Set();
+    
+          viewport.selectAll( 'foreignObject').each( function( data, i) {
+            if(d3.select(this).select("body").classed('node-selected'))
+            {
+              selected_nodes.add(data);
+              selected_node_names.add(data.id);
+            }
+          });
+
+          this.props.onMultipleSelectionChange(Array.from(selected_node_names));
+        }        
+      });   
   }
 
   render()
@@ -1361,13 +1505,13 @@ class D3BehaviorTreeEditor extends Component
       d3.select(this.svg_ref.current).select(".data_graph").attr("visibility", "hidden");
     }
 
-    if (this.props.selectedNodeName)
+    if (this.props.selectedNodeNames)
     {
       var that = this;
       d3.select(this.svg_ref.current)
         .selectAll(".btnode")
         .each(function(d) {
-          d3.select(this).classed("node-selected", (d.id === that.props.selectedNodeName));
+          d3.select(this).classed("node-selected", (that.props.selectedNodeNames.indexOf(d.id) !== -1));
         });
     }
     else
@@ -2178,6 +2322,9 @@ class D3BehaviorTreeEditor extends Component
       .on("mouseover", this.DataEdgeDefaultMouseoverHandler)
       .on("mouseout", this.DataEdgeDefaultMouseoutHandler)
       .merge(link);
+    
+    console.log("link:");
+    console.log(link);
 
     link
       .transition()
@@ -2245,6 +2392,8 @@ class D3BehaviorTreeEditor extends Component
       .attr("dy", d => Math.round(0.5 * d.gripperSize))
       .merge(labels);
     labels.text(d => d.key + " (type: " + prettyprint_type(d.type) + ")");
+
+    // FIXME! find out how to add multi line text that does not repeat itself 3 times - how to use exit().remove() and merge() ???
   }
 
   IOGroupDefaultMouseoverHandler(d, index, group)
@@ -2794,7 +2943,12 @@ class D3BehaviorTreeEditor extends Component
 
   nodeClickHandler(d, index, group)
   {
-    this.props.onSelectionChange(d.data.name);
+    if (d3.event.shiftKey)
+    {
+      this.props.onMultipleSelectionChange(Array.from(new Set(this.props.selectedNodeNames.concat([d.data.name]))));
+    } else {
+      this.props.onSelectionChange(d.data.name);
+    }
     d3.event.preventDefault();
     d3.event.stopPropagation();
   }
@@ -2975,6 +3129,7 @@ class NewNode extends Component
                       doc={this.props.node.doc}
                       changeCopyMode={this.props.changeCopyMode}
                       messagesFuse={this.props.messagesFuse}
+                      capabilitiesFuse={this.props.capabilitiesFuse}
                       updateValidity={this.updateValidity}
                       updateValue={this.updateValue}
                       nameChangeHandler={this.nameChangeHandler}
@@ -3787,6 +3942,484 @@ class FileBrowser extends Component{
     );
   }
 }
+
+class MultipleSelection extends Component
+{
+  constructor(props)
+  {
+    super(props);
+
+    this.setFilename = this.setFilename.bind(this);
+    this.setCapabilityName = this.setCapabilityName.bind(this);
+    this.setDescription = this.setDescription.bind(this);
+    this.setTarget = this.setTarget.bind(this);
+    this.searchPackageName = this.searchPackageName.bind(this);
+    this.selectPackageSearchResult = this.selectPackageSearchResult.bind(this);
+    this.onClickCreateCoordinatorTree = this.onClickCreateCoordinatorTree.bind(this);
+    this.onClickCreateSubtree = this.onClickCreateSubtree.bind(this);
+
+    var name = this.props.selectedNodeNames.join('_');
+    if (name.length === 0)
+    {
+      name = "Subtree";
+    }
+
+    this.state = {name: name,
+                  target: '',
+                  description: '',
+                  filename: 'subtree.yaml',
+                  package: this.props.last_selected_package,
+                  package_results:[],
+                  capability: '',
+                  preconditions: []};
+
+    this.create_coordinator_tree_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.cm_namespace + 'create_coordinator_tree',
+      serviceType: 'ros_ta_msgs/CreateCoordinatorTree'
+    });
+
+    this.save_capability_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.cm_namespace + 'save_capability',
+      serviceType: 'ros_ta_msgs/SaveCapability'
+    });
+
+    this.generate_subtree_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.bt_namespace + 'generate_subtree',
+      serviceType: 'ros_bt_py_msgs/GenerateSubtree'
+    });
+
+    this.add_node_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.bt_namespace + 'add_node',
+      serviceType: 'ros_bt_py_msgs/AddNode'
+    });
+
+    this.add_node_at_index_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.bt_namespace + 'add_node_at_index',
+      serviceType: 'ros_bt_py_msgs/AddNodeAtIndex'
+    });
+
+    this.move_node_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.bt_namespace + 'move_node',
+      serviceType: 'ros_bt_py_msgs/MoveNode'
+    });
+
+    this.remove_node_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.bt_namespace + 'remove_node',
+      serviceType: 'ros_bt_py_msgs/RemoveNode'
+    });
+
+    this.wire_data_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.bt_namespace + 'wire_data',
+      serviceType: 'ros_bt_py_msgs/WireNodeData'
+    });
+
+    this.unwire_data_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.bt_namespace + 'unwire_data',
+      serviceType: 'ros_bt_py_msgs/WireNodeData'
+    });
+  }
+
+  componentDidMount()
+  {
+    document.addEventListener('click', this.handleClick);
+  }
+
+  handleClick = (event) => {
+    if(this.node && !this.node.contains(event.target))
+    {
+      this.setState({package_results:[]});
+    }
+  };
+
+  onFocus(event)
+  {
+    this.props.changeCopyMode(false);
+  }
+
+  buildNodeMessage()
+  {
+    return {
+      module: 'ros_ta.nodes.capability',
+      node_class: 'Capability',
+      name: this.state.name,
+      options: [{
+                  key: 'capability_type',
+                  serialized_value: JSON.stringify({"py/object": "ros_ta.nodes.capability.CapabilityType", "capability_type": this.state.name})
+                },
+                {
+                  key: 'preconditions',
+                  serialized_value: JSON.stringify(this.state.preconditions)
+                }],
+      child_names: []
+    };
+  }
+
+  onClickCreateSubtree(event)
+  {
+    this.generate_subtree_service.callService(
+      new ROSLIB.ServiceRequest({
+        nodes: this.props.selectedNodeNames
+      }),
+      function(response) {
+        if (response.success) {
+          console.log("Generated subtree");
+        } else {
+          this.props.onError('Failed to create subtree '
+                             + response.error_message);
+        }
+      }.bind(this));
+    
+  }
+
+  onClickCreateCoordinatorTree(event)
+  {
+    this.create_coordinator_tree_service.callService(
+      new ROSLIB.ServiceRequest({
+        nodes: this.props.selectedNodeNames
+      }),
+      function(response) {
+        if (response.success) {
+          console.log('Created coordinator tree!');
+          
+          var capability = {};
+          capability.name = this.state.name;
+          capability.target = this.state.target;
+          capability.description = this.state.description;
+          capability.preconditions = this.state.preconditions;
+          capability.path = "coordinator.yaml"
+          var coordinator = response.coordinator;
+
+          this.save_capability_service.callService(
+            new ROSLIB.ServiceRequest({
+              package: this.state.package,
+              capability: capability,
+              coordinator: coordinator
+            }),
+            function(response) {
+              if (response.success) {
+                console.log('Saved capability!');
+
+                var remove_nodes = this.props.selectedNodeNames;
+
+                // now add it to the tree
+                var msg = this.buildNodeMessage();
+                console.log("aha...", msg)
+                this.add_node_service.callService(
+                  new ROSLIB.ServiceRequest({
+                    parent_name: coordinator.root_name,
+                    node: msg,
+                    allow_rename: true
+                  }),
+                  function(response) {
+                    if (response.success) {
+                      if (window.confirm("Do you want to replace the selected node with the newly created capability?"))
+                      {
+                        this.props.onSelectionChange(null);
+                        this.props.onSelectedEdgeChange(null);
+                        console.log('Added node to tree as ' + response.actual_node_name);
+                        var actual_node_name = response.actual_node_name;
+                        // now move it into position
+                        var insertion_index = -1;
+                        for (var i = 0; i < this.props.tree_message.nodes.length; i++) {
+                          if (this.props.tree_message.nodes[i].name == coordinator.root_name) {
+                            for (var j = 0; j < this.props.tree_message.nodes[i].child_names.length; j++) {
+                              for (var k = 0; k < this.props.selectedNodeNames.length; k++) {
+                                if (this.props.selectedNodeNames[k] == this.props.tree_message.nodes[i].child_names[j])
+                                {
+                                  insertion_index = j;
+                                  break;
+                                }
+                              }
+                            }
+                          }
+                        }
+                        this.move_node_service.callService(
+                          new ROSLIB.ServiceRequest({
+                            node_name: actual_node_name,
+                            new_parent_name: coordinator.root_name,
+                            new_child_index: insertion_index
+                          }),
+                          function(response) {
+                            if (response.success) {
+                              console.log('Moved node in tree');
+
+                              // generate wirings
+                              var wirings_to_add = [];
+                              var wirings_to_remove = [];
+                              for (var i = 0; i < remove_nodes.length; i++) {
+                                // check if there are any data wirings for the involved node
+                                for (var j = 0; j < this.props.tree_message.data_wirings.length; j++)
+                                {
+                                  // check if this wiring is towards the involved node and must be rewritten towards the capability
+                                  if (this.props.tree_message.data_wirings[j].target.node_name === remove_nodes[i])
+                                  {
+                                    // check if the target is an involved node, then do not add this wiring!
+                                    if (remove_nodes.indexOf(this.props.tree_message.data_wirings[j].source.node_name) !== -1)
+                                    {
+                                      console.log("source would be an involved node, this is not a wiring we have to perform")
+                                    } else {
+                                      // add the new wiring
+                                      wirings_to_add.push({
+                                        source: this.props.tree_message.data_wirings[j].source,
+                                        target: {
+                                          node_name: actual_node_name, // the capabilities name
+                                          data_kind: this.props.tree_message.data_wirings[j].target.data_kind,
+                                          data_key: this.props.tree_message.data_wirings[j].target.node_name + "." + this.props.tree_message.data_wirings[j].target.data_key, // do not forget the prefix!
+                                        }
+                                      });
+                                    }
+
+                                    // but also remove the old wiring
+                                    wirings_to_remove.push(this.props.tree_message.data_wirings[j]);
+                                  }
+
+                                  // check if this wiring is from the involved node and must be rewritten from the capability
+                                  if (this.props.tree_message.data_wirings[j].source.node_name === remove_nodes[i])
+                                  {
+                                    // check if the target is an involved node, then do not add this wiring!
+                                    if (remove_nodes.indexOf(this.props.tree_message.data_wirings[j].target.node_name) !== -1)
+                                    {
+                                      console.log("target would be an involved node, this is not a wiring we have to perform")
+                                    } else {
+                                      // add the new wiring
+                                      wirings_to_add.push({
+                                        source: {
+                                          node_name: actual_node_name, // the capabilities name,
+                                          data_kind: this.props.tree_message.data_wirings[j].source.data_kind,
+                                          data_key: this.props.tree_message.data_wirings[j].source.node_name + "." + this.props.tree_message.data_wirings[j].source.data_key, // do not forget the prefix!
+                                        },
+                                        target: this.props.tree_message.data_wirings[j].target
+                                      });
+                                    }
+
+                                    // but also remove the old wiring
+                                    wirings_to_remove.push(this.props.tree_message.data_wirings[j]);
+                                  }
+                                }
+                              }
+
+                              console.log("Fixing data wirings...");
+                              this.wire_data_service.callService(
+                                new ROSLIB.ServiceRequest({
+                                  wirings: wirings_to_add,
+                                }),
+                                function(response) {
+                                  if (response.success) {
+                                    console.log("Adding new wirings successful!");
+                                    this.unwire_data_service.callService(
+                                      new ROSLIB.ServiceRequest({
+                                        wirings: wirings_to_remove,
+                                      }),
+                                      function(response) {
+                                        if (response.success) {
+                                          console.log("Removing old wirings successful!");
+                                           // remove all selected nodes
+                                          for (var i = 0; i < remove_nodes.length; i++) {                                            
+                                            // finally remove the node
+                                            this.remove_node_service.callService(
+                                              new ROSLIB.ServiceRequest({
+                                                node_name: remove_nodes[i],
+                                                remove_children: false, // children are not automatically part of a capability atm, so we should not remove all
+                                              }),
+                                              function(response) {
+                                                if (response.success) {
+                                                  console.log('Removed node from tree');
+                                                }
+                                                else {
+                                                  console.log('Failed to remove node ' + response.error_message);
+                                                }
+                                            }.bind(this));
+                                          }
+                                        } else {
+                                          console.log("Failed to remove old wirings: " + response.error_message);
+                                        }
+                                      }.bind(this));
+                                  } else {
+                                    console.log("Failed to add new wirings: " + response.error_message);
+                                  }
+                                }.bind(this));
+                            }
+                            else {
+                              console.log('Failed to move node ' + response.error_message);
+                            }
+                        }.bind(this));
+                      }
+                    }
+                    else {
+                      console.log('Failed to add node ' + this.state.name + ': '
+                                  + response.error_message);
+                    }
+                  }.bind(this));
+              }
+              else {
+                this.props.onError('Failed to save capability '
+                                   + response.error_message);
+              }
+            }.bind(this));
+        }
+        else {
+          this.props.onError('Failed to create coordinator tree '
+                             + response.error_message);
+        }
+      }.bind(this));
+  }
+
+  searchPackageName(event)
+  {
+    if (this.props.packagesFuse)
+    {
+      var results = this.props.packagesFuse.search(event.target.value);
+      this.setState({package_results: results.slice(0,5)});
+    }
+    this.setState({package: event.target.value});
+  }
+
+
+  selectPackageSearchResult(result)
+  {
+    this.setState({package: result});
+    this.setState({package_results: []});
+    this.props.onSelectedPackageChange(result);
+  }
+
+  renderPackageSearchResults(results)
+  {
+    if(results.length > 0)
+    {
+      var result_rows = results.map(x => {
+        return (
+          <div className="list-group-item search-result align-items-start" onClick={() => this.selectPackageSearchResult(x.package)}>
+            <div className="d-flex w-100 justify-content-between">
+              <span>{x.package}</span>
+              <i class="far fa-file-code" title={x.path}></i>
+            </div>
+          </div>
+        );
+      });
+
+      return (
+        <div className="mb-2 search-results" ref={node => this.node = node}>
+          <div className="list-group">
+              {result_rows}
+          </div>
+        </div>
+      );
+    } else {
+      return null;
+    }
+  }
+
+  // FIXME this is temporary...!!!
+  setFilename(event)
+  {
+    this.setState({filename: event.target.value});
+  }
+
+  setCapabilityName(event)
+  {
+    this.setState({name: event.target.value});
+  }
+
+  setDescription(event)
+  {
+    this.setState({description: event.target.value});
+  }
+
+  setTarget(event)
+  {
+    this.setState({target: event.target.value});
+  }
+
+  render()
+  {
+    var create_subtree_text = "Create subtree from selected ";
+    var create_capability_text = "Create capability from selected ";
+    if (this.props.selectedNodeNames.length > 1)
+    {
+      create_subtree_text += "nodes";
+      create_capability_text += "nodes";
+    } else {
+      create_subtree_text += "node";
+      create_capability_text += "node";
+    }
+
+    // show a different ui depending on the availability of the capability manager
+    if (this.props.cm_available)
+    {
+      return (
+        <div className="d-flex flex-column">
+          <div className="btn-group d-flex mb-2" role="group">
+            <button className="btn btn-primary w-30"
+                    onClick={this.onClickCreateCoordinatorTree}>
+              {create_capability_text}
+            </button>
+          </div>
+          <div className="d-flex flex-column">
+            <h5>Capability Name <i title="Capability name" class="fas fa-question-circle"></i></h5>
+            <input className="form-control-lg mb-2"
+                   type="text"
+                   value={this.state.name}
+                   onChange={this.setCapabilityName}/>
+            <h5>Package <i title="The ROS package in which the newly created subtree will be saved in" class="fas fa-question-circle"></i></h5>
+            <input className="form-control-lg mb-2"
+                   type="text"
+                   value={this.state.package}
+                   onChange={this.searchPackageName}/>
+            {this.renderPackageSearchResults(this.state.package_results)}
+            <h5>Description <i title="Description" class="fas fa-question-circle"></i></h5>
+            <input className="form-control-lg mb-2"
+                   type="text"
+                   value={this.state.description}
+                   onChange={this.setDescription}/>
+            <h5>Target <i title="The target robot, leave empty if this is a capability for generic robots" class="fas fa-question-circle"></i></h5>
+            <input className="form-control-lg mb-2"
+                   type="text"
+                   value={this.state.target}
+                   onChange={this.setTarget}/>
+          </div>
+        </div>
+      ); 
+    } else {
+      // show createsubtree
+      return (
+        <div className="d-flex flex-column">
+          <div className="btn-group d-flex mb-2" role="group">
+            <button className="btn btn-primary w-30"
+                    onClick={this.onClickCreateSubtree}
+                    disabled={true}>
+              {create_subtree_text}
+            </button>
+          </div>
+          <div className="d-flex flex-column">
+            <h5>Filename <i title="Filename/Path of the subtree TODO" class="fas fa-question-circle"></i></h5>
+            <input className="form-control-lg mb-2"
+                   type="text"
+                   value={this.state.filename}
+                   onChange={this.setFilename}
+                   disabled={true}/>
+            <h5>Package <i title="The ROS package in which the newly created subtree will be saved in" class="fas fa-question-circle"></i></h5>
+            <input className="form-control-lg mb-2"
+                   type="text"
+                   value={this.state.package}
+                   onChange={this.searchPackageName}
+                   disabled={true}/>
+            {this.renderPackageSearchResults(this.state.package_results)}
+          </div>
+        </div>
+      );
+    }
+  }
+}
+
 class SelectedNode extends Component
 {
   constructor(props)
@@ -4100,6 +4733,7 @@ class SelectedNode extends Component
                       availableNodes={this.props.availableNodes}
                       changeCopyMode={this.props.changeCopyMode}
                       messagesFuse={this.props.messagesFuse}
+                      capabilitiesFuse={this.props.capabilitiesFuse}
                       updateValidity={this.updateValidity}
                       updateValue={this.updateValue}
                       nameChangeHandler={this.nameChangeHandler}
@@ -4238,6 +4872,7 @@ class EditableNode extends Component
 
     this.handleOptionWirings = this.handleOptionWirings.bind(this);
     this.selectMessageResult = this.selectMessageResult.bind(this);
+    this.renderCapabilityOptions = this.renderCapabilityOptions.bind(this);
 
     this.get_message_fields_service = new ROSLIB.Service({
       ros: props.ros,
@@ -4641,10 +5276,24 @@ class EditableNode extends Component
         </div>
       );
     }
+    else if (valueType === 'ros_ta.nodes.capability.CapabilityType' || valueType === 'CapabilityType') // FIXME: consistency?
+    {
+      return (
+        <div className="form-group">
+          <label className="d-block">{paramItem.key}
+            <CapabilityTypeInput capability_type={paramItem.value.value}
+                       ros={this.props.ros}
+                       bt_namespace={this.props.bt_namespace}
+                       capabilitiesFuse={this.props.capabilitiesFuse}
+                       onValidityChange={onValidityChange}
+                       onFocus={this.onFocus}
+                       onNewValue={onNewValue}/>
+          </label>
+        </div>
+      );
+    }
     else if (valueType === 'ros_bt_py.ros_helpers.LoggerLevel')
     {
-      console.log("valuetype: ", valueType);
-      console.log("value: ", paramItem.value.value);
       return (
         <div className="form-group">
           <label className="d-block">{paramItem.key}
@@ -4656,7 +5305,6 @@ class EditableNode extends Component
         </div>
       );
     }
-
     else  // if (valueType === 'object')
     {
       return (
@@ -4739,6 +5387,35 @@ class EditableNode extends Component
         </Fragment>
       );
     }
+  }
+
+  // <div className="d-flex flex-column">
+  // <h5>Name</h5>
+  // <input className="form-control-lg mb-2"
+  //        disabled={!this.state.cm_available}
+  //        type="text"
+  //        value={this.state.name}
+  //        onChange={this.searchCapability}/>
+  // {this.renderCapabilitySearchResults(this.state.capabilities_results)}
+
+  renderCapabilityOptions(param, name)
+  {
+    return (
+      <div className="mb-2">
+        <h5>{name} (capability specific)</h5>
+        <div className="list-group">
+          <div className="list-group-item"
+             key={name + param.key}>
+            {
+              this.inputForValue(
+                param,
+                this.props.updateValidity,
+                (newVal) => this.updateValue(name, param.key, newVal))
+            }
+        </div>
+        </div>
+      </div>
+    );
   }
 
   renderParamInputs(params, name)
@@ -4874,11 +5551,110 @@ class BehaviorTreeEdge extends Component
   }
 }
 
+class CapabilityTypeInput extends Component
+{
+  constructor(props)
+  {
+    super(props);
+    this.state = {name: props.capability_type.capability_type,
+      capabilities_results: [],
+      capability: '',
+      target: '',
+      description: '',
+      cm_available: false,};
+    
+      this.searchCapability = this.searchCapability.bind(this);
+      this.selectCapabilitySearchResult = this.selectCapabilitySearchResult.bind(this);
+      this.reconstructAndUpdateValue = this.reconstructAndUpdateValue.bind(this);
+
+  }
+
+  componentDidMount()
+  {
+    if(!this.props.capabilitiesFuse)
+    {
+      console.log("no capability manager available");
+      this.setState({cm_available:false});
+    } else {
+      console.log("capability manager available");
+      this.setState({cm_available:true});
+    }
+  }
+
+  // START
+  searchCapability(event)
+  {
+    if (this.props.capabilitiesFuse)
+    {
+      var results = this.props.capabilitiesFuse.search(event.target.value);
+      this.setState({capabilities_results: results.slice(0,5)});
+    }
+    this.setState({name: event.target.value});
+
+    this.reconstructAndUpdateValue(event.target.value);
+  }
+
+  selectCapabilitySearchResult(result)
+  {
+    this.setState({name: result});
+    this.setState({capabilities_results: []});
+
+    this.reconstructAndUpdateValue(result);
+  }
+
+  reconstructAndUpdateValue(capability_type)
+  {
+    var reconstructed = {"py/object": "ros_ta.nodes.capability.CapabilityType", "capability_type": capability_type};
+    this.props.onNewValue(reconstructed);
+  }
+
+  renderCapabilitySearchResults(results)
+  {
+    if(results.length > 0)
+    {
+      var result_rows = results.map(x => {
+        return (
+          <div className="list-group-item search-result align-items-start" onClick={() => this.selectCapabilitySearchResult(x.name)}>
+            <div className="d-flex w-100 justify-content-between">
+              <span>{x.name}</span>
+              <i class="far fa-file-code" title={x.capability.path}></i>
+            </div>
+          </div>
+        );
+      });
+
+      return (
+        <div className="mb-2 search-results" ref={node => this.node = node}>
+          <div className="list-group">
+              {result_rows}
+          </div>
+        </div>
+      );
+    } else {
+      return null;
+    }
+  }
+
+  render()
+  {
+    return (
+      <div className="d-flex flex-column">
+        <input className="form-control-lg mb-2"
+              disabled={!this.state.cm_available}
+              type="text"
+              value={this.state.name}
+              onChange={this.searchCapability}/>
+        {this.renderCapabilitySearchResults(this.state.capabilities_results)}
+      </div>
+    );
+    }
+}
 class DropDown extends Component
 {
   constructor(props)
   {
     super(props);
+
     this.state = {
       json: props.json,
       logger_level: props.json.logger_level,

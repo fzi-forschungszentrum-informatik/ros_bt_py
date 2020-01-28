@@ -37,6 +37,7 @@ add_service_files(
   Continue.srv
   ControlTreeExecution.srv
   EvaluateUtility.srv
+  GenerateSubtree.srv
   GetAvailableNodes.srv
   GetAvailableSubtrees.srv
   GetMessageFields.srv
@@ -49,6 +50,7 @@ add_service_files(
   ModifyBreakpoints.srv
   MorphNode.srv
   MoveNode.srv
+  ReloadTree.srv
   RemoveNode.srv
   ReplaceNode.srv
   SaveTree.srv

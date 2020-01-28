@@ -20,7 +20,8 @@ from ros_bt_py_msgs.srv import WireNodeDataRequest, MoveNodeResponse, ReplaceNod
 from ros_bt_py_msgs.srv import WireNodeDataResponse, AddNodeResponse, AddNodeAtIndexResponse
 from ros_bt_py_msgs.srv import RemoveNodeResponse, ContinueResponse, AddNodeAtIndexRequest
 from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, ControlTreeExecutionResponse
-from ros_bt_py_msgs.srv import GetAvailableNodesResponse
+from ros_bt_py_msgs.srv import GetAvailableNodesResponse, ReloadTreeResponse
+from ros_bt_py_msgs.srv import GenerateSubtreeResponse
 from ros_bt_py_msgs.srv import GetSubtreeResponse
 from ros_bt_py_msgs.srv import SetExecutionModeResponse
 from ros_bt_py_msgs.srv import SetOptionsRequest, SetOptionsResponse
@@ -925,6 +926,19 @@ class TreeManager(object):
         return response
 
     @is_edit_service
+    def reload_tree(self, request):
+        """Reloads the currently loaded tree
+        """
+        load_response = self.load_tree(
+            request=LoadTreeRequest(tree=self.tree_msg))
+
+        response = ReloadTreeResponse()
+        response.success = load_response.success
+        response.error_message = load_response.error_message
+
+        return response
+
+    @is_edit_service
     def remove_node(self, request):
         """Remove the node identified by `request.node_name` from the tree.
 
@@ -1731,6 +1745,58 @@ class TreeManager(object):
                 error_message='Error retrieving subtree rooted at %s: %s' % (
                     request.subtree_root_name,
                     str(exc)))
+
+    def generate_subtree(self, request):
+        """Generates a subtree generated from the provided list of nodes and the loaded tree.
+        This also adds all relevant parents to the tree message, resulting in a tree that is
+        executable and does not contain any orpahned nodes.
+        """
+        response = GenerateSubtreeResponse()
+
+        whole_tree = deepcopy(self.tree_msg)
+
+        if whole_tree is None:
+            response.success = False
+            response.error_message = "No tree message available"
+        else:
+            nodes = set()
+            for node in whole_tree.nodes:
+                nodes.add(node.name)
+
+            nodes_to_keep = set()
+            nodes_to_remove = set()
+            for node in whole_tree.nodes:
+                for search_node in request.nodes:
+                    if node.name == search_node or search_node in node.child_names:
+                        nodes_to_keep.add(node.name)
+
+            for node in nodes:
+                if node not in nodes_to_keep:
+                    nodes_to_remove.add(node)
+
+            manager = TreeManager(
+                name="temporary_tree_manager",
+                publish_tree_callback=lambda *args: None,
+                publish_debug_info_callback=lambda *args: None,
+                publish_debug_settings_callback=lambda *args: None,
+                debug_manager=DebugManager())
+
+            load_response = manager.load_tree(
+                request=LoadTreeRequest(tree=whole_tree),
+                prefix="")
+
+            if load_response.success:
+                for node_name in nodes_to_remove:
+                    manager.remove_node(RemoveNodeRequest(node_name=node_name,
+                                                          remove_children=False))
+                root = manager.find_root()
+                if not root:
+                    rospy.loginfo('No nodes in tree')
+                else:
+                    manager.tree_msg.root_name = root.name
+                response.success = True
+                response.tree = manager.to_msg()
+        return response
 
     #########################
     # Service Handlers Done #
