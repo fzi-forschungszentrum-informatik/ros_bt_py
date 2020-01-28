@@ -39,12 +39,14 @@ class App extends Component
       error_history_sorting_asc: false,
       selected_edge: null,
       available_nodes: [],
+      available_capabilities: [],
       subtree_names: [],
       selected_node: null, // FIXME
       selected_node_names: [],
       copied_node: null,
       showDataGraph: true,
       dragging_node_list_item: null,
+      dragging_capability_list_item: null,
       last_tree_msg: null,
       // Can be 'nodelist' or 'editor'. The value decides whether the
       // "Add node" or "change node options" widget is shown.
@@ -144,6 +146,7 @@ class App extends Component
     this.onChangeErrorHistorySorting = this.onChangeErrorHistorySorting.bind(this);
     this.onNodeListSelectionChange = this.onNodeListSelectionChange.bind(this);
     this.onNodeListDragging = this.onNodeListDragging.bind(this);
+    this.onCapabilityDragging = this.onCapabilityDragging.bind(this);
     this.onChangeFileModal = this.onChangeFileModal.bind(this);
     this.check_dragging = this.check_dragging.bind(this);
     this.onNodeChanged = this.onNodeChanged.bind(this);
@@ -298,7 +301,7 @@ class App extends Component
     };
     this.capabilitiesFuse = new Fuse(this.capabilities, options);
 
-    this.setState({cm_available: true});
+    this.setState({cm_available: true, available_capabilities: this.capabilities});
   }
 
   changeSkin(skin)
@@ -646,6 +649,11 @@ class App extends Component
     this.setState({dragging_node_list_item: dragging});
   }
 
+  onCapabilityDragging(dragging)
+  {
+    this.setState({dragging_capability_list_item: dragging});
+  }
+
   onChangeFileModal(mode)
   {
     this.setState({show_file_modal: mode});
@@ -656,6 +664,10 @@ class App extends Component
     if (this.state.dragging_node_list_item)
     {
       this.setState({dragging_node_list_item: null});
+    }
+    if (this.state.dragging_capability_list_item)
+    {
+      this.setState({dragging_capability_list_item: null});
     }
   }
 
@@ -821,7 +833,7 @@ class App extends Component
     }
 
     var dragging_cursor = '';
-    if(this.state.dragging_node_list_item)
+    if(this.state.dragging_node_list_item || this.state.dragging_capability_list_item)
     {
       dragging_cursor = 'cursor-grabbing'
     }
@@ -857,11 +869,17 @@ class App extends Component
           <div className="row row-height">
             <div className="col scroll-col" id="nodelist_container">
               <NodeList key={this.state.bt_namespace}
+                        node_list_collapsed={this.state.cm_available}
                         availableNodes={this.state.available_nodes}
                         dragging_node_list_item={this.state.dragging_node_list_item}
                         getNodes={this.getNodes}
                         onSelectionChange={this.onNodeListSelectionChange}
                         onNodeListDragging={this.onNodeListDragging}/>
+              <CapabilityList key={this.state.cm_namespace}
+                              capability_list_collapsed={!this.state.cm_available}
+                              availableCapabilities={this.state.available_capabilities}
+                              dragging_capability_list_item={this.state.dragging_capability_list_item}
+                              onCapabilityDragging={this.onCapabilityDragging}/>
             </div>
             <div className="col-9 scroll-col" id="main_pane">
               <div className="container-fluid d-flex h-100 flex-column">
@@ -896,13 +914,15 @@ class App extends Component
                                           subtreeNames={this.state.subtree_names}
                                           publishing_subtrees={this.state.publishing_subtrees}
                                           dragging_node_list_item={this.state.dragging_node_list_item}
+                                          dragging_capability_list_item={this.state.dragging_capability_list_item}
                                           onSelectionChange={this.onEditorSelectionChange}
-                                          onMultipleSelectionChange={this.onMultipleSelectionChange} // FIXME: DO NOT COMMIT
-                                          selectedNodeNames={this.state.selected_node_names}         // FIXME: DO NOT COMMIT
+                                          onMultipleSelectionChange={this.onMultipleSelectionChange}
+                                          selectedNodeNames={this.state.selected_node_names}
                                           onSelectedEdgeChange={this.onSelectedEdgeChange}
                                           showDataGraph={this.state.showDataGraph}
                                           onSelectedTreeChange={this.onSelectedTreeChange}
                                           onNodeListDragging={this.onNodeListDragging}
+                                          onCapabilityDragging={this.onCapabilityDragging}
                                           onError={this.onError}
                                           skin={this.state.skin}/>
                   </div>

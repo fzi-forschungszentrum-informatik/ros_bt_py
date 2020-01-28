@@ -344,6 +344,7 @@ class NodeList extends Component
     this.state = {
       package_name: 'ros_bt_py.nodes.sequence',
       package_loader_collapsed: true,
+      node_list_collapsed: props.node_list_collapsed,
     };
 
     this.handleChange = this.handleChange.bind(this);
@@ -362,6 +363,11 @@ class NodeList extends Component
 
   toggleCollapsed(event) {
     this.setState({package_loader_collapsed: !this.state.package_loader_collapsed});
+    event.stopPropagation();
+  }
+
+  toggleNodeListCollapsed(event) {
+    this.setState({node_list_collapsed: !this.state.node_list_collapsed});
     event.stopPropagation();
   }
 
@@ -414,6 +420,7 @@ class NodeList extends Component
     });
 
     var collapsible_icon = "fas fa-angle-up";
+    var node_list_collapsible_icon = "fas fa-angle-up";
     var package_loader = null;
     if (this.state.package_loader_collapsed)
     {
@@ -439,6 +446,12 @@ class NodeList extends Component
       );
     }
 
+    if (this.state.node_list_collapsed)
+    {
+      node_list_collapsible_icon = "fas fa-angle-down";
+      items = null;
+    }
+
     return(
       <div className="available-nodes m-1">
         <div className="border rounded mb-2">
@@ -446,7 +459,159 @@ class NodeList extends Component
           {package_loader}
         </div>
         <div className="vertical_list">
-          {items}
+          <div className="border rounded mb-2">
+            <div onClick={this.toggleNodeListCollapsed.bind(this)} className="text-center cursor-pointer font-weight-bold m-2">Node List <i class={node_list_collapsible_icon}></i></div>
+            {items}
+          </div>
+        </div>
+      </div>
+    );
+  }
+}
+
+
+class CapabilityListItem extends Component {
+  constructor(props)
+  {
+    super(props);
+    this.state = {
+      collapsed: this.props.collapsed,
+    };
+  }
+
+  onClick(e, node) {
+    //this.props.onSelectionChange(this.props.node);
+  }
+
+  onMouseDown(e, node) {
+    this.props.onDragging(this.props.capability);
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  onMouseUp(e, node) {
+    this.props.onDragging(null);
+  }
+
+  toggleCollapsed(event) {
+    this.setState({collapsed: !this.state.collapsed});
+    event.stopPropagation();
+  }
+
+  render() {
+    var collapsible_icon = "cursor-pointer fas fa-angle-up";
+    if (this.state.collapsed)
+    {
+      collapsible_icon = "cursor-pointer fas fa-angle-down";
+    }
+
+    var border = "border rounded p-2 mb-2";
+    if (this.props.highlighted)
+    {
+      border = "border rounded border-primary p-2 mb-2";
+    }
+    return (
+      <div className={border}
+           onClick={this.onClick.bind(this)}
+           onMouseDown={this.onMouseDown.bind(this)}
+           onMouseUp={this.onMouseUp.bind(this)}>
+        <div className="d-flex justify-content-between">
+          <div className="d-flex minw0">
+            <h4 title={this.props.capability.name} className="node_class text-truncate">{this.props.capability.name}</h4>
+            <i title={this.props.capability.description} class="fas fa-question-circle pl-2 pr-2"></i>
+          </div>
+          <div className="d-flex minw0">
+            <i onClick={this.toggleCollapsed.bind(this)} class={collapsible_icon}></i>
+          </div>
+        </div>
+        <h5 title={this.props.capability.target} className="node_module text-truncate text-muted">Target: {this.props.capability.target}</h5>
+      </div>
+    );
+  };
+}
+
+
+class CapabilityList extends Component {
+  constructor(props)
+  {
+    super(props);
+    this.state = {
+      capability_list_collapsed: props.capability_list_collapsed,
+    };
+  }
+
+  componentDidMount()
+  {
+    //get caps? this.props.getNodes('');
+  }
+
+  toggleCapabilityListCollapsed(event) {
+    this.setState({capability_list_collapsed: !this.state.capability_list_collapsed});
+    event.stopPropagation();
+  }
+
+  render()
+  {
+    var byName = function(a, b) {
+      if (a.name < b.name)
+      {
+        return -1;
+      }
+      else if (a.name > b.name)
+      {
+        return 1;
+      }
+
+      return 0;
+    };
+
+    var moduleThenName = function(a, b) {
+      if (a.module < b.module)
+      {
+        return -1;
+      }
+      else if (a.module > b.module)
+      {
+        return 1;
+      }
+
+      return byName(a, b);
+    };
+
+    var items = this.props.availableCapabilities
+        .sort(byName)
+//        .sort(moduleThenName)
+        .map( (capability) => {
+          var highlighted = false;
+          if (this.props.dragging_capability_list_item
+              && this.props.dragging_capability_list_item.name === capability.name
+              && this.props.dragging_capability_list_item.capability.path === capability.capability.path)
+          {
+            highlighted = true;
+          }
+          return (<CapabilityListItem capability={capability}
+                           key={capability.name + capability.capability.path}
+                           collapsed={true}
+                           highlighted={highlighted}
+                           onSelectionChange={this.props.onSelectionChange}
+                           onDragging={this.props.onCapabilityDragging}
+                           />);
+    });
+
+    var capability_list_collapsible_icon = "fas fa-angle-up";
+    if (this.state.capability_list_collapsed)
+    {
+      capability_list_collapsible_icon = "fas fa-angle-down";
+      items = null;
+    }
+
+    return(
+      <div className="available-nodes m-1">
+        <div className="vertical_list">
+          <div className="border rounded mb-2">
+            <div onClick={this.toggleCapabilityListCollapsed.bind(this)} className="text-center cursor-pointer font-weight-bold m-2">Capability List <i class={capability_list_collapsible_icon}></i></div>
+            {items}
+          </div>
         </div>
       </div>
     );
@@ -1276,13 +1441,25 @@ class D3BehaviorTreeEditor extends Component
     // SVG MOUSEUP FOR NODE DRAG/DROP
     var svg_viewport = d3.select(this.svg_ref.current);
     svg_viewport.on("mouseup", () => {
+      var new_node = null;
+      var msg = null;
       if (this.props.dragging_node_list_item)
       {
-        var new_node = new NewNode({node : this.props.dragging_node_list_item});
-        var msg = new_node.buildNodeMessage();
+        new_node = new NewNode({node : this.props.dragging_node_list_item});
+        msg = new_node.buildNodeMessage();
 
         this.props.onNodeListDragging(null);
+      }
+      if (this.props.dragging_capability_list_item)
+      {
+        new_node = new MultipleSelection({selectedNodeNames : [this.props.dragging_capability_list_item.name]});
 
+        msg = new_node.buildNodeMessage();
+        this.props.onCapabilityDragging(null);
+      }
+
+      if (msg)
+      {
         var parent_name = '';
         var position = -1;
         if(this.nodeDropTarget && this.nodeDropTarget.data)
@@ -1524,7 +1701,7 @@ class D3BehaviorTreeEditor extends Component
 
     }
 
-    if (this.props.dragging_node_list_item)
+    if (this.props.dragging_node_list_item || this.props.dragging_capability_list_item)
     {
       // show drop targets
       var svg = d3.select(this.svg_ref.current);
