@@ -524,7 +524,7 @@ class CapabilityListItem extends Component {
             <i onClick={this.toggleCollapsed.bind(this)} class={collapsible_icon}></i>
           </div>
         </div>
-        <h5 title={this.props.capability.target} className="node_module text-truncate text-muted">Target: {this.props.capability.target}</h5>
+        <h5 title={this.props.capability.target} className="node_module text-truncate text-muted">Target: {this.props.capability.capability.target}</h5>
       </div>
     );
   };
@@ -4289,17 +4289,22 @@ class MultipleSelection extends Component
 
                 // now add it to the tree
                 var msg = this.buildNodeMessage();
-                console.log("aha...", msg)
-                this.add_node_service.callService(
-                  new ROSLIB.ServiceRequest({
-                    parent_name: coordinator.root_name,
-                    node: msg,
-                    allow_rename: true
-                  }),
-                  function(response) {
-                    if (response.success) {
-                      if (window.confirm("Do you want to replace the selected node with the newly created capability?"))
-                      {
+
+                if (window.confirm("Do you want to replace the selected node with the newly created capability?"))
+                {
+                  var parent_name = '';
+                  if (remove_nodes.indexOf(coordinator.root_name) < 0) {
+                    parent_name = coordinator.root_name;
+                  }
+
+                  this.add_node_service.callService(
+                    new ROSLIB.ServiceRequest({
+                      parent_name: parent_name,
+                      node: msg,
+                      allow_rename: true
+                    }),
+                    function(response) {
+                      if (response.success) {
                         this.props.onSelectionChange(null);
                         this.props.onSelectedEdgeChange(null);
                         console.log('Added node to tree as ' + response.actual_node_name);
@@ -4307,7 +4312,7 @@ class MultipleSelection extends Component
                         // now move it into position
                         var insertion_index = -1;
                         for (var i = 0; i < this.props.tree_message.nodes.length; i++) {
-                          if (this.props.tree_message.nodes[i].name == coordinator.root_name) {
+                          if (this.props.tree_message.nodes[i].name == parent_name) {
                             for (var j = 0; j < this.props.tree_message.nodes[i].child_names.length; j++) {
                               for (var k = 0; k < this.props.selectedNodeNames.length; k++) {
                                 if (this.props.selectedNodeNames[k] == this.props.tree_message.nodes[i].child_names[j])
@@ -4322,7 +4327,7 @@ class MultipleSelection extends Component
                         this.move_node_service.callService(
                           new ROSLIB.ServiceRequest({
                             node_name: actual_node_name,
-                            new_parent_name: coordinator.root_name,
+                            new_parent_name: parent_name,
                             new_child_index: insertion_index
                           }),
                           function(response) {
@@ -4422,6 +4427,26 @@ class MultipleSelection extends Component
                                       }.bind(this));
                                   } else {
                                     console.log("Failed to add new wirings: " + response.error_message);
+                                    if (wirings_to_add.length === 0 && parent_name === '')
+                                    {
+                                      console.log('the new node is the root, so remove the old nodes anyway:', remove_nodes);
+                                      // finally remove the nodes
+                                      for (var i = 0; i < remove_nodes.length; i++) { 
+                                        this.remove_node_service.callService(
+                                          new ROSLIB.ServiceRequest({
+                                            node_name: remove_nodes[i],
+                                            remove_children: false, // children are not automatically part of a capability atm, so we should not remove all
+                                          }),
+                                          function(response) {
+                                            if (response.success) {
+                                              console.log('Removed node from tree');
+                                            }
+                                            else {
+                                              console.log('Failed to remove node ' + response.error_message);
+                                            }
+                                        }.bind(this));
+                                      }
+                                    }
                                   }
                                 }.bind(this));
                             }
@@ -4430,12 +4455,12 @@ class MultipleSelection extends Component
                             }
                         }.bind(this));
                       }
-                    }
-                    else {
-                      console.log('Failed to add node ' + this.state.name + ': '
-                                  + response.error_message);
-                    }
-                  }.bind(this));
+                      else {
+                        console.log('Failed to add node ' + this.state.name + ': '
+                                    + response.error_message);
+                      }
+                    }.bind(this));
+                  }
               }
               else {
                 this.props.onError('Failed to save capability '
