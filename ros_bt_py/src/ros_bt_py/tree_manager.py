@@ -1755,47 +1755,43 @@ class TreeManager(object):
 
         whole_tree = deepcopy(self.tree_msg)
 
-        if whole_tree is None:
-            response.success = False
-            response.error_message = "No tree message available"
-        else:
-            nodes = set()
-            for node in whole_tree.nodes:
-                nodes.add(node.name)
+        nodes = set()
+        for node in whole_tree.nodes:
+            nodes.add(node.name)
 
-            nodes_to_keep = set()
-            nodes_to_remove = set()
-            for node in whole_tree.nodes:
-                for search_node in request.nodes:
-                    if node.name == search_node or search_node in node.child_names:
-                        nodes_to_keep.add(node.name)
+        nodes_to_keep = set()
+        nodes_to_remove = set()
+        for node in whole_tree.nodes:
+            for search_node in request.nodes:
+                if node.name == search_node or search_node in node.child_names:
+                    nodes_to_keep.add(node.name)
 
-            for node in nodes:
-                if node not in nodes_to_keep:
-                    nodes_to_remove.add(node)
+        for node in nodes:
+            if node not in nodes_to_keep:
+                nodes_to_remove.add(node)
 
-            manager = TreeManager(
-                name="temporary_tree_manager",
-                publish_tree_callback=lambda *args: None,
-                publish_debug_info_callback=lambda *args: None,
-                publish_debug_settings_callback=lambda *args: None,
-                debug_manager=DebugManager())
+        manager = TreeManager(
+            name="temporary_tree_manager",
+            publish_tree_callback=lambda *args: None,
+            publish_debug_info_callback=lambda *args: None,
+            publish_debug_settings_callback=lambda *args: None,
+            debug_manager=DebugManager())
 
-            load_response = manager.load_tree(
-                request=LoadTreeRequest(tree=whole_tree),
-                prefix="")
+        load_response = manager.load_tree(
+            request=LoadTreeRequest(tree=whole_tree),
+            prefix="")
 
-            if load_response.success:
-                for node_name in nodes_to_remove:
-                    manager.remove_node(RemoveNodeRequest(node_name=node_name,
-                                                          remove_children=False))
-                root = manager.find_root()
-                if not root:
-                    rospy.loginfo('No nodes in tree')
-                else:
-                    manager.tree_msg.root_name = root.name
-                response.success = True
-                response.tree = manager.to_msg()
+        if load_response.success:
+            for node_name in nodes_to_remove:
+                manager.remove_node(RemoveNodeRequest(node_name=node_name,
+                                                        remove_children=False))
+            root = manager.find_root()
+            if not root:
+                rospy.loginfo('No nodes in tree')
+            else:
+                manager.tree_msg.root_name = root.name
+            response.success = True
+            response.tree = manager.to_msg()
         return response
 
     #########################

@@ -12,7 +12,7 @@ from ros_bt_py_msgs.srv import (WireNodeDataRequest, AddNodeRequest, RemoveNodeR
                                 LoadTreeRequest, MoveNodeRequest, ReplaceNodeRequest,
                                 MorphNodeRequest, ClearTreeRequest, LoadTreeFromPathRequest,
                                 SetExecutionModeResponse, ModifyBreakpointsRequest,
-                                GetSubtreeRequest)
+                                GetSubtreeRequest, GenerateSubtreeRequest)
 
 from ros_bt_py.node import Node, Leaf, FlowControl, define_bt_node
 from ros_bt_py.node_config import NodeConfig
@@ -147,6 +147,46 @@ class TestTreeManager(unittest.TestCase):
                    'error_message': 'error'}
         self.assertFalse(tm_get_success(message))
         self.assertEqual(tm_get_error_message(message), 'error')
+
+    def testGenerateSubtreeService(self):
+        generate_request = GenerateSubtreeRequest()
+
+        generate_response = self.manager.generate_subtree(generate_request)
+
+        self.assertFalse(get_success(generate_response))
+
+        add_request = AddNodeRequest(node=self.sequence_msg,
+                                     allow_rename=True)
+
+        response = self.manager.add_node(add_request)
+
+        self.assertEqual(len(self.manager.nodes), 1)
+        self.assertTrue(get_success(response))
+
+        add_request = AddNodeRequest(node=self.sequence_msg,
+                                     allow_rename=True,
+                                     parent_name=response.actual_node_name)
+        response = self.manager.add_node(add_request)
+
+        self.assertEqual(len(self.manager.nodes), 2)
+        self.assertTrue(get_success(response))
+
+        seq_2_name = response.actual_node_name
+
+        add_request = AddNodeRequest(node=self.succeeder_msg,
+                                     allow_rename=True,
+                                     parent_name=seq_2_name)
+        response = self.manager.add_node(add_request)
+
+        self.assertEqual(len(self.manager.nodes), 3)
+        self.assertTrue(get_success(response))
+
+        generate_request = GenerateSubtreeRequest()
+        generate_request.nodes = [response.actual_node_name]
+
+        generate_response = self.manager.generate_subtree(generate_request)
+
+        self.assertTrue(get_success(generate_response))
 
     def testGetSubtreeService(self):
         add_request = AddNodeRequest(node=self.sequence_msg,
