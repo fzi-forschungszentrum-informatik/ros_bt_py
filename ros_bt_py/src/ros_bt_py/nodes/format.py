@@ -4,7 +4,7 @@ from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig
 
 from string import Formatter
-
+import os
 
 class ExtendedFormatter(Formatter):
     """An extended format string formatter
@@ -228,4 +228,34 @@ class FormatInputListNode(Leaf):
     def _do_reset(self):
         self.outputs['formatted_strings'] = None
         self.outputs.reset_updated()
+        return NodeMsg.IDLE
+
+
+@define_bt_node(NodeConfig(
+    version='0.9.0',
+    options={},
+    inputs={'path': str},
+    outputs={'filename': str,
+             'extension': str},
+    max_children=0))
+class GetFileExtension(Leaf):
+    """Return filename and extension of the provided path
+    """
+    def _do_setup(self):
+        return NodeMsg.IDLE
+
+    def _do_tick(self):
+        if self.inputs.is_updated('path'):
+            filename, extension = os.path.splitext(self.inputs['path'])
+            self.outputs['extension'] = extension
+            self.outputs['filename'] = filename
+        return NodeMsg.SUCCEEDED
+
+    def _do_untick(self):
+        return NodeMsg.IDLE
+
+    def _do_shutdown(self):
+        pass
+
+    def _do_reset(self):
         return NodeMsg.IDLE

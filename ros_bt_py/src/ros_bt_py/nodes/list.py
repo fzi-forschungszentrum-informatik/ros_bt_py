@@ -29,6 +29,61 @@ class ListLength(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    options={'element_type': type,
+             'index': int},
+    inputs={'list': list},
+    outputs={'element': OptionRef('element_type')},
+    max_children=0))
+class GetListElementOption(Leaf):
+    """Return element at given index in the list"""
+    def _do_setup(self):
+        pass
+
+    def _do_tick(self):
+        self.outputs['element'] = self.inputs['list'][self.options['index']]
+        return NodeMsg.SUCCEEDED
+
+    def _do_shutdown(self):
+        pass
+
+    def _do_reset(self):
+        return NodeMsg.IDLE
+
+    def _do_untick(self):
+        return NodeMsg.IDLE
+
+
+@define_bt_node(NodeConfig(
+    options={'element_type': type,
+             'index': int
+    },
+    inputs={'list': list,
+            'element': OptionRef('element_type')
+    },
+    outputs={'list': list},
+    max_children=0))
+class InsertInList(Leaf):
+    """Return a new list with the inserted element"""
+    def _do_setup(self):
+        pass
+
+    def _do_tick(self):
+        if self.inputs.is_updated('list') or self.inputs.is_updated('element'):
+            self.outputs['list'] = list(self.inputs['list'])
+            self.outputs['list'].insert(self.options['index'], self.inputs['element'])
+        return NodeMsg.SUCCEEDED
+
+    def _do_shutdown(self):
+        pass
+
+    def _do_reset(self):
+        return NodeMsg.IDLE
+
+    def _do_untick(self):
+        return NodeMsg.IDLE
+
+
+@define_bt_node(NodeConfig(
     options={'compare_type': type,
              'list': list},
     inputs={
