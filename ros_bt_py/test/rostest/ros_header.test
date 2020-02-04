@@ -1,0 +1,5 @@
+<launch>
+  <test test-name="test_ros_header"
+        pkg="ros_bt_py"
+        type="test_ros_header.py" />
+</launch>
