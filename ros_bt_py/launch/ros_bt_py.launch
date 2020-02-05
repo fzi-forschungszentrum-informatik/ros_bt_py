@@ -61,6 +61,7 @@
       ros_bt_py.nodes.io,
       ros_bt_py.nodes.wait,
       ros_bt_py.nodes.format,
+      ros_bt_py.nodes.list,
       ros_bt_py.nodes.log,
       ros_bt_py.nodes.constant,
       ros_bt_py.nodes.file,
