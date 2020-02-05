@@ -907,6 +907,12 @@ class LoadSaveControls extends Component
       name: this.props.bt_namespace + 'save_tree',
       serviceType: 'ros_bt_py_msgs/SaveTree'
     });   
+
+    this.control_tree_execution_service = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'control_tree_execution',
+      serviceType: 'ros_bt_py_msgs/ControlTreeExecution'
+    });
   }
 
   openFileDialog()
@@ -979,8 +985,27 @@ class LoadSaveControls extends Component
 
   saveTree()
   {
-    var msg = jsyaml.safeDump(this.props.tree_message);
-    this.downloadURI('data:text/plain,'+encodeURIComponent(msg), "tree.yaml");
+    this.control_tree_execution_service.callService(
+      new ROSLIB.ServiceRequest({
+        // TICK_ONCE = 1
+        // TICK_PERIODICALLY = 2
+        // TICK_UNTIL_RESULT = 3
+        // STOP = 4
+        // RESET = 5
+        // SHUTDOWN = 6
+        // SETUP_AND_SHUTDOWN = 7
+        command: 5
+      }),
+      function(response) {
+        if (response.success) {
+          console.log('called ControlTreeExecution service successfully');
+        }
+        else {
+          this.props.onError('Could not reset tree before saving, the tree might be filled with old "output" values. ' + response.error_message);
+        }
+        var msg = jsyaml.safeDump(this.props.tree_message);
+        this.downloadURI('data:text/plain,'+encodeURIComponent(msg), "tree.yaml");
+      }.bind(this));
   }
 
   loadFromPackage(event)
@@ -990,7 +1015,26 @@ class LoadSaveControls extends Component
 
   saveToPackage(event)
   {
-    this.props.onChangeFileModal('save');
+    this.control_tree_execution_service.callService(
+      new ROSLIB.ServiceRequest({
+        // TICK_ONCE = 1
+        // TICK_PERIODICALLY = 2
+        // TICK_UNTIL_RESULT = 3
+        // STOP = 4
+        // RESET = 5
+        // SHUTDOWN = 6
+        // SETUP_AND_SHUTDOWN = 7
+        command: 5
+      }),
+      function(response) {
+        if (response.success) {
+          console.log('called ControlTreeExecution service successfully');
+        }
+        else {
+          this.props.onError('Could not reset tree before saving, the tree might be filled with old "output" values. ' + response.error_message);
+        }
+        this.props.onChangeFileModal('save');
+      }.bind(this));
   }
 
   render()
