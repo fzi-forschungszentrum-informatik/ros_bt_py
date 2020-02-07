@@ -3001,7 +3001,7 @@ class D3BehaviorTreeEditor extends Component
   {
     if (d.data.module === "ros_bt_py.nodes.subtree" && d.data.node_class === "Subtree")
     {
-      var selected_subtree = this.props.subtreeNames.filter((subtree) => subtree.startsWith(d.data.name+"."));
+      var selected_subtree = this.props.subtreeNames.filter((subtree) => subtree === d.data.name);
       if (selected_subtree.length == 1)
       {
         this.props.onSelectedTreeChange(
