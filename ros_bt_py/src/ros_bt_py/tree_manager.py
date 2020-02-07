@@ -1804,7 +1804,7 @@ class TreeManager(object):
 
     def instantiate_node_from_msg(self, node_msg, allow_rename):
         try:
-            node_instance = Node.from_msg(node_msg)
+            node_instance = Node.from_msg(node_msg, debug_manager=self.debug_manager)
         except TypeError as exc:
             raise BehaviorTreeException(str(exc))
 
@@ -1814,9 +1814,6 @@ class TreeManager(object):
             else:
                 raise BehaviorTreeException('Node with name "%s" exists already'
                                             % node_instance.name)
-
-        # Set DebugManager
-        node_instance.debug_manager = self.debug_manager
 
         self.nodes[node_instance.name] = node_instance
 
