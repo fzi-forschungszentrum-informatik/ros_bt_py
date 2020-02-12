@@ -5,6 +5,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={},
     inputs={'list': list},
     outputs={'length': int},
@@ -29,6 +30,7 @@ class ListLength(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'element_type': type,
              'index': int},
     inputs={'list': list},
@@ -54,6 +56,7 @@ class GetListElementOption(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'element_type': type,
              'index': int
     },
@@ -84,6 +87,7 @@ class InsertInList(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'compare_type': type,
              'list': list},
     inputs={
@@ -126,9 +130,12 @@ class IsInList(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'item_type': type},
     inputs={'list': list},
-    outputs={'list_item': OptionRef('item_type')},
+    outputs={'list_item': OptionRef('item_type'),
+             'done': bool
+    },
     max_children=1))
 class IterateList(Decorator):
     """
@@ -161,9 +168,11 @@ class IterateList(Decorator):
                     if result != NodeMsg.RUNNING:
                         # we only increment the counter when the child succeeded or failed
                         self.counter += 1
+            self.outputs['done'] = False
             return NodeMsg.RUNNING
         else:
             self.reset_counter()
+            self.outputs['done'] = True
             return NodeMsg.SUCCEEDED
 
     def _do_untick(self):
