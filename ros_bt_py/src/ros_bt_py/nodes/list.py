@@ -130,7 +130,7 @@ class IsInList(Leaf):
 
 
 @define_bt_node(NodeConfig(
-    version='0.9.0',
+    version='0.9.1',
     options={'item_type': type},
     inputs={'list': list},
     outputs={'list_item': OptionRef('item_type'),
@@ -150,6 +150,7 @@ class IterateList(Decorator):
         return NodeMsg.IDLE
 
     def reset_counter(self):
+        self.output_changed = True
         self.counter = 0
 
     def _do_tick(self):
@@ -163,11 +164,16 @@ class IterateList(Decorator):
             if len(self.children) == 0:
                 self.counter += 1
             else:
+                if self.output_changed:
+                    # let one tick go for the tree to digest our new output before childs are ticked
+                    self.output_changed = False
+                    return NodeMsg.RUNNING
                 for child in self.children:
                     result = child.tick()
                     if result != NodeMsg.RUNNING:
                         # we only increment the counter when the child succeeded or failed
                         self.counter += 1
+                        self.output_changed = True
             self.outputs['done'] = False
             return NodeMsg.RUNNING
         else:
