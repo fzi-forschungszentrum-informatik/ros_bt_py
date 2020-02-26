@@ -9,6 +9,7 @@ from ros_bt_py.node_config import NodeConfig
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={
         'parent_frame': str,
         'child_frame': str},
@@ -49,6 +50,7 @@ class LookupTFConst(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={},
     inputs={'parent_frame': str,
             'child_frame': str},
