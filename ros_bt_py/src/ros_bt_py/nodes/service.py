@@ -230,7 +230,8 @@ class ServiceInput(Leaf):
         return NodeMsg.IDLE
 
     def _do_shutdown(self):
-        self._service_proxy.shutdown()
+        if self._service_proxy is not None:
+            self._service_proxy.shutdown()
 
     def _do_calculate_utility(self):
         resolved_service = rospy.resolve_name(self.options['service_name'])
