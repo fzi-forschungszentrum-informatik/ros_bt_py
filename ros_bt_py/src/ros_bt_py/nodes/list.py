@@ -133,8 +133,7 @@ class IsInList(Leaf):
     version='0.9.1',
     options={'item_type': type},
     inputs={'list': list},
-    outputs={'list_item': OptionRef('item_type'),
-             'done': bool
+    outputs={'list_item': OptionRef('item_type')
     },
     max_children=1))
 class IterateList(Decorator):
@@ -174,11 +173,9 @@ class IterateList(Decorator):
                         # we only increment the counter when the child succeeded or failed
                         self.counter += 1
                         self.output_changed = True
-            self.outputs['done'] = False
             return NodeMsg.RUNNING
         else:
             self.reset_counter()
-            self.outputs['done'] = True
             return NodeMsg.SUCCEEDED
 
     def _do_untick(self):
