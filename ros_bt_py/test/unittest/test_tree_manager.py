@@ -1987,18 +1987,20 @@ class TestTreeManager(unittest.TestCase):
             command=ControlTreeExecutionRequest.TICK_ONCE))))
 
     def testLoadPermissive(self):
-        load_request = LoadTreeRequest(tree=Tree(
-            name='permissive_load',
-            path='package://ros_bt_py/test/testdata/trees/permissive_changed_msg.yaml'),
-                                       permissive=False)
+        load_request = LoadTreeRequest(
+            tree=Tree(
+                name='permissive_load',
+                path='package://ros_bt_py/test/testdata/trees/permissive_changed_msg.yaml'),
+            permissive=False)
         response = self.manager.load_tree(load_request)
 
         self.assertFalse(get_success(response), get_error_message(response))
 
-        load_request = LoadTreeRequest(tree=Tree(
-            name='permissive_load',
-            path='package://ros_bt_py/test/testdata/trees/permissive_changed_msg.yaml'),
-                                       permissive=True)
+        load_request = LoadTreeRequest(
+            tree=Tree(
+                name='permissive_load',
+                path='package://ros_bt_py/test/testdata/trees/permissive_changed_msg.yaml'),
+            permissive=True)
         response = self.manager.load_tree(load_request)
 
         self.assertTrue(get_success(response), get_error_message(response))
