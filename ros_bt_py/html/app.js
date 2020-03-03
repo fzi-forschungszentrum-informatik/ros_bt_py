@@ -65,6 +65,7 @@ class App extends Component
       last_selected_package: '',
       show_file_modal: null,
       cm_available: false,
+      current_time: null,
     };
 
     ros.on("connection", function(e) {
@@ -98,11 +99,19 @@ class App extends Component
       messageType: 'ros_bt_py_msgs/Messages'
     });
 
-    this.get_nodes_service = new ROSLIB.Service({
-      ros: this.state.ros,
-      name: this.state.bt_namespace + 'get_available_nodes',
-      serviceType: 'ros_bt_py_msgs/GetAvailableNodes'
-    });
+    this.get_nodes_service = null;
+
+    this.state.ros.getServices(function(result) {
+      if (result.includes(this.state.bt_namespace + 'get_available_nodes'))
+      {
+        this.get_nodes_service = new ROSLIB.Service({
+          ros: this.state.ros,
+          name: this.state.bt_namespace + 'get_available_nodes',
+          serviceType: 'ros_bt_py_msgs/GetAvailableNodes'
+        });
+        this.setState({current_time: Date.now()});
+      }
+    }.bind(this));
 
     this.add_node_service = new ROSLIB.Service({
       ros: this.state.ros,
@@ -122,17 +131,25 @@ class App extends Component
       serviceType: 'ros_bt_py_msgs/SetExecutionMode'
     });
 
-    // topics needed for capability functionality
+    // topic needed for capability functionality
+    this.capabilities_topic = null;
+
+    this.state.ros.getTopics(function(result) {
+      if (result.topics.includes(this.state.cm_namespace + 'capabilities'))
+      {
+        this.capabilities_topic = new ROSLIB.Topic({
+          ros : this.state.ros,
+          name : this.state.cm_namespace + 'capabilities',
+          messageType : 'ros_ta_msgs/Capabilities'
+        });
+        this.capabilities_topic.subscribe(this.onCapabilitiesUpdate);
+      }
+    }.bind(this));
+
     this.packages_topic = new ROSLIB.Topic({
       ros : this.state.ros,
       name : this.state.bt_namespace + 'packages',
       messageType : 'ros_bt_py_msgs/Packages'
-    });
-
-    this.capabilities_topic = new ROSLIB.Topic({
-      ros : this.state.ros,
-      name : this.state.cm_namespace + 'capabilities',
-      messageType : 'ros_ta_msgs/Capabilities'
     });
 
     this.lastTreeUpdate = null;
@@ -401,7 +418,10 @@ class App extends Component
       this.debug_topic.unsubscribe(this.onDebugUpdate);
       this.messages_topic.unsubscribe(this.onMessagesUpdate);
       this.packages_topic.unsubscribe(this.onPackagesUpdate);
-      this.capabilities_topic.unsubscribe(this.onCapabilitiesUpdate);
+      if (this.capabilities_topic !== null)
+      {
+        this.capabilities_topic.unsubscribe(this.onCapabilitiesUpdate);
+      }
 
       this.tree_topic = new ROSLIB.Topic({
         ros : this.state.ros,
@@ -427,25 +447,41 @@ class App extends Component
         messageType : 'ros_bt_py_msgs/Packages'
       });
 
-      this.capabilities_topic = new ROSLIB.Topic({
-        ros : this.state.ros,
-        name : this.state.cm_namespace + 'capabilities',
-        messageType : 'ros_ta_msgs/Capabilities'
-      });
+      // topic needed for capability functionality
+      this.capabilities_topic = null;
+
+      this.state.ros.getTopics(function(result) {
+        if (result.topics.includes(this.state.cm_namespace + 'capabilities'))
+        {
+          this.capabilities_topic = new ROSLIB.Topic({
+            ros : this.state.ros,
+            name : this.state.cm_namespace + 'capabilities',
+            messageType : 'ros_ta_msgs/Capabilities'
+          });
+          this.capabilities_topic.subscribe(this.onCapabilitiesUpdate);
+        }
+      }.bind(this));
 
       // Subscribe again
       this.tree_topic.subscribe(this.onTreeUpdate);
       this.debug_topic.subscribe(this.onDebugUpdate);
       this.messages_topic.subscribe(this.onMessagesUpdate);
       this.packages_topic.subscribe(this.onPackagesUpdate);
-      this.capabilities_topic.subscribe(this.onCapabilitiesUpdate);
 
       // Update GetAvailableNodes Service
-      this.get_nodes_service = new ROSLIB.Service({
-        ros: this.state.ros,
-        name: namespace + 'get_available_nodes',
-        serviceType: 'ros_bt_py_msgs/GetAvailableNodes'
-      });
+      this.get_nodes_service = null;
+
+      this.state.ros.getServices(function(result) {
+        if (result.includes(namespace + 'get_available_nodes'))
+        {
+          this.get_nodes_service = new ROSLIB.Service({
+            ros: this.state.ros,
+            name: namespace + 'get_available_nodes',
+            serviceType: 'ros_bt_py_msgs/GetAvailableNodes'
+          });
+          this.setState({current_time: Date.now()});
+        }
+      }.bind(this));
 
       this.add_node_service = new ROSLIB.Service({
         ros: this.state.ros,
@@ -492,18 +528,21 @@ class App extends Component
 
   getNodes(package_name)
   {
-    this.get_nodes_service.callService(
-      new ROSLIB.ServiceRequest({
-        node_modules: [package_name]
-      }),
-      function(response) {
-        if (response.success) {
-          this.setState({available_nodes: response.available_nodes});
-        }
-        else {
-          this.onError('Failed to get list of nodes: ' + response.error_message);
-        }
-      }.bind(this));
+    if (this.get_nodes_service !== null)
+    {
+      this.get_nodes_service.callService(
+        new ROSLIB.ServiceRequest({
+          node_modules: [package_name]
+        }),
+        function(response) {
+          if (response.success) {
+            this.setState({available_nodes: response.available_nodes});
+          }
+          else {
+            this.onError('Failed to get list of nodes: ' + response.error_message);
+          }
+        }.bind(this));
+    }
   }
 
   componentDidMount()
@@ -512,7 +551,6 @@ class App extends Component
     this.debug_topic.subscribe(this.onDebugUpdate);
     this.messages_topic.subscribe(this.onMessagesUpdate);
     this.packages_topic.subscribe(this.onPackagesUpdate);
-    this.capabilities_topic.subscribe(this.onCapabilitiesUpdate);
 
     document.body.addEventListener("keydown",function(e){
       if ( this.state.show_file_modal && e.keyCode == 27) // 27 = ESC
@@ -600,7 +638,10 @@ class App extends Component
     this.debug_topic.unsubscribe(this.onDebugUpdate);
     this.messages_topic.unsubscribe(this.onMessagesUpdate);
     this.packages_topic.unsubscribe(this.onPackagesUpdate);
-    this.capabilities_topic.unsubscribe(this.onCapabilitiesUpdate);
+    if (this.capabilities_topic !== null)
+    {
+      this.capabilities_topic.unsubscribe(this.onCapabilitiesUpdate);
+    }
   }
 
   onError(error_message)
@@ -868,8 +909,7 @@ class App extends Component
         <div className="container-fluid">
           <div className="row row-height">
             <div className="col scroll-col" id="nodelist_container">
-              <NodeList key={this.state.bt_namespace}
-                        node_list_collapsed={this.state.cm_available}
+              <NodeList key={this.state.bt_namespace + this.state.current_time}
                         availableNodes={this.state.available_nodes}
                         dragging_node_list_item={this.state.dragging_node_list_item}
                         getNodes={this.getNodes}

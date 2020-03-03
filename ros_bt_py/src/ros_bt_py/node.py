@@ -175,6 +175,7 @@ class Node(object):
 
     node_classes = {}
     _node_config = None
+    permissive = False
 
     def __init__(self, options=None, debug_manager=None, name=None):
         """Prepare class members
@@ -224,7 +225,8 @@ class Node(object):
         self.options = NodeDataMap(name='options')
         self._register_node_data(source_map=self.node_config.options,
                                  target_map=self.options,
-                                 values=options)
+                                 values=options,
+                                 permissive=self.permissive)
 
         # Warn about unset options, ignore missing optional_options
         unset_option_keys = [key for key in self.options
@@ -661,7 +663,7 @@ class Node(object):
         tmp.parent = None
         return tmp
 
-    def _register_node_data(self, source_map, target_map, values=None):
+    def _register_node_data(self, source_map, target_map, values=None, permissive=False):
         """Register a number of typed :class:`NodeData` in the given map
 
         Note that when using :class:`OptionRef`, the option keys
@@ -692,7 +694,24 @@ class Node(object):
                 raise NodeConfigError('Duplicate data name: %s' % key)
             target_map.add(key, NodeData(data_type=data_type))
             if values is not None and key in values:
-                target_map[key] = values[key]
+                try:
+                    target_map[key] = values[key]
+                except TypeError as e:
+                    if permissive:
+                        if data_type == type:
+                            target_map[key] = int
+                            # if data_type is a type check if a option wiring exists
+                            for option_wiring in self.node_config.option_wirings:
+                                if option_wiring['source'] == key:
+                                    # overwrite values and target_map just to be sure
+                                    values[option_wiring['target']] = 0
+                                    if option_wiring['target'] in target_map:
+                                        # overwrite already set target_map
+                                        target_map[option_wiring['target']] = 0
+                        else:
+                            raise e
+                    else:
+                        raise e
 
         # Now process OptionRefs
         for key, data_type in {k: v for (k, v) in source_map.iteritems()
@@ -797,7 +816,7 @@ class Node(object):
         rospy.logfatal('%s (%s): %s', self.name, type(self).__name__, message)
 
     @classmethod
-    def from_msg(cls, msg, debug_manager=None):
+    def from_msg(cls, msg, debug_manager=None, permissive=False):
         """Construct a Node from the given ROS message.
 
         This will try to import the requested node class, instantiate it
@@ -848,11 +867,16 @@ class Node(object):
 
         # Instantiate node - this shouldn't do anything yet, since we don't
         # call setup()
+        node_class.permissive = permissive
         if msg.name:
             node_instance = node_class(
-                name=msg.name, options=options_dict, debug_manager=debug_manager)
+                name=msg.name,
+                options=options_dict,
+                debug_manager=debug_manager)
         else:
-            node_instance = node_class(options=options_dict, debug_manager=debug_manager)
+            node_instance = node_class(
+                options=options_dict,
+                debug_manager=debug_manager)
         # Set inputs, ignore missing inputs (this can happen if a subtree changes between runs)
         try:
             for input_msg in msg.inputs:

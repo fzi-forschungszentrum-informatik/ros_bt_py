@@ -79,7 +79,7 @@ class TestSubtree(unittest.TestCase):
         subtree.setup()
         self.assertEqual(subtree.state, NodeMsg.IDLE)
         self.assertEqual(
-            subtree.debug_manager.subtrees['Subtree.Subtree.'], subtree.manager.to_msg())
+            subtree.debug_manager.subtrees['Subtree.Subtree'], subtree.manager.to_msg())
 
         self.assertEqual(subtree.tick(), NodeMsg.SUCCEEDED)
         self.assertEqual(subtree.untick(), NodeMsg.IDLE)
