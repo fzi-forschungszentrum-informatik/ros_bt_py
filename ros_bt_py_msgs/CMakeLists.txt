@@ -56,6 +56,7 @@ add_service_files(
   SaveTree.srv
   SetExecutionMode.srv
   SetOptions.srv
+  TestService.srv
   WireNodeData.srv
   )
 

@@ -16,6 +16,7 @@ from ros_bt_py_msgs.msg import UtilityBounds
 from ros_bt_py.exceptions import BehaviorTreeException, NodeStateError, NodeConfigError
 from ros_bt_py.node_data import NodeData, NodeDataMap
 from ros_bt_py.node_config import NodeConfig, OptionRef
+from ros_bt_py.helpers import get_default_value
 
 
 def _required(meth):
@@ -734,7 +735,25 @@ class Node(object):
                                       (target_map.name, key, data_type.option_key))
             target_map.add(key, NodeData(data_type=self.options[data_type.option_key]))
             if values is not None and key in values:
-                target_map[key] = values[key]
+                try:
+                    target_map[key] = values[key]
+                except AttributeError as e:
+                    if permissive:
+                        if (type(values[key]).__slots__ is not None and
+                                type(values[key])._slot_types is not None):
+                            fixed_new_value = type(values[key])()
+
+                            for i, slot in enumerate(type(values[key]).__slots__):
+                                setattr(fixed_new_value, slot, getattr(
+                                    values[key], slot, get_default_value(
+                                        type(getattr(fixed_new_value, slot, int)), ros=True)))
+                            target_map[key] = fixed_new_value
+                        else:
+                            raise AttributeError(
+                                'AttributeError, maybe a ROS Message definition changed. ' + str(e))
+                    else:
+                        raise AttributeError(
+                            'AttributeError, maybe a ROS Message definition changed. ' + str(e))
 
     def __repr__(self):
         return \

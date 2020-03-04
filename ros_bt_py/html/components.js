@@ -940,7 +940,8 @@ class LoadSaveControls extends Component
         if (response.success) {
           console.log('called LoadTree service successfully');
         } else {
-          if (response.error_message.startsWith('Expected data to be of type type, got dict instead. Looks like failed jsonpickle decode,')) {
+          if (response.error_message.startsWith('Expected data to be of type type, got dict instead. Looks like failed jsonpickle decode,') ||
+              response.error_message.startsWith('AttributeError, maybe a ROS Message definition changed.')) {
             if (window.confirm("The tree you want to load seems to have nodes with invalid options, do you want to load it in permissive mode? WARNING: this will probably change some option values!")) {
               this.load_service.callService(
                 new ROSLIB.ServiceRequest({
@@ -3572,7 +3573,8 @@ class FileBrowser extends Component{
                           console.log('called LoadTree service successfully');
                           this.props.onChangeFileModal(null);
                         } else {
-                          if (response.error_message.startsWith('Expected data to be of type type, got dict instead. Looks like failed jsonpickle decode,')) {
+                          if (response.error_message.startsWith('Expected data to be of type type, got dict instead. Looks like failed jsonpickle decode,') ||
+                              response.error_message.startsWith('AttributeError, maybe a ROS Message definition changed.')) {
                             this.props.onError(response.error_message);
                             if (window.confirm("The tree you want to load seems to have nodes with invalid options, do you want to load it in permissive mode? WARNING: this will probably change some option values!")) {
                               this.load_service.callService(
@@ -3623,7 +3625,10 @@ class FileBrowser extends Component{
                   console.log('called LoadTree service successfully');
                   this.props.onChangeFileModal(null);
                 } else {
-                  if (response.error_message.startsWith('Expected data to be of type type, got dict instead. Looks like failed jsonpickle decode,')) {
+                  console.log("err:", response.error_message);
+
+                  if (response.error_message.startsWith('Expected data to be of type type, got dict instead. Looks like failed jsonpickle decode,') ||
+                      response.error_message.startsWith('AttributeError, maybe a ROS Message definition changed.')) {
                     this.props.onError(response.error_message);
                     if (window.confirm("The tree you want to load seems to have nodes with invalid options, do you want to load it in permissive mode? WARNING: this will probably change some option values!")) {
                       this.load_service.callService(

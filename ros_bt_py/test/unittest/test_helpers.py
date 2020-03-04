@@ -3,7 +3,8 @@ import unittest
 import logging
 import rospy
 
-from ros_bt_py.helpers import rospy_log_level_to_logging_log_level
+from ros_bt_py.helpers import rospy_log_level_to_logging_log_level, get_default_value
+from ros_bt_py.ros_helpers import LoggerLevel
 
 
 class TestHelpers(unittest.TestCase):
@@ -27,3 +28,6 @@ class TestHelpers(unittest.TestCase):
         self.assertEqual(
             rospy_log_level_to_logging_log_level(rospy.FATAL),
             logging.FATAL)
+
+    def testGetDefaultValue(self):
+        self.assertEqual(get_default_value(LoggerLevel).logger_level, 'info')
