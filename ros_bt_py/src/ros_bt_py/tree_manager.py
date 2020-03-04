@@ -744,9 +744,6 @@ class TreeManager(object):
                         raise BehaviorTreeException('Tried to join tick thread after single '
                                                     'tick, but failed!')
                     state_after_joining = self.get_state()
-                    if state_after_joining == Tree.IDLE:
-                        response.tree_state = Tree.IDLE
-                        response.success = True
                     if state_after_joining == Tree.WAITING_FOR_TICK:
                         response.tree_state = Tree.WAITING_FOR_TICK
                         response.success = True
