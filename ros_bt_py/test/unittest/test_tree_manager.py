@@ -1,4 +1,8 @@
 import unittest
+try:
+    import unittest.mock as mock
+except ImportError:
+    import mock
 
 import jsonpickle
 import sys
@@ -17,6 +21,7 @@ from ros_bt_py_msgs.srv import (WireNodeDataRequest, AddNodeRequest, RemoveNodeR
 from ros_bt_py.node import Node, Leaf, FlowControl, define_bt_node
 from ros_bt_py.node_config import NodeConfig
 from ros_bt_py.nodes.sequence import Sequence
+from ros_bt_py.nodes.mock_nodes import MockLeaf
 from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, TreeTopologyError
 from ros_bt_py.tree_manager import TreeManager
 from ros_bt_py.tree_manager import (get_success as tm_get_success,
@@ -1604,6 +1609,109 @@ class TestTreeManager(unittest.TestCase):
         execution_request.command = ControlTreeExecutionRequest.TICK_ONCE
         response = self.manager.control_execution(execution_request)
         self.assertTrue(get_success(response))
+
+    def testControlTickThreadAlive(self):
+        add_request = AddNodeRequest(node=self.node_msg)
+        add_request.node.name = 'passthrough'
+        add_request.node.inputs.append(NodeData(key='in',
+                                                serialized_value=jsonpickle.encode(42)))
+
+        self.assertTrue(self.manager.add_node(add_request).success)
+        self.assertEqual(self.manager.nodes['passthrough'].inputs['in'], 42)
+        self.assertIsNone(self.manager.nodes['passthrough'].outputs['out'])
+
+        execution_request = ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.TICK_ONCE)
+
+        response = self.manager.control_execution(execution_request)
+        self.assertTrue(get_success(response))
+        self.assertEqual(response.tree_state, Tree.WAITING_FOR_TICK)
+
+        self.manager._tick_thread.is_alive = mock.MagicMock()
+        self.manager._tick_thread.is_alive.return_value = True
+
+        self.manager.get_state = mock.MagicMock()
+        self.manager.get_state.return_value = Tree.IDLE
+
+        self.assertRaises(BehaviorTreeException, self.manager.control_execution, execution_request)
+
+    def testControlTreeStateNotIdle(self):
+        add_request = AddNodeRequest(node=self.node_msg)
+        add_request.node.name = 'passthrough'
+        add_request.node.inputs.append(NodeData(key='in',
+                                                serialized_value=jsonpickle.encode(42)))
+
+        self.assertTrue(self.manager.add_node(add_request).success)
+        self.assertEqual(self.manager.nodes['passthrough'].inputs['in'], 42)
+        self.assertIsNone(self.manager.nodes['passthrough'].outputs['out'])
+
+        execution_request = ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.TICK_PERIODICALLY)
+
+        response = self.manager.control_execution(execution_request)
+        self.assertTrue(get_success(response))
+        self.assertEqual(response.tree_state, Tree.TICKING)
+
+        execution_request = ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.STOP)
+
+        self.manager.get_state = mock.MagicMock()
+        self.manager.get_state.side_effect = [
+            Tree.TICKING, Tree.TICKING, Tree.STOP_REQUESTED, Tree.STOP_REQUESTED]
+
+        response = self.manager.control_execution(execution_request)
+        self.assertFalse(get_success(response))
+
+    def testControlTreeStateNotIdleOrPaused(self):
+        add_request = AddNodeRequest(node=self.node_msg)
+        add_request.node.name = 'passthrough'
+        add_request.node.inputs.append(NodeData(key='in',
+                                                serialized_value=jsonpickle.encode(42)))
+
+        self.assertTrue(self.manager.add_node(add_request).success)
+        self.assertEqual(self.manager.nodes['passthrough'].inputs['in'], 42)
+        self.assertIsNone(self.manager.nodes['passthrough'].outputs['out'])
+
+        execution_request = ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.TICK_ONCE)
+
+        response = self.manager.control_execution(execution_request)
+        self.assertTrue(get_success(response))
+        self.assertEqual(response.tree_state, Tree.WAITING_FOR_TICK)
+
+        execution_request = ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.STOP)
+
+        self.manager.find_root = mock.MagicMock()
+        node = MockLeaf(name='error',
+                        options={'output_type': int,
+                                 'state_values': [NodeMsg.FAILED],
+                                 'output_values': [1]})
+        node.state = NodeMsg.FAILED
+        node.untick = mock.MagicMock()
+        self.manager.find_root.return_value = node
+
+        response = self.manager.control_execution(execution_request)
+        self.assertFalse(get_success(response))
+
+    def testControlTreeStateTickOnceIdle(self):
+        add_request = AddNodeRequest(node=self.node_msg)
+        add_request.node.name = 'passthrough'
+        add_request.node.inputs.append(NodeData(key='in',
+                                                serialized_value=jsonpickle.encode(42)))
+
+        self.assertTrue(self.manager.add_node(add_request).success)
+        self.assertEqual(self.manager.nodes['passthrough'].inputs['in'], 42)
+        self.assertIsNone(self.manager.nodes['passthrough'].outputs['out'])
+
+        execution_request = ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.TICK_ONCE)
+
+        self.manager.get_state = mock.MagicMock()
+        self.manager.get_state.return_value = Tree.STOP_REQUESTED
+
+        response = self.manager.control_execution(execution_request)
+        self.assertFalse(get_success(response))
 
     def testGetAvailableNodes(self):
         request = GetAvailableNodesRequest(node_modules=['ros_bt_py.nodes.passthrough_node'])
