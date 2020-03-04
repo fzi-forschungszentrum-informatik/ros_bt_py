@@ -1,6 +1,8 @@
 import logging
 import rospy
 import functools
+from collections import OrderedDict
+from ros_bt_py.ros_helpers import LoggerLevel
 
 
 def loglevel_is(level):
@@ -46,3 +48,28 @@ def rgetattr(obj, attr, *args):
 def rsetattr(obj, attr, val):
     pre, _, post = attr.rpartition('.')
     return setattr(rgetattr(obj, pre) if pre else obj, post, val)
+
+
+def get_default_value(data_type, ros=False):
+    if data_type is type:
+        return int
+    elif data_type is int or data_type is long:
+        return 0
+    elif data_type is str or data_type is basestring or data_type is unicode:
+        return 'foo'
+    elif data_type is float:
+        return 1.2
+    elif data_type is bool:
+        return False
+    elif data_type is list:
+        return []
+    elif data_type is dict:
+        return {}
+    elif data_type is OrderedDict:
+        return OrderedDict()
+    elif data_type is LoggerLevel:
+        return LoggerLevel()
+    elif ros:
+        return data_type()
+    else:
+        return {}

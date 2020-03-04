@@ -1809,6 +1809,8 @@ class TreeManager(object):
                 node_msg, debug_manager=self.debug_manager, permissive=permissive)
         except TypeError as exc:
             raise BehaviorTreeException(str(exc))
+        except AttributeError as exc:
+            raise BehaviorTreeException(str(exc))
 
         if node_instance.name in self.nodes:
             if allow_rename:
