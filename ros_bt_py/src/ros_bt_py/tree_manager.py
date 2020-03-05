@@ -1753,7 +1753,9 @@ class TreeManager(object):
 
         whole_tree = deepcopy(self.tree_msg)
 
-        if whole_tree is None:
+        root = self.find_root()
+
+        if not root:
             response.success = False
             response.error_message = "No tree message available"
         else:
