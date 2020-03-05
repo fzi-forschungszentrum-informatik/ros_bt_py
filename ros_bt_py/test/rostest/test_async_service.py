@@ -1,5 +1,9 @@
 #!/usr/bin/env python2.7
 import unittest
+try:
+    import unittest.mock as mock
+except ImportError:
+    import mock
 
 import os
 import signal
@@ -155,6 +159,39 @@ class TestAsyncService(unittest.TestCase):
         self.async_proxy.wait_for_service(timeout=0.5)
         self.async_proxy.call_service(SetBoolRequest(data=True))
         self.assertEqual(self.async_proxy.get_state(), AsyncServiceProxy.RUNNING)
+
+    @mock.patch('os.kill')
+    def testOSErrorOnStop(self, mock_os_kill):
+        mock_os_kill.side_effect = OSError()
+        # This request will return after a second
+        self.async_proxy.call_service(SetBoolRequest(data=True))
+        rospy.sleep(0.1)
+
+        self.async_proxy.stop_call()
+
+    def testROSException(self):
+        class Proxy(object):
+            def __init__(self):
+                self.wait_for_service = None
+                self.call = None
+        data = dict()
+        data['timeout'] = None
+        data['req'] = None
+        data['proxy'] = Proxy()
+        data['proxy'].wait_for_service = mock.MagicMock()
+        data['proxy'].wait_for_service.side_effect = rospy.exceptions.ROSInterruptException()
+        _wait_for_service_impl(data)
+
+        data['proxy'].wait_for_service.side_effect = rospy.exceptions.ROSException()
+        _wait_for_service_impl(data)
+
+        data['proxy'].wait_for_service.side_effect = Exception()
+        _wait_for_service_impl(data)
+
+        data['proxy'].call = mock.MagicMock()
+        data['proxy'].call.side_effect = rospy.exceptions.ROSInterruptException()
+
+        _call_service_impl(data)
 
 
 if __name__ == '__main__':

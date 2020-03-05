@@ -12,7 +12,8 @@ from ros_bt_py.testing_nodes.migrations_test_nodes import (
 )
 
 from ros_bt_py.testing_nodes.migrations_test_nodes_without_migrations import (
-    NodeWithoutVersionAndWithoutMigrationsModule
+    NodeWithoutVersionAndWithoutMigrationsModule,
+    NodeWithVersionAndWithoutMigrationsModule
 )
 
 
@@ -29,7 +30,8 @@ class TestMigrationsTestNodes(unittest.TestCase):
             NodeWithWorkingMigrationsThatChangesTree(), NodeWithGetOptionException(),
             NodeWithAddOptionException({'valid_option': 42}), NodeWithAddInputException(),
             NodeWithAddOutputException(), NodeWithOptionrefException(),
-            NodeWithoutVersionAndWithoutMigrationsModule()
+            NodeWithoutVersionAndWithoutMigrationsModule(),
+            NodeWithVersionAndWithoutMigrationsModule()
         ]
         for node in list_of_nodes:
             node.setup()
