@@ -2456,9 +2456,35 @@ class D3BehaviorTreeEditor extends Component
       })
       .attr("dy", d => Math.round(0.5 * d.gripperSize))
       .merge(labels);
-    labels.text(d => d.key + " (type: " + prettyprint_type(d.type) + ")");
 
-    // FIXME! find out how to add multi line text that does not repeat itself 3 times - how to use exit().remove() and merge() ???
+    labels.append("tspan")
+          .text(d => d.key)
+          .attr("class", "label")
+          .attr("dx", d => {
+            if (d.kind === "input") {
+              return Math.round(-5);
+            }
+            else if (d.kind === "output") {
+              return Math.round(d.gripperSize + 5);
+            }
+            return 0;
+          })
+          .attr("dy", d => Math.round(0.5 * d.gripperSize));
+
+    labels.append("tspan")
+          .text(d => "(type: " + prettyprint_type(d.type) + ")")
+          .attr("class", "label")
+          .attr("x", 0)
+          .attr("dx", d => {
+            if (d.kind === "input") {
+              return Math.round(-5);
+            }
+            else if (d.kind === "output") {
+              return Math.round(d.gripperSize + 5);
+            }
+            return 0;
+          })
+          .attr("dy", d => Math.round(0.5 * d.gripperSize) + 10);
   }
 
   IOGroupDefaultMouseoverHandler(d, index, group)
