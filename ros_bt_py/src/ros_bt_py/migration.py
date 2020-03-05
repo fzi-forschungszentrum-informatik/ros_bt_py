@@ -24,6 +24,7 @@ from ros_bt_py.node_data import NodeData
 from ros_bt_py.exceptions import MigrationException
 
 from ros_bt_py.ros_helpers import LoggerLevel
+from ros_bt_py.helpers import get_default_value
 
 
 def load_migration_module(package_name):
@@ -455,35 +456,13 @@ class Migration(object):
                 if not available:
                     raise MigrationException(
                         'Option key "%s" referenced by OptionRef does not exist!' % (data_type))
-            initial_value = self._get_default_value(data_type)
+            initial_value = get_default_value(data_type)
         data = NodeData(data_type=data_type,
                         initial_value=initial_value,
                         static=static)
         return NodeDataMsg(key=key,
                            serialized_value=data.get_serialized(),
                            serialized_type=data.get_serialized_type())
-
-    def _get_default_value(self, data_type):
-        if data_type is type:
-            return int
-        elif data_type is int or data_type is long:
-            return 0
-        elif data_type is str or data_type is basestring or data_type is unicode:
-            return 'foo'
-        elif data_type is float:
-            return 1.2
-        elif data_type is bool:
-            return False
-        elif data_type is list:
-            return []
-        elif data_type is dict:
-            return {}
-        elif data_type is OrderedDict:
-            return OrderedDict()
-        elif data_type is LoggerLevel:
-            return LoggerLevel()
-        else:
-            return {}
 
     # Logging methods - these just use the ROS logging framework, but add the
     # name and type of the node so it's easier to trace errors.
