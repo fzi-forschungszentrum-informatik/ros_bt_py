@@ -18,8 +18,8 @@ from ros_bt_py.nodes.ros_param import RosParamOption, RosParamInput
 PKG = 'ros_bt_py'
 
 
-class TestRosParamOption(unittest.TestCase):
-    def testExistingParam(self):
+class TestRosParam(unittest.TestCase):
+    def testExistingParamOption(self):
         ros_param = RosParamOption(options={
             'param_name': '/param_int',
             'param_type': int,
@@ -44,7 +44,7 @@ class TestRosParamOption(unittest.TestCase):
         self.assertEqual(ros_param.reset(), NodeMsg.IDLE)
         self.assertEqual(ros_param.shutdown(), NodeMsg.SHUTDOWN)
 
-    def testMissingParam(self):
+    def testMissingParamOption(self):
         ros_param = RosParamOption(options={
             'param_name': '/param_missing',
             'param_type': int,
@@ -65,7 +65,7 @@ class TestRosParamOption(unittest.TestCase):
 
         self.assertEqual(ros_param.calculate_utility(), expected_bounds)
 
-    def testWrongParamType(self):
+    def testWrongParamTypeOption(self):
         ros_param = RosParamOption(options={
             'param_name': '/param_int',
             'param_type': str,
@@ -77,7 +77,7 @@ class TestRosParamOption(unittest.TestCase):
         ros_param.inputs['default_value'] = 'default'
         self.assertEqual(ros_param.tick(), NodeMsg.FAILED)
 
-    def testROSException(self):
+    def testROSExceptionOption(self):
         ros_param = RosParamOption(options={
             'param_name': '/param_missing',
             'param_type': int,
@@ -88,9 +88,7 @@ class TestRosParamOption(unittest.TestCase):
             mocked_get_param_names.side_effect = rospy.ROSException()
             self.assertEqual(ros_param.calculate_utility(), expected_bounds)
 
-
-class TestRosParamInput(unittest.TestCase):
-    def testExistingParam(self):
+    def testExistingParamInput(self):
         ros_param = RosParamInput(options={
             'param_type': int,
             'default_value': 0
@@ -107,7 +105,7 @@ class TestRosParamInput(unittest.TestCase):
         self.assertEqual(ros_param.reset(), NodeMsg.IDLE)
         self.assertEqual(ros_param.shutdown(), NodeMsg.SHUTDOWN)
 
-    def testMissingParam(self):
+    def testMissingParamInput(self):
         ros_param = RosParamInput(options={
             'param_type': int,
             'default_value': 0
@@ -125,7 +123,7 @@ class TestRosParamInput(unittest.TestCase):
 
         self.assertEqual(ros_param.calculate_utility(), expected_bounds)
 
-    def testWrongParamType(self):
+    def testWrongParamTypeInput(self):
         ros_param = RosParamInput(options={
             'default_value': 'toto',
             'param_type': str,
@@ -144,7 +142,5 @@ if __name__ == '__main__':
     import sys
     import os
     os.environ['COVERAGE_FILE'] = '%s.%s.coverage' % (PKG, 'test_ros_param')
-    rostest.rosrun(PKG, 'test_ros_param', TestRosParamOption,
-                   sysargs=sys.argv + ['--cov'])
-    rostest.rosrun(PKG, 'test_ros_param', TestRosParamInput,
+    rostest.rosrun(PKG, 'test_ros_param', TestRosParam,
                    sysargs=sys.argv + ['--cov'])
