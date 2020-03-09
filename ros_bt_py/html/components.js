@@ -260,6 +260,25 @@ class NodeListItem extends Component {
     );
   };
 
+  renderTags(tags) {
+    if (tags.length === 0)
+    {
+      return null;
+    }
+
+    var bubbles = tags.map(data => {
+      return (
+        <span class="border rounded p-2 m-1 tag">{data}</span>
+      );
+    });
+
+    return (
+      <div className="list-group-item mt-1">
+        Tags: {bubbles}
+      </div>
+    );
+  }
+
   onClick(e, node) {
     this.props.onSelectionChange(this.props.node);
   }
@@ -296,6 +315,12 @@ class NodeListItem extends Component {
         </div>
       );
     }
+    var tags = null;
+    if (!this.state.collapsed)
+    {
+      // cute bubbles in different colors?
+      tags = this.renderTags(this.props.node.tags);
+    }
     var node_type = null;
     if (this.props.node.max_children < 0)
     {
@@ -330,6 +355,7 @@ class NodeListItem extends Component {
         <div>{
           node_type + ' (max_children: ' + (this.props.node.max_children >= 0 ? this.props.node.max_children : '∞') + ')'}</div>
         {io_table}
+        {tags}
       </div>
     );
   };
@@ -373,7 +399,8 @@ class NodeList extends Component
       keys: [
         "node_class",
         "node_type",
-        "module"]
+        "module",
+        "tags"]
     };
     var nodes = this.props.availableNodes.map( (node) => {
       if (node.max_children < 0)
