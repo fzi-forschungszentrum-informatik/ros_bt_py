@@ -346,3 +346,6 @@ div.jsoneditor-menu {
     visibility: visible;
   }
 }
+.grab:hover {
+  cursor: grab;
+}

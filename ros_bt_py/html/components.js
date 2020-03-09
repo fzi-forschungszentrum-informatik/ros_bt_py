@@ -344,20 +344,74 @@ class NodeList extends Component
     this.state = {
       package_name: 'ros_bt_py.nodes.sequence',
       package_loader_collapsed: true,
+      node_search: '',
+      filtered_nodes: null
     };
 
     this.handleChange = this.handleChange.bind(this);
+    this.handleNodeSearch = this.handleNodeSearch.bind(this);
+    this.handleNodeSearchClear = this.handleNodeSearchClear.bind(this);
+
+    this.nodesFuse = null;
   }
 
   componentDidMount()
   {
     this.props.getNodes('');
+    this.nameInput.focus();
   }
 
+  componentDidUpdate()
+  {
+    var options = {
+      shouldSort: true,
+      threshold: 0.6,
+      location: 0,
+      distance: 100,
+      maxPatternLength: 32,
+      minMatchCharLength: 1,
+      keys: [
+        "node_class",
+        "node_type",
+        "module"]
+    };
+    var nodes = this.props.availableNodes.map( (node) => {
+      if (node.max_children < 0)
+      {
+        node.node_type = "Flow control";
+      } else if (node.max_children > 0)
+      {
+        node.node_type = "Decorator";
+      } else {
+        node.node_type = "Leaf";
+      }
+      return node;
+    });
+    this.nodesFuse = new Fuse(nodes, options)
+  }
 
   handleChange(e)
   {
     this.setState({package_name: e.target.value});
+  }
+
+  handleNodeSearch(e)
+  {
+    if (this.nodesFuse)
+    {
+      var results = this.nodesFuse.search(e.target.value);
+      this.setState({filtered_nodes: results});
+    }
+
+    this.setState({node_search: e.target.value});
+  }
+
+  handleNodeSearchClear(e)
+  {
+    if (e.keyCode == 27) // ESC
+    {
+      this.setState({node_search: '', filtered_nodes: null});
+    }
   }
 
   toggleCollapsed(event) {
@@ -393,8 +447,14 @@ class NodeList extends Component
       return byName(a, b);
     };
 
-    var items = this.props.availableNodes
-        .sort(byName)
+    var nodes = this.props.availableNodes.sort(byName);
+    if (this.state.filtered_nodes && this.state.filtered_nodes.length > 0)
+    {
+      nodes = this.state.filtered_nodes;
+    }
+
+    var items = nodes
+    //    .sort(byName)
 //        .sort(moduleThenName)
         .map( (node) => {
           var highlighted = false;
@@ -439,11 +499,27 @@ class NodeList extends Component
       );
     }
 
+    var search = (
+      <div className="form-group form-inline m-1">
+        <label className="d-block">Search:
+          <input type="text"
+                  ref={(input) => { this.nameInput = input; }}
+                  className="form-control m-2"
+                  value={this.state.node_search}
+                  onChange={this.handleNodeSearch}
+                  onKeyDown={this.handleNodeSearchClear}/>
+        </label>
+      </div>
+    );
+
     return(
       <div className="available-nodes m-1">
         <div className="border rounded mb-2">
           <div onClick={this.toggleCollapsed.bind(this)} className="text-center cursor-pointer font-weight-bold m-2">Package Loader <i class={collapsible_icon}></i></div>
           {package_loader}
+        </div>
+        <div className="border rounded mb-2">
+          {search}
         </div>
         <div className="vertical_list">
           {items}
