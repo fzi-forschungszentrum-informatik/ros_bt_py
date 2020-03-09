@@ -307,7 +307,7 @@ class NodeListItem extends Component {
       node_type = "Leaf";
     }
 
-    var border = "border rounded p-2 mb-2";
+    var border = "border rounded p-2 mb-2 grab";
     if (this.props.highlighted)
     {
       border = "border rounded border-primary p-2 mb-2";
