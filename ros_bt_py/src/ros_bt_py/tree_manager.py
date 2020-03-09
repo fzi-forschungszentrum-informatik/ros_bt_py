@@ -1722,7 +1722,8 @@ class TreeManager(object):
                         source=data['source'],
                         target=data['target'])
                         for data in node_class._node_config.option_wirings],
-                    doc=str(doc)
+                    doc=str(doc),
+                    tags=node_class._node_config.tags
                 ))
 
         response.success = True
