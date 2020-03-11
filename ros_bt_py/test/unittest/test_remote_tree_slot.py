@@ -291,6 +291,15 @@ class TestRemoteTreeSlot(unittest.TestCase):
 
         self.assertRaises(Exception, self.remote_slot.cancel_run_tree_handler, gh)
 
+        self.remote_slot.update_tree_msg = mock.MagicMock()
+        self.remote_slot.latest_tree = Tree()
+
+        self.remote_slot.tree_manager.control_execution.return_value = \
+            ControlTreeExecutionResponse(success=True)
+
+        self.remote_slot.cancel_run_tree_handler(gh)
+        self.assertEqual(gh.state, MockGoalHandle.CANCELED)
+
 
 def get_success(response):
     if isinstance(response, dict):
