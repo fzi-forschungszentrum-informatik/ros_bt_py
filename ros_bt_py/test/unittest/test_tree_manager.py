@@ -2493,9 +2493,6 @@ class TestTreeManager(unittest.TestCase):
 
         self.assertTrue(get_success(res))
 
-        # self.manager.remove_node = mock.MagicMock()
-        # self.manager.remove_node.return_value = RemoveNodeResponse(success=False)
-
 
 class TestWiringServices(unittest.TestCase):
     def setUp(self):
