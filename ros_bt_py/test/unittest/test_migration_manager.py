@@ -1,4 +1,8 @@
 import unittest
+try:
+    import unittest.mock as mock
+except ImportError:
+    import mock
 
 import jsonpickle
 import sys
@@ -6,7 +10,7 @@ import time
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import Tree
-from ros_bt_py_msgs.srv import MigrateTreeRequest, GetAvailableNodesRequest
+from ros_bt_py_msgs.srv import MigrateTreeRequest, GetAvailableNodesRequest, MigrateTreeResponse
 
 from ros_bt_py.testing_nodes import migrations_test_nodes
 
@@ -382,6 +386,32 @@ class TestMigrationManager(unittest.TestCase):
         self.assertTrue(migrate_reply.success)
         self.assertTrue(migrate_reply.migrated)
 
+    @mock.patch('ros_bt_py.migration.getattr')
+    def testMigrateTreeError(self, mock_getattr):
+        tree_manager = TreeManager()
+        request = GetAvailableNodesRequest(
+            node_modules=['ros_bt_py.nodes.constant'])
+
+        response = tree_manager.get_available_nodes(request)
+        self.assertTrue(response.success)
+
+        migration_manager = MigrationManager(tree_manager=tree_manager)
+
+        tree = Tree(nodes=[NodeMsg(
+            module='ros_bt_py.nodes.constant',
+            node_class='Constant')])
+        migrate_request = MigrateTreeRequest(tree=tree)
+
+        migration_manager.tree_manager.load_tree_from_file = mock.MagicMock()
+        migration_manager.tree_manager.load_tree_from_file.return_value = MigrateTreeResponse(
+            success=Tree,
+            tree=tree)
+
+        mock_getattr.return_value = None
+
+        migrate_reply = migration_manager.migrate_tree(migrate_request)
+        # self.assertFalse(migrate_reply.success)
+
     def testCheckNodeVersions(self):
         tree_manager = TreeManager()
         request = GetAvailableNodesRequest(
@@ -423,3 +453,40 @@ class TestMigrationManager(unittest.TestCase):
         migrate_reply = migration_manager.check_node_versions(migrate_request)
         self.assertTrue(migrate_reply.success)
         self.assertTrue(migrate_reply.migrated)
+
+    def testCheckNodeVersionsNone(self):
+        tree_manager = TreeManager()
+        request = GetAvailableNodesRequest(
+            node_modules=['ros_bt_py.nodes.constant'])
+
+        response = tree_manager.get_available_nodes(request)
+        self.assertTrue(response.success)
+
+        migration_manager = MigrationManager(tree_manager=tree_manager)
+
+        tree = Tree(nodes=[NodeMsg(
+            module='ros_bt_py.does_not_exist',
+            node_class='')])
+        migrate_request = MigrateTreeRequest(tree=tree)
+
+        migration_manager.tree_manager.load_tree_from_file = mock.MagicMock()
+        migration_manager.tree_manager.load_tree_from_file.return_value = MigrateTreeResponse(
+            success=Tree,
+            tree=tree)
+
+        migrate_reply = migration_manager.check_node_versions(migrate_request)
+        self.assertTrue(migrate_reply.success)
+        self.assertTrue(migrate_reply.migrated)
+
+    @mock.patch('ros_bt_py.migration.izip')
+    def testCheckForAvailableMigration(self, mock_izip):
+        tree_manager = TreeManager()
+        request = GetAvailableNodesRequest(
+            node_modules=['ros_bt_py.nodes.constant'])
+
+        response = tree_manager.get_available_nodes(request)
+        self.assertTrue(response.success)
+
+        mock_izip.side_effect = TypeError()
+
+        migration_manager = MigrationManager(tree_manager=tree_manager)
