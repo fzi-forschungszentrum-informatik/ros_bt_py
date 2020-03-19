@@ -33,6 +33,8 @@ class TreeNode(object):
 
         show_traceback_on_exception = rospy.get_param('~show_traceback_on_exception', default=False)
         load_default_tree = rospy.get_param('~load_default_tree', default=False)
+        load_default_tree_permissive = rospy.get_param(
+            '~load_default_tree_permissive', default=False)
         default_tree_path = rospy.get_param('~default_tree_path', default="")
         default_tree_tick_frequency_hz = rospy.get_param('~default_tree_tick_frequency_hz',
                                                          default=1)
@@ -142,7 +144,9 @@ class TreeNode(object):
         if load_default_tree:
             rospy.logwarn("loading default tree: %s" % default_tree_path)
             tree = Tree(path=default_tree_path)
-            load_tree_request = LoadTreeRequest(tree=tree)
+            load_tree_request = LoadTreeRequest(
+                tree=tree,
+                permissive=load_default_tree_permissive)
             load_tree_response = self.tree_manager.load_tree(load_tree_request)
             if not load_tree_response.success:
                 rospy.logerr("could not load default tree: %s" % load_tree_response.error_message)
