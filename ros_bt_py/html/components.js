@@ -3694,7 +3694,7 @@ class FileBrowser extends Component{
                     console.log('called MigrateTree service successfully');
                     this.load_service.callService(
                       new ROSLIB.ServiceRequest({
-                        tree: msg,
+                        tree: response.tree,
                         permissive: false
                       }),
                       function(response) {
