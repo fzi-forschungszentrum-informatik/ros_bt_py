@@ -904,6 +904,12 @@ class Node(object):
                         input_msg.serialized_value)
                 except KeyError, e:
                     rospy.logwarn("Could not set a non existing input %s", str(e))
+                except AttributeError as e:
+                    if permissive:
+                        node_instance.inputs[input_msg.key] = None
+                    else:
+                        raise AttributeError(
+                            'AttributeError, maybe a ROS Message definition changed. ' + str(e))
         except ValueError, e:
             raise BehaviorTreeException('Failed to instantiate node from message: %s' %
                                         str(e))
@@ -916,6 +922,12 @@ class Node(object):
                         output_msg.serialized_value)
                 except KeyError, e:
                     rospy.logwarn("Could not set a non existing output %s", str(e))
+                except AttributeError as e:
+                    if permissive:
+                        node_instance.outputs[output_msg.key] = None
+                    else:
+                        raise AttributeError(
+                            'AttributeError, maybe a ROS Message definition changed. ' + str(e))
         except ValueError, e:
             raise BehaviorTreeException('Failed to instantiate node from message: %s' %
                                         str(e))
