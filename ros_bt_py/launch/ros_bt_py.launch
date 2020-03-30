@@ -32,7 +32,9 @@
   <arg name="show_traceback_on_exception" default="false" />
   
   <!-- rosbridge that provides the websocket connection for the web interface -->
-  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
+  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch">
+    <arg name="services_glob" default="[*/rosapi/*, */tree_node/*]" />
+  </include>
 
   <!-- webserver -->
   <include file="$(find roswww)/launch/roswww.launch">
