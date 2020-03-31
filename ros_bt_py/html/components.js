@@ -851,7 +851,7 @@ class SelectTree extends Component
     }
     return (
       <div>
-        <label className="form-inline m-1">Tree:
+        <label className="form-inline m-1 ml-2">Tree:
           <select className="custom-select ml-1"
                   value={this.props.subtreeNames.indexOf(selected)}
                   onChange={this.onChange}>
