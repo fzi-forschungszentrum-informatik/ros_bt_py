@@ -65,6 +65,7 @@ class App extends Component
       cm_available: false,
       current_time: null,
       nodelist_visible: true,
+      executionbar_visible: true,
     };
 
     ros.on("connection", function(e) {
@@ -909,6 +910,28 @@ class App extends Component
       );
     }
 
+    var toggle_ui_visibility_text = 'Hide User Interface';
+    var execution_bar = null;
+    if(this.state.executionbar_visible)
+    {
+      execution_bar = (
+        <ExecutionBar key={this.state.bt_namespace}
+                      ros={this.state.ros}
+                      connected={this.state.connected}
+                      cm_available={this.state.cm_available}
+                      subtreeNames={this.state.subtree_names}
+                      currentNamespace={this.state.bt_namespace}
+                      tree_message={this.state.last_tree_msg}
+                      onSelectedTreeChange={this.onSelectedTreeChange}
+                      onNamespaceChange={this.onNamespaceChange}
+                      onError={this.onError}
+                      onPublishingSubtreesChange={this.onPublishingSubtreesChange}
+                      onChangeFileModal={this.onChangeFileModal}/>
+      );
+    } else {
+      toggle_ui_visibility_text = 'Show User Interface';
+    }
+
     return (
       <div onMouseUp={this.check_dragging} className={dragging_cursor}>
         <ReactModal key={this.state.bt_namespace}
@@ -923,18 +946,7 @@ class App extends Component
                        onChangeFileModal={this.onChangeFileModal}
                        onSelectedPackageChange={this.onSelectedPackageChange}/>
         </ReactModal>
-        <ExecutionBar key={this.state.bt_namespace}
-                      ros={this.state.ros}
-                      connected={this.state.connected}
-                      cm_available={this.state.cm_available}
-                      subtreeNames={this.state.subtree_names}
-                      currentNamespace={this.state.bt_namespace}
-                      tree_message={this.state.last_tree_msg}
-                      onSelectedTreeChange={this.onSelectedTreeChange}
-                      onNamespaceChange={this.onNamespaceChange}
-                      onError={this.onError}
-                      onPublishingSubtreesChange={this.onPublishingSubtreesChange}
-                      onChangeFileModal={this.onChangeFileModal}/>
+        {execution_bar}
 
         <div className="container-fluid">
           <div className="row row-height">
@@ -959,6 +971,16 @@ class App extends Component
                             }.bind(this)
                                     }>
                       Toggle Data Graph
+                    </button>
+                    <button className="btn btn-primary m-1"
+                            onClick={function() {
+                              this.setState(
+                                (prevstate, props) => ({executionbar_visible: !prevstate.executionbar_visible,
+                                                        nodelist_visible: !prevstate.executionbar_visible})
+                              );
+                            }.bind(this)
+                                    }>
+                      {toggle_ui_visibility_text}
                     </button>
                     <Spacer />
                     <SelectEditorSkin changeSkin={this.changeSkin}/>
