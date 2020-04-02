@@ -56,22 +56,37 @@ class TestIterateList(unittest.TestCase):
 
         iterate_list.setup()
 
-        self.assertEqual(iterate_list.tick(), Node.RUNNING)
-        self.assertEqual(iterate_list.outputs['list_item'], 'a')
-        self.assertEqual(run_success_fail.tick_count, 1)
+        max_iteration = 20
+        def tick_until_child_tick():
+            initial_count = run_success_fail.tick_count
+            max_iteration = 20
+            ii = 0
 
-        self.assertEqual(iterate_list.tick(), Node.RUNNING)
-        self.assertEqual(iterate_list.outputs['list_item'], 'a')
-        self.assertEqual(run_success_fail.tick_count, 2)
+            iterate_tick = []
+            while run_success_fail.tick_count != initial_count+1 and ii < max_iteration:
+                # tick the iterator until it decides to tick its child (or until we give up)
+                ii += 1
+                token = iterate_list.tick()
+                iterate_tick.append(token)
+            self.assertLess(ii, max_iteration)
+            return iterate_tick
 
-        self.assertEqual(iterate_list.tick(), Node.RUNNING)
+        iterator_tokens = tick_until_child_tick()
+        [ self.assertEqual(token, Node.RUNNING) for token in iterator_tokens ]
+        self.assertEqual(iterate_list.outputs['list_item'], 'a')
+
+        # child returned running so output did not change
+        iterator_tokens = tick_until_child_tick()
+        [ self.assertEqual(token, Node.RUNNING) for token in iterator_tokens ]
+        self.assertEqual(iterate_list.outputs['list_item'], 'a')
+
+        # child returned success so moved to next item in list
+        iterator_tokens = tick_until_child_tick()
         self.assertEqual(iterate_list.outputs['list_item'], 'b')
-        self.assertEqual(run_success_fail.tick_count, 3)
+        [ self.assertEqual(token, Node.RUNNING) for token in iterator_tokens ]
 
-        # iteration is over
+        # last tick is success when iteration is over
         self.assertEqual(iterate_list.tick(), Node.SUCCEEDED)
-        self.assertEqual(iterate_list.outputs['list_item'], 'b')
-        self.assertEqual(run_success_fail.tick_count, 3)
 
         self.assertEqual(iterate_list.untick(), Node.PAUSED)
         self.assertEqual(iterate_list.children[0].state, Node.PAUSED)
