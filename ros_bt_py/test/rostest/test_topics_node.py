@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 import rospy
 from std_msgs.msg import Int32
 

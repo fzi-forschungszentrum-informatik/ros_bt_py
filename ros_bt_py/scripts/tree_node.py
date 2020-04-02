@@ -1,4 +1,5 @@
-#! /usr/bin/env python2.7
+#!/usr/bin/env python
+
 import rospy
 
 from ros_bt_py_msgs.msg import Messages, Packages
