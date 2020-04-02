@@ -64,6 +64,8 @@ class App extends Component
       show_file_modal: null,
       cm_available: false,
       current_time: null,
+      nodelist_visible: true,
+      executionbar_visible: true,
     };
 
     ros.on("connection", function(e) {
@@ -867,6 +869,69 @@ class App extends Component
       dragging_cursor = 'cursor-grabbing'
     }
 
+    var nodelist = null;
+    var show_nodelist_button = null;
+    var main_col = 'col scroll-col';
+    if(this.state.nodelist_visible)
+    {
+      nodelist = (
+        <div className="col scroll-col" id="nodelist_container">
+          <button class="hide_button btn btn-outline-primary btn-sm"
+                  title="Hide nodelist"
+                  onClick={function() {
+                    this.setState(
+                      (prevstate, props) => ({nodelist_visible: false})
+                    );
+                  }.bind(this)}
+                  >
+            <i class="fas fa-angle-double-left show-button-icon"></i>
+          </button>
+          <NodeList key={this.state.bt_namespace + this.state.current_time}
+                    availableNodes={this.state.available_nodes}
+                    dragging_node_list_item={this.state.dragging_node_list_item}
+                    getNodes={this.getNodes}
+                    onSelectionChange={this.onNodeListSelectionChange}
+                    onNodeListDragging={this.onNodeListDragging}/>
+        </div>
+      );
+      main_col = 'col-9 scroll-col';
+    } else {
+      show_nodelist_button = (
+        <button class="hide_button btn btn-outline-primary btn-sm"
+              title="Show nodelist"
+              onClick={function() {
+                this.setState(
+                  (prevstate, props) => ({nodelist_visible: true})
+                );
+              }.bind(this)}
+              >
+          <i class="fas fa-angle-double-right show-button-icon"></i>
+        </button>
+      );
+    }
+
+    var toggle_ui_visibility_text = 'Hide User Interface';
+    var execution_bar = null;
+    if(this.state.executionbar_visible)
+    {
+      execution_bar = (
+        <ExecutionBar key={this.state.bt_namespace}
+                      ros={this.state.ros}
+                      connected={this.state.connected}
+                      cm_available={this.state.cm_available}
+                      subtreeNames={this.state.subtree_names}
+                      currentNamespace={this.state.bt_namespace}
+                      tree_message={this.state.last_tree_msg}
+                      onSelectedTreeChange={this.onSelectedTreeChange}
+                      onNamespaceChange={this.onNamespaceChange}
+                      onError={this.onError}
+                      onPublishingSubtreesChange={this.onPublishingSubtreesChange}
+                      onChangeFileModal={this.onChangeFileModal}/>
+      );
+    } else {
+      toggle_ui_visibility_text = 'Show User Interface';
+    }
+
     return (
       <div onMouseUp={this.check_dragging} className={dragging_cursor}>
         <ReactModal key={this.state.bt_namespace}
@@ -881,30 +946,13 @@ class App extends Component
                        onChangeFileModal={this.onChangeFileModal}
                        onSelectedPackageChange={this.onSelectedPackageChange}/>
         </ReactModal>
-        <ExecutionBar key={this.state.bt_namespace}
-                      ros={this.state.ros}
-                      connected={this.state.connected}
-                      cm_available={this.state.cm_available}
-                      subtreeNames={this.state.subtree_names}
-                      currentNamespace={this.state.bt_namespace}
-                      tree_message={this.state.last_tree_msg}
-                      onSelectedTreeChange={this.onSelectedTreeChange}
-                      onNamespaceChange={this.onNamespaceChange}
-                      onError={this.onError}
-                      onPublishingSubtreesChange={this.onPublishingSubtreesChange}
-                      onChangeFileModal={this.onChangeFileModal}/>
+        {execution_bar}
 
         <div className="container-fluid">
           <div className="row row-height">
-            <div className="col scroll-col" id="nodelist_container">
-              <NodeList key={this.state.bt_namespace + this.state.current_time}
-                        availableNodes={this.state.available_nodes}
-                        dragging_node_list_item={this.state.dragging_node_list_item}
-                        getNodes={this.getNodes}
-                        onSelectionChange={this.onNodeListSelectionChange}
-                        onNodeListDragging={this.onNodeListDragging}/>
-            </div>
-            <div className="col-9 scroll-col" id="main_pane">
+            {nodelist}
+            <div className={main_col} id="main_pane">
+              {show_nodelist_button}
               <div className="container-fluid d-flex h-100 flex-column">
                 <div className="row">
                   <div className="col d-flex">
@@ -923,6 +971,16 @@ class App extends Component
                             }.bind(this)
                                     }>
                       Toggle Data Graph
+                    </button>
+                    <button className="btn btn-primary m-1"
+                            onClick={function() {
+                              this.setState(
+                                (prevstate, props) => ({executionbar_visible: !prevstate.executionbar_visible,
+                                                        nodelist_visible: !prevstate.executionbar_visible})
+                              );
+                            }.bind(this)
+                                    }>
+                      {toggle_ui_visibility_text}
                     </button>
                     <Spacer />
                     <SelectEditorSkin changeSkin={this.changeSkin}/>

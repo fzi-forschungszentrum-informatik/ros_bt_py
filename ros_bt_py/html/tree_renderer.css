@@ -235,6 +235,18 @@ path.data-hover {
     border-right: solid;
 }
 
+#nodelist_container > .hide_button {
+  margin-left: -10px;
+  margin-top: 5px;
+}
+
+#main_pane > .hide_button {
+  position: absolute;
+  margin-left: -10px;
+  margin-top: 5px;
+  z-index: 1;
+}
+
 .node-selected {
     background: #27406D;
 }

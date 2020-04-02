@@ -527,15 +527,17 @@ class NodeList extends Component
     }
 
     var search = (
-      <div className="form-group form-inline m-1">
-        <label className="d-block">Search:
-          <input type="text"
+      <div className="form-group row mt-2 mb-2 ml-1 mr-1">
+        <label for="nodelist_search" className="col-sm-2 col-form-label">Search:</label>
+        <div class="col-sm-10">
+          <input  id="nodelist_search"
+                  type="text"
                   ref={(input) => { this.nameInput = input; }}
-                  className="form-control m-2"
+                  className="form-control"
                   value={this.state.node_search}
                   onChange={this.handleNodeSearch}
                   onKeyDown={this.handleNodeSearchClear}/>
-        </label>
+        </div>
       </div>
     );
 
@@ -849,7 +851,7 @@ class SelectTree extends Component
     }
     return (
       <div>
-        <label className="form-inline m-1">Tree:
+        <label className="form-inline m-1 ml-2">Tree:
           <select className="custom-select ml-1"
                   value={this.props.subtreeNames.indexOf(selected)}
                   onChange={this.onChange}>
