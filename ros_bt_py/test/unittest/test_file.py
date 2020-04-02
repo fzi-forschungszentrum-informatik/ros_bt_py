@@ -33,8 +33,8 @@ class TestFile(unittest.TestCase):
         self.assertEqual(file_node.state, NodeMsg.UNINITIALIZED)
         file_node.setup()
         self.assertEqual(file_node.state, NodeMsg.IDLE)
-        self.assertEqual(file_node.data, None)
         self.assertEqual(file_node.tick(), NodeMsg.FAILED)
+        self.assertEqual(file_node.outputs['content'], None)
 
     def testFileLoadNotAvailable(self):
         file_node = File(options={
@@ -43,8 +43,8 @@ class TestFile(unittest.TestCase):
         self.assertEqual(file_node.state, NodeMsg.UNINITIALIZED)
         file_node.setup()
         self.assertEqual(file_node.state, NodeMsg.IDLE)
-        self.assertEqual(file_node.data, None)
         self.assertEqual(file_node.tick(), NodeMsg.FAILED)
+        self.assertEqual(file_node.outputs['content'], None)
 
     def testFileLoadMalformedContent(self):
         path = 'package://ros_bt_py/test/testdata/data/file_malformed.yaml'
@@ -55,20 +55,20 @@ class TestFile(unittest.TestCase):
         file_node.setup()
         self.assertEqual(file_node.state, NodeMsg.IDLE)
 
-        self.assertEqual(file_node.data, None)
         self.assertEqual(file_node.tick(), NodeMsg.FAILED)
 
-    def testFileLoadMalformedList(self):
-        path = 'package://ros_bt_py/test/testdata/data/file_malformed_list.yaml'
+    def testFileLoadListObject(self):
+        path = 'package://ros_bt_py/test/testdata/data/file_object_list.yaml'
         file_node = File(options={
             'file_path': path,
         })
         self.assertEqual(file_node.state, NodeMsg.UNINITIALIZED)
         file_node.setup()
         self.assertEqual(file_node.state, NodeMsg.IDLE)
+        self.assertEqual(file_node.tick(), NodeMsg.SUCCESS)
 
-        self.assertEqual(file_node.data, None)
-        self.assertEqual(file_node.tick(), NodeMsg.FAILED)
+        self.assertIsInstance(file_node.outputs['content'][0], dict)
+        self.assertEqual(list(file_node.outputs['content'][0].keys()), ['not_basestring'])
 
 
 class TestFileInput(unittest.TestCase):
@@ -112,8 +112,8 @@ class TestFileInput(unittest.TestCase):
         file_node.inputs['file_path'] = path
         self.assertEqual(file_node.state, NodeMsg.IDLE)
 
-        self.assertEqual(file_node.data, None)
         self.assertEqual(file_node.tick(), NodeMsg.FAILED)
+        self.assertEqual(file_node.outputs['content'], None)
 
     def testFileLoadMalformedList(self):
         path = 'package://ros_bt_py/test/testdata/data/file_malformed_list.yaml'
@@ -122,5 +122,5 @@ class TestFileInput(unittest.TestCase):
         file_node.inputs['file_path'] = path
         self.assertEqual(file_node.state, NodeMsg.IDLE)
 
-        self.assertEqual(file_node.data, None)
         self.assertEqual(file_node.tick(), NodeMsg.FAILED)
+        self.assertEqual(file_node.outputs['content'], None)
