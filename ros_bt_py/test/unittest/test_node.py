@@ -15,6 +15,11 @@ from ros_bt_py.nodes.passthrough_node import PassthroughNode
 from ros_bt_py.nodes.mock_nodes import MockUtilityLeaf
 from ros_bt_py.node_data import NodeDataMap, NodeData as NodeDataObj
 
+try:
+    range = xrange
+except NameError:
+    pass
+
 
 class TestLoadModule(unittest.TestCase):
     def testLoadModule(self):
@@ -26,7 +31,7 @@ class TestLoadModule(unittest.TestCase):
 
 class TestIncrementName(unittest.TestCase):
     def testIncrementName(self):
-        numbers = [random.randint(0, 20) for _ in xrange(20)]
+        numbers = [random.randint(0, 20) for _ in range(20)]
         for number in numbers:
             name = 'foo'
             # Special case for 0 - if number is zero, add no suffix and expect
