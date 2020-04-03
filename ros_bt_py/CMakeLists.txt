@@ -58,7 +58,7 @@ include_directories(
 
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
-install(PROGRAMS
+catkin_install_python(PROGRAMS
   scripts/diagnostics_node.py
   scripts/find_best_executor_node.py
   scripts/load_tree.py
