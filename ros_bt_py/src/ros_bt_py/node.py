@@ -885,7 +885,7 @@ class Node(object):
         try:
             for option in msg.options:
                 options_dict[option.key] = jsonpickle.decode(option.serialized_value)
-        except ValueError, e:
+        except ValueError as e:
             raise BehaviorTreeException('Failed to instantiate node from message: %s' %
                                         str(e))
 
@@ -907,7 +907,7 @@ class Node(object):
                 try:
                     node_instance.inputs[input_msg.key] = jsonpickle.decode(
                         input_msg.serialized_value)
-                except KeyError, e:
+                except KeyError as e:
                     rospy.logwarn("Could not set a non existing input %s", str(e))
                 except AttributeError as e:
                     if permissive:
@@ -915,7 +915,7 @@ class Node(object):
                     else:
                         raise AttributeError(
                             'AttributeError, maybe a ROS Message definition changed. ' + str(e))
-        except ValueError, e:
+        except ValueError as e:
             raise BehaviorTreeException('Failed to instantiate node from message: %s' %
                                         str(e))
 
@@ -925,7 +925,7 @@ class Node(object):
                 try:
                     node_instance.outputs[output_msg.key] = jsonpickle.decode(
                         output_msg.serialized_value)
-                except KeyError, e:
+                except KeyError as e:
                     rospy.logwarn("Could not set a non existing output %s", str(e))
                 except AttributeError as e:
                     if permissive:
@@ -933,7 +933,7 @@ class Node(object):
                     else:
                         raise AttributeError(
                             'AttributeError, maybe a ROS Message definition changed. ' + str(e))
-        except ValueError, e:
+        except ValueError as e:
             raise BehaviorTreeException('Failed to instantiate node from message: %s' %
                                         str(e))
 
