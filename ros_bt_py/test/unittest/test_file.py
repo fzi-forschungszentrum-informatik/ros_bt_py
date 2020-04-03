@@ -2,10 +2,10 @@ import unittest
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py.exceptions import BehaviorTreeException
-from ros_bt_py.nodes.file import File, FileInput
+from ros_bt_py.nodes.file import YamlListOption, YamlListInput, YamlDictInput
 
 
-class TestFile(unittest.TestCase):
+class TestYamlListOption(unittest.TestCase):
     def setUp(self):
         # self.constant = Constant({'constant_type': int,
         #                           'constant_value': 42})
@@ -14,7 +14,7 @@ class TestFile(unittest.TestCase):
 
     def testFileLoad(self):
         path = 'package://ros_bt_py/test/testdata/data/file_greetings.yaml'
-        file_node = File(options={
+        file_node = YamlListOption(options={
             'file_path': path,
         })
         self.assertEqual(file_node.state, NodeMsg.UNINITIALIZED)
@@ -27,7 +27,7 @@ class TestFile(unittest.TestCase):
         self.assertEqual(file_node.shutdown(), NodeMsg.SHUTDOWN)
 
     def testFileLoadMalformedPath(self):
-        file_node = File(options={
+        file_node = YamlListOption(options={
             'file_path': 'malformed://ros_bt_py/etc/data/greetings.yaml',
         })
         self.assertEqual(file_node.state, NodeMsg.UNINITIALIZED)
@@ -37,7 +37,7 @@ class TestFile(unittest.TestCase):
         self.assertEqual(file_node.outputs['content'], None)
 
     def testFileLoadNotAvailable(self):
-        file_node = File(options={
+        file_node = YamlListOption(options={
             'file_path': 'file://',
         })
         self.assertEqual(file_node.state, NodeMsg.UNINITIALIZED)
@@ -48,7 +48,7 @@ class TestFile(unittest.TestCase):
 
     def testFileLoadMalformedContent(self):
         path = 'package://ros_bt_py/test/testdata/data/file_malformed.yaml'
-        file_node = File(options={
+        file_node = YamlListOption(options={
             'file_path': path,
         })
         self.assertEqual(file_node.state, NodeMsg.UNINITIALIZED)
@@ -59,7 +59,7 @@ class TestFile(unittest.TestCase):
 
     def testFileLoadListObject(self):
         path = 'package://ros_bt_py/test/testdata/data/file_object_list.yaml'
-        file_node = File(options={
+        file_node = YamlListOption(options={
             'file_path': path,
         })
         self.assertEqual(file_node.state, NodeMsg.UNINITIALIZED)
@@ -71,10 +71,10 @@ class TestFile(unittest.TestCase):
         self.assertEqual(list(file_node.outputs['content'][0].keys()), ['not_basestring'])
 
 
-class TestFileInput(unittest.TestCase):
+class TestYamlListInput(unittest.TestCase):
     def testFileLoad(self):
         path = 'package://ros_bt_py/test/testdata/data/file_greetings.yaml'
-        file_node = FileInput()
+        file_node = YamlListInput()
         file_node.setup()
 
         file_node.inputs['file_path'] = path
@@ -91,7 +91,7 @@ class TestFileInput(unittest.TestCase):
 
     def testFileLoadNotAvailable(self):
         path = 'file://'
-        file_node = FileInput()
+        file_node = YamlListInput()
         file_node.setup()
         file_node.inputs['file_path'] = path
         self.assertEqual(NodeMsg.FAILED, file_node.tick())
@@ -99,7 +99,7 @@ class TestFileInput(unittest.TestCase):
 
     def testFileLoadMalformedPath(self):
         path = 'malformed://ros_bt_py/etc/data/greetings.yaml'
-        file_node = FileInput()
+        file_node = YamlListInput()
         file_node.setup()
         file_node.inputs['file_path'] = path
         self.assertEqual(NodeMsg.FAILED, file_node.tick())
@@ -107,7 +107,7 @@ class TestFileInput(unittest.TestCase):
 
     def testFileLoadMalformedContent(self):
         path = 'package://ros_bt_py/test/testdata/data/file_malformed.yaml'
-        file_node = FileInput()
+        file_node = YamlListInput()
         file_node.setup()
         file_node.inputs['file_path'] = path
         self.assertEqual(file_node.state, NodeMsg.IDLE)
@@ -117,7 +117,7 @@ class TestFileInput(unittest.TestCase):
 
     def testFileLoadMalformedList(self):
         path = 'package://ros_bt_py/test/testdata/data/file_malformed_list.yaml'
-        file_node = FileInput()
+        file_node = YamlListInput()
         file_node.setup()
         file_node.inputs['file_path'] = path
         self.assertEqual(file_node.state, NodeMsg.IDLE)

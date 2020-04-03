@@ -41,7 +41,7 @@ def load_file(path):
 
 
 @define_bt_node(NodeConfig(
-    version='0.9.0',
+    version='1.0.0',
     options={'file_path': str},
     inputs={},
     outputs={'load_success': bool,
@@ -50,16 +50,13 @@ def load_file(path):
              'line_count': int},
     max_children=0,
     optional_options=['something']))
-class File(Leaf):
+class YamlListOption(Leaf):
     """Loads a yaml file from the location pointed to by `file_path`.
     This uses package:// and file:// style URIs.
 
     """
-    def __init__(self, options=None, debug_manager=None, name=None):
-        super(File, self).__init__(options, debug_manager, name)
-        self.data = None
-
     def _do_setup(self):
+        self.data = None
         self.outputs['load_success'] = False
         self.outputs['load_error_msg'] = ''
 
@@ -75,7 +72,7 @@ class File(Leaf):
 
 
     def _do_tick(self):
-        if self.data:
+        if self.data is not None:
             self.outputs['content'] = self.data
             self.outputs['line_count'] = len(self.data)
 
@@ -94,6 +91,7 @@ class File(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='1.0.0',
     options={},
     inputs={'file_path': str},
     outputs={'load_success': bool,
@@ -102,7 +100,7 @@ class File(Leaf):
              'line_count': int},
     max_children=0
     ))
-class FileInput(Leaf):
+class YamlListInput(Leaf):
     """Loads a yaml file (list) from the location pointed to by `file_path`.
     This uses package:// and file:// style URIs.
 
@@ -142,6 +140,7 @@ class FileInput(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='1.0.0',
     options={},
     inputs={'file_path': str},
     outputs={'load_success': bool,
@@ -150,7 +149,7 @@ class FileInput(Leaf):
              },
     max_children=0
     ))
-class YamlInput(Leaf):
+class YamlDictInput(Leaf):
     """Loads a yaml file (dict) from the location pointed to by `file_path`.
     This uses package:// and file:// style URIs.
 
