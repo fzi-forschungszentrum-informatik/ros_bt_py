@@ -4,6 +4,21 @@ import functools
 from collections import OrderedDict
 from ros_bt_py.ros_helpers import LoggerLevel
 
+try:
+    basestring
+except NameError:
+    basestring = str
+
+try:
+    unicode
+except NameError:
+    unicode = str
+
+try:
+    long
+except NameError:
+    long = int
+
 
 def loglevel_is(level):
     """Determine the current logging level of the default ROS logger

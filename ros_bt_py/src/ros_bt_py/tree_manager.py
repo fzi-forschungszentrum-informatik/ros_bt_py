@@ -35,6 +35,11 @@ from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, Tree
 from ros_bt_py.node import Node, load_node_module, increment_name
 from ros_bt_py.debug_manager import DebugManager
 
+try:
+    unicode
+except NameError:
+    unicode = str
+
 
 def is_edit_service(func):
     """Decorator for all tree editing service handlers.

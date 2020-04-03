@@ -16,6 +16,11 @@ from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.migration import MigrationManager
 from ros_bt_py.package_manager import PackageManager
 
+try:
+    basestring
+except NameError:
+    basestring = str
+
 
 class TreeNode(object):
     def __init__(self):

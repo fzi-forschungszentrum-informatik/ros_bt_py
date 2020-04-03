@@ -28,6 +28,11 @@ from ros_bt_py.tree_manager import TreeManager
 from ros_bt_py.tree_manager import (get_success as tm_get_success,
                                     get_error_message as tm_get_error_message)
 
+try:
+    unicode
+except NameError:
+    unicode = str
+
 
 @define_bt_node(NodeConfig(
     options={},

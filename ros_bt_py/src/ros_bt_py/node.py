@@ -18,6 +18,11 @@ from ros_bt_py.node_data import NodeData, NodeDataMap
 from ros_bt_py.node_config import NodeConfig, OptionRef
 from ros_bt_py.helpers import get_default_value
 
+try:
+    basestring
+except NameError:
+    basestring = str
+
 
 def _required(meth):
     """Mark a method as required.

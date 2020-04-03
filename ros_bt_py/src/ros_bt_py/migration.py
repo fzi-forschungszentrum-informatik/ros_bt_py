@@ -3,7 +3,10 @@ from copy import deepcopy
 from functools import wraps
 import importlib
 import inspect
-from itertools import izip
+try:
+    from itertools import izip
+except ImportError:
+    izip = zip
 import jsonpickle
 import os
 import sys
