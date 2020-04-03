@@ -694,8 +694,8 @@ class Node(object):
 
         """
         # Find the values that are not OptionRefs first
-        for key, data_type in {k: v for (k, v) in source_map.iteritems()
-                               if not isinstance(v, OptionRef)}.iteritems():
+        for key, data_type in {k: v for (k, v) in source_map.items()
+                               if not isinstance(v, OptionRef)}.items():
             if key in target_map:
                 raise NodeConfigError('Duplicate data name: %s' % key)
             target_map.add(key, NodeData(data_type=data_type))
@@ -720,8 +720,8 @@ class Node(object):
                         raise e
 
         # Now process OptionRefs
-        for key, data_type in {k: v for (k, v) in source_map.iteritems()
-                               if isinstance(v, OptionRef)}.iteritems():
+        for key, data_type in {k: v for (k, v) in source_map.items()
+                               if isinstance(v, OptionRef)}.items():
             if key in target_map:
                 raise NodeConfigError('Duplicate %s data name: %s' % (target_map.name, key))
 

@@ -234,7 +234,7 @@ class DebugManager(object):
                 raise BehaviorTreeException(
                     'Trying to add subtree info when subtree publishing is disabled!')
             self.subtrees[subtree_name] = subtree_msg
-            self._debug_info_msg.subtree_states = [msg for msg in self.subtrees.itervalues()]
+            self._debug_info_msg.subtree_states = [msg for msg in self.subtrees.values()]
 
     def clear_subtrees(self):
         with self._lock:
