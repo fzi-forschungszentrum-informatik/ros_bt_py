@@ -58,12 +58,13 @@ include_directories(
 
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
-install(PROGRAMS
-  scripts/tree_node.py
-  scripts/load_tree.py
+catkin_install_python(PROGRAMS
+  scripts/diagnostics_node.py
   scripts/find_best_executor_node.py
-  scripts/remote_tree_slot_node.py
+  scripts/load_tree.py
   scripts/print_editor_url.py
+  scripts/remote_tree_slot_node.py
+  scripts/tree_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   )
 

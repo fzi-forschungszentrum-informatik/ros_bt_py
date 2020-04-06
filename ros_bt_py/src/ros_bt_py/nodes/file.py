@@ -6,6 +6,11 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig
 
+try:
+    basestring
+except NameError:
+    basestring = str
+
 
 @define_bt_node(NodeConfig(
     version='0.9.0',

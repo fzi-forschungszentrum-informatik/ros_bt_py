@@ -35,6 +35,11 @@ from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, Tree
 from ros_bt_py.node import Node, load_node_module, increment_name
 from ros_bt_py.debug_manager import DebugManager
 
+try:
+    unicode
+except NameError:
+    unicode = str
+
 
 def is_edit_service(func):
     """Decorator for all tree editing service handlers.
@@ -173,7 +178,7 @@ class TreeManager(object):
         if not self.nodes:
             return None
         # Find root node
-        possible_roots = [node for node in self.nodes.itervalues() if not node.parent]
+        possible_roots = [node for node in self.nodes.values() if not node.parent]
 
         if len(possible_roots) > 1:
             raise TreeTopologyError('Tree "%s" has multiple nodes without parents. '
@@ -222,7 +227,7 @@ class TreeManager(object):
 
         # First check for nodes with missing parents
         orphans = ['"%s"(parent: "%s")' % (node.name, node.parent.name if node.parent else '')
-                   for node in self.nodes.itervalues()
+                   for node in self.nodes.values()
                    if node.parent and node.parent.name not in self.nodes]
         if orphans:
             raise MissingParentError('The following nodes\' parents are missing: %s'
@@ -1162,7 +1167,7 @@ class TreeManager(object):
         # Find any options values that
         # a) the node does not expect
         # b) have the wrong type
-        for key, value in deserialized_options.iteritems():
+        for key, value in deserialized_options.items():
             if key not in node.options:
                 unknown_options.append(key)
                 continue
@@ -1702,10 +1707,10 @@ class TreeManager(object):
         def to_node_data(data_map):
             return [NodeData(key=name,
                              serialized_value=jsonpickle.encode(type_or_ref))
-                    for (name, type_or_ref) in data_map.iteritems()]
+                    for (name, type_or_ref) in data_map.items()]
 
-        for (module, nodes) in Node.node_classes.iteritems():
-            for (class_name, node_class) in nodes.iteritems():
+        for (module, nodes) in Node.node_classes.items():
+            for (class_name, node_class) in nodes.items():
                 max_children = node_class._node_config.max_children
                 max_children = -1 if max_children is None else max_children
                 doc = inspect.getdoc(node_class) or ''
@@ -1832,7 +1837,7 @@ class TreeManager(object):
         # TODO(nberg): Maybe switch over to using
         # root.get_subtree_msg(), but for now we maybe don't want that
         # overhead?
-        self.tree_msg.nodes = [node.to_msg() for node in self.nodes.itervalues()]
+        self.tree_msg.nodes = [node.to_msg() for node in self.nodes.values()]
 
         # TODO(khermann): using root.get_subtree_msg() here anyway
         # to get the correct public_node_data. Monitor overhead of this decision

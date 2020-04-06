@@ -18,6 +18,11 @@ from ros_bt_py.node_data import NodeData, NodeDataMap
 from ros_bt_py.node_config import NodeConfig, OptionRef
 from ros_bt_py.helpers import get_default_value
 
+try:
+    basestring
+except NameError:
+    basestring = str
+
 
 def _required(meth):
     """Mark a method as required.
@@ -689,8 +694,8 @@ class Node(object):
 
         """
         # Find the values that are not OptionRefs first
-        for key, data_type in {k: v for (k, v) in source_map.iteritems()
-                               if not isinstance(v, OptionRef)}.iteritems():
+        for key, data_type in {k: v for (k, v) in source_map.items()
+                               if not isinstance(v, OptionRef)}.items():
             if key in target_map:
                 raise NodeConfigError('Duplicate data name: %s' % key)
             target_map.add(key, NodeData(data_type=data_type))
@@ -715,8 +720,8 @@ class Node(object):
                         raise e
 
         # Now process OptionRefs
-        for key, data_type in {k: v for (k, v) in source_map.iteritems()
-                               if isinstance(v, OptionRef)}.iteritems():
+        for key, data_type in {k: v for (k, v) in source_map.items()
+                               if isinstance(v, OptionRef)}.items():
             if key in target_map:
                 raise NodeConfigError('Duplicate %s data name: %s' % (target_map.name, key))
 
@@ -880,7 +885,7 @@ class Node(object):
         try:
             for option in msg.options:
                 options_dict[option.key] = jsonpickle.decode(option.serialized_value)
-        except ValueError, e:
+        except ValueError as e:
             raise BehaviorTreeException('Failed to instantiate node from message: %s' %
                                         str(e))
 
@@ -902,7 +907,7 @@ class Node(object):
                 try:
                     node_instance.inputs[input_msg.key] = jsonpickle.decode(
                         input_msg.serialized_value)
-                except KeyError, e:
+                except KeyError as e:
                     rospy.logwarn("Could not set a non existing input %s", str(e))
                 except AttributeError as e:
                     if permissive:
@@ -910,7 +915,7 @@ class Node(object):
                     else:
                         raise AttributeError(
                             'AttributeError, maybe a ROS Message definition changed. ' + str(e))
-        except ValueError, e:
+        except ValueError as e:
             raise BehaviorTreeException('Failed to instantiate node from message: %s' %
                                         str(e))
 
@@ -920,7 +925,7 @@ class Node(object):
                 try:
                     node_instance.outputs[output_msg.key] = jsonpickle.decode(
                         output_msg.serialized_value)
-                except KeyError, e:
+                except KeyError as e:
                     rospy.logwarn("Could not set a non existing output %s", str(e))
                 except AttributeError as e:
                     if permissive:
@@ -928,7 +933,7 @@ class Node(object):
                     else:
                         raise AttributeError(
                             'AttributeError, maybe a ROS Message definition changed. ' + str(e))
-        except ValueError, e:
+        except ValueError as e:
             raise BehaviorTreeException('Failed to instantiate node from message: %s' %
                                         str(e))
 

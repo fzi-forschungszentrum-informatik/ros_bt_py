@@ -3,6 +3,16 @@ import rospy
 
 from ros_bt_py.helpers import loglevel_is
 
+try:
+    basestring
+except NameError:
+    basestring = str
+
+try:
+    unicode
+except NameError:
+    unicode = str
+
 
 def from_string(data_type, string_value, static=False):
     return NodeData(data_type=data_type,

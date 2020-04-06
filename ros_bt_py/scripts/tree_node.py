@@ -1,4 +1,5 @@
-#! /usr/bin/env python2.7
+#!/usr/bin/env python
+
 import rospy
 
 from ros_bt_py_msgs.msg import Messages, Packages
@@ -14,6 +15,11 @@ from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message
 from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.migration import MigrationManager
 from ros_bt_py.package_manager import PackageManager
+
+try:
+    basestring
+except NameError:
+    basestring = str
 
 
 class TreeNode(object):
