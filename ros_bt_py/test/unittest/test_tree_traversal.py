@@ -130,9 +130,7 @@ class TestTreeTraversal(unittest.TestCase):
         self.passthrough.unwire_data(wiring)
         wiring.target.data_key = 'in'
 
-        # It still throws for a wrong source or target node name, though:
-        wiring.source.node_name = 'baz'
-        self.assertRaises(BehaviorTreeException, self.passthrough.unwire_data, wiring)
+        # It still throws for a wrong target node name, though:
         wiring.source.node_name = 'inner_leaf_1'
 
         wiring.target.node_name = 'foobar'

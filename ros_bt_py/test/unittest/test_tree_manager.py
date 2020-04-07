@@ -17,7 +17,7 @@ from ros_bt_py_msgs.srv import (WireNodeDataRequest, AddNodeRequest, RemoveNodeR
                                 MorphNodeRequest, ClearTreeRequest, LoadTreeFromPathRequest,
                                 SetExecutionModeResponse, ModifyBreakpointsRequest,
                                 GetSubtreeRequest, ReloadTreeRequest, WireNodeDataResponse,
-                                RemoveNodeResponse, GenerateSubtreeRequest)
+                                RemoveNodeResponse, GenerateSubtreeRequest, AddNodeAtIndexRequest)
 
 from ros_bt_py.node import Node, Leaf, FlowControl, define_bt_node
 from ros_bt_py.node_config import NodeConfig
@@ -27,6 +27,8 @@ from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, Tree
 from ros_bt_py.tree_manager import TreeManager
 from ros_bt_py.tree_manager import (get_success as tm_get_success,
                                     get_error_message as tm_get_error_message)
+
+from ros_bt_py.ros_helpers import LoggerLevel
 
 try:
     unicode
@@ -2633,16 +2635,81 @@ class TestWiringServices(unittest.TestCase):
                                         data_key='invalid',
                                         data_kind=NodeDataLocation.INPUT_DATA)))
 
-        # Number of wirings should stay the same, since the unwire operation failed
+        # Number of wirings should be reduced by one since the second unwire request
+        # was ignore but the first was performed
         unwire_response = self.manager.unwire_data(unwire_request)
-        self.assertFalse(get_success(unwire_response))
-        self.assertEqual(len(self.manager.tree_msg.data_wirings), 2)
+        self.assertTrue(get_success(unwire_response))  # unwire is forgiving with wrong sources
+        self.assertEqual(len(self.manager.tree_msg.data_wirings), 1)
 
     def testWiringWithoutNodes(self):
         manager = TreeManager()
         wire_request = WireNodeDataRequest()
         wire_response = manager.wire_data(wire_request)
         self.assertFalse(get_success(wire_response))
+
+    def testWireAfterNodeRemoveAndAdd(self):
+        manager = TreeManager()
+
+        sequence_msg = NodeMsg(
+            module='ros_bt_py.nodes.sequence',
+            node_class='Sequence')
+
+        constant_msg = NodeMsg(
+            module='ros_bt_py.nodes.constant',
+            node_class='Constant',
+            options=[NodeData(key='constant_type',
+                              serialized_value=jsonpickle.encode(str)),
+                     NodeData(key='constant_value',
+                              serialized_value=jsonpickle.encode('hello'))])
+
+        log_msg = NodeMsg(
+            module='ros_bt_py.nodes.log',
+            node_class='Log',
+            options=[NodeData(key='logger_level',
+                              serialized_value=jsonpickle.encode(
+                                  LoggerLevel(logger_level='info')))])
+
+        add_response = manager.add_node(AddNodeRequest(node=sequence_msg))
+        self.assertTrue(get_success(add_response))
+
+        add_response = manager.add_node(
+            AddNodeRequest(node=constant_msg, parent_name='Sequence'))
+        self.assertTrue(get_success(add_response))
+
+        add_response = manager.add_node(
+            AddNodeRequest(node=log_msg, parent_name='Sequence'))
+        self.assertTrue(get_success(add_response))
+
+        # now that the nodes are added, wire constant.constant to log.in
+        wiring = NodeDataWiring(
+            source=NodeDataLocation(node_name='Constant',
+                                    data_key='constant',
+                                    data_kind=NodeDataLocation.OUTPUT_DATA),
+            target=NodeDataLocation(node_name='Log',
+                                    data_key='in',
+                                    data_kind=NodeDataLocation.INPUT_DATA))
+
+        wire_request = WireNodeDataRequest()
+        wire_request.wirings.append(wiring)
+
+        wire_response = manager.wire_data(wire_request)
+        self.assertTrue(get_success(wire_response))
+
+        remove_response = manager.remove_node(
+            RemoveNodeRequest(node_name='Constant'))
+        self.assertTrue(get_success(remove_response))
+
+        add_response = manager.add_node_at_index(
+            AddNodeAtIndexRequest(node=constant_msg, parent_name='Sequence',
+                                  new_child_index=0, allow_rename=False))
+        self.assertTrue(get_success(add_response))
+
+        # wiring should work because the old node got deleted
+        wire_request = WireNodeDataRequest()
+        wire_request.wirings.append(wiring)
+
+        wire_response = manager.wire_data(wire_request)
+        self.assertTrue(get_success(wire_response))
 
 
 def get_success(response):
