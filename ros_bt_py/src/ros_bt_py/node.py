@@ -1272,17 +1272,15 @@ class Node(object):
                 wiring.target.node_name,
                 self.name))
         source_node = self.find_node(wiring.source.node_name)
-        if not source_node:
-            raise BehaviorTreeException(
-                'Source node %s does not exist or is not connected to target node %s' % (
-                    wiring.source.node_name,
-                    self.name))
 
         if wiring not in self.subscriptions:
             # Nothing to do
             return
-        source_node._unsubscribe(wiring)
+
+        if source_node:
+            source_node._unsubscribe(wiring)
         self.subscriptions.remove(wiring)
+
         # If the removed wiring was the last subscription for this
         # datum, set it to None
         if not [sub for sub in self.subscriptions
