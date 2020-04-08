@@ -4,7 +4,8 @@ from ros_bt_py_msgs.msg import Node, UtilityBounds
 from ros_bt_py_msgs.msg import NodeDataWiring
 from ros_bt_py_msgs.msg import NodeDataLocation
 
-from ros_bt_py.nodes.list import ListLength, IsInList, IterateList
+from ros_bt_py.nodes.list import ListLength, IsInList, IterateList,\
+    InsertInList, GetListElementOption
 from ros_bt_py.nodes.mock_nodes import MockLeaf
 from ros_bt_py.nodes.compare import CompareConstant
 from ros_bt_py.nodes.decorators import IgnoreFailure
@@ -13,6 +14,7 @@ try:
     import unittest.mock as mock
 except ImportError:
     import mock
+
 
 class TestListLength(unittest.TestCase):
     def testListLength(self):
@@ -44,6 +46,80 @@ class TestIsInList(unittest.TestCase):
         self.assertEqual(in_list.reset(), Node.IDLE)
         self.assertFalse(in_list._received_in)
         self.assertEqual(in_list.shutdown(), Node.SHUTDOWN)
+
+
+class TestGetListElementOption(unittest.TestCase):
+    def testGetOption(self):
+        get_elem = GetListElementOption({
+            'element_type': str,
+            'index': 2
+        })
+        get_elem.setup()
+        get_elem.inputs['list'] = ['nop', 'no', 'yep']
+
+        self.assertEqual(get_elem.tick(), Node.SUCCEEDED)
+        self.assertEqual(get_elem.outputs['element'], 'yep')
+
+    def testOutOfRange(self):
+        get_elem = GetListElementOption({
+            'element_type': str,
+            'index': 5
+        })
+        get_elem.setup()
+        get_elem.inputs['list'] = ['nop', 'no', 'yep']
+
+        self.assertRaises(IndexError, get_elem.tick)
+
+    def testWrongType(self):
+        get_elem = GetListElementOption({
+            'element_type': int,
+            'index': 2
+        })
+        get_elem.setup()
+        get_elem.inputs['list'] = ['no', 'int', 'toto']
+        self.assertRaises(TypeError, get_elem.tick)
+
+
+class TestInsertInList(unittest.TestCase):
+    def testInsert(self):
+        insert = InsertInList({
+            'element_type': str,
+            'index': 2
+        })
+        insert.setup()
+        insert.inputs['list'] = ['first', 'before', 'after', 'last']
+        insert.inputs['element'] = 'here'
+
+        self.assertEqual(insert.tick(), Node.SUCCEEDED)
+        self.assertEqual(insert.outputs['list'][2], 'here')
+        self.assertEqual(insert.outputs['list'][1], 'before')
+        self.assertEqual(insert.outputs['list'][3], 'after')
+
+    def testOutOfRangePositive(self):
+        insert = InsertInList({
+            'element_type': str,
+            'index': 10
+        })
+        insert.setup()
+
+        # index > len(list) insert at last position
+        insert.inputs['list'] = ['first', 'before', 'after', 'last']
+        insert.inputs['element'] = 'here'
+        self.assertEqual(insert.tick(), Node.SUCCEEDED)
+        self.assertEqual(insert.outputs['list'][-1], 'here')
+
+    def testOutOfRangeNegative(self):
+        insert = InsertInList({
+            'element_type': str,
+            'index': -10
+        })
+        insert.setup()
+
+        # index > len(list) insert at last position
+        insert.inputs['list'] = ['first', 'before', 'after', 'last']
+        insert.inputs['element'] = 'here'
+        self.assertEqual(insert.tick(), Node.SUCCEEDED)
+        self.assertEqual(insert.outputs['list'][0], 'here')
 
 
 class TestIterateList(unittest.TestCase):
@@ -126,7 +202,8 @@ class TestIterateList(unittest.TestCase):
     def testIterateWithChildRunningInput(self):
         self.iterate.add_child(self.compare)
         self.connect_compare()
-        self.tick_count.side_effect = [Node.RUNNING, Node.SUCCEEDED, Node.RUNNING, Node.SUCCEEDED]
+        self.tick_count.side_effect = [
+            Node.RUNNING, Node.SUCCEEDED, Node.RUNNING, Node.SUCCEEDED]
 
         self.iterate.inputs['list'] = ['ignored', 'bymock']
         self.iterate.setup()

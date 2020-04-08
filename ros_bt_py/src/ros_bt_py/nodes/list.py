@@ -12,6 +12,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
     max_children=0))
 class ListLength(Leaf):
     """Compute list length"""
+
     def _do_setup(self):
         pass
 
@@ -38,6 +39,7 @@ class ListLength(Leaf):
     max_children=0))
 class GetListElementOption(Leaf):
     """Return element at given index in the list"""
+
     def _do_setup(self):
         pass
 
@@ -59,21 +61,23 @@ class GetListElementOption(Leaf):
     version='0.9.0',
     options={'element_type': type,
              'index': int
-    },
+             },
     inputs={'list': list,
             'element': OptionRef('element_type')
-    },
+            },
     outputs={'list': list},
     max_children=0))
 class InsertInList(Leaf):
     """Return a new list with the inserted element"""
+
     def _do_setup(self):
         pass
 
     def _do_tick(self):
         if self.inputs.is_updated('list') or self.inputs.is_updated('element'):
             self.outputs['list'] = list(self.inputs['list'])
-            self.outputs['list'].insert(self.options['index'], self.inputs['element'])
+            self.outputs['list'].insert(
+                self.options['index'], self.inputs['element'])
         return NodeMsg.SUCCEEDED
 
     def _do_shutdown(self):
@@ -100,6 +104,7 @@ class IsInList(Leaf):
 
     Will succeed if `in` is in `list` and fail otherwise
     """
+
     def _do_setup(self):
         self._received_in = False
         return NodeMsg.IDLE
@@ -134,7 +139,7 @@ class IsInList(Leaf):
     options={'item_type': type},
     inputs={'list': list},
     outputs={'list_item': OptionRef('item_type')
-    },
+             },
     max_children=1))
 class IterateList(Decorator):
     """
@@ -145,6 +150,7 @@ class IterateList(Decorator):
     If it managed to iterate through the list, it returns success.
     If the decorated child returned failure, it fails.
     """
+
     def _do_setup(self):
         self.reset_counter()
         for child in self.children:
