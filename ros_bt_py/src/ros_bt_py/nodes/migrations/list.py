@@ -12,6 +12,10 @@ class IterateList(Migration):
     def adding_version(self):
         pass
 
+class IterateList(Migration):
+    @migration(from_version='0.9.1', to_version='0.9.2', changelog='Failing on failed child')
+    def adding_version(self):
+        pass
 
 class IsInList(Migration):
     @migration(from_version='', to_version='0.9.0', changelog='added version')

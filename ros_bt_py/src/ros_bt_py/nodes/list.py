@@ -130,7 +130,7 @@ class IsInList(Leaf):
 
 
 @define_bt_node(NodeConfig(
-    version='0.9.1',
+    version='0.9.2',
     options={'item_type': type},
     inputs={'list': list},
     outputs={'list_item': OptionRef('item_type')
@@ -138,9 +138,12 @@ class IsInList(Leaf):
     max_children=1))
 class IterateList(Decorator):
     """
-    Iterate through list, will succeed if iterated through entire list,
-    returns running while iterating.
-    To be used as a decorator, with one child.
+    Iterate through list provided as input.
+    The elements in the list are iterated on the output list_item.
+    The iteration goes when the decorated child returns a success.
+    This node returns running until the iteration is done.
+    If it managed to iterate through the list, it returns success.
+    If the decorated child returned failure, it fails.
     """
     def _do_setup(self):
         self.reset_counter()
@@ -157,26 +160,31 @@ class IterateList(Decorator):
             self.logwarn('Input list changed - resetting iterator')
             self.reset_counter()
 
-        if self.counter < len(self.inputs['list']):
-            self.outputs['list_item'] = self.inputs['list'][self.counter]
+        self.outputs['list_item'] = self.inputs['list'][self.counter]
 
-            if len(self.children) == 0:
-                self.counter += 1
-            else:
-                if self.output_changed:
-                    # let one tick go for the tree to digest our new output before childs are ticked
-                    self.output_changed = False
-                    return NodeMsg.RUNNING
-                for child in self.children:
-                    result = child.tick()
-                    if result != NodeMsg.RUNNING:
-                        # we only increment the counter when the child succeeded or failed
-                        self.counter += 1
-                        self.output_changed = True
-            return NodeMsg.RUNNING
+        if len(self.children) == 0:
+            self.counter += 1
+            if self.counter == len(self.inputs['list']):
+                self.reset_counter()
+                return NodeMsg.SUCCEEDED
         else:
-            self.reset_counter()
-            return NodeMsg.SUCCEEDED
+            if self.output_changed:
+                # let one tick go for the tree to digest our new output before childs are ticked
+                self.output_changed = False
+                return NodeMsg.RUNNING
+            for child in self.children:
+                result = child.tick()
+                if result == NodeMsg.SUCCEEDED:
+                    # we only increment the counter when the child succeeded
+                    self.counter += 1
+                    self.output_changed = True
+                    if self.counter == len(self.inputs['list']):
+                        self.reset_counter()
+                        return NodeMsg.SUCCEEDED
+                elif result == NodeMsg.FAILED:
+                    # child failed: we failed
+                    return NodeMsg.FAILED
+        return NodeMsg.RUNNING
 
     def _do_untick(self):
         for child in self.children:
