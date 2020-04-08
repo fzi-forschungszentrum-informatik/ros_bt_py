@@ -106,10 +106,11 @@ class TestYamlListOption(unittest.TestCase):
         self.assertEqual(file_node.tick(), NodeMsg.SUCCESS)
 
         self.assertIsInstance(file_node.outputs['content'][0], dict)
-        self.assertEqual(list(file_node.outputs['content'][0].keys()), ['not_basestring'])
+        self.assertEqual(list(file_node.outputs['content'][0].keys()), [
+                         'not_basestring'])
 
 
-class TestYamlListInput(BasicFileInputTest,unittest.TestCase):
+class TestYamlListInput(BasicFileInputTest, unittest.TestCase):
     def make_file_input(self):
         return YamlListInput()
 
@@ -131,7 +132,7 @@ class TestYamlListInput(BasicFileInputTest,unittest.TestCase):
         self.assertEqual(file_node.shutdown(), NodeMsg.SHUTDOWN)
 
 
-class TestYamlDictInput(BasicFileInputTest,unittest.TestCase):
+class TestYamlDictInput(BasicFileInputTest, unittest.TestCase):
     def make_file_input(self):
         return YamlDictInput()
 
@@ -146,7 +147,8 @@ class TestYamlDictInput(BasicFileInputTest,unittest.TestCase):
 
         self.assertEqual(file_node.outputs['load_success'], True)
         self.assertEqual(file_node.outputs['content']['french'], 'bonjour')
-        self.assertEqual(file_node.outputs['content']['german']['south'], 'moin moin')
+        self.assertEqual(
+            file_node.outputs['content']['german']['south'], 'moin moin')
 
         self.assertEqual(file_node.untick(), NodeMsg.IDLE)
         self.assertEqual(file_node.reset(), NodeMsg.IDLE)
