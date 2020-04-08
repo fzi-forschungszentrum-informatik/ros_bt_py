@@ -1,10 +1,18 @@
 import unittest
 
 from ros_bt_py_msgs.msg import Node, UtilityBounds
+from ros_bt_py_msgs.msg import NodeDataWiring
+from ros_bt_py_msgs.msg import NodeDataLocation
 
 from ros_bt_py.nodes.list import ListLength, IsInList, IterateList
 from ros_bt_py.nodes.mock_nodes import MockLeaf
+from ros_bt_py.nodes.compare import CompareConstant
+from ros_bt_py.nodes.decorators import IgnoreFailure
 
+try:
+    import unittest.mock as mock
+except ImportError:
+    import mock
 
 class TestListLength(unittest.TestCase):
     def testListLength(self):
@@ -39,77 +47,118 @@ class TestIsInList(unittest.TestCase):
 
 
 class TestIterateList(unittest.TestCase):
-    def testIterateWithChild(self):
-        iterate_list = IterateList({
+    def setUp(self):
+        self.iterate = IterateList({
             'item_type': str
         })
 
-        run_success_fail = MockLeaf(
-            options={'output_type': int,
-                     'state_values': [Node.RUNNING,
-                                      Node.SUCCEEDED,
-                                      Node.FAILED],
-                     'output_values': [0, 1, 2]})
-        iterate_list.add_child(run_success_fail)
+        self.compare = CompareConstant({
+            'compare_type': str,
+            'expected': 'toto'
+        })
+        self.tick_count = mock.Mock(wraps=self.compare._do_tick)
+        self.compare._do_tick = self.tick_count
 
-        iterate_list.inputs['list'] = ['a', 'b']
+        self.ignore_failure = IgnoreFailure()
 
-        iterate_list.setup()
+    def connect_compare(self):
+        self.compare.wire_data(NodeDataWiring(
+            source=NodeDataLocation(
+                node_name=self.iterate.name,
+                data_kind=NodeDataLocation.OUTPUT_DATA,
+                data_key='list_item'
+            ),
+            target=NodeDataLocation(
+                node_name=self.compare.name,
+                data_kind=NodeDataLocation.INPUT_DATA,
+                data_key='in'
+            )))
 
+    def tick_until_compare_tick(self):
+        initial_count = self.tick_count.call_count
         max_iteration = 20
-        def tick_until_child_tick():
-            initial_count = run_success_fail.tick_count
-            max_iteration = 20
-            ii = 0
+        ii = 0
 
-            iterate_tick = []
-            while run_success_fail.tick_count != initial_count+1 and ii < max_iteration:
-                # tick the iterator until it decides to tick its child (or until we give up)
-                ii += 1
-                token = iterate_list.tick()
-                iterate_tick.append(token)
-            self.assertLess(ii, max_iteration)
-            return iterate_tick
+        last_tick = Node.RUNNING
+        while self.tick_count.call_count != initial_count+1 and ii < max_iteration:
+            # tick the iterator until it decides to tick its compare (or until we give up)
+            ii += 1
+            self.assertEqual(last_tick, Node.RUNNING)
+            last_tick = self.iterate.tick()
+        self.assertLess(ii, max_iteration)
+        return last_tick
 
-        iterator_tokens = tick_until_child_tick()
-        [ self.assertEqual(token, Node.RUNNING) for token in iterator_tokens ]
-        self.assertEqual(iterate_list.outputs['list_item'], 'a')
+    def testIterateWithChildSuccessInput(self):
+        self.iterate.add_child(self.ignore_failure)
+        self.ignore_failure.add_child(self.compare)
+        self.connect_compare()
 
-        # child returned running so output did not change
-        iterator_tokens = tick_until_child_tick()
-        [ self.assertEqual(token, Node.RUNNING) for token in iterator_tokens ]
-        self.assertEqual(iterate_list.outputs['list_item'], 'a')
+        self.iterate.inputs['list'] = ['some', 'ignored', 'string']
+        self.iterate.setup()
 
-        # child returned success so moved to next item in list
-        iterator_tokens = tick_until_child_tick()
-        self.assertEqual(iterate_list.outputs['list_item'], 'b')
-        [ self.assertEqual(token, Node.RUNNING) for token in iterator_tokens ]
+        token = self.tick_until_compare_tick()
+        self.assertEqual(token, Node.RUNNING)
+        self.assertEqual(self.compare.inputs['in'], 'some')
 
-        # last tick is success when iteration is over
-        self.assertEqual(iterate_list.tick(), Node.SUCCEEDED)
+        token = self.tick_until_compare_tick()
+        self.assertEqual(token, Node.RUNNING)
+        self.assertEqual(self.compare.inputs['in'], 'ignored')
 
-        self.assertEqual(iterate_list.untick(), Node.PAUSED)
-        self.assertEqual(iterate_list.children[0].state, Node.PAUSED)
-        self.assertEqual(iterate_list.reset(), Node.IDLE)
-        self.assertEqual(iterate_list.children[0].state, Node.IDLE)
-        self.assertEqual(iterate_list.shutdown(), Node.SHUTDOWN)
-        self.assertEqual(iterate_list.children[0].state, Node.SHUTDOWN)
+        token = self.tick_until_compare_tick()
+        self.assertEqual(token, Node.SUCCEEDED)
+        self.assertEqual(self.compare.inputs['in'], 'string')
+
+    def testIterateWithChildFailInput(self):
+        self.iterate.add_child(self.compare)
+        self.connect_compare()
+
+        self.iterate.inputs['list'] = ['toto', 'fail']
+        self.iterate.setup()
+
+        token = self.tick_until_compare_tick()
+        self.assertEqual(token, Node.RUNNING)
+        self.assertEqual(self.compare.inputs['in'], 'toto')
+
+        token = self.tick_until_compare_tick()
+        self.assertEqual(token, Node.FAILED)
+        self.assertEqual(self.compare.inputs['in'], 'fail')
+
+    def testIterateWithChildRunningInput(self):
+        self.iterate.add_child(self.compare)
+        self.connect_compare()
+        self.tick_count.side_effect = [Node.RUNNING, Node.SUCCEEDED, Node.RUNNING, Node.SUCCEEDED]
+
+        self.iterate.inputs['list'] = ['ignored', 'bymock']
+        self.iterate.setup()
+
+        token = self.tick_until_compare_tick()
+        self.assertEqual(token, Node.RUNNING)
+        self.assertEqual(self.compare.inputs['in'], 'ignored')
+
+        # child returned running - input did not change
+        token = self.tick_until_compare_tick()
+        self.assertEqual(token, Node.RUNNING)
+        self.assertEqual(self.compare.inputs['in'], 'ignored')
+
+        token = self.tick_until_compare_tick()
+        self.assertEqual(token, Node.RUNNING)
+        self.assertEqual(self.compare.inputs['in'], 'bymock')
+
+        # child returned running - input did not change
+        token = self.tick_until_compare_tick()
+        self.assertEqual(token, Node.SUCCEEDED)
+        self.assertEqual(self.compare.inputs['in'], 'bymock')
 
     def testIterateWithoutChild(self):
-        iterate_list = IterateList({
-            'item_type': str
-        })
+        self.iterate.inputs['list'] = ['a', 'b']
 
-        iterate_list.inputs['list'] = ['a', 'b']
+        self.iterate.setup()
 
-        iterate_list.setup()
+        self.assertEqual(self.iterate.tick(), Node.RUNNING)
+        self.assertEqual(self.iterate.outputs['list_item'], 'a')
+        self.assertEqual(self.iterate.tick(), Node.SUCCEEDED)
+        self.assertEqual(self.iterate.outputs['list_item'], 'b')
 
-        self.assertEqual(iterate_list.tick(), Node.RUNNING)
-        self.assertEqual(iterate_list.outputs['list_item'], 'a')
-        self.assertEqual(iterate_list.tick(), Node.RUNNING)
-        self.assertEqual(iterate_list.outputs['list_item'], 'b')
-        self.assertEqual(iterate_list.tick(), Node.SUCCEEDED)
-
-        self.assertEqual(iterate_list.untick(), Node.IDLE)
-        self.assertEqual(iterate_list.reset(), Node.IDLE)
-        self.assertEqual(iterate_list.shutdown(), Node.SHUTDOWN)
+        self.assertEqual(self.iterate.untick(), Node.IDLE)
+        self.assertEqual(self.iterate.reset(), Node.IDLE)
+        self.assertEqual(self.iterate.shutdown(), Node.SHUTDOWN)
