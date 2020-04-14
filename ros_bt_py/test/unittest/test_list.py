@@ -60,6 +60,10 @@ class TestGetListElementOption(unittest.TestCase):
         self.assertEqual(get_elem.tick(), Node.SUCCEEDED)
         self.assertEqual(get_elem.outputs['element'], 'yep')
 
+        self.assertEqual(get_elem.untick(), Node.IDLE)
+        self.assertEqual(get_elem.reset(), Node.IDLE)
+        self.assertEqual(get_elem.shutdown(), Node.SHUTDOWN)
+
     def testOutOfRange(self):
         get_elem = GetListElementOption({
             'element_type': str,
@@ -94,6 +98,10 @@ class TestInsertInList(unittest.TestCase):
         self.assertEqual(insert.outputs['list'][2], 'here')
         self.assertEqual(insert.outputs['list'][1], 'before')
         self.assertEqual(insert.outputs['list'][3], 'after')
+
+        self.assertEqual(insert.untick(), Node.IDLE)
+        self.assertEqual(insert.reset(), Node.IDLE)
+        self.assertEqual(insert.shutdown(), Node.SHUTDOWN)
 
     def testOutOfRangePositive(self):
         insert = InsertInList({
@@ -183,6 +191,10 @@ class TestIterateList(unittest.TestCase):
         token = self.tick_until_compare_tick()
         self.assertEqual(token, Node.SUCCEEDED)
         self.assertEqual(self.compare.inputs['in'], 'string')
+
+        self.assertEqual(self.iterate.untick(), Node.IDLE)
+        self.assertEqual(self.iterate.reset(), Node.IDLE)
+        self.assertEqual(self.iterate.shutdown(), Node.SHUTDOWN)
 
     def testIterateWithChildFailInput(self):
         self.iterate.add_child(self.compare)
