@@ -6,6 +6,7 @@ from ros_bt_py.node_config import NodeConfig
 from string import Formatter
 import os
 
+
 class ExtendedFormatter(Formatter):
     """An extended format string formatter
 

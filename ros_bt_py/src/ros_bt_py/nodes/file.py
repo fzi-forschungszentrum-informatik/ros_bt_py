@@ -26,7 +26,8 @@ def load_file(path):
         package_path = rospack.get_path(package_name)
         file_path = package_path + path[len('package://') + len(package_name):]
     else:
-        raise LoadFileError('File path "%s" is malformed. It needs to start with either "file://" or "package://"'.format(path))
+        raise LoadFileError('File path "%s" is malformed. It needs to start '
+                            'with either "file://" or "package://"'.format(path))
     try:
         data_file = open(file_path, 'r')
     except IOError as ex:
@@ -70,7 +71,6 @@ class YamlListOption(Leaf):
         except LoadFileError as ex:
             self.outputs['load_error_msg'] = str(ex)
 
-
     def _do_tick(self):
         if self.data is not None:
             self.outputs['content'] = self.data
@@ -89,7 +89,6 @@ class YamlListOption(Leaf):
         pass
 
 
-
 @define_bt_node(NodeConfig(
     version='1.0.0',
     options={},
@@ -98,8 +97,7 @@ class YamlListOption(Leaf):
              'load_error_msg': str,
              'content': list,
              'line_count': int},
-    max_children=0
-    ))
+    max_children=0))
 class YamlListInput(Leaf):
     """Loads a yaml file (list) from the location pointed to by `file_path`.
     This uses package:// and file:// style URIs.
@@ -147,8 +145,7 @@ class YamlListInput(Leaf):
              'load_error_msg': str,
              'content': dict
              },
-    max_children=0
-    ))
+    max_children=0))
 class YamlDictInput(Leaf):
     """Loads a yaml file (dict) from the location pointed to by `file_path`.
     This uses package:// and file:// style URIs.

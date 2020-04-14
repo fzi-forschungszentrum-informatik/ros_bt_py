@@ -156,7 +156,7 @@ class TestIterateList(unittest.TestCase):
         ii = 0
 
         last_tick = Node.RUNNING
-        while self.tick_count.call_count != initial_count+1 and ii < max_iteration:
+        while self.tick_count.call_count != initial_count + 1 and ii < max_iteration:
             # tick the iterator until it decides to tick its compare (or until we give up)
             ii += 1
             self.assertEqual(last_tick, Node.RUNNING)

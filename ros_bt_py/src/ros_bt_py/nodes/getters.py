@@ -207,7 +207,7 @@ class GetMultipleDictItems(Decorator):
 
         if self.inputs.is_updated('dict'):
             try:
-                self.outputs['values'] = [ self.inputs['dict'][k] for k in self.options['keys'] ]
+                self.outputs['values'] = [self.inputs['dict'][k] for k in self.options['keys']]
                 return NodeMsg.SUCCEEDED
             except KeyError:
                 self.logerr('One of the key (%s) is not in dict %s'
