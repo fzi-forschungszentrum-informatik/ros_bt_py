@@ -1,0 +1,60 @@
+name: ''
+path: ''
+root_name: ''
+nodes: 
+  - 
+    module: "ros_bt_py.nodes.service"
+    node_class: "ServiceInput"
+    version: ""
+    max_children: 0
+    name: "ServiceInput"
+    child_names: []
+    options: 
+      - 
+        key: "service_type"
+        serialized_value: "{\"py/type\": \"std_srvs.srv._SetBool.SetBool\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "wait_for_response_seconds"
+        serialized_value: "1.2"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+      - 
+        key: "request_type"
+        serialized_value: "{\"py/type\": \"std_srvs.srv._SetBool.SetBool\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "response_type"
+        serialized_value: "{\"py/type\": \"std_srvs.srv._SetBool.SetBoolResponse\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "service_name"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "request"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"std_srvs.srv._SetBool.SetBool\"}"
+    outputs: 
+      - 
+        key: "response"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"std_srvs.srv._SetBool.SetBoolResponse\"}"
+    option_wirings: []
+    state: "UNINITIALIZED"
+data_wirings: []
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: 
+  - 
+    node_name: "ServiceInput"
+    data_kind: "inputs"
+    data_key: "service_name"
+  - 
+    node_name: "ServiceInput"
+    data_kind: "inputs"
+    data_key: "request"
+  - 
+    node_name: "ServiceInput"
+    data_kind: "outputs"
+    data_key: "response"
