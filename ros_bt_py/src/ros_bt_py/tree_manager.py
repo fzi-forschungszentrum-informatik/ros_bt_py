@@ -35,9 +35,9 @@ from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, Tree
 from ros_bt_py.node import Node, load_node_module, increment_name
 from ros_bt_py.debug_manager import DebugManager
 
-try:
+try:  # pragma: no cover
     unicode
-except NameError:
+except NameError:  # pragma: no cover
     unicode = str
 
 

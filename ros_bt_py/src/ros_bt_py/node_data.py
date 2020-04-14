@@ -3,14 +3,14 @@ import rospy
 
 from ros_bt_py.helpers import loglevel_is
 
-try:
+try:  # pragma: no cover
     basestring
-except NameError:
+except NameError:  # pragma: no cover
     basestring = str
 
-try:
+try:  # pragma: no cover
     unicode
-except NameError:
+except NameError:  # pragma: no cover
     unicode = str
 
 

@@ -18,9 +18,9 @@ from ros_bt_py.node_data import NodeData, NodeDataMap
 from ros_bt_py.node_config import NodeConfig, OptionRef
 from ros_bt_py.helpers import get_default_value
 
-try:
+try:  # pragma: no cover
     basestring
-except NameError:
+except NameError:  # pragma: no cover
     basestring = str
 
 

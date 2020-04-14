@@ -4,19 +4,19 @@ import functools
 from collections import OrderedDict
 from ros_bt_py.ros_helpers import LoggerLevel
 
-try:
+try:  # pragma: no cover
     basestring
-except NameError:
+except NameError:  # pragma: no cover
     basestring = str
 
-try:
+try:  # pragma: no cover
     unicode
-except NameError:
+except NameError:  # pragma: no cover
     unicode = str
 
-try:
+try:  # pragma: no cover
     long
-except NameError:
+except NameError:  # pragma: no cover
     long = int
 
 
