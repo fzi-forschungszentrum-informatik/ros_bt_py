@@ -154,6 +154,14 @@ class TestMigrationManager(unittest.TestCase):
         self.assertTrue(migrate_reply.migrated)
 
         tree.path = 'package://ros_bt_py/test/testdata/trees/' \
+                    'migrations_serviceinput.yaml'
+        migrate_request = MigrateTreeRequest(tree=tree)
+
+        migrate_reply = migration_manager.migrate_tree(migrate_request)
+        self.assertTrue(migrate_reply.success)
+        self.assertTrue(migrate_reply.migrated)
+
+        tree.path = 'package://ros_bt_py/test/testdata/trees/' \
                     'migrations_waitforservice.yaml'
         migrate_request = MigrateTreeRequest(tree=tree)
 
@@ -194,6 +202,46 @@ class TestMigrationManager(unittest.TestCase):
         self.assertTrue(migrate_reply.migrated)
 
         tree.path = 'package://ros_bt_py/test/testdata/trees/' \
+                    'migrations_fileinput.yaml'
+        migrate_request = MigrateTreeRequest(tree=tree)
+
+        migrate_reply = migration_manager.migrate_tree(migrate_request)
+        self.assertTrue(migrate_reply.success)
+        self.assertTrue(migrate_reply.migrated)
+
+        tree.path = 'package://ros_bt_py/test/testdata/trees/' \
+                    'migrations_yamlinput.yaml'
+        migrate_request = MigrateTreeRequest(tree=tree)
+
+        migrate_reply = migration_manager.migrate_tree(migrate_request)
+        self.assertTrue(migrate_reply.success)
+        self.assertTrue(migrate_reply.migrated)
+
+        tree.path = 'package://ros_bt_py/test/testdata/trees/' \
+                    'migrations_yamllistinput.yaml'
+        migrate_request = MigrateTreeRequest(tree=tree)
+
+        migrate_reply = migration_manager.migrate_tree(migrate_request)
+        self.assertTrue(migrate_reply.success)
+        self.assertTrue(migrate_reply.migrated)
+
+        tree.path = 'package://ros_bt_py/test/testdata/trees/' \
+                    'migrations_yamllistoption.yaml'
+        migrate_request = MigrateTreeRequest(tree=tree)
+
+        migrate_reply = migration_manager.migrate_tree(migrate_request)
+        self.assertTrue(migrate_reply.success)
+        self.assertTrue(migrate_reply.migrated)
+
+        tree.path = 'package://ros_bt_py/test/testdata/trees/' \
+                    'migrations_yamldictinput.yaml'
+        migrate_request = MigrateTreeRequest(tree=tree)
+
+        migrate_reply = migration_manager.migrate_tree(migrate_request)
+        self.assertTrue(migrate_reply.success)
+        self.assertTrue(migrate_reply.migrated)
+
+        tree.path = 'package://ros_bt_py/test/testdata/trees/' \
                     'migrations_format.yaml'
         migrate_request = MigrateTreeRequest(tree=tree)
 
@@ -211,6 +259,46 @@ class TestMigrationManager(unittest.TestCase):
 
         tree.path = 'package://ros_bt_py/test/testdata/trees/' \
                     'migrations_io.yaml'
+        migrate_request = MigrateTreeRequest(tree=tree)
+
+        migrate_reply = migration_manager.migrate_tree(migrate_request)
+        self.assertTrue(migrate_reply.success)
+        self.assertTrue(migrate_reply.migrated)
+
+        tree.path = 'package://ros_bt_py/test/testdata/trees/' \
+                    'migrations_list_getlistelementoption.yaml'
+        migrate_request = MigrateTreeRequest(tree=tree)
+
+        migrate_reply = migration_manager.migrate_tree(migrate_request)
+        self.assertTrue(migrate_reply.success)
+        self.assertTrue(migrate_reply.migrated)
+
+        tree.path = 'package://ros_bt_py/test/testdata/trees/' \
+                    'migrations_list_insertinlist.yaml'
+        migrate_request = MigrateTreeRequest(tree=tree)
+
+        migrate_reply = migration_manager.migrate_tree(migrate_request)
+        self.assertTrue(migrate_reply.success)
+        self.assertTrue(migrate_reply.migrated)
+
+        tree.path = 'package://ros_bt_py/test/testdata/trees/' \
+                    'migrations_list_isinlist.yaml'
+        migrate_request = MigrateTreeRequest(tree=tree)
+
+        migrate_reply = migration_manager.migrate_tree(migrate_request)
+        self.assertTrue(migrate_reply.success)
+        self.assertTrue(migrate_reply.migrated)
+
+        tree.path = 'package://ros_bt_py/test/testdata/trees/' \
+                    'migrations_list_iteratelist.yaml'
+        migrate_request = MigrateTreeRequest(tree=tree)
+
+        migrate_reply = migration_manager.migrate_tree(migrate_request)
+        self.assertTrue(migrate_reply.success)
+        self.assertTrue(migrate_reply.migrated)
+
+        tree.path = 'package://ros_bt_py/test/testdata/trees/' \
+                    'migrations_list_listlength.yaml'
         migrate_request = MigrateTreeRequest(tree=tree)
 
         migrate_reply = migration_manager.migrate_tree(migrate_request)

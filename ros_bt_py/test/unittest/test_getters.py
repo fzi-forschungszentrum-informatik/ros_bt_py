@@ -7,7 +7,7 @@ from ros_bt_py_msgs.msg import NodeData, NodeDataLocation
 from ros_bt_py.exceptions import BehaviorTreeException, NodeConfigError
 from ros_bt_py.nodes.mock_nodes import MockLeaf
 from ros_bt_py.nodes.getters import GetConstListItem, GetListItem, GetDictItem, \
-    GetDictItemFromKey, GetAttr
+    GetDictItemFromKey, GetAttr, GetMultipleDictItems
 
 
 class TestListGetter(unittest.TestCase):
@@ -239,6 +239,97 @@ class TestDictGetter(unittest.TestCase):
         # Succeed on fail is true, so this should work too
         self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
         self.assertEqual(getter.outputs['value'], 42)
+
+
+class TestMultipleDictGetter(unittest.TestCase):
+    def testMultipleDictGetter(self):
+        getter = GetMultipleDictItems({'keys': ['frob', 'toto'],
+                                      'succeed_on_stale_data': False})
+        getter.setup()
+        self.assertEqual(NodeMsg.IDLE, getter.state)
+
+        getter.inputs['dict'] = {'foo': 5}
+        self.assertTrue(getter.inputs.is_updated('dict'))
+
+        # The required key 'frob' is not in the dict
+        self.assertEqual(NodeMsg.FAILED, getter.tick())
+
+        getter.inputs['dict'] = {
+            'foo': 5,
+            'bar': 'hello',
+            'frob': 42
+        }
+
+        # The required key 'toto' is not in the dict
+        self.assertEqual(NodeMsg.FAILED, getter.tick())
+
+        getter.inputs['dict'] = {
+            'foo': 5,
+            'bar': 'hello',
+            'frob': 42,
+            'toto': 55
+        }
+
+        # Now the keys 'frob' and 'toto' are in the dict
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
+        self.assertEqual(len(getter.outputs['values']), 2)
+        self.assertEqual(getter.outputs['values'][0], 42)
+        self.assertEqual(getter.outputs['values'][1], 55)
+
+        # Tick should return RUNNING on stale data
+        self.assertEqual(NodeMsg.RUNNING, getter.tick())
+
+        getter = GetMultipleDictItems({'keys': ['frob', 'toto'],
+                                       'succeed_on_stale_data': True})
+        getter.setup()
+        getter.inputs['dict'] = {
+            'foo': 5,
+            'bar': 'hello',
+            'frob': 42,
+            'toto': 55
+        }
+
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
+
+        # This tick should succeed on stale data
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
+
+        self.assertEqual(NodeMsg.IDLE, getter.untick())
+        self.assertEqual(NodeMsg.IDLE, getter.reset())
+        self.assertEqual(getter.outputs['values'], [])
+
+        self.assertEqual(NodeMsg.SHUTDOWN, getter.shutdown())
+
+    def testDictGetterAsDecorator(self):
+        getter = GetMultipleDictItems({'keys': ['frob', 'toto'],
+                                      'succeed_on_stale_data': True})
+        dict_provider = MockLeaf(
+            options={
+                'output_type': dict,
+                'state_values': [NodeMsg.SUCCEEDED],
+                'output_values': [{
+                    'foo': 5,
+                    'bar': 'hello',
+                    'frob': 42,
+                    'toto': 55
+                }]
+            })
+
+        getter.add_child(dict_provider)
+        dict_provider.outputs.subscribe('out', getter.inputs.get_callback('dict'))
+
+        getter.setup()
+
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
+        self.assertEqual(len(getter.outputs['values']), 2)
+        self.assertEqual(getter.outputs['values'][0], 42)
+        self.assertEqual(getter.outputs['values'][1], 55)
+
+        # Succeed on fail is true, so this should work too
+        self.assertEqual(NodeMsg.SUCCEEDED, getter.tick())
+        self.assertEqual(len(getter.outputs['values']), 2)
+        self.assertEqual(getter.outputs['values'][0], 42)
+        self.assertEqual(getter.outputs['values'][1], 55)
 
 
 class TestDictGetterFromKey(unittest.TestCase):

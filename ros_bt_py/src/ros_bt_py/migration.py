@@ -3,9 +3,9 @@ from copy import deepcopy
 from functools import wraps
 import importlib
 import inspect
-try:
+try:  # pragma: no cover
     from itertools import izip
-except ImportError:
+except ImportError:  # pragma: no cover
     izip = zip
 import jsonpickle
 import os

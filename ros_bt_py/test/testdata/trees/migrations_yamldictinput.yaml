@@ -1,0 +1,100 @@
+name: ''
+path: ''
+root_name: "Sequence"
+nodes: 
+  - 
+    module: "ros_bt_py.nodes.file"
+    node_class: "YamlDictInput"
+    version: ""
+    max_children: 0
+    name: "YamlDictInput"
+    child_names: []
+    options: []
+    inputs: 
+      - 
+        key: "file_path"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+    outputs: 
+      - 
+        key: "load_success"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+      - 
+        key: "content"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.dict\"}"
+      - 
+        key: "load_error_msg"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+    option_wirings: []
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    version: "0.9.0"
+    max_children: -1
+    name: "Sequence"
+    child_names: [Constant, YamlDictInput]
+    options: []
+    inputs: []
+    outputs: []
+    option_wirings: []
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.nodes.constant"
+    node_class: "Constant"
+    version: "0.9.0"
+    max_children: 0
+    name: "Constant"
+    child_names: []
+    options: 
+      - 
+        key: "constant_value"
+        serialized_value: "\"package://ros_bt_py/test/testdata/data/file_greetings.yaml\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "constant_type"
+        serialized_value: "{\"py/type\": \"__builtin__.str\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: []
+    outputs: 
+      - 
+        key: "constant"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+    option_wirings: 
+      - 
+        source: "constant_type"
+        target: "constant_value"
+    state: "UNINITIALIZED"
+data_wirings: 
+  - 
+    source: 
+      node_name: "Constant"
+      data_kind: "outputs"
+      data_key: "constant"
+    target: 
+      node_name: "YamlDictInput"
+      data_kind: "inputs"
+      data_key: "file_path"
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: 
+  - 
+    node_name: "Constant"
+    data_kind: "outputs"
+    data_key: "constant"
+  - 
+    node_name: "YamlDictInput"
+    data_kind: "outputs"
+    data_key: "load_success"
+  - 
+    node_name: "YamlDictInput"
+    data_kind: "outputs"
+    data_key: "content"
+  - 
+    node_name: "YamlDictInput"
+    data_kind: "outputs"
+    data_key: "load_error_msg"

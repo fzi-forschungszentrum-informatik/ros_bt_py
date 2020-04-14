@@ -3,7 +3,7 @@ import unittest
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py.nodes.format import FormatOptionNode, FormatInputNode, \
     FormatOptionListNode, FormatInputListNode, \
-    StringConcatenation
+    StringConcatenation, GetFileExtension
 
 from ros_bt_py.exceptions import BehaviorTreeException
 
@@ -141,3 +141,25 @@ class TestStringConcatenation(unittest.TestCase):
         self.assertEqual(concat.untick(), NodeMsg.IDLE)
         self.assertEqual(concat.reset(), NodeMsg.IDLE)
         self.assertEqual(concat.shutdown(), NodeMsg.SHUTDOWN)
+
+
+class TestFileExtension(unittest.TestCase):
+    def testFileExtension(self):
+        fileExtension = GetFileExtension()
+        fileExtension.inputs['path'] = 'toto.yaml'
+        self.assertEqual(fileExtension.state, NodeMsg.UNINITIALIZED)
+        fileExtension.setup()
+
+        self.assertEqual(fileExtension.state, NodeMsg.IDLE)
+        self.assertEqual(fileExtension.tick(), NodeMsg.SUCCEEDED)
+        self.assertEqual(fileExtension.outputs['extension'], '.yaml')
+        self.assertEqual(fileExtension.outputs['filename'], 'toto')
+
+        fileExtension.inputs['path'] = 'some/long/filepath/and.weird_filename.csv'
+        self.assertEqual(fileExtension.tick(), NodeMsg.SUCCEEDED)
+        self.assertEqual(fileExtension.outputs['extension'], '.csv')
+        self.assertEqual(fileExtension.outputs['filename'], 'some/long/filepath/and.weird_filename')
+
+        self.assertEqual(fileExtension.untick(), NodeMsg.IDLE)
+        self.assertEqual(fileExtension.reset(), NodeMsg.IDLE)
+        self.assertEqual(fileExtension.shutdown(), NodeMsg.SHUTDOWN)
