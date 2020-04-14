@@ -240,7 +240,7 @@ class ServiceInput(Leaf):
             self._service_proxy.shutdown()
 
     def _do_calculate_utility(self):
-        resolved_service = rospy.resolve_name(self.options['service_name'])
+        resolved_service = rospy.resolve_name(self.inputs['service_name'])
 
         try:
             service_type_name = rosservice.get_service_type(resolved_service)

@@ -42,3 +42,7 @@ class TestServiceInput(unittest.TestCase):
         unavailable_service.inputs['service_name'] = 'this_service_does_not_exist'
         unavailable_service.inputs['request'] = SetBoolRequest()
         self.assertEqual(unavailable_service.tick(), NodeMsg.FAILED)
+
+        expected_bounds = UtilityBounds()
+        self.assertEqual(
+            unavailable_service.calculate_utility(), expected_bounds)
