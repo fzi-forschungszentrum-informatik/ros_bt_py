@@ -5154,7 +5154,7 @@ class EditableNode extends Component
                        this.updateValue('options', action_type, x.msg.replace(replace_regex, action_name+action_types[action_type]));
                      }
                    }
-                 } else if (this.props.nodeClass === 'Service' && this.props.module === 'ros_bt_py.nodes.service')
+                 } else if ( (this.props.nodeClass === 'Service' || this.props.nodeClass === 'ServiceInput') && this.props.module === 'ros_bt_py.nodes.service')
                  {
                    var service_types = {service_type: '', request_type: 'Request', response_type: 'Response'};
                    var type_name = x.msg.split('.').pop();
