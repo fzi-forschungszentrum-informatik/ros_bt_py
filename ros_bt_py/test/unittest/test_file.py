@@ -5,7 +5,10 @@ from ros_bt_py.exceptions import BehaviorTreeException
 from ros_bt_py.nodes.file import YamlListOption, YamlListInput, YamlDictInput
 
 
-class BasicFileInputTest():
+class BasicFileInputTest(unittest.TestCase):
+    def make_file_input(self):
+        return YamlListInput()
+
     def testFileLoadNotAvailable(self):
         path = 'file://'
         file_node = self.make_file_input()
@@ -42,14 +45,18 @@ class BasicFileInputTest():
         self.assertEqual(file_node.tick(), NodeMsg.FAILED)
         self.assertEqual(file_node.outputs['content'], None)
 
+    def testFileInvalidYaml(self):
+        path = 'package://ros_bt_py/test/testdata/data/file_invalid_yaml.yaml'
+        file_node = self.make_file_input()
+        file_node.setup()
+        file_node.inputs['file_path'] = path
+        self.assertEqual(file_node.state, NodeMsg.IDLE)
+
+        self.assertEqual(file_node.tick(), NodeMsg.FAILED)
+        self.assertEqual(file_node.outputs['content'], None)
+
 
 class TestYamlListOption(unittest.TestCase):
-    def setUp(self):
-        # self.constant = Constant({'constant_type': int,
-        #                           'constant_value': 42})
-        # self.constant.setup()
-        pass
-
     def testFileLoad(self):
         path = 'package://ros_bt_py/test/testdata/data/file_greetings.yaml'
         file_node = YamlListOption(options={
