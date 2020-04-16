@@ -1001,6 +1001,12 @@ class LoadSaveControls extends Component
       serviceType: 'ros_bt_py_msgs/LoadTree'
     });
 
+    this.fix_yaml_service = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'fix_yaml',
+      serviceType: 'ros_bt_py_msgs/FixYaml'
+    });
+
     this.clear_service = new ROSLIB.Service({
       ros: this.props.ros,
       name: this.props.bt_namespace + 'clear',
@@ -1025,17 +1031,8 @@ class LoadSaveControls extends Component
     this.fileref.current.click();
   }
 
-  handleFileRead(event)
+  loadTreeMsg(msg)
   {
-    var msgs = jsyaml.loadAll(this.fileReader.result);
-
-    var msg = null;
-    for (var i = 0; i < msgs.length; i++) {
-      if (msgs[i] != null) {
-        msg = msgs[i];
-      }
-    }
-
     this.load_service.callService(
       new ROSLIB.ServiceRequest({
         tree: msg,
@@ -1072,6 +1069,43 @@ class LoadSaveControls extends Component
       function(failed) {
         this.props.onError('Error loading tree, is your yaml file correct? ' + failed)
       }.bind(this));
+  }
+
+  handleFileRead(event)
+  {
+    var msgs = [];
+    try {
+      msgs = jsyaml.loadAll(this.fileReader.result);
+      var msg = null;
+      for (var i = 0; i < msgs.length; i++) {
+        if (msgs[i] != null) {
+          msg = msgs[i];
+        }
+      }
+
+      this.loadTreeMsg(msg);
+    } catch (e) {
+      // try fixing the YAML error
+      this.fix_yaml_service.callService(
+        new ROSLIB.ServiceRequest({
+          broken_yaml: this.fileReader.result
+        }),
+        function(response) {
+          if (response.success) {
+            msgs = jsyaml.loadAll(response.fixed_yaml);
+            var msg = null;
+            for (var i = 0; i < msgs.length; i++) {
+              if (msgs[i] != null) {
+                msg = msgs[i];
+              }
+            }
+            this.loadTreeMsg(msg);
+          }
+        }.bind(this),
+        function(failed) {
+          this.props.onError('Error loading tree, is your yaml file correct? ' + failed)
+        }.bind(this));
+    }
   }
 
   downloadURI(uri, name) {

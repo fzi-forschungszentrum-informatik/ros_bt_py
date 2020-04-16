@@ -8,7 +8,7 @@ from ros_bt_py_msgs.msg import Tree, DebugInfo, DebugSettings, NodeDiagnostics
 from ros_bt_py_msgs.srv import (AddNode, AddNodeAtIndex, ControlTreeExecution, ModifyBreakpoints,
                                 RemoveNode, WireNodeData, GetAvailableNodes, SetExecutionMode,
                                 SetOptions, Continue, LoadTree, LoadTreeFromPath, MoveNode,
-                                ReplaceNode, GetSubtree, ClearTree, MorphNode, SaveTree)
+                                ReplaceNode, GetSubtree, ClearTree, MorphNode, SaveTree, FixYaml)
 from ros_bt_py_msgs.srv import (LoadTreeRequest, ControlTreeExecutionRequest, GetMessageFields,
                                 GetPackageStructure, MigrateTree, GenerateSubtree, ReloadTree)
 from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message
@@ -144,6 +144,10 @@ class TreeNode(object):
         self.reload_service = rospy.Service('~reload',
                                             ReloadTree,
                                             self.tree_manager.reload_tree)
+
+        self.fix_yaml_service = rospy.Service('~fix_yaml',
+                                              FixYaml,
+                                              self.tree_manager.fix_yaml)
 
         rospy.loginfo("initialized tree manager")
 
