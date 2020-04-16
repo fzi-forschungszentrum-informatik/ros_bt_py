@@ -2500,6 +2500,61 @@ class TestTreeManager(unittest.TestCase):
 
         self.assertTrue(get_success(res))
 
+    def testLoadFromFileWithPyYAMLgenpyMigration(self):
+        load_request = LoadTreeRequest(
+            tree=Tree(
+                name='migration',
+                path='package://ros_bt_py/test/testdata/trees/pyyaml_5_3_1_seq_multilayer.yaml'),
+            permissive=True)
+        response = self.manager.load_tree(load_request)
+
+        self.assertTrue(get_success(response), get_error_message(response))
+
+        load_request = LoadTreeRequest(
+            tree=Tree(
+                name='migration',
+                path='package://ros_bt_py/test/testdata/trees/pyyaml_5_3_1_1_child.yaml'),
+            permissive=True)
+        response = self.manager.load_tree(load_request)
+
+        self.assertTrue(get_success(response), get_error_message(response))
+
+        load_request = LoadTreeRequest(
+            tree=Tree(
+                name='migration',
+                path='package://ros_bt_py/test/testdata/trees/pyyaml_5_3_1_100_children.yaml'),
+            permissive=True)
+        response = self.manager.load_tree(load_request)
+
+        self.assertTrue(get_success(response), get_error_message(response))
+
+        load_request = LoadTreeRequest(
+            tree=Tree(
+                name='migration',
+                path='package://ros_bt_py/test/testdata/trees/pyyaml_5_3_1.yaml'),
+            permissive=True)
+        response = self.manager.load_tree(load_request)
+
+        self.assertTrue(get_success(response), get_error_message(response))
+
+        load_request = LoadTreeRequest(
+            tree=Tree(
+                name='migration',
+                path='package://ros_bt_py/test/testdata/trees/pyyaml_3_13.yaml'),
+            permissive=True)
+        response = self.manager.load_tree(load_request)
+
+        self.assertTrue(get_success(response), get_error_message(response))
+
+        load_request = LoadTreeRequest(
+            tree=Tree(
+                name='migration',
+                path='package://ros_bt_py/test/testdata/trees/pyyaml_3_13_100_children.yaml'),
+            permissive=True)
+        response = self.manager.load_tree(load_request)
+
+        self.assertTrue(get_success(response), get_error_message(response))
+
 
 class TestWiringServices(unittest.TestCase):
     def setUp(self):

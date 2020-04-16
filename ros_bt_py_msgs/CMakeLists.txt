@@ -37,6 +37,7 @@ add_service_files(
   Continue.srv
   ControlTreeExecution.srv
   EvaluateUtility.srv
+  FixYaml.srv
   GenerateSubtree.srv
   GetAvailableNodes.srv
   GetAvailableSubtrees.srv
