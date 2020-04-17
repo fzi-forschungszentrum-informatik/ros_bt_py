@@ -15,6 +15,7 @@ from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message
 from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.migration import MigrationManager
 from ros_bt_py.package_manager import PackageManager
+from ros_bt_py.helpers import fix_yaml
 
 try:
     basestring
@@ -147,7 +148,7 @@ class TreeNode(object):
 
         self.fix_yaml_service = rospy.Service('~fix_yaml',
                                               FixYaml,
-                                              self.tree_manager.fix_yaml)
+                                              fix_yaml)
 
         rospy.loginfo("initialized tree manager")
 

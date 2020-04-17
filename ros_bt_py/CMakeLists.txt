@@ -89,6 +89,9 @@ install(DIRECTORY html/
 roslint_python()
 
 if (CATKIN_ENABLE_TESTING)
+  # remove generated files
+  file(REMOVE_RECURSE test/testdata/save_data/generated_files)
+  file(MAKE_DIRECTORY test/testdata/save_data/generated_files)
   ## Add folders to be run by python nosetests
   # nosetest automatically collects test methods, no need for main
   # methods in your test files!
@@ -97,6 +100,7 @@ if (CATKIN_ENABLE_TESTING)
   find_package(rostest REQUIRED)
   add_rostest(test/rostest/async_service.test)
   add_rostest(test/rostest/parallel_if_remote.test)
+  add_rostest(test/rostest/package_manager.test)
   add_rostest(test/rostest/ros_header.test)
   add_rostest(test/rostest/ros_leaf_utility.test)
   add_rostest(test/rostest/ros_leaves.test)

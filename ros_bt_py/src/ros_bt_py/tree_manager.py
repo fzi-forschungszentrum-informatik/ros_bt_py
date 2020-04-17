@@ -14,7 +14,7 @@ import rospkg
 
 from ros_bt_py_msgs.srv import LoadTreeRequest, LoadTreeResponse
 from ros_bt_py_msgs.srv import LoadTreeFromPathResponse, MigrateTreeResponse
-from ros_bt_py_msgs.srv import FixYamlRequest, FixYamlResponse
+from ros_bt_py_msgs.srv import FixYamlRequest
 from ros_bt_py_msgs.srv import ClearTreeResponse
 from ros_bt_py_msgs.srv import MorphNodeResponse
 from ros_bt_py_msgs.srv import MoveNodeRequest, RemoveNodeRequest, ReplaceNodeRequest
@@ -34,6 +34,7 @@ from ros_bt_py_msgs.msg import DocumentedNode
 from ros_bt_py_msgs.msg import NodeData, NodeDataLocation, NodeOptionWiring
 
 from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, TreeTopologyError
+from ros_bt_py.helpers import fix_yaml
 from ros_bt_py.node import Node, load_node_module, increment_name
 from ros_bt_py.debug_manager import DebugManager
 
@@ -377,59 +378,6 @@ class TreeManager(object):
         response.tree = tree
         return response
 
-    def fix_yaml(self, request):
-        response = FixYamlResponse()
-
-        tree_yaml = request.broken_yaml
-
-        last_index = 0
-
-        index = 0
-        search_string = 'child_names: - '
-        replace_string = 'child_names:'
-        search_len = len(search_string)
-        replace_len = len(replace_string)
-        while index < len(tree_yaml):
-            index = tree_yaml.find(search_string, index)
-            if index == -1:
-                break
-
-            # find the last linebreak and count number of spaces until child_names:
-            linebreak_index = tree_yaml.rfind('\n', last_index, index)
-
-            indent = index - linebreak_index - 1 + 2
-
-            # now replace the search_string with the proper linebreak
-            tree_yaml = tree_yaml[:index + replace_len] + '\n' + \
-                tree_yaml[index + replace_len + 1:]
-
-            # now check all newlines until they are not "\n- " any more
-            newline_index = index + replace_len
-
-            # update for next check
-            index = index + search_len
-            last_index = index
-
-            # rospy.logerr("newline: %s" % tree_yaml[newline_index:])
-            while newline_index < len(tree_yaml):
-                # skip "\n"
-                newline_index = newline_index + 1
-                # check if the line starts with "- "
-                if tree_yaml[newline_index:newline_index + 2] == "- ":
-                    # fix it by adding the correct indent:
-                    tree_yaml = tree_yaml[:newline_index] + ' ' * indent + \
-                        tree_yaml[newline_index:]
-                else:
-                    # found no compatible newline
-                    break
-                # find next "\n"
-                newline_index = tree_yaml.find('\n', newline_index + indent + 2)
-
-        response.success = True
-        response.fixed_yaml = tree_yaml
-
-        return response
-
     def load_tree_from_file(self, request):
         """Loads a tree file from disk
         """
@@ -479,7 +427,7 @@ class TreeManager(object):
                     # ScannerError most likely means that the tree was created
                     # with PyYAML 5 and genpy <0.6.10
                     # fix this by correctly indenting the broken lists
-                    fix_yaml_response = self.fix_yaml(request=FixYamlRequest(broken_yaml=tree_yaml))
+                    fix_yaml_response = fix_yaml(request=FixYamlRequest(broken_yaml=tree_yaml))
 
                     # try parsing again with fixed tree_yaml:
                     response = self.parse_tree_yaml(tree_yaml=fix_yaml_response.fixed_yaml)
