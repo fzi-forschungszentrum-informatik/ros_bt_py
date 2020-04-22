@@ -187,21 +187,7 @@ class ALessThanB(Leaf):
         pass
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={
-        'target': float
-    },
-    inputs={
-        'a': float
-    },
-    outputs={},
-    max_children=0))
-class LessThanConstant(Leaf):
-    """Compares `a` and `target`
-
-    Will succeed if `a < target` and fail otherwise
-    """
+class LessThanConstantImp:
     def _do_setup(self):
         self._received_in = False
         return NodeMsg.IDLE
@@ -229,3 +215,41 @@ class LessThanConstant(Leaf):
     def _do_shutdown(self):
         # Nothing to do
         pass
+
+
+
+@define_bt_node(NodeConfig(
+    version='0.9.0',
+    options={
+        'target': float
+    },
+    inputs={
+        'a': float
+    },
+    outputs={},
+    max_children=0))
+class LessThanConstant(LessThanConstantImp,Leaf):
+    """Compares `a` and `target`
+
+    Will succeed if `a < target` and fail otherwise
+    """
+    pass
+
+
+
+@define_bt_node(NodeConfig(
+    version='0.9.0',
+    options={
+        'target': int
+    },
+    inputs={
+        'a': int
+    },
+    outputs={},
+    max_children=0))
+class LessThanIntConstant(LessThanConstantImp,Leaf):
+    """Compares `a` and `target`
+
+    Will succeed if `a < target` and fail otherwise
+    """
+    pass
