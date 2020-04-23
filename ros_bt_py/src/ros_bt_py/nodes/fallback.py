@@ -8,6 +8,53 @@ from ros_bt_py.node_config import NodeConfig
 @define_bt_node(NodeConfig(
     version='0.9.0',
     options={},
+    inputs={'name': str},
+    outputs={},
+    max_children=None))
+class NameSwitch(FlowControl):
+    def _do_setup(self):
+        self.child_map = { child.name.split('.')[-1] : child for child in self.children }
+        for child in self.children:
+            child.setup()
+
+    def _do_tick(self):
+        name = self.inputs['name']
+        if name not in self.child_map:
+            self.logwarn('Ticking without children. Is this really what you want?')
+            return NodeMsg.FAILED
+
+        # If we've previously succeeded or failed, untick all children
+        if self.state in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
+            for child in self.children:
+                child.reset()
+
+        for child_name, child in self.child_map.items():
+            if not child_name == name:
+                child.untick()
+
+        return self.child_map[name].tick()
+
+    def _do_untick(self):
+        for child in self.children:
+            child.untick()
+        return NodeMsg.IDLE
+
+    def _do_reset(self):
+        for child in self.children:
+            child.reset()
+        return NodeMsg.IDLE
+
+    def _do_shutdown(self):
+        for child in self.children:
+            child.shutdown()
+
+    def _do_calculate_utility(self):
+        return calculate_utility_fallback(self.children)
+
+
+@define_bt_node(NodeConfig(
+    version='0.9.0',
+    options={},
     inputs={},
     outputs={},
     max_children=None))

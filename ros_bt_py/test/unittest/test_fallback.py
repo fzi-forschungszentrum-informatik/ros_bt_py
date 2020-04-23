@@ -4,7 +4,61 @@ import unittest
 from ros_bt_py_msgs.msg import Node, UtilityBounds
 
 from ros_bt_py.nodes.mock_nodes import MockLeaf, MockUtilityLeaf
-from ros_bt_py.nodes.fallback import Fallback, MemoryFallback
+from ros_bt_py.nodes.fallback import Fallback, MemoryFallback, NameSwitch
+
+
+class TestNameSwitch(unittest.TestCase):
+    def setUp(self):
+        self.toto = MockLeaf(name='toto',
+                             options={'output_type': int,
+                                      'state_values': [Node.SUCCEEDED],
+                                      'output_values': [1]})
+
+        self.foo = MockLeaf(name='foo',
+                             options={'output_type': int,
+                                      'state_values': [Node.FAILED],
+                                      'output_values': [1]})
+
+
+        self.bar = MockLeaf(name='bar',
+                             options={'output_type': int,
+                                      'state_values': [Node.RUNNING,Node.SUCCEEDED],
+                                      'output_values': [1,2]})
+        self.name_switch = NameSwitch()
+        self.name_switch.add_child(self.toto)
+        self.name_switch.add_child(self.foo)
+        self.name_switch.add_child(self.bar)
+
+    def testRunChildName(self):
+        self.name_switch.inputs['name'] = 'toto'
+        self.name_switch.setup()
+        self.name_switch.tick()
+        self.assertEqual(self.name_switch.state, Node.SUCCEEDED)
+        self.assertEqual(self.toto.outputs['tick_count'], 1)
+        self.assertEqual(self.foo.outputs['untick_count'], 1)
+        self.assertEqual(self.bar.outputs['untick_count'], 1)
+
+        self.name_switch.inputs['name'] = 'foo'
+        self.name_switch.tick()
+        self.assertEqual(self.name_switch.state, Node.FAILED)
+        self.assertEqual(self.foo.outputs['tick_count'], 1)
+        self.assertEqual(self.toto.outputs['untick_count'], 1)
+        self.assertEqual(self.bar.outputs['untick_count'], 2)
+
+    def testInputReset(self):
+        self.name_switch.inputs['name'] = 'toto'
+        self.name_switch.setup()
+        self.name_switch.tick()
+        self.assertEqual(self.name_switch.state, Node.SUCCEEDED)
+        self.assertEqual(self.toto.outputs['tick_count'], 1)
+        self.assertEqual(self.foo.outputs['untick_count'], 1)
+        self.assertEqual(self.bar.outputs['untick_count'], 1)
+
+        self.name_switch.tick()
+        self.assertEqual(self.name_switch.state, Node.SUCCEEDED)
+        self.assertEqual(self.toto.outputs['tick_count'], 2)
+        self.assertEqual(self.foo.outputs['untick_count'], 2)
+        self.assertEqual(self.bar.outputs['untick_count'], 2)
 
 
 class TestFallback(unittest.TestCase):
