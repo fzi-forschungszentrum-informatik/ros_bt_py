@@ -932,6 +932,12 @@ class App extends Component
       toggle_ui_visibility_text = 'Show User Interface';
     }
 
+    var tree_name = null;
+    if (this.state.last_tree_msg)
+    {
+      tree_name = this.state.last_tree_msg.name;
+    }
+
     return (
       <div onMouseUp={this.check_dragging} className={dragging_cursor}>
         <ReactModal key={this.state.bt_namespace}
@@ -955,7 +961,7 @@ class App extends Component
               {show_nodelist_button}
               <div className="container-fluid d-flex h-100 flex-column">
                 <div className="row">
-                  <div className="col d-flex">
+                  <div className="col d-flex align-items-center">
                     <SelectTree key={this.state.bt_namespace}
                                 ros={this.state.ros}
                                 bt_namespace={this.state.bt_namespace}
@@ -982,6 +988,14 @@ class App extends Component
                                     }>
                       {toggle_ui_visibility_text}
                     </button>
+                    <div>
+                      <label className="form-inline m-1 ml-2">Name:
+                        <input className="ml-1"
+                               type="text"
+                               disabled={true}
+                               value={tree_name}/>
+                      </label>
+                    </div>
                     <Spacer />
                     <SelectEditorSkin changeSkin={this.changeSkin}/>
                   </div>
