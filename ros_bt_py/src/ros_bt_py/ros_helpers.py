@@ -50,7 +50,8 @@ class AsyncServiceProxy(object):
 
     def shutdown(self):
         self.stop_call()
-        self._data['proxy'].close()
+        if self._data['proxy'] is not None:
+            self._data['proxy'].close()
         self._data['proxy'] = None
 
     def stop_call(self):

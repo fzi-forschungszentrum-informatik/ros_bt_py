@@ -1,17 +1,25 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 
 import unittest
+try:
+    import unittest.mock as mock
+except ImportError:
+    import mock
 
 import jsonpickle
 import rospy
+import rosservice
 
 from std_msgs.msg import Bool
 
 from ros_bt_py_msgs.srv import LoadTree, LoadTreeRequest
 from ros_bt_py_msgs.srv import ControlTreeExecution, ControlTreeExecutionRequest
+from ros_bt_py_msgs.srv import ControlTreeExecutionResponse
 from ros_bt_py_msgs.msg import Tree, Node as NodeMsg, UtilityBounds
 
 from ros_bt_py.nodes.remote_slot import RemoteSlot
+
+from ros_bt_py.ros_helpers import AsyncServiceProxy
 
 PKG = 'ros_bt_py'
 
@@ -362,6 +370,39 @@ class TestShoveTree(unittest.TestCase):
                                        has_lower_bound_failure=True,
                                        has_upper_bound_failure=True))
 
+    @mock.patch('ros_bt_py.nodes.remote_slot.rosservice.get_service_type')
+    def testRemoteExecutionWithRemoteSlotNodeCalculateUtilityException(self, mock_rosservice):
+        # First, create and set up the RemoteSlot node that will control the slot
+        remote_slot_node = RemoteSlot(options={
+            'slot_namespace': '/remote_slot/remote_slot',
+            'wait_for_service_seconds': 5.0
+        })
+
+        remote_slot_node.setup()
+        self.assertEqual(remote_slot_node.state, NodeMsg.IDLE)
+
+        # No tree in the slot yet, so the node should short-circuit to
+        # succeeding
+        self.assertEqual(remote_slot_node.tick(), NodeMsg.SUCCEEDED)
+
+        # Now load the tree, as above:
+        load_res = self.load_tree_proxy(LoadTreeRequest(
+            tree=Tree(path="package://ros_bt_py/etc/trees/test_shove_tree.yaml")))
+        self.assertTrue(load_res.success, load_res.error_message)
+
+        exec_res = self.control_tree_proxy(ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.TICK_UNTIL_RESULT,
+            tick_frequency_hz=10.0))
+        self.assertTrue(exec_res.success, exec_res.error_message)
+
+        # Enough for the tree to be shoved over
+        rospy.sleep(2.0)
+
+        mock_rosservice.side_effect = rosservice.ROSServiceIOException
+
+        self.assertEqual(remote_slot_node.calculate_utility(),
+                         UtilityBounds())
+
     def testRemoteExecutionWithRemoteSlotNodeCalculateUtilityServiceNotAvailable(self):
         # First, create and set up the RemoteSlot node that will control the slot
         remote_slot_node = RemoteSlot(options={
@@ -373,6 +414,71 @@ class TestShoveTree(unittest.TestCase):
 
         self.assertEqual(remote_slot_node.calculate_utility(),
                          UtilityBounds())
+
+    def testRemoteExecutionWithRemoteSlotNodeAsyncProxyError(self):
+        # First, create and set up the RemoteSlot node that will control the slot
+        remote_slot_node = RemoteSlot(options={
+            'slot_namespace': '/remote_slot/remote_slot',
+            'wait_for_service_seconds': 5.0
+        })
+
+        remote_slot_node.setup()
+        self.assertEqual(remote_slot_node.state, NodeMsg.IDLE)
+
+        # No tree in the slot yet, so the node should short-circuit to
+        # succeeding
+        self.assertEqual(remote_slot_node.tick(), NodeMsg.SUCCEEDED)
+
+        # Now load the tree, as above:
+        load_res = self.load_tree_proxy(LoadTreeRequest(
+            tree=Tree(path="package://ros_bt_py/etc/trees/test_shove_tree.yaml")))
+        self.assertTrue(load_res.success, load_res.error_message)
+
+        exec_res = self.control_tree_proxy(ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.TICK_UNTIL_RESULT,
+            tick_frequency_hz=10.0))
+        self.assertTrue(exec_res.success, exec_res.error_message)
+
+        # Enough for the tree to be shoved over
+        rospy.sleep(2.0)
+
+        remote_slot_node._service_proxy.get_state = mock.MagicMock()
+        remote_slot_node._service_proxy.get_state.return_value = AsyncServiceProxy.ERROR
+        self.assertEqual(remote_slot_node.tick(), NodeMsg.FAILED)
+
+    def testRemoteExecutionWithRemoteSlotNodeAsyncProxyResponseReady(self):
+        # First, create and set up the RemoteSlot node that will control the slot
+        remote_slot_node = RemoteSlot(options={
+            'slot_namespace': '/remote_slot/remote_slot',
+            'wait_for_service_seconds': 5.0
+        })
+
+        remote_slot_node.setup()
+        self.assertEqual(remote_slot_node.state, NodeMsg.IDLE)
+
+        # No tree in the slot yet, so the node should short-circuit to
+        # succeeding
+        self.assertEqual(remote_slot_node.tick(), NodeMsg.SUCCEEDED)
+
+        # Now load the tree, as above:
+        load_res = self.load_tree_proxy(LoadTreeRequest(
+            tree=Tree(path="package://ros_bt_py/etc/trees/test_shove_tree.yaml")))
+        self.assertTrue(load_res.success, load_res.error_message)
+
+        exec_res = self.control_tree_proxy(ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.TICK_UNTIL_RESULT,
+            tick_frequency_hz=10.0))
+        self.assertTrue(exec_res.success, exec_res.error_message)
+
+        # Enough for the tree to be shoved over
+        rospy.sleep(2.0)
+
+        remote_slot_node._service_proxy.get_state = mock.MagicMock()
+        remote_slot_node._service_proxy.get_state.return_value = AsyncServiceProxy.RESPONSE_READY
+        remote_slot_node._service_proxy.get_response = mock.MagicMock()
+        remote_slot_node._service_proxy.get_response.return_value = ControlTreeExecutionResponse(
+            success=False)
+        self.assertEqual(remote_slot_node.tick(), NodeMsg.FAILED)
 
 
 def get_root(tree_msg):

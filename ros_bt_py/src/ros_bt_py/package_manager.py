@@ -1,7 +1,7 @@
 import jsonpickle
 import os
 
-import roslib
+import roslib.message
 import rospkg
 import rospy
 import genpy
@@ -10,9 +10,10 @@ import catkin
 from catkin.find_in_workspaces import find_in_workspaces
 from ros_bt_py_msgs.msg import Message, Messages, Package, Packages
 from ros_bt_py_msgs.srv import GetMessageFields, GetMessageFieldsResponse, SaveTreeResponse
-from ros_bt_py_msgs.srv import GetPackageStructureResponse
+from ros_bt_py_msgs.srv import GetPackageStructureResponse, FixYamlRequest
 
 from ros_bt_py.node import increment_name
+from ros_bt_py.helpers import fix_yaml
 
 
 class PackageManager(object):
@@ -146,69 +147,6 @@ class PackageManager(object):
 
         self.packages_list_pub.publish(list_of_packages)
 
-    def _root(self, name=None, children=[]):
-        return {
-            "type": "root",
-            "name": name,
-            "children": children,
-        }
-
-    def _workspace(self, name=None, children=[], absolute_path=None):
-        return {
-            "type": "workspace",
-            "name": name,
-            "children": children,
-            "absolute_path": absolute_path,
-        }
-
-    def _package(self, name=None, children=[]):
-        return {
-            "type": "package",
-            "name": name,
-            "children": children,
-        }
-
-    def get_workspace_tree(self):
-        """Returns a tree that contains all catkin workspaces with a source space and their packages
-        """
-
-        # get a list of all packages
-        packages = self.rospack.list()
-
-        list_of_packages = []
-
-        for package in packages:
-            # add all paths to the package path to be able to load installed capabilities
-            package_path = self.rospack.get_path(package)
-            package_msg = {}
-            package_msg["name"] = package
-            package_msg["path"] = package_path
-            list_of_packages.append(package_msg)
-
-        workspace_tree = self._root()
-        for ws in catkin.workspace.get_workspaces():
-            source_paths = catkin.workspace.get_source_paths(ws)
-            rospy.logwarn(source_paths)
-            if len(source_paths) == 0:
-                continue
-            elif len(source_paths) > 1:
-                rospy.logwarn("multiple source paths, only adding the first")
-
-            # only consider the first source_path
-            source_path = source_paths[0]
-
-            workspace = self._workspace(absolute_path=source_path)
-
-            # filter the packages to only include packages in the source space
-            for source_path in source_paths:
-                for package in list_of_packages:
-                    if package["path"].startswith(source_path):
-                        workspace["children"].append(self._package(name=package["name"]))
-
-            workspace_tree["children"].append(workspace)
-
-        return workspace_tree
-
     def get_id(self):
         self.item_id += 1
         return self.item_id
@@ -239,18 +177,12 @@ class PackageManager(object):
         response = GetPackageStructureResponse()
         try:
             package_path = self.rospack.get_path(request.package)
-            if not os.path.isdir(package_path):
-                response.success = False
-                response.error_message = 'Package path "{}" does not exist'.format(package_path)
-            else:
+            self.reset_id()
+            package_structure = self.path_to_dict(
+                path=package_path, show_hidden=request.show_hidden)
 
-                self.reset_id()
-                package_structure = self.path_to_dict(
-                    path=package_path, show_hidden=request.show_hidden)
-
-                response.success = True
-                response.package_structure = jsonpickle.encode(package_structure)
-
+            response.success = True
+            response.package_structure = jsonpickle.encode(package_structure)
         except rospkg.common.ResourceNotFound:
             response.success = False
             response.error_message = 'Package "{}" does not exist'.format(request.package)
@@ -282,54 +214,54 @@ class PackageManager(object):
 
         try:
             package_path = self.rospack.get_path(request.package)
-            if not os.path.isdir(package_path):
+            save_path = os.path.join(package_path, request.filename)
+
+            if os.path.commonprefix(
+                    [os.path.realpath(save_path), package_path]) != package_path:
                 response.success = False
-                response.error_message = 'Package path "{}" does not exist'.format(package_path)
-            else:
-                save_path = os.path.join(package_path, request.filename)
+                response.error_message = 'Path outside package path'
+                return response
+            save_path = save_path.rstrip(os.sep)  # split trailing /
+            path, filename = os.path.split(save_path)
 
-                if os.path.commonprefix(
-                        [os.path.realpath(save_path), package_path]) != package_path:
+            try:
+                os.makedirs(path)
+            except OSError:
+                if not os.path.isdir(path):
                     response.success = False
-                    response.error_message = 'Path outside package path'
+                    response.error_message = "Could not create path"
                     return response
-                save_path = save_path.rstrip(os.sep)  # split trailing /
-                path, filename = os.path.split(save_path)
 
-                try:
-                    os.makedirs(path)
-                except OSError:
-                    if not os.path.isdir(path):
+            if os.path.isdir(save_path):
+                response.success = False
+                response.error_message = "File path already exists as directory"
+                return response
+
+            if os.path.isfile(save_path):
+                if request.allow_rename:
+                    save_path = self.make_filepath_unique(save_path)
+                    if os.path.isfile(save_path):
                         response.success = False
-                        response.error_message = "Could not create path"
+                        response.error_message = "Rename failed"
+                        return response
+                else:
+                    if not request.allow_overwrite:
+                        response.success = False
+                        response.error_message = "Overwrite not allowed"
                         return response
 
-                if os.path.isdir(save_path):
-                    response.success = False
-                    response.error_message = "File path already exists as directory"
-                    return response
-
-                if os.path.isfile(save_path):
-                    if request.allow_rename:
-                        save_path = self.make_filepath_unique(save_path)
-                        if os.path.isfile(save_path):
-                            response.success = False
-                            response.error_message = "Rename failed"
-                            return response
-                    else:
-                        if not request.allow_overwrite:
-                            response.success = False
-                            response.error_message = "Overwrite not allowed"
-                            return response
-
-                with open(save_path, 'w') as save_file:
-                    msg = genpy.message.strify_message(request.tree)
-                    save_file.write(msg)
-                response.success = True
-                return response
+            with open(save_path, 'w') as save_file:
+                msg = genpy.message.strify_message(request.tree)
+                fix_yaml_response = fix_yaml(request=FixYamlRequest(broken_yaml=msg))
+                save_file.write(fix_yaml_response.fixed_yaml)
+            response.success = True
+            return response
 
         except rospkg.common.ResourceNotFound:
             response.success = False
             response.error_message = 'Package "{}" does not exist'.format(request.package)
+        except IOError:
+            response.success = False
+            response.error_message = 'IOError on file: "{}"'.format(request.filename)
 
         return response

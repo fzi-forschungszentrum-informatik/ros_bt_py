@@ -1,0 +1,109 @@
+name: ''
+path: ''
+root_name: ''
+nodes: 
+  - 
+    module: "ros_bt_py.nodes.constant"
+    node_class: "Constant"
+    version: "0.9.0"
+    max_children: 0
+    name: "Constant"
+    child_names: []
+    options: 
+      - 
+        key: "constant_value"
+        serialized_value: "{\"py/object\": \"ros_bt_py_msgs.srv._TestService.TestServiceRequest\", \"py/state\"\
+  : [\"\", false]}"
+        serialized_type: "{\"py/type\": \"ros_bt_py_msgs.srv._TestService.TestServiceRequest\"}"
+      - 
+        key: "constant_type"
+        serialized_value: "{\"py/type\": \"ros_bt_py_msgs.srv._TestService.TestServiceRequest\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: []
+    outputs: 
+      - 
+        key: "constant"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"ros_bt_py_msgs.srv._TestService.TestServiceRequest\"}"
+    option_wirings: 
+      - 
+        source: "constant_type"
+        target: "constant_value"
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.nodes.service"
+    node_class: "Service"
+    version: "0.9.0"
+    max_children: 0
+    name: "Service"
+    child_names: []
+    options: 
+      - 
+        key: "wait_for_service_seconds"
+        serialized_value: "1.2"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+      - 
+        key: "service_name"
+        serialized_value: "\"foo\""
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "wait_for_response_seconds"
+        serialized_value: "1.2"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+      - 
+        key: "request_type"
+        serialized_value: "{\"py/type\": \"ros_bt_py_msgs.srv._TestService.TestServiceRequest\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "response_type"
+        serialized_value: "{\"py/type\": \"ros_bt_py_msgs.srv._TestService.TestServiceResponse\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "service_type"
+        serialized_value: "{\"py/type\": \"ros_bt_py_msgs.srv._TestService.TestService\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "fail_if_not_available"
+        serialized_value: "true"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+    inputs: 
+      - 
+        key: "request"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"ros_bt_py_msgs.srv._TestService.TestServiceRequest\"}"
+    outputs: 
+      - 
+        key: "response"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"ros_bt_py_msgs.srv._TestService.TestServiceResponse\"}"
+    option_wirings: []
+    state: "UNINITIALIZED"
+  - 
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    version: "0.9.0"
+    max_children: -1
+    name: "Sequence"
+    child_names: [Constant, Service]
+    options: []
+    inputs: []
+    outputs: []
+    option_wirings: []
+    state: "UNINITIALIZED"
+data_wirings: 
+  - 
+    source: 
+      node_name: "Constant"
+      data_kind: "outputs"
+      data_key: "constant"
+    target: 
+      node_name: "Service"
+      data_kind: "inputs"
+      data_key: "request"
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: 
+  - 
+    node_name: "Service"
+    data_kind: "outputs"
+    data_key: "response"

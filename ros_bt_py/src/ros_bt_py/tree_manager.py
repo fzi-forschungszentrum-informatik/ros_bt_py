@@ -6,6 +6,7 @@ import jsonpickle
 import yaml
 import inspect
 import traceback
+import re
 
 import genpy
 import rospy
@@ -13,6 +14,7 @@ import rospkg
 
 from ros_bt_py_msgs.srv import LoadTreeRequest, LoadTreeResponse
 from ros_bt_py_msgs.srv import LoadTreeFromPathResponse, MigrateTreeResponse
+from ros_bt_py_msgs.srv import FixYamlRequest
 from ros_bt_py_msgs.srv import ClearTreeResponse
 from ros_bt_py_msgs.srv import MorphNodeResponse
 from ros_bt_py_msgs.srv import MoveNodeRequest, RemoveNodeRequest, ReplaceNodeRequest
@@ -32,8 +34,14 @@ from ros_bt_py_msgs.msg import DocumentedNode
 from ros_bt_py_msgs.msg import NodeData, NodeDataLocation, NodeOptionWiring
 
 from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, TreeTopologyError
+from ros_bt_py.helpers import fix_yaml
 from ros_bt_py.node import Node, load_node_module, increment_name
 from ros_bt_py.debug_manager import DebugManager
+
+try:  # pragma: no cover
+    unicode
+except NameError:  # pragma: no cover
+    unicode = str
 
 
 def is_edit_service(func):
@@ -173,7 +181,7 @@ class TreeManager(object):
         if not self.nodes:
             return None
         # Find root node
-        possible_roots = [node for node in self.nodes.itervalues() if not node.parent]
+        possible_roots = [node for node in self.nodes.values() if not node.parent]
 
         if len(possible_roots) > 1:
             raise TreeTopologyError('Tree "%s" has multiple nodes without parents. '
@@ -222,7 +230,7 @@ class TreeManager(object):
 
         # First check for nodes with missing parents
         orphans = ['"%s"(parent: "%s")' % (node.name, node.parent.name if node.parent else '')
-                   for node in self.nodes.itervalues()
+                   for node in self.nodes.values()
                    if node.parent and node.parent.name not in self.nodes]
         if orphans:
             raise MissingParentError('The following nodes\' parents are missing: %s'
@@ -342,6 +350,34 @@ class TreeManager(object):
 
         return response
 
+    def parse_tree_yaml(self, tree_yaml):
+        response = MigrateTreeResponse()
+
+        data = yaml.load_all(tree_yaml)
+        read_data = False
+        for datum in data:
+            if datum is None:
+                continue
+            if not read_data:
+                tree = Tree()
+                genpy.message.fill_message_args(tree, datum, keys={})
+                read_data = True
+            else:
+                response.success = False
+                response.error_message = ('Tree YAML file must contain '
+                                          'exactly one YAML object!')
+                return response
+
+        if not read_data:
+            response.success = False
+            response.error_message = ('No data in YAML file!')
+
+            return response
+
+        response.success = True
+        response.tree = tree
+        return response
+
     def load_tree_from_file(self, request):
         """Loads a tree file from disk
         """
@@ -380,25 +416,23 @@ class TreeManager(object):
                 response.error_message = ('Error opening file %s: %s' % (file_path, str(ex)))
                 return response
             with tree_file:
-                data = yaml.load_all(tree_file)
-                read_data = False
-                for datum in data:
-                    if datum is None:
-                        continue
-                    if not read_data:
-                        tree = Tree()
-                        genpy.message.fill_message_args(tree, datum, keys={})
-                        read_data = True
-                    else:
-                        response.success = False
-                        response.error_message = ('Tree YAML file must contain '
-                                                  'exactly one YAML object!')
-                        return response
-                if not read_data:
-                    response.success = False
-                    response.error_message = ('No data in YAML file %s!' % file_path)
+                tree_yaml = tree_file.read()
+                try:
+                    response = self.parse_tree_yaml(tree_yaml=tree_yaml)
+                except yaml.scanner.ScannerError as ex:
+                    rospy.logwarn("Encountered a ScannerError while parsing the tree yaml: %s\n"
+                                  "This is most likely caused by a tree that was created with "
+                                  "PyYAML 5 and genpy < 0.6.10.\n"
+                                  "Attempting to fix this automatically..." % str(ex))
+                    # ScannerError most likely means that the tree was created
+                    # with PyYAML 5 and genpy <0.6.10
+                    # fix this by correctly indenting the broken lists
+                    fix_yaml_response = fix_yaml(request=FixYamlRequest(broken_yaml=tree_yaml))
 
-                    return response
+                    # try parsing again with fixed tree_yaml:
+                    response = self.parse_tree_yaml(tree_yaml=fix_yaml_response.fixed_yaml)
+                tree = response.tree
+
         response.success = True
         response.tree = tree
         return response
@@ -744,9 +778,6 @@ class TreeManager(object):
                         raise BehaviorTreeException('Tried to join tick thread after single '
                                                     'tick, but failed!')
                     state_after_joining = self.get_state()
-                    if state_after_joining == Tree.IDLE:
-                        response.tree_state = Tree.IDLE
-                        response.success = True
                     if state_after_joining == Tree.WAITING_FOR_TICK:
                         response.tree_state = Tree.WAITING_FOR_TICK
                         response.success = True
@@ -1165,7 +1196,7 @@ class TreeManager(object):
         # Find any options values that
         # a) the node does not expect
         # b) have the wrong type
-        for key, value in deserialized_options.iteritems():
+        for key, value in deserialized_options.items():
             if key not in node.options:
                 unknown_options.append(key)
                 continue
@@ -1705,10 +1736,10 @@ class TreeManager(object):
         def to_node_data(data_map):
             return [NodeData(key=name,
                              serialized_value=jsonpickle.encode(type_or_ref))
-                    for (name, type_or_ref) in data_map.iteritems()]
+                    for (name, type_or_ref) in data_map.items()]
 
-        for (module, nodes) in Node.node_classes.iteritems():
-            for (class_name, node_class) in nodes.iteritems():
+        for (module, nodes) in Node.node_classes.items():
+            for (class_name, node_class) in nodes.items():
                 max_children = node_class._node_config.max_children
                 max_children = -1 if max_children is None else max_children
                 doc = inspect.getdoc(node_class) or ''
@@ -1725,7 +1756,8 @@ class TreeManager(object):
                         source=data['source'],
                         target=data['target'])
                         for data in node_class._node_config.option_wirings],
-                    doc=str(doc)
+                    doc=str(doc),
+                    tags=node_class._node_config.tags
                 ))
 
         response.success = True
@@ -1756,43 +1788,49 @@ class TreeManager(object):
 
         whole_tree = deepcopy(self.tree_msg)
 
-        nodes = set()
-        for node in whole_tree.nodes:
-            nodes.add(node.name)
+        root = self.find_root()
 
-        nodes_to_keep = set()
-        nodes_to_remove = set()
-        for node in whole_tree.nodes:
-            for search_node in request.nodes:
-                if node.name == search_node or search_node in node.child_names:
-                    nodes_to_keep.add(node.name)
+        if not root:
+            response.success = False
+            response.error_message = "No tree message available"
+        else:
+            nodes = set()
+            for node in whole_tree.nodes:
+                nodes.add(node.name)
 
-        for node in nodes:
-            if node not in nodes_to_keep:
-                nodes_to_remove.add(node)
+            nodes_to_keep = set()
+            nodes_to_remove = set()
+            for node in whole_tree.nodes:
+                for search_node in request.nodes:
+                    if node.name == search_node or search_node in node.child_names:
+                        nodes_to_keep.add(node.name)
 
-        manager = TreeManager(
-            name="temporary_tree_manager",
-            publish_tree_callback=lambda *args: None,
-            publish_debug_info_callback=lambda *args: None,
-            publish_debug_settings_callback=lambda *args: None,
-            debug_manager=DebugManager())
+            for node in nodes:
+                if node not in nodes_to_keep:
+                    nodes_to_remove.add(node)
 
-        load_response = manager.load_tree(
-            request=LoadTreeRequest(tree=whole_tree),
-            prefix="")
+            manager = TreeManager(
+                name="temporary_tree_manager",
+                publish_tree_callback=lambda *args: None,
+                publish_debug_info_callback=lambda *args: None,
+                publish_debug_settings_callback=lambda *args: None,
+                debug_manager=DebugManager())
 
-        if load_response.success:
-            for node_name in nodes_to_remove:
-                manager.remove_node(RemoveNodeRequest(node_name=node_name,
-                                                        remove_children=False))
-            root = manager.find_root()
-            if not root:
-                rospy.loginfo('No nodes in tree')
-            else:
-                manager.tree_msg.root_name = root.name
-            response.success = True
-            response.tree = manager.to_msg()
+            load_response = manager.load_tree(
+                request=LoadTreeRequest(tree=whole_tree),
+                prefix="")
+
+            if load_response.success:
+                for node_name in nodes_to_remove:
+                    manager.remove_node(RemoveNodeRequest(node_name=node_name,
+                                                          remove_children=False))
+                root = manager.find_root()
+                if not root:
+                    rospy.loginfo('No nodes in tree')
+                else:
+                    manager.tree_msg.root_name = root.name
+                response.success = True
+                response.tree = manager.to_msg()
         return response
 
     #########################
@@ -1804,6 +1842,8 @@ class TreeManager(object):
             node_instance = Node.from_msg(
                 node_msg, debug_manager=self.debug_manager, permissive=permissive)
         except TypeError as exc:
+            raise BehaviorTreeException(str(exc))
+        except AttributeError as exc:
             raise BehaviorTreeException(str(exc))
 
         if node_instance.name in self.nodes:
@@ -1826,7 +1866,7 @@ class TreeManager(object):
         # TODO(nberg): Maybe switch over to using
         # root.get_subtree_msg(), but for now we maybe don't want that
         # overhead?
-        self.tree_msg.nodes = [node.to_msg() for node in self.nodes.itervalues()]
+        self.tree_msg.nodes = [node.to_msg() for node in self.nodes.values()]
 
         # TODO(khermann): using root.get_subtree_msg() here anyway
         # to get the correct public_node_data. Monitor overhead of this decision

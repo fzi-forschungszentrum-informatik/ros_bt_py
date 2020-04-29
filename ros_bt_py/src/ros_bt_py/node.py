@@ -16,6 +16,12 @@ from ros_bt_py_msgs.msg import UtilityBounds
 from ros_bt_py.exceptions import BehaviorTreeException, NodeStateError, NodeConfigError
 from ros_bt_py.node_data import NodeData, NodeDataMap
 from ros_bt_py.node_config import NodeConfig, OptionRef
+from ros_bt_py.helpers import get_default_value
+
+try:  # pragma: no cover
+    basestring
+except NameError:  # pragma: no cover
+    basestring = str
 
 
 def _required(meth):
@@ -688,8 +694,8 @@ class Node(object):
 
         """
         # Find the values that are not OptionRefs first
-        for key, data_type in {k: v for (k, v) in source_map.iteritems()
-                               if not isinstance(v, OptionRef)}.iteritems():
+        for key, data_type in {k: v for (k, v) in source_map.items()
+                               if not isinstance(v, OptionRef)}.items():
             if key in target_map:
                 raise NodeConfigError('Duplicate data name: %s' % key)
             target_map.add(key, NodeData(data_type=data_type))
@@ -714,8 +720,8 @@ class Node(object):
                         raise e
 
         # Now process OptionRefs
-        for key, data_type in {k: v for (k, v) in source_map.iteritems()
-                               if isinstance(v, OptionRef)}.iteritems():
+        for key, data_type in {k: v for (k, v) in source_map.items()
+                               if isinstance(v, OptionRef)}.items():
             if key in target_map:
                 raise NodeConfigError('Duplicate %s data name: %s' % (target_map.name, key))
 
@@ -734,7 +740,25 @@ class Node(object):
                                       (target_map.name, key, data_type.option_key))
             target_map.add(key, NodeData(data_type=self.options[data_type.option_key]))
             if values is not None and key in values:
-                target_map[key] = values[key]
+                try:
+                    target_map[key] = values[key]
+                except AttributeError as e:
+                    if permissive:
+                        if (type(values[key]).__slots__ is not None and
+                                type(values[key])._slot_types is not None):
+                            fixed_new_value = type(values[key])()
+
+                            for i, slot in enumerate(type(values[key]).__slots__):
+                                setattr(fixed_new_value, slot, getattr(
+                                    values[key], slot, get_default_value(
+                                        type(getattr(fixed_new_value, slot, int)), ros=True)))
+                            target_map[key] = fixed_new_value
+                        else:
+                            raise AttributeError(
+                                'AttributeError, maybe a ROS Message definition changed. ' + str(e))
+                    else:
+                        raise AttributeError(
+                            'AttributeError, maybe a ROS Message definition changed. ' + str(e))
 
     def __repr__(self):
         return \
@@ -861,7 +885,7 @@ class Node(object):
         try:
             for option in msg.options:
                 options_dict[option.key] = jsonpickle.decode(option.serialized_value)
-        except ValueError, e:
+        except ValueError as e:
             raise BehaviorTreeException('Failed to instantiate node from message: %s' %
                                         str(e))
 
@@ -883,9 +907,15 @@ class Node(object):
                 try:
                     node_instance.inputs[input_msg.key] = jsonpickle.decode(
                         input_msg.serialized_value)
-                except KeyError, e:
+                except KeyError as e:
                     rospy.logwarn("Could not set a non existing input %s", str(e))
-        except ValueError, e:
+                except AttributeError as e:
+                    if permissive:
+                        node_instance.inputs[input_msg.key] = None
+                    else:
+                        raise AttributeError(
+                            'AttributeError, maybe a ROS Message definition changed. ' + str(e))
+        except ValueError as e:
             raise BehaviorTreeException('Failed to instantiate node from message: %s' %
                                         str(e))
 
@@ -895,9 +925,15 @@ class Node(object):
                 try:
                     node_instance.outputs[output_msg.key] = jsonpickle.decode(
                         output_msg.serialized_value)
-                except KeyError, e:
+                except KeyError as e:
                     rospy.logwarn("Could not set a non existing output %s", str(e))
-        except ValueError, e:
+                except AttributeError as e:
+                    if permissive:
+                        node_instance.outputs[output_msg.key] = None
+                    else:
+                        raise AttributeError(
+                            'AttributeError, maybe a ROS Message definition changed. ' + str(e))
+        except ValueError as e:
             raise BehaviorTreeException('Failed to instantiate node from message: %s' %
                                         str(e))
 
@@ -1236,17 +1272,15 @@ class Node(object):
                 wiring.target.node_name,
                 self.name))
         source_node = self.find_node(wiring.source.node_name)
-        if not source_node:
-            raise BehaviorTreeException(
-                'Source node %s does not exist or is not connected to target node %s' % (
-                    wiring.source.node_name,
-                    self.name))
 
         if wiring not in self.subscriptions:
             # Nothing to do
             return
-        source_node._unsubscribe(wiring)
+
+        if source_node:
+            source_node._unsubscribe(wiring)
         self.subscriptions.remove(wiring)
+
         # If the removed wiring was the last subscription for this
         # datum, set it to None
         if not [sub for sub in self.subscriptions

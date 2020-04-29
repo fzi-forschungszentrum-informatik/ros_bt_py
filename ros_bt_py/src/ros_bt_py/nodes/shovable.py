@@ -205,7 +205,7 @@ class Shovable(Decorator):
         if self._state == Shovable.START_REMOTE_EXEC_ACTION:
             # Ensure the "updated" state of children with outputs is
             # set correctly when executing remotely
-            for child_node in self._children_with_external_outputs.itervalues():
+            for child_node in self._children_with_external_outputs.values():
                 child_node.outputs.reset_updated()
 
             self.logdebug('Sending goal to action server at %s'

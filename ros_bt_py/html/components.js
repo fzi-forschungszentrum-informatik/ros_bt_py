@@ -260,6 +260,25 @@ class NodeListItem extends Component {
     );
   };
 
+  renderTags(tags) {
+    if (tags.length === 0)
+    {
+      return null;
+    }
+
+    var bubbles = tags.map(data => {
+      return (
+        <span class="border rounded p-2 m-1 tag">{data}</span>
+      );
+    });
+
+    return (
+      <div className="list-group-item mt-1">
+        Tags: {bubbles}
+      </div>
+    );
+  }
+
   onClick(e, node) {
     this.props.onSelectionChange(this.props.node);
   }
@@ -296,6 +315,12 @@ class NodeListItem extends Component {
         </div>
       );
     }
+    var tags = null;
+    if (!this.state.collapsed)
+    {
+      // cute bubbles in different colors?
+      tags = this.renderTags(this.props.node.tags);
+    }
     var node_type = null;
     if (this.props.node.max_children < 0)
     {
@@ -307,7 +332,7 @@ class NodeListItem extends Component {
       node_type = "Leaf";
     }
 
-    var border = "border rounded p-2 mb-2";
+    var border = "border rounded p-2 mb-2 grab";
     if (this.props.highlighted)
     {
       border = "border rounded border-primary p-2 mb-2";
@@ -330,6 +355,7 @@ class NodeListItem extends Component {
         <div>{
           node_type + ' (max_children: ' + (this.props.node.max_children >= 0 ? this.props.node.max_children : '∞') + ')'}</div>
         {io_table}
+        {tags}
       </div>
     );
   };
@@ -345,20 +371,75 @@ class NodeList extends Component
       package_name: 'ros_bt_py.nodes.sequence',
       package_loader_collapsed: true,
       node_list_collapsed: props.node_list_collapsed,
+      node_search: '',
+      filtered_nodes: null
     };
 
     this.handleChange = this.handleChange.bind(this);
+    this.handleNodeSearch = this.handleNodeSearch.bind(this);
+    this.handleNodeSearchClear = this.handleNodeSearchClear.bind(this);
+
+    this.nodesFuse = null;
   }
 
   componentDidMount()
   {
     this.props.getNodes('');
+    this.nameInput.focus();
   }
 
+  componentDidUpdate()
+  {
+    var options = {
+      shouldSort: true,
+      threshold: 0.6,
+      location: 0,
+      distance: 100,
+      maxPatternLength: 32,
+      minMatchCharLength: 1,
+      keys: [
+        "node_class",
+        "node_type",
+        "module",
+        "tags"]
+    };
+    var nodes = this.props.availableNodes.map( (node) => {
+      if (node.max_children < 0)
+      {
+        node.node_type = "Flow control";
+      } else if (node.max_children > 0)
+      {
+        node.node_type = "Decorator";
+      } else {
+        node.node_type = "Leaf";
+      }
+      return node;
+    });
+    this.nodesFuse = new Fuse(nodes, options)
+  }
 
   handleChange(e)
   {
     this.setState({package_name: e.target.value});
+  }
+
+  handleNodeSearch(e)
+  {
+    if (this.nodesFuse)
+    {
+      var results = this.nodesFuse.search(e.target.value);
+      this.setState({filtered_nodes: results});
+    }
+
+    this.setState({node_search: e.target.value});
+  }
+
+  handleNodeSearchClear(e)
+  {
+    if (e.keyCode == 27) // ESC
+    {
+      this.setState({node_search: '', filtered_nodes: null});
+    }
   }
 
   toggleCollapsed(event) {
@@ -399,8 +480,14 @@ class NodeList extends Component
       return byName(a, b);
     };
 
-    var items = this.props.availableNodes
-        .sort(byName)
+    var nodes = this.props.availableNodes.sort(byName);
+    if (this.state.filtered_nodes && this.state.filtered_nodes.length > 0)
+    {
+      nodes = this.state.filtered_nodes;
+    }
+
+    var items = nodes
+    //    .sort(byName)
 //        .sort(moduleThenName)
         .map( (node) => {
           var highlighted = false;
@@ -446,10 +533,26 @@ class NodeList extends Component
       );
     }
 
+    var search = (
+      <div className="form-group row mt-2 mb-2 ml-1 mr-1">
+        <label for="nodelist_search" className="col-sm-2 col-form-label">Search:</label>
+        <div class="col-sm-10">
+          <input  id="nodelist_search"
+                  type="text"
+                  ref={(input) => { this.nameInput = input; }}
+                  className="form-control"
+                  value={this.state.node_search}
+                  onChange={this.handleNodeSearch}
+                  onKeyDown={this.handleNodeSearchClear}/>
+        </div>
+      </div>
+    );
+
     if (this.state.node_list_collapsed)
     {
       node_list_collapsible_icon = "fas fa-angle-down";
       items = null;
+      search = null;
     }
 
     return(
@@ -457,6 +560,9 @@ class NodeList extends Component
         <div className="border rounded mb-2">
           <div onClick={this.toggleCollapsed.bind(this)} className="text-center cursor-pointer font-weight-bold m-2">Package Loader <i class={collapsible_icon}></i></div>
           {package_loader}
+        </div>
+        <div className="border rounded mb-2">
+          {search}
         </div>
         <div className="vertical_list">
           <div className="border rounded mb-2">
@@ -911,7 +1017,7 @@ class SelectTree extends Component
     }
     return (
       <div>
-        <label className="form-inline m-1">Tree:
+        <label className="form-inline m-1 ml-2">Tree:
           <select className="custom-select ml-1"
                   value={this.props.subtreeNames.indexOf(selected)}
                   onChange={this.onChange}>
@@ -1061,6 +1167,12 @@ class LoadSaveControls extends Component
       serviceType: 'ros_bt_py_msgs/LoadTree'
     });
 
+    this.fix_yaml_service = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'fix_yaml',
+      serviceType: 'ros_bt_py_msgs/FixYaml'
+    });
+
     this.clear_service = new ROSLIB.Service({
       ros: this.props.ros,
       name: this.props.bt_namespace + 'clear',
@@ -1085,17 +1197,8 @@ class LoadSaveControls extends Component
     this.fileref.current.click();
   }
 
-  handleFileRead(event)
+  loadTreeMsg(msg)
   {
-    var msgs = jsyaml.loadAll(this.fileReader.result);
-
-    var msg = null;
-    for (var i = 0; i < msgs.length; i++) {
-      if (msgs[i] != null) {
-        msg = msgs[i];
-      }
-    }
-
     this.load_service.callService(
       new ROSLIB.ServiceRequest({
         tree: msg,
@@ -1105,7 +1208,8 @@ class LoadSaveControls extends Component
         if (response.success) {
           console.log('called LoadTree service successfully');
         } else {
-          if (response.error_message.startsWith('Expected data to be of type type, got dict instead. Looks like failed jsonpickle decode,')) {
+          if (response.error_message.startsWith('Expected data to be of type type, got dict instead. Looks like failed jsonpickle decode,') ||
+              response.error_message.startsWith('AttributeError, maybe a ROS Message definition changed.')) {
             if (window.confirm("The tree you want to load seems to have nodes with invalid options, do you want to load it in permissive mode? WARNING: this will probably change some option values!")) {
               this.load_service.callService(
                 new ROSLIB.ServiceRequest({
@@ -1131,6 +1235,43 @@ class LoadSaveControls extends Component
       function(failed) {
         this.props.onError('Error loading tree, is your yaml file correct? ' + failed)
       }.bind(this));
+  }
+
+  handleFileRead(event)
+  {
+    var msgs = [];
+    try {
+      msgs = jsyaml.loadAll(this.fileReader.result);
+      var msg = null;
+      for (var i = 0; i < msgs.length; i++) {
+        if (msgs[i] != null) {
+          msg = msgs[i];
+        }
+      }
+
+      this.loadTreeMsg(msg);
+    } catch (e) {
+      // try fixing the YAML error
+      this.fix_yaml_service.callService(
+        new ROSLIB.ServiceRequest({
+          broken_yaml: this.fileReader.result
+        }),
+        function(response) {
+          if (response.success) {
+            msgs = jsyaml.loadAll(response.fixed_yaml);
+            var msg = null;
+            for (var i = 0; i < msgs.length; i++) {
+              if (msgs[i] != null) {
+                msg = msgs[i];
+              }
+            }
+            this.loadTreeMsg(msg);
+          }
+        }.bind(this),
+        function(failed) {
+          this.props.onError('Error loading tree, is your yaml file correct? ' + failed)
+        }.bind(this));
+    }
   }
 
   downloadURI(uri, name) {
@@ -2632,9 +2773,35 @@ class D3BehaviorTreeEditor extends Component
       })
       .attr("dy", d => Math.round(0.5 * d.gripperSize))
       .merge(labels);
-    labels.text(d => d.key + " (type: " + prettyprint_type(d.type) + ")");
 
-    // FIXME! find out how to add multi line text that does not repeat itself 3 times - how to use exit().remove() and merge() ???
+    labels.append("tspan")
+          .text(d => d.key)
+          .attr("class", "label")
+          .attr("dx", d => {
+            if (d.kind === "input") {
+              return Math.round(-5);
+            }
+            else if (d.kind === "output") {
+              return Math.round(d.gripperSize + 5);
+            }
+            return 0;
+          })
+          .attr("dy", d => Math.round(0.5 * d.gripperSize));
+
+    labels.append("tspan")
+          .text(d => "(type: " + prettyprint_type(d.type) + ")")
+          .attr("class", "label")
+          .attr("x", 0)
+          .attr("dx", d => {
+            if (d.kind === "input") {
+              return Math.round(-5);
+            }
+            else if (d.kind === "output") {
+              return Math.round(d.gripperSize + 5);
+            }
+            return 0;
+          })
+          .attr("dy", d => Math.round(0.5 * d.gripperSize) + 10);
   }
 
   IOGroupDefaultMouseoverHandler(d, index, group)
@@ -3741,7 +3908,7 @@ class FileBrowser extends Component{
                     console.log('called MigrateTree service successfully');
                     this.load_service.callService(
                       new ROSLIB.ServiceRequest({
-                        tree: msg,
+                        tree: response.tree,
                         permissive: false
                       }),
                       function(response) {
@@ -3749,7 +3916,8 @@ class FileBrowser extends Component{
                           console.log('called LoadTree service successfully');
                           this.props.onChangeFileModal(null);
                         } else {
-                          if (response.error_message.startsWith('Expected data to be of type type, got dict instead. Looks like failed jsonpickle decode,')) {
+                          if (response.error_message.startsWith('Expected data to be of type type, got dict instead. Looks like failed jsonpickle decode,') ||
+                              response.error_message.startsWith('AttributeError, maybe a ROS Message definition changed.')) {
                             this.props.onError(response.error_message);
                             if (window.confirm("The tree you want to load seems to have nodes with invalid options, do you want to load it in permissive mode? WARNING: this will probably change some option values!")) {
                               this.load_service.callService(
@@ -3800,7 +3968,10 @@ class FileBrowser extends Component{
                   console.log('called LoadTree service successfully');
                   this.props.onChangeFileModal(null);
                 } else {
-                  if (response.error_message.startsWith('Expected data to be of type type, got dict instead. Looks like failed jsonpickle decode,')) {
+                  console.log("err:", response.error_message);
+
+                  if (response.error_message.startsWith('Expected data to be of type type, got dict instead. Looks like failed jsonpickle decode,') ||
+                      response.error_message.startsWith('AttributeError, maybe a ROS Message definition changed.')) {
                     this.props.onError(response.error_message);
                     if (window.confirm("The tree you want to load seems to have nodes with invalid options, do you want to load it in permissive mode? WARNING: this will probably change some option values!")) {
                       this.load_service.callService(
@@ -5220,7 +5391,7 @@ class EditableNode extends Component
                        this.updateValue('options', action_type, x.msg.replace(replace_regex, action_name+action_types[action_type]));
                      }
                    }
-                 } else if (this.props.nodeClass === 'Service' && this.props.module === 'ros_bt_py.nodes.service')
+                 } else if ( (this.props.nodeClass === 'Service' || this.props.nodeClass === 'ServiceInput') && this.props.module === 'ros_bt_py.nodes.service')
                  {
                    var service_types = {service_type: '', request_type: 'Request', response_type: 'Response'};
                    var type_name = x.msg.split('.').pop();

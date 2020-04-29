@@ -1,0 +1,44 @@
+name: ''
+path: ''
+root_name: ''
+nodes: 
+  - 
+    module: "ros_bt_py.nodes.list"
+    node_class: "GetListElementOption"
+    version: ""
+    max_children: 0
+    name: "GetListElementOption"
+    child_names: []
+    options: 
+      - 
+        key: "index"
+        serialized_value: "0"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      - 
+        key: "element_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "list"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.list\"}"
+    outputs: 
+      - 
+        key: "element"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    option_wirings: []
+    state: "UNINITIALIZED"
+data_wirings: []
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: 
+  - 
+    node_name: "GetListElementOption"
+    data_kind: "inputs"
+    data_key: "list"
+  - 
+    node_name: "GetListElementOption"
+    data_kind: "outputs"
+    data_key: "element"

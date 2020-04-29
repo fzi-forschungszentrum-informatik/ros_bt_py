@@ -24,6 +24,9 @@ NodeOptionWiring[] option_wirings
 # Documentation
 string doc
 
+# Tags
+string[] tags
+
 # Should be one of the constants below
 string state
 

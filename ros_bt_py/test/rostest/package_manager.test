@@ -1,0 +1,3 @@
+<launch>
+  <test test-name="test_package_manager" pkg="ros_bt_py" type="test_package_manager.py" />
+</launch>

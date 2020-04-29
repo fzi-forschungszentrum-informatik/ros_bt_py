@@ -1,12 +1,19 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 
 from threading import Lock
 import unittest
+try:
+    import unittest.mock as mock
+except ImportError:
+    import mock
 
 import rospy
 
-from ros_bt_py_msgs.msg import Node as NodeMsg
+from actionlib_msgs.msg import GoalStatus
+
+from ros_bt_py_msgs.msg import Node as NodeMsg, UtilityBounds
 from ros_bt_py_msgs.msg import NodeDataWiring, NodeDataLocation
+from ros_bt_py_msgs.msg import FindBestExecutorResult
 
 from ros_bt_py.nodes.constant import Constant
 from ros_bt_py.nodes.passthrough_node import PassthroughNode
@@ -133,6 +140,122 @@ class TestShovable(unittest.TestCase):
         # don't need to wait for the ActionServer to connect!
         self.assertGreaterEqual(ticks, ticks2)
 
+        self.assertEqual(shovable.shutdown(), NodeMsg.SHUTDOWN)
+
+    def testRemoteExecutionUntick(self):
+        shovable = make_shovable('evaluate_utility_remote')
+        shovable.add_child(self.immediate_success)
+
+        shovable.setup()
+
+        shovable.tick()
+
+        shovable.untick()
+
+    def testRemoteExecutionFindExecutorError(self):
+        shovable = make_shovable('evaluate_utility_remote')
+        shovable.add_child(self.immediate_success)
+
+        shovable.setup()
+
+        shovable._find_best_executor_ac.get_state = mock.MagicMock()
+        shovable._find_best_executor_ac.get_state.return_value = GoalStatus.ABORTED
+
+        self.assertEqual(shovable.tick(), NodeMsg.FAILED)
+
+    def testUnableToExecuteAnywhere(self):
+        shovable = make_shovable('evaluate_utility_remote')
+        shovable.add_child(self.immediate_success)
+
+        shovable.setup()
+
+        shovable._find_best_executor_start_time = rospy.Time.now()
+        shovable._state = Shovable.WAIT_FOR_UTILITY_RESPONSE
+
+        shovable._find_best_executor_ac.get_state = mock.MagicMock()
+        shovable._find_best_executor_ac.get_state.return_value = GoalStatus.SUCCEEDED
+
+        shovable._find_best_executor_ac.get_result = mock.MagicMock()
+        shovable._find_best_executor_ac.get_result.return_value = FindBestExecutorResult(
+            local_is_best=False,
+            best_executor_namespace=False
+        )
+
+        self.assertEqual(shovable.tick(), NodeMsg.FAILED)
+
+    def testRemoteNamespace(self):
+        shovable = make_shovable('evaluate_utility_remote')
+        shovable.add_child(self.immediate_success)
+
+        shovable.setup()
+
+        shovable._find_best_executor_start_time = rospy.Time.now()
+        shovable._state = Shovable.WAIT_FOR_UTILITY_RESPONSE
+
+        shovable._find_best_executor_ac.get_state = mock.MagicMock()
+        shovable._find_best_executor_ac.get_state.return_value = GoalStatus.SUCCEEDED
+
+        shovable._find_best_executor_ac.get_result = mock.MagicMock()
+        shovable._find_best_executor_ac.get_result.return_value = FindBestExecutorResult(
+            local_is_best=False,
+            best_executor_namespace='remote'
+        )
+
+        shovable._remote_namespace = 'remote'
+
+        self.assertRaises(AttributeError, shovable.tick)
+
+    def testRunTreeActionClientNotRunning(self):
+        shovable = make_shovable('evaluate_utility_remote')
+        shovable.add_child(self.immediate_success)
+
+        shovable.setup()
+
+        shovable._state = Shovable.ACTION_CLIENT_INIT
+
+        shovable._subtree_action_client = mock.MagicMock()
+        shovable._subtree_action_client.wait_for_server = mock.MagicMock()
+        shovable._subtree_action_client.wait_for_server.return_value = False
+
+        shovable._subtree_action_client_creation_time = rospy.Time.now() - rospy.Duration(10.0)
+
+        self.assertEqual(shovable.tick(), NodeMsg.FAILED)
+
+    def testExecuteRemoteEarlyFail(self):
+        shovable = make_shovable('evaluate_utility_remote')
+        shovable.add_child(self.immediate_success)
+
+        shovable.setup()
+
+        shovable._state = Shovable.EXECUTE_REMOTE
+
+        shovable._subtree_action_start_time = rospy.Time.now() - rospy.Duration(10.0)
+
+        shovable._subtree_action_client = mock.MagicMock()
+        shovable._subtree_action_client.cancel_goal = mock.MagicMock()
+        shovable._subtree_action_client.cancel_goal.return_value = False
+
+        self.assertEqual(shovable.tick(), NodeMsg.FAILED)
+
+    def testExecuteRemote(self):
+        shovable = make_shovable('evaluate_utility_remote')
+        shovable.add_child(self.immediate_success)
+
+        shovable.setup()
+
+        shovable._state = Shovable.EXECUTE_REMOTE
+
+        shovable._subtree_action_start_time = rospy.Time.now()
+
+        shovable._subtree_action_client = mock.MagicMock()
+        shovable._subtree_action_client.get_state = mock.MagicMock()
+        shovable._subtree_action_client.get_state.return_value = GoalStatus.ABORTED
+
+        shovable._subtree_action_client.cancel_goal = mock.MagicMock()
+        shovable._subtree_action_client.cancel_goal.return_value = False
+
+        self.assertEqual(shovable.tick(), NodeMsg.FAILED)
+
     def testRemoteExecutionWithIO(self):
         shovable = make_shovable('evaluate_utility_remote')
         root = Sequence()\
@@ -181,6 +304,24 @@ class TestShovable(unittest.TestCase):
             self.assertTrue(shovable.outputs['running_remotely'])
             self.assertEqual(self.outer_passthrough.outputs['out'],
                              self.constant.outputs['constant'])
+
+    def testCalculateUtility(self):
+        shovable = make_shovable('evaluate_utility_local')
+        shovable.add_child(self.immediate_success)
+
+        shovable.setup()
+
+        self.assertEqual(shovable.calculate_utility(),
+                         UtilityBounds(can_execute=False,
+                                       has_lower_bound_success=True,
+                                       has_upper_bound_success=True,
+                                       has_lower_bound_failure=True,
+                                       has_upper_bound_failure=True))
+
+        shovable = make_shovable('not_available')
+
+        self.assertEqual(shovable.calculate_utility(),
+                         UtilityBounds())
 
 
 if __name__ == '__main__':

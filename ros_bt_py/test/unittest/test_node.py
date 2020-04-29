@@ -3,6 +3,7 @@ import jsonpickle
 import random
 import unittest
 import types
+import sys
 
 from ros_bt_py_msgs.msg import Node as NodeMsg, UtilityBounds
 from ros_bt_py_msgs.msg import NodeData, NodeDataLocation
@@ -15,6 +16,11 @@ from ros_bt_py.nodes.passthrough_node import PassthroughNode
 from ros_bt_py.nodes.mock_nodes import MockUtilityLeaf
 from ros_bt_py.node_data import NodeDataMap, NodeData as NodeDataObj
 
+try:
+    range = xrange
+except NameError:
+    pass
+
 
 class TestLoadModule(unittest.TestCase):
     def testLoadModule(self):
@@ -26,7 +32,7 @@ class TestLoadModule(unittest.TestCase):
 
 class TestIncrementName(unittest.TestCase):
     def testIncrementName(self):
-        numbers = [random.randint(0, 20) for _ in xrange(20)]
+        numbers = [random.randint(0, 20) for _ in range(20)]
         for number in numbers:
             name = 'foo'
             # Special case for 0 - if number is zero, add no suffix and expect
@@ -396,10 +402,16 @@ class TestNodeConfig(unittest.TestCase):
         self.assertNotEqual(self.conf, conf_original)
 
     def testRepr(self):
-        expected = "NodeConfig(inputs={'int_input': <type 'int'>}," \
-                   " outputs={'str_output': <type 'str'>}," \
-                   " options={'float_option': <type 'float'>}," \
-                   " max_children=42, option_wirings=[], optional_options=[], version=)"
+        if sys.version_info[0] == 2:
+            expected = "NodeConfig(inputs={'int_input': <type 'int'>}," \
+                       " outputs={'str_output': <type 'str'>}," \
+                       " options={'float_option': <type 'float'>}," \
+                       " max_children=42, option_wirings=[], optional_options=[], version=)"
+        else:
+            expected = "NodeConfig(inputs={'int_input': <class 'int'>}," \
+                       " outputs={'str_output': <class 'str'>}," \
+                       " options={'float_option': <class 'float'>}," \
+                       " max_children=42, option_wirings=[], optional_options=[], version=)"
         self.assertEqual(expected, repr(self.conf))
 
 

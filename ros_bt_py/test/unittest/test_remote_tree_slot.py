@@ -1,10 +1,14 @@
 import unittest
+try:
+    import unittest.mock as mock
+except ImportError:
+    import mock
 import rospy
 
 from ros_bt_py_msgs.msg import Node, Tree
 from ros_bt_py_msgs.msg import RunTreeGoal
 from ros_bt_py_msgs.srv import EvaluateUtilityRequest
-from ros_bt_py_msgs.srv import ControlTreeExecutionRequest
+from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, ControlTreeExecutionResponse
 
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
@@ -244,6 +248,57 @@ class TestRemoteTreeSlot(unittest.TestCase):
         self.assertEqual(self.remote_slot.tree_manager.get_state(), Tree.EDITABLE)
         self.assertFalse(self.slot_state.tree_running)
         self.assertFalse(self.slot_state.tree_finished)
+
+    def testRunTreeHandler(self):
+        self.remote_slot.tree_manager.control_execution = mock.MagicMock()
+        self.remote_slot.tree_manager.control_execution.return_value = \
+            ControlTreeExecutionResponse(success=False)
+
+        execute_tree, _, _ = self.execute_root.get_subtree_msg()
+
+        gh = MockGoalHandle(RunTreeGoal(tree=execute_tree), goal_id=1)
+        self.assertEqual(gh.state, MockGoalHandle.INIT)
+
+        self.remote_slot.run_tree_handler(gh)
+
+    def testControlTreeExecutionHandler(self):
+        execute_tree, _, _ = self.execute_root.get_subtree_msg()
+
+        gh = MockGoalHandle(RunTreeGoal(tree=execute_tree), goal_id=1)
+        self.assertEqual(gh.state, MockGoalHandle.INIT)
+
+        self.remote_slot.run_tree_handler(gh)
+
+        self.remote_slot.tree_manager.control_execution = mock.MagicMock()
+        self.remote_slot.tree_manager.control_execution.return_value = \
+            ControlTreeExecutionResponse(success=False)
+
+        res = self.remote_slot.control_tree_execution_handler(ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.TICK_ONCE))
+        self.assertFalse(get_success(res))
+
+    def testCancelRunTreeHandler(self):
+        execute_tree, _, _ = self.execute_root.get_subtree_msg()
+
+        gh = MockGoalHandle(RunTreeGoal(tree=execute_tree), goal_id=1)
+        self.assertEqual(gh.state, MockGoalHandle.INIT)
+
+        self.remote_slot.run_tree_handler(gh)
+
+        self.remote_slot.tree_manager.control_execution = mock.MagicMock()
+        self.remote_slot.tree_manager.control_execution.return_value = \
+            ControlTreeExecutionResponse(success=False)
+
+        self.assertRaises(Exception, self.remote_slot.cancel_run_tree_handler, gh)
+
+        self.remote_slot.update_tree_msg = mock.MagicMock()
+        self.remote_slot.latest_tree = Tree()
+
+        self.remote_slot.tree_manager.control_execution.return_value = \
+            ControlTreeExecutionResponse(success=True)
+
+        self.remote_slot.cancel_run_tree_handler(gh)
+        self.assertEqual(gh.state, MockGoalHandle.CANCELED)
 
 
 def get_success(response):

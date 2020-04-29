@@ -7,7 +7,7 @@
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="berg@fzi.de">Nils Berg</maintainer>
+  <maintainer email="khermann@fzi.de">Kai-Uwe Hermann</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
@@ -15,13 +15,14 @@
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
   <license>proprietary</license>
 
-  <url type="website">https://ids-git.fzi.de/berg/ros_bt_py</url>
+  <url type="website">https://ids-git.fzi.de/ros/ros_bt_py</url>
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
   <!-- Authors do not have to be maintainers, but could be -->
   <!-- Example: -->
-  <!-- <author email="jane.doe@example.com">Jane Doe</author> -->
+  <author email="berg@fzi.de">Nils Berg</author>
+  <author email="khermann@fzi.de">Kai-Uwe Hermann</author>
 
 
   <buildtool_depend>catkin</buildtool_depend>

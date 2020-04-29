@@ -1,4 +1,5 @@
-#! /usr/bin/env python2.7
+#!/usr/bin/env python
+
 import rospy
 
 from ros_bt_py_msgs.msg import Messages, Packages
@@ -7,13 +8,19 @@ from ros_bt_py_msgs.msg import Tree, DebugInfo, DebugSettings, NodeDiagnostics
 from ros_bt_py_msgs.srv import (AddNode, AddNodeAtIndex, ControlTreeExecution, ModifyBreakpoints,
                                 RemoveNode, WireNodeData, GetAvailableNodes, SetExecutionMode,
                                 SetOptions, Continue, LoadTree, LoadTreeFromPath, MoveNode,
-                                ReplaceNode, GetSubtree, ClearTree, MorphNode, SaveTree)
+                                ReplaceNode, GetSubtree, ClearTree, MorphNode, SaveTree, FixYaml)
 from ros_bt_py_msgs.srv import (LoadTreeRequest, ControlTreeExecutionRequest, GetMessageFields,
                                 GetPackageStructure, MigrateTree, GenerateSubtree, ReloadTree)
 from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message
 from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.migration import MigrationManager
 from ros_bt_py.package_manager import PackageManager
+from ros_bt_py.helpers import fix_yaml
+
+try:
+    basestring
+except NameError:
+    basestring = str
 
 
 class TreeNode(object):
@@ -33,6 +40,8 @@ class TreeNode(object):
 
         show_traceback_on_exception = rospy.get_param('~show_traceback_on_exception', default=False)
         load_default_tree = rospy.get_param('~load_default_tree', default=False)
+        load_default_tree_permissive = rospy.get_param(
+            '~load_default_tree_permissive', default=False)
         default_tree_path = rospy.get_param('~default_tree_path', default="")
         default_tree_tick_frequency_hz = rospy.get_param('~default_tree_tick_frequency_hz',
                                                          default=1)
@@ -137,12 +146,18 @@ class TreeNode(object):
                                             ReloadTree,
                                             self.tree_manager.reload_tree)
 
+        self.fix_yaml_service = rospy.Service('~fix_yaml',
+                                              FixYaml,
+                                              fix_yaml)
+
         rospy.loginfo("initialized tree manager")
 
         if load_default_tree:
             rospy.logwarn("loading default tree: %s" % default_tree_path)
             tree = Tree(path=default_tree_path)
-            load_tree_request = LoadTreeRequest(tree=tree)
+            load_tree_request = LoadTreeRequest(
+                tree=tree,
+                permissive=load_default_tree_permissive)
             load_tree_response = self.tree_manager.load_tree(load_tree_request)
             if not load_tree_response.success:
                 rospy.logerr("could not load default tree: %s" % load_tree_response.error_message)

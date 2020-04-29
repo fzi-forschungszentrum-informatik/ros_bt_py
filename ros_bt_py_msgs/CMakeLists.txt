@@ -37,6 +37,7 @@ add_service_files(
   Continue.srv
   ControlTreeExecution.srv
   EvaluateUtility.srv
+  FixYaml.srv
   GenerateSubtree.srv
   GetAvailableNodes.srv
   GetAvailableSubtrees.srv
@@ -56,6 +57,7 @@ add_service_files(
   SaveTree.srv
   SetExecutionMode.srv
   SetOptions.srv
+  TestService.srv
   WireNodeData.srv
   )
 

@@ -22,7 +22,7 @@ class OptionRef(object):
 
 class NodeConfig(object):
     def __init__(self, options, inputs, outputs, max_children, option_wirings=[],
-                 optional_options=[], version=''):
+                 optional_options=[], version='', tags=[]):
         """Describes the interface of a :class:ros_bt_py.node.Node
 
         :param dict(str, type) options
@@ -54,6 +54,7 @@ class NodeConfig(object):
         self.option_wirings = option_wirings
         self.optional_options = optional_options
         self.version = version
+        self.tags = tags
 
     def __repr__(self):
         return \
