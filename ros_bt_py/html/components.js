@@ -361,7 +361,7 @@ class NodeListItem extends Component {
   };
 }
 
-class NodeList extends Component
+class PackageLoader extends Component
 {
   constructor(props)
   {
@@ -370,52 +370,14 @@ class NodeList extends Component
     this.state = {
       package_name: 'ros_bt_py.nodes.sequence',
       package_loader_collapsed: true,
-      node_list_collapsed: props.node_list_collapsed,
-      node_search: '',
-      filtered_nodes: null
     };
 
     this.handleChange = this.handleChange.bind(this);
-    this.handleNodeSearch = this.handleNodeSearch.bind(this);
-    this.handleNodeSearchClear = this.handleNodeSearchClear.bind(this);
-
-    this.nodesFuse = null;
   }
 
   componentDidMount()
   {
     this.props.getNodes('');
-    this.nameInput.focus();
-  }
-
-  componentDidUpdate()
-  {
-    var options = {
-      shouldSort: true,
-      threshold: 0.6,
-      location: 0,
-      distance: 100,
-      maxPatternLength: 32,
-      minMatchCharLength: 1,
-      keys: [
-        "node_class",
-        "node_type",
-        "module",
-        "tags"]
-    };
-    var nodes = this.props.availableNodes.map( (node) => {
-      if (node.max_children < 0)
-      {
-        node.node_type = "Flow control";
-      } else if (node.max_children > 0)
-      {
-        node.node_type = "Decorator";
-      } else {
-        node.node_type = "Leaf";
-      }
-      return node;
-    });
-    this.nodesFuse = new Fuse(nodes, options)
   }
 
   handleChange(e)
@@ -423,28 +385,61 @@ class NodeList extends Component
     this.setState({package_name: e.target.value});
   }
 
-  handleNodeSearch(e)
-  {
-    if (this.nodesFuse)
-    {
-      var results = this.nodesFuse.search(e.target.value);
-      this.setState({filtered_nodes: results});
-    }
-
-    this.setState({node_search: e.target.value});
-  }
-
-  handleNodeSearchClear(e)
-  {
-    if (e.keyCode == 27) // ESC
-    {
-      this.setState({node_search: '', filtered_nodes: null});
-    }
-  }
-
   toggleCollapsed(event) {
     this.setState({package_loader_collapsed: !this.state.package_loader_collapsed});
     event.stopPropagation();
+  }
+
+  render()
+  {
+    var collapsible_icon = "fas fa-angle-up";
+    var package_loader = null;
+    if (this.state.package_loader_collapsed)
+    {
+      collapsible_icon = "fas fa-angle-down";
+    } else {
+      package_loader = (
+        <div className="form-group">
+          <button id="refresh"
+                  className="btn btn-block btn-primary mt-2"
+                  onClick={() => this.props.getNodes('')}>
+            Refresh
+          </button>
+          <input type="text" id="package_name"
+                 className="form-control mt-2"
+                 value={this.state.package_name}
+                 onChange={this.handleChange}/>
+          <button id="load_package"
+                  className="btn btn-block btn-primary mt-2"
+                  onClick={() => this.props.getNodes(this.state.package_name)}>
+            Load package
+          </button>
+        </div>
+      );
+    }
+    return (
+      <div className="border rounded mb-2">
+        <div onClick={this.toggleCollapsed.bind(this)} className="text-center cursor-pointer font-weight-bold m-2">Package Loader <i class={collapsible_icon}></i></div>
+        {package_loader}
+      </div>
+    )
+  };
+}
+
+class NodeList extends Component
+{
+  constructor(props)
+  {
+    super(props);
+
+    this.state = {
+      node_list_collapsed: props.node_list_collapsed,
+    };
+  }
+
+  componentDidMount()
+  {
+    this.props.getNodes('');
   }
 
   toggleNodeListCollapsed(event) {
@@ -481,9 +476,9 @@ class NodeList extends Component
     };
 
     var nodes = this.props.availableNodes.sort(byName);
-    if (this.state.filtered_nodes && this.state.filtered_nodes.length > 0)
+    if (this.props.filtered_nodes && this.props.filtered_nodes.length > 0)
     {
-      nodes = this.state.filtered_nodes;
+      nodes = this.props.filtered_nodes;
     }
 
     var items = nodes
@@ -506,64 +501,16 @@ class NodeList extends Component
                            />);
     });
 
-    var collapsible_icon = "fas fa-angle-up";
     var node_list_collapsible_icon = "fas fa-angle-up";
-    var package_loader = null;
-    if (this.state.package_loader_collapsed)
-    {
-      collapsible_icon = "fas fa-angle-down";
-    } else {
-      package_loader = (
-        <div className="form-group">
-          <button id="refresh"
-                  className="btn btn-block btn-primary mt-2"
-                  onClick={() => this.props.getNodes('')}>
-            Refresh
-          </button>
-          <input type="text" id="package_name"
-                 className="form-control mt-2"
-                 value={this.state.package_name}
-                 onChange={this.handleChange}/>
-          <button id="load_package"
-                  className="btn btn-block btn-primary mt-2"
-                  onClick={() => this.props.getNodes(this.state.package_name)}>
-            Load package
-          </button>
-        </div>
-      );
-    }
-
-    var search = (
-      <div className="form-group row mt-2 mb-2 ml-1 mr-1">
-        <label for="nodelist_search" className="col-sm-2 col-form-label">Search:</label>
-        <div class="col-sm-10">
-          <input  id="nodelist_search"
-                  type="text"
-                  ref={(input) => { this.nameInput = input; }}
-                  className="form-control"
-                  value={this.state.node_search}
-                  onChange={this.handleNodeSearch}
-                  onKeyDown={this.handleNodeSearchClear}/>
-        </div>
-      </div>
-    );
 
     if (this.state.node_list_collapsed)
     {
       node_list_collapsible_icon = "fas fa-angle-down";
       items = null;
-      search = null;
     }
 
     return(
       <div className="available-nodes m-1">
-        <div className="border rounded mb-2">
-          <div onClick={this.toggleCollapsed.bind(this)} className="text-center cursor-pointer font-weight-bold m-2">Package Loader <i class={collapsible_icon}></i></div>
-          {package_loader}
-        </div>
-        <div className="border rounded mb-2">
-          {search}
-        </div>
         <div className="vertical_list">
           <div className="border rounded mb-2">
             <div onClick={this.toggleNodeListCollapsed.bind(this)} className="text-center cursor-pointer font-weight-bold m-2">Node List <i class={node_list_collapsible_icon}></i></div>
@@ -684,9 +631,13 @@ class CapabilityList extends Component {
       return byName(a, b);
     };
 
-    var items = this.props.availableCapabilities
-        .sort(byName)
-//        .sort(moduleThenName)
+    var capabilities = this.props.availableCapabilities.sort(byName);
+
+    if (this.props.filtered_capabilities && this.props.filtered_capabilities.length > 0)
+    {
+      capabilities = this.props.filtered_capabilities;
+    }
+    var items = capabilities
         .map( (capability) => {
           var highlighted = false;
           if (this.props.dragging_capability_list_item
