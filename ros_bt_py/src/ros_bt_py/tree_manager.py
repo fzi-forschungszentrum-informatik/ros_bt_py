@@ -333,7 +333,7 @@ class TreeManager(object):
         """
         tree = Tree()
         tree.path = request.path
-        load_tree_request = LoadTreeRequest(tree=tree)
+        load_tree_request = LoadTreeRequest(tree=tree, permissive=request.permissive)
         load_tree_response = self.load_tree(request=load_tree_request)
 
         response = LoadTreeFromPathResponse()
@@ -467,7 +467,8 @@ class TreeManager(object):
                          if (node.name not in self.nodes and
                              all((name in self.nodes for name in node.child_names)))):
                 try:
-                    instance = self.instantiate_node_from_msg(node, allow_rename=False)
+                    instance = self.instantiate_node_from_msg(
+                        node, allow_rename=False, permissive=request.permissive)
                     for child_name in node.child_names:
                         instance.add_child(self.nodes[child_name])
                     self.nodes[node.name] = instance
@@ -1798,9 +1799,10 @@ class TreeManager(object):
     # Service Handlers Done #
     #########################
 
-    def instantiate_node_from_msg(self, node_msg, allow_rename):
+    def instantiate_node_from_msg(self, node_msg, allow_rename, permissive=False):
         try:
-            node_instance = Node.from_msg(node_msg)
+            node_instance = Node.from_msg(
+                node_msg, debug_manager=self.debug_manager, permissive=permissive)
         except TypeError as exc:
             raise BehaviorTreeException(str(exc))
 
@@ -1810,9 +1812,6 @@ class TreeManager(object):
             else:
                 raise BehaviorTreeException('Node with name "%s" exists already'
                                             % node_instance.name)
-
-        # Set DebugManager
-        node_instance.debug_manager = self.debug_manager
 
         self.nodes[node_instance.name] = node_instance
 
