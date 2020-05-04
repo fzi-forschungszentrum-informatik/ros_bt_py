@@ -4469,7 +4469,7 @@ class MultipleSelection extends Component
     return {
       module: 'ros_ta.nodes.capability',
       node_class: 'Capability',
-      name: this.state.name,
+      name: this.state.capability_class + "_" + this.state.capability_type,
       options: [{
                   key: 'capability_class',
                   serialized_value: JSON.stringify({"py/object": "ros_ta.nodes.capability.CapabilityClass", "capability_class": this.state.capability_class})
