@@ -354,7 +354,7 @@ class TreeManager(object):
     def parse_tree_yaml(self, tree_yaml):
         response = MigrateTreeResponse()
 
-        data = yaml.load_all(tree_yaml)
+        data = yaml.safe_load_all(tree_yaml)
         read_data = False
         for datum in data:
             if datum is None:
