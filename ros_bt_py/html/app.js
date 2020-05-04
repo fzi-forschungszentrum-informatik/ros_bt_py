@@ -310,8 +310,13 @@ class App extends Component
     this.last_received_capabilities_msg = msg;
     this.capabilities = [];
     for (var i = 0; i < msg.capabilities.length; i++) {
-      var cap = {name:msg.capabilities[i].name, description:msg.capabilities[i].description, capability:msg.capabilities[i]};
-      this.capabilities.push(cap);
+      var capability = {
+        capability_class: msg.capabilities[i].capability_class,
+        capability_type: msg.capabilities[i].capability_type,
+        description: msg.capabilities[i].description,
+        capability: msg.capabilities[i]
+      };
+      this.capabilities.push(capability);
     }
     var options = {
       shouldSort: true,
@@ -321,7 +326,8 @@ class App extends Component
       maxPatternLength: 32,
       minMatchCharLength: 1,
       keys: [
-        "name",
+        "capability_class",
+        "capability_type",
         "description"
       ]
     };

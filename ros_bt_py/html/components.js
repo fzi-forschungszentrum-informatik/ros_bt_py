@@ -570,13 +570,14 @@ class CapabilityListItem extends Component {
            onMouseUp={this.onMouseUp.bind(this)}>
         <div className="d-flex justify-content-between">
           <div className="d-flex minw0">
-            <h4 title={this.props.capability.name} className="node_class text-truncate">{this.props.capability.name}</h4>
+            <h4 title={this.props.capability.capability_class} className="node_class text-truncate">Class: {this.props.capability.capability_class}</h4>
             <i title={this.props.capability.description} class="fas fa-question-circle pl-2 pr-2"></i>
           </div>
           <div className="d-flex minw0">
             <i onClick={this.toggleCollapsed.bind(this)} class={collapsible_icon}></i>
           </div>
         </div>
+        <h5 title={this.props.capability.capability_type} className="node_class text-truncate">Type: {this.props.capability.capability_type}</h5>
         <h5 title={this.props.capability.target} className="node_module text-truncate text-muted">Target: {this.props.capability.capability.target}</h5>
       </div>
     );
@@ -641,13 +642,14 @@ class CapabilityList extends Component {
         .map( (capability) => {
           var highlighted = false;
           if (this.props.dragging_capability_list_item
-              && this.props.dragging_capability_list_item.name === capability.name
+              && this.props.dragging_capability_list_item.capability_class === capability.capability_class
+              && this.props.dragging_capability_list_item.capability_type === capability.capability_type
               && this.props.dragging_capability_list_item.capability.path === capability.capability.path)
           {
             highlighted = true;
           }
           return (<CapabilityListItem capability={capability}
-                           key={capability.name + capability.capability.path}
+                           key={capability.capability_class + capability.capability_type + capability.capability.path}
                            collapsed={true}
                            highlighted={highlighted}
                            onSelectionChange={this.props.onSelectionChange}
@@ -1608,7 +1610,11 @@ class D3BehaviorTreeEditor extends Component
       }
       if (this.props.dragging_capability_list_item)
       {
-        new_node = new MultipleSelection({selectedNodeNames : [this.props.dragging_capability_list_item.name]});
+        new_node = new MultipleSelection({
+          selectedNodeNames : [this.props.dragging_capability_list_item.capability_class + "_" + this.props.dragging_capability_list_item.capability_type],
+          capability_class: this.props.dragging_capability_list_item.capability_class,
+          capability_type: this.props.dragging_capability_list_item.capability_type,
+        });
 
         msg = new_node.buildNodeMessage();
         this.props.onCapabilityDragging(null);
@@ -4360,7 +4366,8 @@ class MultipleSelection extends Component
     super(props);
 
     this.setFilename = this.setFilename.bind(this);
-    this.setCapabilityName = this.setCapabilityName.bind(this);
+    this.setCapabilityClass = this.setCapabilityClass.bind(this);
+    this.setCapabilityType = this.setCapabilityType.bind(this);
     this.setDescription = this.setDescription.bind(this);
     this.setTarget = this.setTarget.bind(this);
     this.searchPackageName = this.searchPackageName.bind(this);
@@ -4375,6 +4382,8 @@ class MultipleSelection extends Component
     }
 
     this.state = {name: name,
+                  capability_class: this.props.capability_class,
+                  capability_type: this.props.capability_type,
                   target: '',
                   description: '',
                   filename: 'subtree.yaml',
@@ -4462,13 +4471,17 @@ class MultipleSelection extends Component
       node_class: 'Capability',
       name: this.state.name,
       options: [{
-                  key: 'capability_type',
-                  serialized_value: JSON.stringify({"py/object": "ros_ta.nodes.capability.CapabilityType", "capability_type": this.state.name})
+                  key: 'capability_class',
+                  serialized_value: JSON.stringify({"py/object": "ros_ta.nodes.capability.CapabilityClass", "capability_class": this.state.capability_class})
                 },
                 {
-                  key: 'preconditions',
-                  serialized_value: JSON.stringify(this.state.preconditions)
+                  key: 'capability_type',
+                  serialized_value: JSON.stringify({"py/object": "ros_ta.nodes.capability.CapabilityType", "capability_type": this.state.capability_type})
                 }],
+                // {
+                //   key: 'preconditions',
+                //   serialized_value: JSON.stringify(this.state.preconditions)
+                // }],
       child_names: []
     };
   }
@@ -4501,10 +4514,11 @@ class MultipleSelection extends Component
           console.log('Created coordinator tree!');
           
           var capability = {};
-          capability.name = this.state.name;
+          capability.capability_class = this.state.capability_class;
+          capability.capability_type = this.state.capability_type;
           capability.target = this.state.target;
           capability.description = this.state.description;
-          capability.preconditions = this.state.preconditions;
+          //capability.preconditions = this.state.preconditions;
           capability.path = "coordinator.yaml"
           var coordinator = response.coordinator;
 
@@ -4723,7 +4737,7 @@ class MultipleSelection extends Component
   {
     this.setState({package: result});
     this.setState({package_results: []});
-    this.props.onSelectedPackageChange(result);
+    this.props.onCapabilityPackageChange(result);
   }
 
   renderPackageSearchResults(results)
@@ -4759,9 +4773,14 @@ class MultipleSelection extends Component
     this.setState({filename: event.target.value});
   }
 
-  setCapabilityName(event)
+  setCapabilityClass(event)
   {
-    this.setState({name: event.target.value});
+    this.setState({capability_class: event.target.value});
+  }
+
+  setCapabilityType(event)
+  {
+    this.setState({capability_type: event.target.value});
   }
 
   setDescription(event)
@@ -4799,11 +4818,16 @@ class MultipleSelection extends Component
             </button>
           </div>
           <div className="d-flex flex-column">
-            <h5>Capability Name <i title="Capability name" class="fas fa-question-circle"></i></h5>
+            <h5>Capability Class (dropdown?) <i title="Capability class" class="fas fa-question-circle"></i></h5>
             <input className="form-control-lg mb-2"
                    type="text"
-                   value={this.state.name}
-                   onChange={this.setCapabilityName}/>
+                   value={this.state.capability_class}
+                   onChange={this.setCapabilityClass}/>
+            <h5>Capability Type <i title="Capability type" class="fas fa-question-circle"></i></h5>
+            <input className="form-control-lg mb-2"
+                   type="text"
+                   value={this.state.capability_type}
+                   onChange={this.setCapabilityType}/>
             <h5>Package <i title="The ROS package in which the newly created subtree will be saved in" class="fas fa-question-circle"></i></h5>
             <input className="form-control-lg mb-2"
                    type="text"
