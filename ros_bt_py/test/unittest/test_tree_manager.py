@@ -2299,6 +2299,21 @@ class TestTreeManager(unittest.TestCase):
             path='package://ros_bt_py/test/testdata/trees/subtree_constant.yaml')
         self.assertTrue(get_success(self.manager.load_tree_from_path(load_request)))
 
+    def testLoadWithAndWithoutName(self):
+        load_request = LoadTreeRequest(tree=Tree(
+            path='package://ros_bt_py/test/testdata/trees/without_name.yaml'))
+
+        response = self.manager.load_tree(load_request)
+        self.assertTrue(get_success(response))
+        self.assertEqual(self.manager.tree_msg.name, 'without_name.yaml')
+
+        load_request = LoadTreeRequest(tree=Tree(
+            path='package://ros_bt_py/test/testdata/trees/with_name.yaml'))
+
+        response = self.manager.load_tree(load_request)
+        self.assertTrue(get_success(response))
+        self.assertEqual(self.manager.tree_msg.name, 'hello there')
+
     def testLoadFromInvalidFiles(self):
         load_request = LoadTreeRequest(tree=Tree(
             name='from_file',
