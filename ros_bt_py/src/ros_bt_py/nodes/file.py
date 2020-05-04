@@ -35,7 +35,7 @@ def load_file(path):
         raise LoadFileError(error_msg)
     with data_file:
         try:
-            data = yaml.load(data_file)
+            data = yaml.safe_load(data_file)
         except yaml.YAMLError as ex:
             raise LoadFileError('Yaml error in file {}: {}'.format(file_path, str(ex)))
     return data
