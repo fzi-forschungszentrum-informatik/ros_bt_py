@@ -7,6 +7,7 @@ import yaml
 import inspect
 import traceback
 import re
+import os
 
 import genpy
 import rospy
@@ -384,6 +385,7 @@ class TreeManager(object):
         response = MigrateTreeResponse()
         tree = request.tree
         rospack = rospkg.RosPack()
+        file_name = ''
         while not tree.nodes:
             # TODO(nberg): Save visited file names to find loops
 
@@ -416,6 +418,7 @@ class TreeManager(object):
                 response.error_message = ('Error opening file %s: %s' % (file_path, str(ex)))
                 return response
             with tree_file:
+                file_name = os.path.basename(tree_file.name)
                 tree_yaml = tree_file.read()
                 try:
                     response = self.parse_tree_yaml(tree_yaml=tree_yaml)
@@ -432,6 +435,9 @@ class TreeManager(object):
                     # try parsing again with fixed tree_yaml:
                     response = self.parse_tree_yaml(tree_yaml=fix_yaml_response.fixed_yaml)
                 tree = response.tree
+
+        if tree.name == '':
+            tree.name = file_name
 
         response.success = True
         response.tree = tree
