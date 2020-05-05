@@ -151,10 +151,15 @@ function getDefaultValue(typeName, options)
             value: {"py/reduce": [{"py/type": "collections.OrderedDict"}, {"py/tuple": [[]]}, null, null, null]}
     };
   }
-  else if (typeName === 'CapabilityType')
+  else if (typeName === 'CapabilityType' || typeName === 'ros_ta.nodes.capability.CapabilityType')
   {
     return {type: 'ros_ta.nodes.capability.CapabilityType',
             value: {"capability_type": ""}};
+  }
+  else if (typeName === 'CapabilityClass' || typeName === 'ros_ta.nodes.capability.CapabilityClass')
+  {
+    return {type: 'ros_ta.nodes.capability.CapabilityClass',
+            value: {"capability_class": ""}};
   }
   else if (typeName === 'ros_bt_py.ros_helpers.LoggerLevel')
   {
@@ -2047,7 +2052,6 @@ class D3BehaviorTreeEditor extends Component
           this.drawDataGraph(g_data, node.data(), tree_msg.data_wirings);
         }, 100);
 
-    //console.log(root);
   }
 
   drawNodes(selection)
@@ -2661,9 +2665,6 @@ class D3BehaviorTreeEditor extends Component
       .on("mouseover", this.DataEdgeDefaultMouseoverHandler)
       .on("mouseout", this.DataEdgeDefaultMouseoutHandler)
       .merge(link);
-    
-    console.log("link:");
-    console.log(link);
 
     link
       .transition()
@@ -3495,6 +3496,7 @@ class NewNode extends Component
                       changeCopyMode={this.props.changeCopyMode}
                       messagesFuse={this.props.messagesFuse}
                       capabilitiesFuse={this.props.capabilitiesFuse}
+                      available_capabilities={this.props.available_capabilities}
                       updateValidity={this.updateValidity}
                       updateValue={this.updateValue}
                       nameChangeHandler={this.nameChangeHandler}
@@ -5193,6 +5195,7 @@ class SelectedNode extends Component
                       changeCopyMode={this.props.changeCopyMode}
                       messagesFuse={this.props.messagesFuse}
                       capabilitiesFuse={this.props.capabilitiesFuse}
+                      available_capabilities={this.props.available_capabilities}
                       updateValidity={this.updateValidity}
                       updateValue={this.updateValue}
                       nameChangeHandler={this.nameChangeHandler}
@@ -5323,7 +5326,7 @@ class EditableNode extends Component
   constructor(props)
   {
     super(props);
-    this.state = {messages_results:[], results_at_key: null, selected_message: null};
+    this.state = {messages_results:[], results_at_key: null, selected_message: null, capability_class: null};
 
     this.onFocus = this.onFocus.bind(this);
 
@@ -5332,6 +5335,7 @@ class EditableNode extends Component
     this.handleOptionWirings = this.handleOptionWirings.bind(this);
     this.selectMessageResult = this.selectMessageResult.bind(this);
     this.renderCapabilityOptions = this.renderCapabilityOptions.bind(this);
+    this.onCapabilityClassChange = this.onCapabilityClassChange.bind(this);
 
     this.get_message_fields_service = new ROSLIB.Service({
       ros: props.ros,
@@ -5520,6 +5524,11 @@ class EditableNode extends Component
     }
 
     this.props.updateValue(paramType, key, new_value);
+  }
+
+  onCapabilityClassChange(capability_class)
+  {
+    this.setState({capability_class: capability_class});
   }
 
   inputForValue(paramItem, onValidityChange, onNewValue)
@@ -5735,6 +5744,23 @@ class EditableNode extends Component
         </div>
       );
     }
+    else if (valueType === 'ros_ta.nodes.capability.CapabilityClass' || valueType === 'CapabilityClass') // FIXME: consistency?
+    {
+      return (
+        <div className="form-group">
+          <label className="d-block">{paramItem.key}
+            <CapabilityClassInput capability_class={paramItem.value.value}
+                       ros={this.props.ros}
+                       bt_namespace={this.props.bt_namespace}
+                       available_capabilities={this.props.available_capabilities}
+                       onValidityChange={onValidityChange}
+                       onFocus={this.onFocus}
+                       onNewValue={onNewValue}
+                       onCapabilityClassChange={this.onCapabilityClassChange}/>
+          </label>
+        </div>
+      );
+    }
     else if (valueType === 'ros_ta.nodes.capability.CapabilityType' || valueType === 'CapabilityType') // FIXME: consistency?
     {
       return (
@@ -5743,7 +5769,8 @@ class EditableNode extends Component
             <CapabilityTypeInput capability_type={paramItem.value.value}
                        ros={this.props.ros}
                        bt_namespace={this.props.bt_namespace}
-                       capabilitiesFuse={this.props.capabilitiesFuse}
+                       capability_class={this.state.capability_class}
+                       available_capabilities={this.props.available_capabilities}
                        onValidityChange={onValidityChange}
                        onFocus={this.onFocus}
                        onNewValue={onNewValue}/>
@@ -6010,61 +6037,78 @@ class BehaviorTreeEdge extends Component
   }
 }
 
-class CapabilityTypeInput extends Component
+class CapabilityClassInput extends Component
 {
   constructor(props)
   {
     super(props);
-    this.state = {name: props.capability_type.capability_type,
+    this.state = {
+      capability_class: props.capability_class.capability_class,
       capabilities_results: [],
       capability: '',
       target: '',
       description: '',
-      cm_available: false,};
-    
-      this.searchCapability = this.searchCapability.bind(this);
-      this.selectCapabilitySearchResult = this.selectCapabilitySearchResult.bind(this);
-      this.reconstructAndUpdateValue = this.reconstructAndUpdateValue.bind(this);
+    };
 
+    this.props.onCapabilityClassChange(props.capability_class.capability_class);
+
+    var options = {
+      shouldSort: true,
+      threshold: 0.6,
+      location: 0,
+      distance: 100,
+      maxPatternLength: 32,
+      minMatchCharLength: 1,
+      keys: [
+        "capability_class",
+      ]
+    };
+
+    var capability_classes = new Set();
+    var capability_class_objects = []
+    for (let index = 0; index < props.available_capabilities.length; index++) {
+      if (!capability_classes.has(props.available_capabilities[index].capability_class))
+      {
+        capability_class_objects.push(props.available_capabilities[index]);
+      }
+      capability_classes.add(props.available_capabilities[index].capability_class);
+    }
+    this.capability_class_fuse = new Fuse(capability_class_objects, options);
+
+    this.searchCapability = this.searchCapability.bind(this);
+    this.selectCapabilitySearchResult = this.selectCapabilitySearchResult.bind(this);
+    this.reconstructAndUpdateValue = this.reconstructAndUpdateValue.bind(this);
   }
 
   componentDidMount()
   {
-    if(!this.props.capabilitiesFuse)
-    {
-      console.log("no capability manager available");
-      this.setState({cm_available:false});
-    } else {
-      console.log("capability manager available");
-      this.setState({cm_available:true});
-    }
   }
 
-  // START
   searchCapability(event)
   {
-    if (this.props.capabilitiesFuse)
+    if (this.capability_class_fuse)
     {
-      var results = this.props.capabilitiesFuse.search(event.target.value);
+      var results = this.capability_class_fuse.search(event.target.value);
       this.setState({capabilities_results: results.slice(0,5)});
     }
-    this.setState({name: event.target.value});
+    this.setState({capability_class: event.target.value});
 
     this.reconstructAndUpdateValue(event.target.value);
   }
 
   selectCapabilitySearchResult(result)
   {
-    this.setState({name: result});
+    this.setState({capability_class: result});
     this.setState({capabilities_results: []});
 
     this.reconstructAndUpdateValue(result);
   }
 
-  reconstructAndUpdateValue(capability_type)
+  reconstructAndUpdateValue(capability_class)
   {
-    var reconstructed = {"py/object": "ros_ta.nodes.capability.CapabilityType", "capability_type": capability_type};
+    var reconstructed = {"py/object": "ros_ta.nodes.capability.CapabilityClass", "capability_class": capability_class};
     this.props.onNewValue(reconstructed);
+    this.props.onCapabilityClassChange(capability_class);
   }
 
   renderCapabilitySearchResults(results)
@@ -6073,9 +6117,9 @@ class CapabilityTypeInput extends Component
     {
       var result_rows = results.map(x => {
         return (
-          <div className="list-group-item search-result align-items-start" onClick={() => this.selectCapabilitySearchResult(x.name)}>
+          <div className="list-group-item search-result align-items-start" onClick={() => this.selectCapabilitySearchResult(x.capability_class)}>
             <div className="d-flex w-100 justify-content-between">
-              <span>{x.name}</span>
+              <span>{x.capability_class}</span>
               <i class="far fa-file-code" title={x.capability.path}></i>
             </div>
           </div>
@@ -6098,11 +6142,142 @@ class CapabilityTypeInput extends Component
   {
     return (
       <div className="d-flex flex-column">
+        CAPCLASS
         <input className="form-control-lg mb-2"
-              disabled={!this.state.cm_available}
-              type="text"
-              value={this.state.name}
-              onChange={this.searchCapability}/>
+               type="text"
+               value={this.state.capability_class}
+               onChange={this.searchCapability}/>
+        {this.renderCapabilitySearchResults(this.state.capabilities_results)}
+      </div>
+    );
+    }
+}
+
+class CapabilityTypeInput extends Component
+{
+  constructor(props)
+  {
+    super(props);
+    this.state = {
+      capability_type: props.capability_type.capability_type,
+      capabilities_results: [],
+      capability: '',
+      target: '',
+      description: '',
+      cm_available: false,
+    };
+    
+    this.options = {
+      shouldSort: true,
+      threshold: 0.6,
+      location: 0,
+      distance: 100,
+      maxPatternLength: 32,
+      minMatchCharLength: 1,
+      keys: [
+        "capability_type",
+      ]
+    };
+    // TODO filter - modify the one from capability class copy pasted below:
+    this.capability_types = new Set();
+    this.capability_type_objects = []
+
+    this.searchCapability = this.searchCapability.bind(this);
+    this.selectCapabilitySearchResult = this.selectCapabilitySearchResult.bind(this);
+    this.reconstructAndUpdateValue = this.reconstructAndUpdateValue.bind(this);
+  }
+
+  componentDidMount()
+  {
+    if(!this.props.capabilitiesFuse)
+    {
+      this.setState({cm_available:false});
+    } else {
+      this.setState({cm_available:true});
+    }
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    if (prevProps.capability_class !== this.props.capability_class)
+    {
+      for (let index = 0; index < this.props.available_capabilities.length; index++) {
+        if (this.props.available_capabilities[index].capability_class === this.props.capability_class)
+        {
+          if (!this.capability_types.has(this.props.available_capabilities[index].capability_type))
+          {
+            this.capability_type_objects.push(this.props.available_capabilities[index]);
+          }
+          this.capability_types.add(this.props.available_capabilities[index].capability_type);
+        }
+      }
+
+      this.capability_type_fuse = new Fuse(this.capability_type_objects, this.options);
+    }
+  }
+
+  searchCapability(event)
+  {
+    if (this.capability_type_fuse)
+    {
+      var results = this.capability_type_fuse.search(event.target.value);
+      this.setState({capabilities_results: results.slice(0,5)});
+    }
+    this.setState({capability_type: event.target.value});
+
+    this.reconstructAndUpdateValue(event.target.value);
+  }
+
+  selectCapabilitySearchResult(result)
+  {
+    this.setState({capability_type: result});
+    this.setState({capabilities_results: []});
+
+    this.reconstructAndUpdateValue(result);
+  }
+
+  reconstructAndUpdateValue(capability_type)
+  {
+    var reconstructed = {"py/object": "ros_ta.nodes.capability.CapabilityType", "capability_type": capability_type};
+    this.props.onNewValue(reconstructed);
+  }
+
+  renderCapabilitySearchResults(results)
+  {
+    if(results.length > 0)
+    {
+      var result_rows = results.map(x => {
+        return (
+          <div className="list-group-item search-result align-items-start" onClick={() => this.selectCapabilitySearchResult(x.capability_type)}>
+            <div className="d-flex w-100 justify-content-between">
+              <span>{x.capability_type}</span>
+              <i class="far fa-file-code" title={x.capability.path}></i>
+            </div>
+          </div>
+        );
+      });
+
+      return (
+        <div className="mb-2 search-results" ref={node => this.node = node}>
+          <div className="list-group">
+              {result_rows}
+          </div>
+        </div>
+      );
+    } else {
+      return null;
+    }
+  }
+
+  render()
+  {
+    return (
+      <div className="d-flex flex-column">
+        CAP TYPE
+        <input className="form-control-lg mb-2"
+               disabled={this.props.capability_class === null}
+               type="text"
+               value={this.state.capability_type}
+               onChange={this.searchCapability}/>
         {this.renderCapabilitySearchResults(this.state.capabilities_results)}
       </div>
     );
@@ -6121,7 +6296,6 @@ class DropDown extends Component
   }
 
   handleChange = (event) => {
-    console.log(event.target.value);
     var json = this.state.json;
     json.logger_level = event.target.value;
     this.setState({json:json, logger_level:event.target.value});

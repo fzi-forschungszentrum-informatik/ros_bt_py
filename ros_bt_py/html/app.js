@@ -917,6 +917,7 @@ class App extends Component
           parents={this.findPossibleParents()}
           messagesFuse={this.messagesFuse}
           capabilitiesFuse={this.capabilities_fuse}
+          available_capabilities={this.state.available_capabilities}
           onError={this.onError}
           onNodeChanged={this.onNodeChanged}
           changeCopyMode={this.changeCopyMode}
@@ -940,6 +941,7 @@ class App extends Component
           availableNodes={this.state.available_nodes}
           messagesFuse={this.messagesFuse}
           capabilitiesFuse={this.capabilities_fuse}
+          available_capabilities={this.state.available_capabilities}
           onError={this.onError}
           onNodeChanged={this.onNodeChanged}
           changeCopyMode={this.changeCopyMode}
