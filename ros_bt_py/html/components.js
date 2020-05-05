@@ -6142,7 +6142,6 @@ class CapabilityClassInput extends Component
   {
     return (
       <div className="d-flex flex-column">
-        CAPCLASS
         <input className="form-control-lg mb-2"
                type="text"
                value={this.state.capability_class}
@@ -6272,7 +6271,6 @@ class CapabilityTypeInput extends Component
   {
     return (
       <div className="d-flex flex-column">
-        CAP TYPE
         <input className="form-control-lg mb-2"
                disabled={this.props.capability_class === null}
                type="text"
