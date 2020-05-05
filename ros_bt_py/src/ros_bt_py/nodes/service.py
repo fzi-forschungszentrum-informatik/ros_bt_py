@@ -194,6 +194,7 @@ class ServiceInput(Leaf):
         if self.inputs.is_updated('service_name'):
             if self._service_proxy is not None:
                 self._do_reset()
+        if self._service_proxy is None:
             self._service_proxy = AsyncServiceProxy(self.inputs['service_name'],
                                                     self.options['service_type'])
         # If theres' no service call in-flight, and we have already reported
