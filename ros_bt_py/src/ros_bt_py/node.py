@@ -1190,8 +1190,8 @@ class Node(object):
             if sub.target == wiring.target:
                 if sub.source == wiring.source:
                     raise BehaviorTreeException('Duplicate subscription!')
-                self.logwarn('Subscribing to two different sources for key %s[%s]'
-                             % (wiring.target.data_kind, wiring.target.data_key))
+                # self.logwarn('Subscribing to two different sources for key %s[%s]'
+                #              % (wiring.target.data_kind, wiring.target.data_key))
         source_node = self.find_node(wiring.source.node_name)
         if not source_node:
             raise BehaviorTreeException(
