@@ -55,7 +55,7 @@ function prettyprint_type(jsonpickled_type) {
   if (json_type['py/type'] !== undefined)
   {
     // shorten the CapabilityType
-    if (json_type['py/type'] === 'ros_ta.nodes.capability.CapabilityType')
+    if (json_type['py/type'] === 'bt_capabilities.nodes.capability.CapabilityType')
     {
       return 'CapabilityType';
     }
@@ -151,14 +151,14 @@ function getDefaultValue(typeName, options)
             value: {"py/reduce": [{"py/type": "collections.OrderedDict"}, {"py/tuple": [[]]}, null, null, null]}
     };
   }
-  else if (typeName === 'CapabilityType' || typeName === 'ros_ta.nodes.capability.CapabilityType')
+  else if (typeName === 'CapabilityType' || typeName === 'bt_capabilities.nodes.capability.CapabilityType')
   {
-    return {type: 'ros_ta.nodes.capability.CapabilityType',
+    return {type: 'bt_capabilities.nodes.capability.CapabilityType',
             value: {"capability_type": ""}};
   }
-  else if (typeName === 'CapabilityClass' || typeName === 'ros_ta.nodes.capability.CapabilityClass')
+  else if (typeName === 'CapabilityClass' || typeName === 'bt_capabilities.nodes.capability.CapabilityClass')
   {
-    return {type: 'ros_ta.nodes.capability.CapabilityClass',
+    return {type: 'bt_capabilities.nodes.capability.CapabilityClass',
             value: {"capability_class": ""}};
   }
   else if (typeName === 'ros_bt_py.ros_helpers.LoggerLevel')
@@ -4397,13 +4397,13 @@ class MultipleSelection extends Component
     this.create_coordinator_tree_service = new ROSLIB.Service({
       ros: props.ros,
       name: props.cm_namespace + 'create_coordinator_tree',
-      serviceType: 'ros_ta_msgs/CreateCoordinatorTree'
+      serviceType: 'bt_capabilities_msgs/CreateCoordinatorTree'
     });
 
     this.save_capability_service = new ROSLIB.Service({
       ros: props.ros,
       name: props.cm_namespace + 'save_capability',
-      serviceType: 'ros_ta_msgs/SaveCapability'
+      serviceType: 'bt_capabilities_msgs/SaveCapability'
     });
 
     this.generate_subtree_service = new ROSLIB.Service({
@@ -4469,16 +4469,16 @@ class MultipleSelection extends Component
   buildNodeMessage()
   {
     return {
-      module: 'ros_ta.nodes.capability',
+      module: 'bt_capabilities.nodes.capability',
       node_class: 'Capability',
       name: this.state.capability_class + "_" + this.state.capability_type,
       options: [{
                   key: 'capability_class',
-                  serialized_value: JSON.stringify({"py/object": "ros_ta.nodes.capability.CapabilityClass", "capability_class": this.state.capability_class})
+                  serialized_value: JSON.stringify({"py/object": "bt_capabilities.nodes.capability.CapabilityClass", "capability_class": this.state.capability_class})
                 },
                 {
                   key: 'capability_type',
-                  serialized_value: JSON.stringify({"py/object": "ros_ta.nodes.capability.CapabilityType", "capability_type": this.state.capability_type})
+                  serialized_value: JSON.stringify({"py/object": "bt_capabilities.nodes.capability.CapabilityType", "capability_type": this.state.capability_type})
                 }],
                 // {
                 //   key: 'preconditions',
@@ -5744,7 +5744,7 @@ class EditableNode extends Component
         </div>
       );
     }
-    else if (valueType === 'ros_ta.nodes.capability.CapabilityClass' || valueType === 'CapabilityClass') // FIXME: consistency?
+    else if (valueType === 'bt_capabilities.nodes.capability.CapabilityClass' || valueType === 'CapabilityClass') // FIXME: consistency?
     {
       return (
         <div className="form-group">
@@ -5761,7 +5761,7 @@ class EditableNode extends Component
         </div>
       );
     }
-    else if (valueType === 'ros_ta.nodes.capability.CapabilityType' || valueType === 'CapabilityType') // FIXME: consistency?
+    else if (valueType === 'bt_capabilities.nodes.capability.CapabilityType' || valueType === 'CapabilityType') // FIXME: consistency?
     {
       return (
         <div className="form-group">
@@ -6106,7 +6106,7 @@ class CapabilityClassInput extends Component
 
   reconstructAndUpdateValue(capability_class)
   {
-    var reconstructed = {"py/object": "ros_ta.nodes.capability.CapabilityClass", "capability_class": capability_class};
+    var reconstructed = {"py/object": "bt_capabilities.nodes.capability.CapabilityClass", "capability_class": capability_class};
     this.props.onNewValue(reconstructed);
     this.props.onCapabilityClassChange(capability_class);
   }
@@ -6236,7 +6236,7 @@ class CapabilityTypeInput extends Component
 
   reconstructAndUpdateValue(capability_type)
   {
-    var reconstructed = {"py/object": "ros_ta.nodes.capability.CapabilityType", "capability_type": capability_type};
+    var reconstructed = {"py/object": "bt_capabilities.nodes.capability.CapabilityType", "capability_type": capability_type};
     this.props.onNewValue(reconstructed);
   }
 

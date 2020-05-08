@@ -147,7 +147,7 @@ class App extends Component
         this.capabilities_topic = new ROSLIB.Topic({
           ros : this.state.ros,
           name : this.state.cm_namespace + 'capabilities',
-          messageType : 'ros_ta_msgs/Capabilities'
+          messageType : 'bt_capabilities_msgs/Capabilities'
         });
         this.capabilities_topic.subscribe(this.onCapabilitiesUpdate);
       }
@@ -471,7 +471,7 @@ class App extends Component
           this.capabilities_topic = new ROSLIB.Topic({
             ros : this.state.ros,
             name : this.state.cm_namespace + 'capabilities',
-            messageType : 'ros_ta_msgs/Capabilities'
+            messageType : 'bt_capabilities_msgs/Capabilities'
           });
           this.capabilities_topic.subscribe(this.onCapabilitiesUpdate);
         }
