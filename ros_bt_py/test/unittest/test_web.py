@@ -25,12 +25,12 @@ class TestDownloadImage(unittest.TestCase):
         dl.inputs['image_url'] = 'www.foobar.com/picture.png'
         with mock.patch('ros_bt_py.nodes.web.open', mock.mock_open()) as mocked_file:
             self.assertEqual(dl.tick(), Node.SUCCEEDED)
-            mocked_file.assert_called_once()
+            assert mocked_file.call_count == 1
             # test caching
             with mock.patch('os.path.exists') as mocked_exists:
                 mocked_exists.return_value = True
                 self.assertEqual(dl.tick(), Node.SUCCEEDED)
-                mocked_exists.assert_called_once()
+                assert mocked_exists.call_count == 1
 
         self.assertEqual(dl.outputs['download_error_msg'], '')
         self.assertTrue(dl.outputs['download_success'])
@@ -49,7 +49,7 @@ class TestDownloadImage(unittest.TestCase):
         dl.inputs['image_url'] = 'www.foobar.com/picture.png'
         with mock.patch('ros_bt_py.nodes.web.open', mock.mock_open()) as mocked_file:
             self.assertEqual(dl.tick(), Node.FAILED)
-            mocked_file.assert_not_called()
+            assert mocked_file.call_count == 0
 
         self.assertNotEqual(dl.outputs['download_error_msg'], '')
         self.assertFalse(dl.outputs['download_success'])

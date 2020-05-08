@@ -421,7 +421,7 @@ class TestDecorators(unittest.TestCase):
         # Should not tick its child multiple times within tick_interval
         mock_time_now.return_value = Time.from_seconds(50.)
         self.assertEqual(throttle.tick(), Node.FAILED)
-        magic_leaf._do_tick.assert_not_called()
+        assert magic_leaf._do_tick.call_count == 0
         magic_leaf._do_tick.reset_mock()
 
         # Should tick its child after tick interval
@@ -435,7 +435,7 @@ class TestDecorators(unittest.TestCase):
         mock_time_now.return_value = Time.from_seconds(150.)
         magic_leaf._do_tick.return_value = Node.FAILED
         self.assertEqual(throttle.tick(), Node.SUCCEEDED)
-        magic_leaf._do_tick.assert_not_called()
+        assert magic_leaf._do_tick.call_count == 0
         magic_leaf._do_tick.reset_mock()
 
         self.assertEqual(throttle.untick(), Node.PAUSED)
@@ -500,7 +500,7 @@ class TestDecorators(unittest.TestCase):
         # Should not tick its child multiple times within tick_interval and return FAILED
         mock_time_now.return_value = Time.from_seconds(50.)
         self.assertEqual(throttle_success.tick(), Node.FAILED)
-        magic_leaf._do_tick.assert_not_called()
+        assert magic_leaf._do_tick.call_count == 0
         magic_leaf._do_tick.reset_mock()
 
         # Should tick its child after tick interval
