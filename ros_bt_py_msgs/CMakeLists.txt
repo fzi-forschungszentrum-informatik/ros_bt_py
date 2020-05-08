@@ -15,12 +15,12 @@ add_message_files(
      DocumentedNode.msg
      Message.msg
      Messages.msg
-     NodeDataLocation.msg
+     Node.msg
      NodeData.msg
+     NodeDataLocation.msg
      NodeDataWiring.msg
      NodeDiagnostics.msg
      NodeOptionWiring.msg
-     Node.msg
      Package.msg
      Packages.msg
      RemoteSlotState.msg
@@ -70,10 +70,10 @@ add_action_files(
   )
 
 ## Generate added messages and services with any dependencies listed here
- generate_messages(
-   DEPENDENCIES actionlib_msgs geometry_msgs
-   )
+generate_messages(
+  DEPENDENCIES actionlib_msgs geometry_msgs
+  )
 
 catkin_package(
-  CATKIN_DEPENDS message_runtime actionlib_msgs geometry_msgs
+  CATKIN_DEPENDS actionlib_msgs geometry_msgs message_runtime
   )
