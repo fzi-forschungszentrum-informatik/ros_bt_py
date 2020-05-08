@@ -57,33 +57,6 @@ variables:
 
   allow_failure: true
 
-.roslint_python:
-  tags:
-    - docker
-  stage: check
-  script:
-    - apt-get -y update
-    - source /opt/ros/${ROS_DISTRIBUTION}/setup.bash
-    - git clone ${CI_SCRIPTS_REPO} ${HOME}/ci_scripts
-    - cp ${HOME}/ci_scripts/catkin_build_scripts/10-fzi-sources.list /etc/ros/rosdep/sources.list.d/
-    - ${HOME}/ci_scripts/catkin_build_scripts/prepare_workspace.sh ${CI_PROJECT_DIR} ${CI_PROJECT_NAME} ${CATKIN_ROOT} ${ROSDISTRO_INDEX_URL}
-    - rm -rf /usr/lib/python2.7/dist-packages/OpenSSL
-    - rm -rf /usr/lib/python2.7/dist-packages/pyOpenSSL-*
-    - pip install pyopenssl
-    - mkdir -p ${HOME}/.config
-    - git clone https://gitlab-ci-token:${CI_JOB_TOKEN}@ids-git.fzi.de/Utilities/fzi_styles.git ${HOME}/fzi_styles
-    - cp ${HOME}/fzi_styles/.config/pep8 ${HOME}/.config/pep8
-    - cp ${HOME}/fzi_styles/.config/pylintrc ${HOME}/.config/pylintrc
-    - mkdir -p ${CI_PROJECT_DIR}/lint_results
-    - cd ${CATKIN_ROOT}/src
-    - apt-get install -y bc ros-${ROS_DISTRIBUTION}-roslint
-    - ${HOME}/ci_scripts/catkin_build_scripts/roslint.sh ${CATKIN_ROOT} ${CI_PROJECT_DIR}/lint_results
-  allow_failure: true
-  artifacts:
-    when: always
-    paths:
-      - ${CI_PROJECT_DIR}/lint_results
-
 .run_tests:
   tags:
     - docker
