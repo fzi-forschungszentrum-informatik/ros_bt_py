@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   visualization_msgs
   message_generation
+  actionlib_msgs
 )
 
 find_package(roslint REQUIRED)
@@ -60,7 +61,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES ros_bt_py
-   CATKIN_DEPENDS rospy message_generation message_runtime geometry_msgs visualization_msgs
+   CATKIN_DEPENDS rospy message_generation message_runtime geometry_msgs visualization_msgs actionlib_msgs
 #  DEPENDS system_lib
 )
 
