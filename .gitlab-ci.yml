@@ -49,7 +49,6 @@ variables:
     - rm -rf /usr/lib/python2.7/dist-packages/pyOpenSSL-*
     - pip install pyopenssl
     - pip install coverage gcovr
-    - pip install requests
     - apt-get install libxml2-utils tree
     - cd ${CATKIN_ROOT}
     - catkin_make
