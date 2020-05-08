@@ -8,10 +8,11 @@ project(bt_sim_helpers)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  rospy
+  actionlib_msgs
   geometry_msgs
-  visualization_msgs
   message_generation
+  rospy
+  visualization_msgs
 )
 
 find_package(roslint REQUIRED)
@@ -60,7 +61,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES ros_bt_py
-   CATKIN_DEPENDS rospy message_generation message_runtime geometry_msgs visualization_msgs
+   CATKIN_DEPENDS actionlib_msgs geometry_msgs message_generation message_runtime rospy visualization_msgs
 #  DEPENDS system_lib
 )
 
