@@ -42,6 +42,7 @@
   <test_depend>std_msgs</test_depend>
   <test_depend>std_srvs</test_depend>
   <test_depend>actionlib_tutorials</test_depend>
+  <test_depend>python-mock</test_depend>
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
