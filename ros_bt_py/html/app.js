@@ -311,10 +311,10 @@ class App extends Component
     this.capabilities = [];
     for (var i = 0; i < msg.capabilities.length; i++) {
       var capability = {
-        capability_class: msg.capabilities[i].capability_class,
-        capability_type: msg.capabilities[i].capability_type,
+        capability: msg.capabilities[i].capability,
+        implementation: msg.capabilities[i].implementation,
         description: msg.capabilities[i].description,
-        capability: msg.capabilities[i]
+        capability_object: msg.capabilities[i]
       };
       this.capabilities.push(capability);
     }
@@ -326,8 +326,8 @@ class App extends Component
       maxPatternLength: 32,
       minMatchCharLength: 1,
       keys: [
-        "capability_class",
-        "capability_type",
+        "capability",
+        "implementation",
         "description"
       ]
     };

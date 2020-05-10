@@ -154,12 +154,12 @@ function getDefaultValue(typeName, options)
   else if (typeName === 'CapabilityType' || typeName === 'bt_capabilities.nodes.capability.CapabilityType')
   {
     return {type: 'bt_capabilities.nodes.capability.CapabilityType',
-            value: {"capability_type": ""}};
+            value: {"capability": ""}};
   }
-  else if (typeName === 'CapabilityClass' || typeName === 'bt_capabilities.nodes.capability.CapabilityClass')
+  else if (typeName === 'ImplementationType' || typeName === 'bt_capabilities.nodes.capability.ImplementationType')
   {
-    return {type: 'bt_capabilities.nodes.capability.CapabilityClass',
-            value: {"capability_class": ""}};
+    return {type: 'bt_capabilities.nodes.capability.ImplementationType',
+            value: {"implementation": ""}};
   }
   else if (typeName === 'ros_bt_py.ros_helpers.LoggerLevel')
   {
@@ -575,14 +575,14 @@ class CapabilityListItem extends Component {
            onMouseUp={this.onMouseUp.bind(this)}>
         <div className="d-flex justify-content-between">
           <div className="d-flex minw0">
-            <h4 title={this.props.capability.capability_class} className="node_class text-truncate">Class: {this.props.capability.capability_class}</h4>
+            <h4 title={this.props.capability.capability} className="node_class text-truncate">Capability: {this.props.capability.capability}</h4>
             <i title={this.props.capability.description} class="fas fa-question-circle pl-2 pr-2"></i>
           </div>
           <div className="d-flex minw0">
             <i onClick={this.toggleCollapsed.bind(this)} class={collapsible_icon}></i>
           </div>
         </div>
-        <h5 title={this.props.capability.capability_type} className="node_class text-truncate">Type: {this.props.capability.capability_type}</h5>
+        <h5 title={this.props.capability.implementation} className="node_class text-truncate">Implementation: {this.props.capability.implementation}</h5>
         <h5 title={this.props.capability.target} className="node_module text-truncate text-muted">Target: {this.props.capability.capability.target}</h5>
       </div>
     );
@@ -647,14 +647,14 @@ class CapabilityList extends Component {
         .map( (capability) => {
           var highlighted = false;
           if (this.props.dragging_capability_list_item
-              && this.props.dragging_capability_list_item.capability_class === capability.capability_class
-              && this.props.dragging_capability_list_item.capability_type === capability.capability_type
+              && this.props.dragging_capability_list_item.capability === capability.capability
+              && this.props.dragging_capability_list_item.implementation === capability.implementation
               && this.props.dragging_capability_list_item.capability.path === capability.capability.path)
           {
             highlighted = true;
           }
           return (<CapabilityListItem capability={capability}
-                           key={capability.capability_class + capability.capability_type + capability.capability.path}
+                           key={capability.capability + capability.implementation + capability.capability.path}
                            collapsed={true}
                            highlighted={highlighted}
                            onSelectionChange={this.props.onSelectionChange}
@@ -1616,9 +1616,9 @@ class D3BehaviorTreeEditor extends Component
       if (this.props.dragging_capability_list_item)
       {
         new_node = new MultipleSelection({
-          selectedNodeNames : [this.props.dragging_capability_list_item.capability_class + "_" + this.props.dragging_capability_list_item.capability_type],
-          capability_class: this.props.dragging_capability_list_item.capability_class,
-          capability_type: this.props.dragging_capability_list_item.capability_type,
+          selectedNodeNames : [this.props.dragging_capability_list_item.capability + "_" + this.props.dragging_capability_list_item.implementation],
+          capability: this.props.dragging_capability_list_item.capability,
+          implementation: this.props.dragging_capability_list_item.implementation,
         });
 
         msg = new_node.buildNodeMessage();
@@ -4368,8 +4368,8 @@ class MultipleSelection extends Component
     super(props);
 
     this.setFilename = this.setFilename.bind(this);
-    this.setCapabilityClass = this.setCapabilityClass.bind(this);
-    this.setCapabilityType = this.setCapabilityType.bind(this);
+    this.setCapability = this.setCapability.bind(this);
+    this.setImplementation = this.setImplementation.bind(this);
     this.setDescription = this.setDescription.bind(this);
     this.setTarget = this.setTarget.bind(this);
     this.searchPackageName = this.searchPackageName.bind(this);
@@ -4384,8 +4384,8 @@ class MultipleSelection extends Component
     }
 
     this.state = {name: name,
-                  capability_class: this.props.capability_class,
-                  capability_type: this.props.capability_type,
+                  capability: this.props.capability,
+                  implementation: this.props.implementation,
                   target: '',
                   description: '',
                   filename: 'subtree.yaml',
@@ -4471,14 +4471,14 @@ class MultipleSelection extends Component
     return {
       module: 'bt_capabilities.nodes.capability',
       node_class: 'Capability',
-      name: this.state.capability_class + "_" + this.state.capability_type,
+      name: this.state.capability + "_" + this.state.implementation,
       options: [{
-                  key: 'capability_class',
-                  serialized_value: JSON.stringify({"py/object": "bt_capabilities.nodes.capability.CapabilityClass", "capability_class": this.state.capability_class})
+                  key: 'capability',
+                  serialized_value: JSON.stringify({"py/object": "bt_capabilities.nodes.capability.CapabilityType", "capability": this.state.capability})
                 },
                 {
-                  key: 'capability_type',
-                  serialized_value: JSON.stringify({"py/object": "bt_capabilities.nodes.capability.CapabilityType", "capability_type": this.state.capability_type})
+                  key: 'implementation',
+                  serialized_value: JSON.stringify({"py/object": "bt_capabilities.nodes.capability.ImplementationType", "implementation": this.state.implementation})
                 }],
                 // {
                 //   key: 'preconditions',
@@ -4516,8 +4516,8 @@ class MultipleSelection extends Component
           console.log('Created coordinator tree!');
           
           var capability = {};
-          capability.capability_class = this.state.capability_class;
-          capability.capability_type = this.state.capability_type;
+          capability.capability = this.state.capability;
+          capability.implementation = this.state.implementation;
           capability.target = this.state.target;
           capability.description = this.state.description;
           //capability.preconditions = this.state.preconditions;
@@ -4775,14 +4775,14 @@ class MultipleSelection extends Component
     this.setState({filename: event.target.value});
   }
 
-  setCapabilityClass(event)
+  setCapability(event)
   {
-    this.setState({capability_class: event.target.value});
+    this.setState({capability: event.target.value});
   }
 
-  setCapabilityType(event)
+  setImplementation(event)
   {
-    this.setState({capability_type: event.target.value});
+    this.setState({implementation: event.target.value});
   }
 
   setDescription(event)
@@ -4820,16 +4820,16 @@ class MultipleSelection extends Component
             </button>
           </div>
           <div className="d-flex flex-column">
-            <h5>Capability Class (dropdown?) <i title="Capability class" class="fas fa-question-circle"></i></h5>
+            <h5>Capability (dropdown?) <i title="Capability" class="fas fa-question-circle"></i></h5>
             <input className="form-control-lg mb-2"
                    type="text"
-                   value={this.state.capability_class}
-                   onChange={this.setCapabilityClass}/>
-            <h5>Capability Type <i title="Capability type" class="fas fa-question-circle"></i></h5>
+                   value={this.state.capability}
+                   onChange={this.setCapability}/>
+            <h5>Implementation <i title="Implementation" class="fas fa-question-circle"></i></h5>
             <input className="form-control-lg mb-2"
                    type="text"
-                   value={this.state.capability_type}
-                   onChange={this.setCapabilityType}/>
+                   value={this.state.implementation}
+                   onChange={this.setImplementation}/>
             <h5>Package <i title="The ROS package in which the newly created subtree will be saved in" class="fas fa-question-circle"></i></h5>
             <input className="form-control-lg mb-2"
                    type="text"
@@ -5326,7 +5326,7 @@ class EditableNode extends Component
   constructor(props)
   {
     super(props);
-    this.state = {messages_results:[], results_at_key: null, selected_message: null, capability_class: null};
+    this.state = {messages_results:[], results_at_key: null, selected_message: null, capability: null};
 
     this.onFocus = this.onFocus.bind(this);
 
@@ -5335,7 +5335,7 @@ class EditableNode extends Component
     this.handleOptionWirings = this.handleOptionWirings.bind(this);
     this.selectMessageResult = this.selectMessageResult.bind(this);
     this.renderCapabilityOptions = this.renderCapabilityOptions.bind(this);
-    this.onCapabilityClassChange = this.onCapabilityClassChange.bind(this);
+    this.onCapabilityChange = this.onCapabilityChange.bind(this);
 
     this.get_message_fields_service = new ROSLIB.Service({
       ros: props.ros,
@@ -5526,9 +5526,9 @@ class EditableNode extends Component
     this.props.updateValue(paramType, key, new_value);
   }
 
-  onCapabilityClassChange(capability_class)
+  onCapabilityChange(capability)
   {
-    this.setState({capability_class: capability_class});
+    this.setState({capability: capability});
   }
 
   inputForValue(paramItem, onValidityChange, onNewValue)
@@ -5744,32 +5744,32 @@ class EditableNode extends Component
         </div>
       );
     }
-    else if (valueType === 'bt_capabilities.nodes.capability.CapabilityClass' || valueType === 'CapabilityClass') // FIXME: consistency?
+    else if (valueType === 'bt_capabilities.nodes.capability.CapabilityType' || valueType === 'CapabilityType')
     {
       return (
         <div className="form-group">
           <label className="d-block">{paramItem.key}
-            <CapabilityClassInput capability_class={paramItem.value.value}
+            <CapabilityTypeInput capability={paramItem.value.value}
                        ros={this.props.ros}
                        bt_namespace={this.props.bt_namespace}
                        available_capabilities={this.props.available_capabilities}
                        onValidityChange={onValidityChange}
                        onFocus={this.onFocus}
                        onNewValue={onNewValue}
-                       onCapabilityClassChange={this.onCapabilityClassChange}/>
+                       onCapabilityChange={this.onCapabilityChange}/>
           </label>
         </div>
       );
     }
-    else if (valueType === 'bt_capabilities.nodes.capability.CapabilityType' || valueType === 'CapabilityType') // FIXME: consistency?
+    else if (valueType === 'bt_capabilities.nodes.capability.ImplementationType' || valueType === 'ImplementationType')
     {
       return (
         <div className="form-group">
           <label className="d-block">{paramItem.key}
-            <CapabilityTypeInput capability_type={paramItem.value.value}
+            <ImplementationTypeInput implementation={paramItem.value.value}
                        ros={this.props.ros}
                        bt_namespace={this.props.bt_namespace}
-                       capability_class={this.state.capability_class}
+                       capability={this.state.capability}
                        available_capabilities={this.props.available_capabilities}
                        onValidityChange={onValidityChange}
                        onFocus={this.onFocus}
@@ -6037,20 +6037,19 @@ class BehaviorTreeEdge extends Component
   }
 }
 
-class CapabilityClassInput extends Component
+class CapabilityTypeInput extends Component
 {
   constructor(props)
   {
     super(props);
     this.state = {
-      capability_class: props.capability_class.capability_class,
+      capability: props.capability.capability,
       capabilities_results: [],
-      capability: '',
       target: '',
       description: '',
     };
 
-    this.props.onCapabilityClassChange(props.capability_class.capability_class);
+    this.props.onCapabilityChange(props.capability.capability);
 
     var options = {
       shouldSort: true,
@@ -6060,20 +6059,20 @@ class CapabilityClassInput extends Component
       maxPatternLength: 32,
       minMatchCharLength: 1,
       keys: [
-        "capability_class",
+        "capability",
       ]
     };
 
-    var capability_classes = new Set();
-    var capability_class_objects = []
+    var capabilities = new Set();
+    var capability_objects = []
     for (let index = 0; index < props.available_capabilities.length; index++) {
-      if (!capability_classes.has(props.available_capabilities[index].capability_class))
+      if (!capabilities.has(props.available_capabilities[index].capability))
       {
-        capability_class_objects.push(props.available_capabilities[index]);
+        capability_objects.push(props.available_capabilities[index]);
       }
-      capability_classes.add(props.available_capabilities[index].capability_class);
+      capabilities.add(props.available_capabilities[index].capability);
     }
-    this.capability_class_fuse = new Fuse(capability_class_objects, options);
+    this.capability_fuse = new Fuse(capability_objects, options);
 
     this.searchCapability = this.searchCapability.bind(this);
     this.selectCapabilitySearchResult = this.selectCapabilitySearchResult.bind(this);
@@ -6086,29 +6085,29 @@ class CapabilityClassInput extends Component
 
   searchCapability(event)
   {
-    if (this.capability_class_fuse)
+    if (this.capability_fuse)
     {
-      var results = this.capability_class_fuse.search(event.target.value);
+      var results = this.capability_fuse.search(event.target.value);
       this.setState({capabilities_results: results.slice(0,5)});
     }
-    this.setState({capability_class: event.target.value});
+    this.setState({capability: event.target.value});
 
     this.reconstructAndUpdateValue(event.target.value);
   }
 
   selectCapabilitySearchResult(result)
   {
-    this.setState({capability_class: result});
+    this.setState({capability: result});
     this.setState({capabilities_results: []});
 
     this.reconstructAndUpdateValue(result);
   }
 
-  reconstructAndUpdateValue(capability_class)
+  reconstructAndUpdateValue(capability)
   {
-    var reconstructed = {"py/object": "bt_capabilities.nodes.capability.CapabilityClass", "capability_class": capability_class};
+    var reconstructed = {"py/object": "bt_capabilities.nodes.capability.CapabilityType", "capability": capability};
     this.props.onNewValue(reconstructed);
-    this.props.onCapabilityClassChange(capability_class);
+    this.props.onCapabilityChange(capability);
   }
 
   renderCapabilitySearchResults(results)
@@ -6117,9 +6116,9 @@ class CapabilityClassInput extends Component
     {
       var result_rows = results.map(x => {
         return (
-          <div className="list-group-item search-result align-items-start" onClick={() => this.selectCapabilitySearchResult(x.capability_class)}>
+          <div className="list-group-item search-result align-items-start" onClick={() => this.selectCapabilitySearchResult(x.capability)}>
             <div className="d-flex w-100 justify-content-between">
-              <span>{x.capability_class}</span>
+              <span>{x.capability}</span>
               <i class="far fa-file-code" title={x.capability.path}></i>
             </div>
           </div>
@@ -6144,7 +6143,7 @@ class CapabilityClassInput extends Component
       <div className="d-flex flex-column">
         <input className="form-control-lg mb-2"
                type="text"
-               value={this.state.capability_class}
+               value={this.state.capability}
                onChange={this.searchCapability}/>
         {this.renderCapabilitySearchResults(this.state.capabilities_results)}
       </div>
@@ -6152,13 +6151,13 @@ class CapabilityClassInput extends Component
     }
 }
 
-class CapabilityTypeInput extends Component
+class ImplementationTypeInput extends Component
 {
   constructor(props)
   {
     super(props);
     this.state = {
-      capability_type: props.capability_type.capability_type,
+      implementation: props.implementation.implementation,
       capabilities_results: [],
       capability: '',
       target: '',
@@ -6174,12 +6173,12 @@ class CapabilityTypeInput extends Component
       maxPatternLength: 32,
       minMatchCharLength: 1,
       keys: [
-        "capability_type",
+        "implementation",
       ]
     };
     // TODO filter - modify the one from capability class copy pasted below:
-    this.capability_types = new Set();
-    this.capability_type_objects = []
+    this.implementations = new Set();
+    this.implementation_objects = []
 
     this.searchCapability = this.searchCapability.bind(this);
     this.selectCapabilitySearchResult = this.selectCapabilitySearchResult.bind(this);
@@ -6197,46 +6196,46 @@ class CapabilityTypeInput extends Component
   }
 
   componentDidUpdate(prevProps, prevState) {
-    if (prevProps.capability_class !== this.props.capability_class)
+    if (prevProps.capability !== this.props.capability)
     {
       for (let index = 0; index < this.props.available_capabilities.length; index++) {
-        if (this.props.available_capabilities[index].capability_class === this.props.capability_class)
+        if (this.props.available_capabilities[index].capability === this.props.capability)
         {
-          if (!this.capability_types.has(this.props.available_capabilities[index].capability_type))
+          if (!this.implementations.has(this.props.available_capabilities[index].implementation))
           {
-            this.capability_type_objects.push(this.props.available_capabilities[index]);
+            this.implementation_objects.push(this.props.available_capabilities[index]);
           }
-          this.capability_types.add(this.props.available_capabilities[index].capability_type);
+          this.implementations.add(this.props.available_capabilities[index].implementation);
         }
       }
 
-      this.capability_type_fuse = new Fuse(this.capability_type_objects, this.options);
+      this.implementation_fuse = new Fuse(this.implementation_objects, this.options);
     }
   }
 
   searchCapability(event)
   {
-    if (this.capability_type_fuse)
+    if (this.implementation_fuse)
     {
-      var results = this.capability_type_fuse.search(event.target.value);
+      var results = this.implementation_fuse.search(event.target.value);
       this.setState({capabilities_results: results.slice(0,5)});
     }
-    this.setState({capability_type: event.target.value});
+    this.setState({implementation: event.target.value});
 
     this.reconstructAndUpdateValue(event.target.value);
   }
 
   selectCapabilitySearchResult(result)
   {
-    this.setState({capability_type: result});
+    this.setState({implementation: result});
     this.setState({capabilities_results: []});
 
     this.reconstructAndUpdateValue(result);
   }
 
-  reconstructAndUpdateValue(capability_type)
+  reconstructAndUpdateValue(implementation)
   {
-    var reconstructed = {"py/object": "bt_capabilities.nodes.capability.CapabilityType", "capability_type": capability_type};
+    var reconstructed = {"py/object": "bt_capabilities.nodes.capability.ImplementationType", "implementation": implementation};
     this.props.onNewValue(reconstructed);
   }
 
@@ -6246,9 +6245,9 @@ class CapabilityTypeInput extends Component
     {
       var result_rows = results.map(x => {
         return (
-          <div className="list-group-item search-result align-items-start" onClick={() => this.selectCapabilitySearchResult(x.capability_type)}>
+          <div className="list-group-item search-result align-items-start" onClick={() => this.selectCapabilitySearchResult(x.implementation)}>
             <div className="d-flex w-100 justify-content-between">
-              <span>{x.capability_type}</span>
+              <span>{x.implementation}</span>
               <i class="far fa-file-code" title={x.capability.path}></i>
             </div>
           </div>
@@ -6272,9 +6271,9 @@ class CapabilityTypeInput extends Component
     return (
       <div className="d-flex flex-column">
         <input className="form-control-lg mb-2"
-               disabled={this.props.capability_class === null}
+               disabled={this.props.capability === null}
                type="text"
-               value={this.state.capability_type}
+               value={this.state.implementation}
                onChange={this.searchCapability}/>
         {this.renderCapabilitySearchResults(this.state.capabilities_results)}
       </div>
