@@ -4391,7 +4391,6 @@ class MultipleSelection extends Component
                   filename: 'subtree.yaml',
                   package: this.props.last_selected_package,
                   package_results:[],
-                  capability: '',
                   preconditions: []};
 
     this.create_coordinator_tree_service = new ROSLIB.Service({
