@@ -40,7 +40,7 @@ variables:
   script:
     - apt-get -y update
     - source /opt/ros/${ROS_DISTRIBUTION}/setup.bash
-    - git clone ${CI_SCRIPTS_REPO} ${HOME}/ci_scripts
+    - git clone ${CI_SCRIPTS_REPO} ${HOME}/ci_scripts -b fb-add-combined-code-coverage-output
     - cp ${HOME}/ci_scripts/catkin_build_scripts/10-fzi-sources.list /etc/ros/rosdep/sources.list.d/
     - ${HOME}/ci_scripts/catkin_build_scripts/prepare_workspace.sh ${CI_PROJECT_DIR} ${CI_PROJECT_NAME} ${CATKIN_ROOT} ${ROSDISTRO_INDEX_URL}
     - rosdep install --from-path ${CATKIN_ROOT}/src -y --ignore-src
@@ -57,9 +57,8 @@ variables:
     - catkin_make run_tests -DCMAKE_CXX_FLAGS="${cxx_flags}"
     - cp -r ${CATKIN_ROOT}/build/test_results ${CI_PROJECT_DIR}/test_results
     - ${HOME}/ci_scripts/catkin_build_scripts/coverage.sh ${CATKIN_ROOT} ${CI_PROJECT_DIR}/code_coverage
+    - ${HOME}/ci_scripts/catkin_build_scripts/combine_coverage.sh ${CATKIN_ROOT} ${CI_PROJECT_DIR}/code_coverage
     - ${HOME}/ci_scripts/catkin_build_scripts/check_tests.sh ${CATKIN_ROOT}/build/test_results/
-    - pip install pycobertura
-    - pycobertura show ${CI_PROJECT_DIR}/code_coverage/ros_bt_py/coverage.python.xml
   artifacts:
     when: always
     paths:
@@ -71,3 +70,18 @@ run_tests_xenial:
   variables:
     ROS_DISTRIBUTION: kinetic # This will be overwritten once ROS is sourced
   extends: .run_tests
+  except:
+    variables:
+      - $TEST_KINETIC == "false"
+      - $BUILD_KINETIC == "false"
+
+
+run_tests_bionic:
+  image: ids-git.fzi.de:5555/continuous_integration/ci_docker_images/ubuntu_18.04_ros
+  variables:
+    ROS_DISTRIBUTION: melodic # This will be overwritten once ROS is sourced
+  extends: .run_tests
+  except:
+    variables:
+      - $TEST_MELODIC == "false"
+      - $BUILD_MELODIC == "false"
