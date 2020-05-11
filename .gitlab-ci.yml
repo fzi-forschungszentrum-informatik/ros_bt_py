@@ -50,6 +50,7 @@ variables:
     - pip install pyopenssl
     - pip install coverage gcovr
     - apt-get install libxml2-utils tree
+    - apt-get install bc
     - cd ${CATKIN_ROOT}
     - catkin_make
     - source devel/setup.bash
