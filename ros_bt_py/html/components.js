@@ -55,7 +55,7 @@ function prettyprint_type(jsonpickled_type) {
   if (json_type['py/type'] !== undefined)
   {
     // shorten the CapabilityType
-    if (json_type['py/type'] === 'ros_ta.nodes.capability.CapabilityType')
+    if (json_type['py/type'] === 'bt_capabilities.nodes.capability.CapabilityType')
     {
       return 'CapabilityType';
     }
@@ -151,10 +151,15 @@ function getDefaultValue(typeName, options)
             value: {"py/reduce": [{"py/type": "collections.OrderedDict"}, {"py/tuple": [[]]}, null, null, null]}
     };
   }
-  else if (typeName === 'CapabilityType')
+  else if (typeName === 'CapabilityType' || typeName === 'bt_capabilities.nodes.capability.CapabilityType')
   {
-    return {type: 'ros_ta.nodes.capability.CapabilityType',
-            value: {"capability_type": ""}};
+    return {type: 'bt_capabilities.nodes.capability.CapabilityType',
+            value: {"capability": ""}};
+  }
+  else if (typeName === 'ImplementationType' || typeName === 'bt_capabilities.nodes.capability.ImplementationType')
+  {
+    return {type: 'bt_capabilities.nodes.capability.ImplementationType',
+            value: {"implementation": ""}};
   }
   else if (typeName === 'ros_bt_py.ros_helpers.LoggerLevel')
   {
@@ -361,7 +366,7 @@ class NodeListItem extends Component {
   };
 }
 
-class NodeList extends Component
+class PackageLoader extends Component
 {
   constructor(props)
   {
@@ -370,51 +375,14 @@ class NodeList extends Component
     this.state = {
       package_name: 'ros_bt_py.nodes.sequence',
       package_loader_collapsed: true,
-      node_search: '',
-      filtered_nodes: null
     };
 
     this.handleChange = this.handleChange.bind(this);
-    this.handleNodeSearch = this.handleNodeSearch.bind(this);
-    this.handleNodeSearchClear = this.handleNodeSearchClear.bind(this);
-
-    this.nodesFuse = null;
   }
 
   componentDidMount()
   {
     this.props.getNodes('');
-    this.nameInput.focus();
-  }
-
-  componentDidUpdate()
-  {
-    var options = {
-      shouldSort: true,
-      threshold: 0.6,
-      location: 0,
-      distance: 100,
-      maxPatternLength: 32,
-      minMatchCharLength: 1,
-      keys: [
-        "node_class",
-        "node_type",
-        "module",
-        "tags"]
-    };
-    var nodes = this.props.availableNodes.map( (node) => {
-      if (node.max_children < 0)
-      {
-        node.node_type = "Flow control";
-      } else if (node.max_children > 0)
-      {
-        node.node_type = "Decorator";
-      } else {
-        node.node_type = "Leaf";
-      }
-      return node;
-    });
-    this.nodesFuse = new Fuse(nodes, options)
   }
 
   handleChange(e)
@@ -422,27 +390,65 @@ class NodeList extends Component
     this.setState({package_name: e.target.value});
   }
 
-  handleNodeSearch(e)
-  {
-    if (this.nodesFuse)
-    {
-      var results = this.nodesFuse.search(e.target.value);
-      this.setState({filtered_nodes: results});
-    }
-
-    this.setState({node_search: e.target.value});
-  }
-
-  handleNodeSearchClear(e)
-  {
-    if (e.keyCode == 27) // ESC
-    {
-      this.setState({node_search: '', filtered_nodes: null});
-    }
-  }
-
   toggleCollapsed(event) {
     this.setState({package_loader_collapsed: !this.state.package_loader_collapsed});
+    event.stopPropagation();
+  }
+
+  render()
+  {
+    var collapsible_icon = "fas fa-angle-up";
+    var package_loader = null;
+    if (this.state.package_loader_collapsed)
+    {
+      collapsible_icon = "fas fa-angle-down";
+    } else {
+      package_loader = (
+        <div className="form-group">
+          <button id="refresh"
+                  className="btn btn-block btn-primary mt-2"
+                  onClick={() => this.props.getNodes('')}>
+            Refresh
+          </button>
+          <input type="text" id="package_name"
+                 className="form-control mt-2"
+                 value={this.state.package_name}
+                 onChange={this.handleChange}/>
+          <button id="load_package"
+                  className="btn btn-block btn-primary mt-2"
+                  onClick={() => this.props.getNodes(this.state.package_name)}>
+            Load package
+          </button>
+        </div>
+      );
+    }
+    return (
+      <div className="border rounded mb-2">
+        <div onClick={this.toggleCollapsed.bind(this)} className="text-center cursor-pointer font-weight-bold m-2">Package Loader <i class={collapsible_icon}></i></div>
+        {package_loader}
+      </div>
+    )
+  };
+}
+
+class NodeList extends Component
+{
+  constructor(props)
+  {
+    super(props);
+
+    this.state = {
+      node_list_collapsed: props.node_list_collapsed,
+    };
+  }
+
+  componentDidMount()
+  {
+    this.props.getNodes('');
+  }
+
+  toggleNodeListCollapsed(event) {
+    this.setState({node_list_collapsed: !this.state.node_list_collapsed});
     event.stopPropagation();
   }
 
@@ -475,9 +481,9 @@ class NodeList extends Component
     };
 
     var nodes = this.props.availableNodes.sort(byName);
-    if (this.state.filtered_nodes && this.state.filtered_nodes.length > 0)
+    if (this.props.filtered_nodes && this.props.filtered_nodes.length > 0)
     {
-      nodes = this.state.filtered_nodes;
+      nodes = this.props.filtered_nodes;
     }
 
     var items = nodes
@@ -500,58 +506,176 @@ class NodeList extends Component
                            />);
     });
 
-    var collapsible_icon = "fas fa-angle-up";
-    var package_loader = null;
-    if (this.state.package_loader_collapsed)
-    {
-      collapsible_icon = "fas fa-angle-down";
-    } else {
-      package_loader = (
-        <div className="form-group">
-          <button id="refresh"
-                  className="btn btn-block btn-primary mt-2"
-                  onClick={() => this.props.getNodes('')}>
-            Refresh
-          </button>
-          <input type="text" id="package_name"
-                 className="form-control mt-2"
-                 value={this.state.package_name}
-                 onChange={this.handleChange}/>
-          <button id="load_package"
-                  className="btn btn-block btn-primary mt-2"
-                  onClick={() => this.props.getNodes(this.state.package_name)}>
-            Load package
-          </button>
-        </div>
-      );
-    }
+    var node_list_collapsible_icon = "fas fa-angle-up";
 
-    var search = (
-      <div className="form-group row mt-2 mb-2 ml-1 mr-1">
-        <label for="nodelist_search" className="col-sm-2 col-form-label">Search:</label>
-        <div class="col-sm-10">
-          <input  id="nodelist_search"
-                  type="text"
-                  ref={(input) => { this.nameInput = input; }}
-                  className="form-control"
-                  value={this.state.node_search}
-                  onChange={this.handleNodeSearch}
-                  onKeyDown={this.handleNodeSearchClear}/>
-        </div>
-      </div>
-    );
+    if (this.state.node_list_collapsed)
+    {
+      node_list_collapsible_icon = "fas fa-angle-down";
+      items = null;
+    }
 
     return(
       <div className="available-nodes m-1">
-        <div className="border rounded mb-2">
-          <div onClick={this.toggleCollapsed.bind(this)} className="text-center cursor-pointer font-weight-bold m-2">Package Loader <i class={collapsible_icon}></i></div>
-          {package_loader}
-        </div>
-        <div className="border rounded mb-2">
-          {search}
-        </div>
         <div className="vertical_list">
-          {items}
+          <div className="border rounded mb-2">
+            <div onClick={this.toggleNodeListCollapsed.bind(this)} className="text-center cursor-pointer font-weight-bold m-2">Node List <i class={node_list_collapsible_icon}></i></div>
+            {items}
+          </div>
+        </div>
+      </div>
+    );
+  }
+}
+
+
+class CapabilityListItem extends Component {
+  constructor(props)
+  {
+    super(props);
+    this.state = {
+      collapsed: this.props.collapsed,
+    };
+  }
+
+  onClick(e, node) {
+    //this.props.onSelectionChange(this.props.node);
+  }
+
+  onMouseDown(e, node) {
+    this.props.onDragging(this.props.capability);
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  onMouseUp(e, node) {
+    this.props.onDragging(null);
+  }
+
+  toggleCollapsed(event) {
+    this.setState({collapsed: !this.state.collapsed});
+    event.stopPropagation();
+  }
+
+  render() {
+    var collapsible_icon = "cursor-pointer fas fa-angle-up";
+    if (this.state.collapsed)
+    {
+      collapsible_icon = "cursor-pointer fas fa-angle-down";
+    }
+
+    var border = "border rounded p-2 mb-2";
+    if (this.props.highlighted)
+    {
+      border = "border rounded border-primary p-2 mb-2";
+    }
+    return (
+      <div className={border}
+           onClick={this.onClick.bind(this)}
+           onMouseDown={this.onMouseDown.bind(this)}
+           onMouseUp={this.onMouseUp.bind(this)}>
+        <div className="d-flex justify-content-between">
+          <div className="d-flex minw0">
+            <h4 title={this.props.capability.capability} className="node_class text-truncate">Capability: {this.props.capability.capability}</h4>
+            <i title={this.props.capability.description} class="fas fa-question-circle pl-2 pr-2"></i>
+          </div>
+          <div className="d-flex minw0">
+            <i onClick={this.toggleCollapsed.bind(this)} class={collapsible_icon}></i>
+          </div>
+        </div>
+        <h5 title={this.props.capability.implementation} className="node_class text-truncate">Implementation: {this.props.capability.implementation}</h5>
+        <h5 title={this.props.capability.target} className="node_module text-truncate text-muted">Target: {this.props.capability.capability.target}</h5>
+      </div>
+    );
+  };
+}
+
+
+class CapabilityList extends Component {
+  constructor(props)
+  {
+    super(props);
+    this.state = {
+      capability_list_collapsed: props.capability_list_collapsed,
+    };
+  }
+
+  componentDidMount()
+  {
+    //get caps? this.props.getNodes('');
+  }
+
+  toggleCapabilityListCollapsed(event) {
+    this.setState({capability_list_collapsed: !this.state.capability_list_collapsed});
+    event.stopPropagation();
+  }
+
+  render()
+  {
+    var byName = function(a, b) {
+      if (a.name < b.name)
+      {
+        return -1;
+      }
+      else if (a.name > b.name)
+      {
+        return 1;
+      }
+
+      return 0;
+    };
+
+    var moduleThenName = function(a, b) {
+      if (a.module < b.module)
+      {
+        return -1;
+      }
+      else if (a.module > b.module)
+      {
+        return 1;
+      }
+
+      return byName(a, b);
+    };
+
+    var capabilities = this.props.availableCapabilities.sort(byName);
+
+    if (this.props.filtered_capabilities && this.props.filtered_capabilities.length > 0)
+    {
+      capabilities = this.props.filtered_capabilities;
+    }
+    var items = capabilities
+        .map( (capability) => {
+          var highlighted = false;
+          if (this.props.dragging_capability_list_item
+              && this.props.dragging_capability_list_item.capability === capability.capability
+              && this.props.dragging_capability_list_item.implementation === capability.implementation
+              && this.props.dragging_capability_list_item.capability.path === capability.capability.path)
+          {
+            highlighted = true;
+          }
+          return (<CapabilityListItem capability={capability}
+                           key={capability.capability + capability.implementation + capability.capability.path}
+                           collapsed={true}
+                           highlighted={highlighted}
+                           onSelectionChange={this.props.onSelectionChange}
+                           onDragging={this.props.onCapabilityDragging}
+                           />);
+    });
+
+    var capability_list_collapsible_icon = "fas fa-angle-up";
+    if (this.state.capability_list_collapsed)
+    {
+      capability_list_collapsible_icon = "fas fa-angle-down";
+      items = null;
+    }
+
+    return(
+      <div className="available-nodes m-1">
+        <div className="vertical_list">
+          <div className="border rounded mb-2">
+            <div onClick={this.toggleCapabilityListCollapsed.bind(this)} className="text-center cursor-pointer font-weight-bold m-2">Capability List <i class={capability_list_collapsible_icon}></i></div>
+            {items}
+          </div>
         </div>
       </div>
     );
@@ -1480,13 +1604,29 @@ class D3BehaviorTreeEditor extends Component
     // SVG MOUSEUP FOR NODE DRAG/DROP
     var svg_viewport = d3.select(this.svg_ref.current);
     svg_viewport.on("mouseup", () => {
+      var new_node = null;
+      var msg = null;
       if (this.props.dragging_node_list_item)
       {
-        var new_node = new NewNode({node : this.props.dragging_node_list_item});
-        var msg = new_node.buildNodeMessage();
+        new_node = new NewNode({node : this.props.dragging_node_list_item});
+        msg = new_node.buildNodeMessage();
 
         this.props.onNodeListDragging(null);
+      }
+      if (this.props.dragging_capability_list_item)
+      {
+        new_node = new MultipleSelection({
+          selectedNodeNames : [this.props.dragging_capability_list_item.capability + "_" + this.props.dragging_capability_list_item.implementation],
+          capability: this.props.dragging_capability_list_item.capability,
+          implementation: this.props.dragging_capability_list_item.implementation,
+        });
 
+        msg = new_node.buildNodeMessage();
+        this.props.onCapabilityDragging(null);
+      }
+
+      if (msg)
+      {
         var parent_name = '';
         var position = -1;
         if(this.nodeDropTarget && this.nodeDropTarget.data)
@@ -1728,7 +1868,7 @@ class D3BehaviorTreeEditor extends Component
 
     }
 
-    if (this.props.dragging_node_list_item)
+    if (this.props.dragging_node_list_item || this.props.dragging_capability_list_item)
     {
       // show drop targets
       var svg = d3.select(this.svg_ref.current);
@@ -1912,7 +2052,6 @@ class D3BehaviorTreeEditor extends Component
           this.drawDataGraph(g_data, node.data(), tree_msg.data_wirings);
         }, 100);
 
-    //console.log(root);
   }
 
   drawNodes(selection)
@@ -2526,9 +2665,6 @@ class D3BehaviorTreeEditor extends Component
       .on("mouseover", this.DataEdgeDefaultMouseoverHandler)
       .on("mouseout", this.DataEdgeDefaultMouseoutHandler)
       .merge(link);
-    
-    console.log("link:");
-    console.log(link);
 
     link
       .transition()
@@ -3360,6 +3496,7 @@ class NewNode extends Component
                       changeCopyMode={this.props.changeCopyMode}
                       messagesFuse={this.props.messagesFuse}
                       capabilitiesFuse={this.props.capabilitiesFuse}
+                      available_capabilities={this.props.available_capabilities}
                       updateValidity={this.updateValidity}
                       updateValue={this.updateValue}
                       nameChangeHandler={this.nameChangeHandler}
@@ -4231,7 +4368,8 @@ class MultipleSelection extends Component
     super(props);
 
     this.setFilename = this.setFilename.bind(this);
-    this.setCapabilityName = this.setCapabilityName.bind(this);
+    this.setCapability = this.setCapability.bind(this);
+    this.setImplementation = this.setImplementation.bind(this);
     this.setDescription = this.setDescription.bind(this);
     this.setTarget = this.setTarget.bind(this);
     this.searchPackageName = this.searchPackageName.bind(this);
@@ -4246,24 +4384,25 @@ class MultipleSelection extends Component
     }
 
     this.state = {name: name,
+                  capability: this.props.capability,
+                  implementation: this.props.implementation,
                   target: '',
                   description: '',
                   filename: 'subtree.yaml',
                   package: this.props.last_selected_package,
                   package_results:[],
-                  capability: '',
                   preconditions: []};
 
     this.create_coordinator_tree_service = new ROSLIB.Service({
       ros: props.ros,
       name: props.cm_namespace + 'create_coordinator_tree',
-      serviceType: 'ros_ta_msgs/CreateCoordinatorTree'
+      serviceType: 'bt_capabilities_msgs/CreateCoordinatorTree'
     });
 
     this.save_capability_service = new ROSLIB.Service({
       ros: props.ros,
       name: props.cm_namespace + 'save_capability',
-      serviceType: 'ros_ta_msgs/SaveCapability'
+      serviceType: 'bt_capabilities_msgs/SaveCapability'
     });
 
     this.generate_subtree_service = new ROSLIB.Service({
@@ -4329,17 +4468,21 @@ class MultipleSelection extends Component
   buildNodeMessage()
   {
     return {
-      module: 'ros_ta.nodes.capability',
+      module: 'bt_capabilities.nodes.capability',
       node_class: 'Capability',
-      name: this.state.name,
+      name: this.state.capability + "_" + this.state.implementation,
       options: [{
-                  key: 'capability_type',
-                  serialized_value: JSON.stringify({"py/object": "ros_ta.nodes.capability.CapabilityType", "capability_type": this.state.name})
+                  key: 'capability',
+                  serialized_value: JSON.stringify({"py/object": "bt_capabilities.nodes.capability.CapabilityType", "capability": this.state.capability})
                 },
                 {
-                  key: 'preconditions',
-                  serialized_value: JSON.stringify(this.state.preconditions)
+                  key: 'implementation',
+                  serialized_value: JSON.stringify({"py/object": "bt_capabilities.nodes.capability.ImplementationType", "implementation": this.state.implementation})
                 }],
+                // {
+                //   key: 'preconditions',
+                //   serialized_value: JSON.stringify(this.state.preconditions)
+                // }],
       child_names: []
     };
   }
@@ -4372,10 +4515,11 @@ class MultipleSelection extends Component
           console.log('Created coordinator tree!');
           
           var capability = {};
-          capability.name = this.state.name;
+          capability.capability = this.state.capability;
+          capability.implementation = this.state.implementation;
           capability.target = this.state.target;
           capability.description = this.state.description;
-          capability.preconditions = this.state.preconditions;
+          //capability.preconditions = this.state.preconditions;
           capability.path = "coordinator.yaml"
           var coordinator = response.coordinator;
 
@@ -4393,17 +4537,22 @@ class MultipleSelection extends Component
 
                 // now add it to the tree
                 var msg = this.buildNodeMessage();
-                console.log("aha...", msg)
-                this.add_node_service.callService(
-                  new ROSLIB.ServiceRequest({
-                    parent_name: coordinator.root_name,
-                    node: msg,
-                    allow_rename: true
-                  }),
-                  function(response) {
-                    if (response.success) {
-                      if (window.confirm("Do you want to replace the selected node with the newly created capability?"))
-                      {
+
+                if (window.confirm("Do you want to replace the selected node with the newly created capability?"))
+                {
+                  var parent_name = '';
+                  if (remove_nodes.indexOf(coordinator.root_name) < 0) {
+                    parent_name = coordinator.root_name;
+                  }
+
+                  this.add_node_service.callService(
+                    new ROSLIB.ServiceRequest({
+                      parent_name: parent_name,
+                      node: msg,
+                      allow_rename: true
+                    }),
+                    function(response) {
+                      if (response.success) {
                         this.props.onSelectionChange(null);
                         this.props.onSelectedEdgeChange(null);
                         console.log('Added node to tree as ' + response.actual_node_name);
@@ -4411,7 +4560,7 @@ class MultipleSelection extends Component
                         // now move it into position
                         var insertion_index = -1;
                         for (var i = 0; i < this.props.tree_message.nodes.length; i++) {
-                          if (this.props.tree_message.nodes[i].name == coordinator.root_name) {
+                          if (this.props.tree_message.nodes[i].name == parent_name) {
                             for (var j = 0; j < this.props.tree_message.nodes[i].child_names.length; j++) {
                               for (var k = 0; k < this.props.selectedNodeNames.length; k++) {
                                 if (this.props.selectedNodeNames[k] == this.props.tree_message.nodes[i].child_names[j])
@@ -4426,7 +4575,7 @@ class MultipleSelection extends Component
                         this.move_node_service.callService(
                           new ROSLIB.ServiceRequest({
                             node_name: actual_node_name,
-                            new_parent_name: coordinator.root_name,
+                            new_parent_name: parent_name,
                             new_child_index: insertion_index
                           }),
                           function(response) {
@@ -4526,6 +4675,26 @@ class MultipleSelection extends Component
                                       }.bind(this));
                                   } else {
                                     console.log("Failed to add new wirings: " + response.error_message);
+                                    if (wirings_to_add.length === 0 && parent_name === '')
+                                    {
+                                      console.log('the new node is the root, so remove the old nodes anyway:', remove_nodes);
+                                      // finally remove the nodes
+                                      for (var i = 0; i < remove_nodes.length; i++) { 
+                                        this.remove_node_service.callService(
+                                          new ROSLIB.ServiceRequest({
+                                            node_name: remove_nodes[i],
+                                            remove_children: false, // children are not automatically part of a capability atm, so we should not remove all
+                                          }),
+                                          function(response) {
+                                            if (response.success) {
+                                              console.log('Removed node from tree');
+                                            }
+                                            else {
+                                              console.log('Failed to remove node ' + response.error_message);
+                                            }
+                                        }.bind(this));
+                                      }
+                                    }
                                   }
                                 }.bind(this));
                             }
@@ -4534,12 +4703,12 @@ class MultipleSelection extends Component
                             }
                         }.bind(this));
                       }
-                    }
-                    else {
-                      console.log('Failed to add node ' + this.state.name + ': '
-                                  + response.error_message);
-                    }
-                  }.bind(this));
+                      else {
+                        console.log('Failed to add node ' + this.state.name + ': '
+                                    + response.error_message);
+                      }
+                    }.bind(this));
+                  }
               }
               else {
                 this.props.onError('Failed to save capability '
@@ -4569,7 +4738,7 @@ class MultipleSelection extends Component
   {
     this.setState({package: result});
     this.setState({package_results: []});
-    this.props.onSelectedPackageChange(result);
+    this.props.onCapabilityPackageChange(result);
   }
 
   renderPackageSearchResults(results)
@@ -4605,9 +4774,14 @@ class MultipleSelection extends Component
     this.setState({filename: event.target.value});
   }
 
-  setCapabilityName(event)
+  setCapability(event)
   {
-    this.setState({name: event.target.value});
+    this.setState({capability: event.target.value});
+  }
+
+  setImplementation(event)
+  {
+    this.setState({implementation: event.target.value});
   }
 
   setDescription(event)
@@ -4645,11 +4819,16 @@ class MultipleSelection extends Component
             </button>
           </div>
           <div className="d-flex flex-column">
-            <h5>Capability Name <i title="Capability name" class="fas fa-question-circle"></i></h5>
+            <h5>Capability (dropdown?) <i title="Capability" class="fas fa-question-circle"></i></h5>
             <input className="form-control-lg mb-2"
                    type="text"
-                   value={this.state.name}
-                   onChange={this.setCapabilityName}/>
+                   value={this.state.capability}
+                   onChange={this.setCapability}/>
+            <h5>Implementation <i title="Implementation" class="fas fa-question-circle"></i></h5>
+            <input className="form-control-lg mb-2"
+                   type="text"
+                   value={this.state.implementation}
+                   onChange={this.setImplementation}/>
             <h5>Package <i title="The ROS package in which the newly created subtree will be saved in" class="fas fa-question-circle"></i></h5>
             <input className="form-control-lg mb-2"
                    type="text"
@@ -5015,6 +5194,7 @@ class SelectedNode extends Component
                       changeCopyMode={this.props.changeCopyMode}
                       messagesFuse={this.props.messagesFuse}
                       capabilitiesFuse={this.props.capabilitiesFuse}
+                      available_capabilities={this.props.available_capabilities}
                       updateValidity={this.updateValidity}
                       updateValue={this.updateValue}
                       nameChangeHandler={this.nameChangeHandler}
@@ -5145,7 +5325,7 @@ class EditableNode extends Component
   constructor(props)
   {
     super(props);
-    this.state = {messages_results:[], results_at_key: null, selected_message: null};
+    this.state = {messages_results:[], results_at_key: null, selected_message: null, capability: null};
 
     this.onFocus = this.onFocus.bind(this);
 
@@ -5154,6 +5334,7 @@ class EditableNode extends Component
     this.handleOptionWirings = this.handleOptionWirings.bind(this);
     this.selectMessageResult = this.selectMessageResult.bind(this);
     this.renderCapabilityOptions = this.renderCapabilityOptions.bind(this);
+    this.onCapabilityChange = this.onCapabilityChange.bind(this);
 
     this.get_message_fields_service = new ROSLIB.Service({
       ros: props.ros,
@@ -5342,6 +5523,11 @@ class EditableNode extends Component
     }
 
     this.props.updateValue(paramType, key, new_value);
+  }
+
+  onCapabilityChange(capability)
+  {
+    this.setState({capability: capability});
   }
 
   inputForValue(paramItem, onValidityChange, onNewValue)
@@ -5557,15 +5743,33 @@ class EditableNode extends Component
         </div>
       );
     }
-    else if (valueType === 'ros_ta.nodes.capability.CapabilityType' || valueType === 'CapabilityType') // FIXME: consistency?
+    else if (valueType === 'bt_capabilities.nodes.capability.CapabilityType' || valueType === 'CapabilityType')
     {
       return (
         <div className="form-group">
           <label className="d-block">{paramItem.key}
-            <CapabilityTypeInput capability_type={paramItem.value.value}
+            <CapabilityTypeInput capability={paramItem.value.value}
                        ros={this.props.ros}
                        bt_namespace={this.props.bt_namespace}
-                       capabilitiesFuse={this.props.capabilitiesFuse}
+                       available_capabilities={this.props.available_capabilities}
+                       onValidityChange={onValidityChange}
+                       onFocus={this.onFocus}
+                       onNewValue={onNewValue}
+                       onCapabilityChange={this.onCapabilityChange}/>
+          </label>
+        </div>
+      );
+    }
+    else if (valueType === 'bt_capabilities.nodes.capability.ImplementationType' || valueType === 'ImplementationType')
+    {
+      return (
+        <div className="form-group">
+          <label className="d-block">{paramItem.key}
+            <ImplementationTypeInput implementation={paramItem.value.value}
+                       ros={this.props.ros}
+                       bt_namespace={this.props.bt_namespace}
+                       capability={this.state.capability}
+                       available_capabilities={this.props.available_capabilities}
                        onValidityChange={onValidityChange}
                        onFocus={this.onFocus}
                        onNewValue={onNewValue}/>
@@ -5837,56 +6041,72 @@ class CapabilityTypeInput extends Component
   constructor(props)
   {
     super(props);
-    this.state = {name: props.capability_type.capability_type,
+    this.state = {
+      capability: props.capability.capability,
       capabilities_results: [],
-      capability: '',
       target: '',
       description: '',
-      cm_available: false,};
-    
-      this.searchCapability = this.searchCapability.bind(this);
-      this.selectCapabilitySearchResult = this.selectCapabilitySearchResult.bind(this);
-      this.reconstructAndUpdateValue = this.reconstructAndUpdateValue.bind(this);
+    };
 
+    this.props.onCapabilityChange(props.capability.capability);
+
+    var options = {
+      shouldSort: true,
+      threshold: 0.6,
+      location: 0,
+      distance: 100,
+      maxPatternLength: 32,
+      minMatchCharLength: 1,
+      keys: [
+        "capability",
+      ]
+    };
+
+    var capabilities = new Set();
+    var capability_objects = []
+    for (let index = 0; index < props.available_capabilities.length; index++) {
+      if (!capabilities.has(props.available_capabilities[index].capability))
+      {
+        capability_objects.push(props.available_capabilities[index]);
+      }
+      capabilities.add(props.available_capabilities[index].capability);
+    }
+    this.capability_fuse = new Fuse(capability_objects, options);
+
+    this.searchCapability = this.searchCapability.bind(this);
+    this.selectCapabilitySearchResult = this.selectCapabilitySearchResult.bind(this);
+    this.reconstructAndUpdateValue = this.reconstructAndUpdateValue.bind(this);
   }
 
   componentDidMount()
   {
-    if(!this.props.capabilitiesFuse)
-    {
-      console.log("no capability manager available");
-      this.setState({cm_available:false});
-    } else {
-      console.log("capability manager available");
-      this.setState({cm_available:true});
-    }
   }
 
-  // START
   searchCapability(event)
   {
-    if (this.props.capabilitiesFuse)
+    if (this.capability_fuse)
     {
-      var results = this.props.capabilitiesFuse.search(event.target.value);
+      var results = this.capability_fuse.search(event.target.value);
       this.setState({capabilities_results: results.slice(0,5)});
     }
-    this.setState({name: event.target.value});
+    this.setState({capability: event.target.value});
 
     this.reconstructAndUpdateValue(event.target.value);
   }
 
   selectCapabilitySearchResult(result)
   {
-    this.setState({name: result});
+    this.setState({capability: result});
     this.setState({capabilities_results: []});
 
     this.reconstructAndUpdateValue(result);
   }
 
-  reconstructAndUpdateValue(capability_type)
+  reconstructAndUpdateValue(capability)
   {
-    var reconstructed = {"py/object": "ros_ta.nodes.capability.CapabilityType", "capability_type": capability_type};
+    var reconstructed = {"py/object": "bt_capabilities.nodes.capability.CapabilityType", "capability": capability};
     this.props.onNewValue(reconstructed);
+    this.props.onCapabilityChange(capability);
   }
 
   renderCapabilitySearchResults(results)
@@ -5895,9 +6115,9 @@ class CapabilityTypeInput extends Component
     {
       var result_rows = results.map(x => {
         return (
-          <div className="list-group-item search-result align-items-start" onClick={() => this.selectCapabilitySearchResult(x.name)}>
+          <div className="list-group-item search-result align-items-start" onClick={() => this.selectCapabilitySearchResult(x.capability)}>
             <div className="d-flex w-100 justify-content-between">
-              <span>{x.name}</span>
+              <span>{x.capability}</span>
               <i class="far fa-file-code" title={x.capability.path}></i>
             </div>
           </div>
@@ -5921,10 +6141,139 @@ class CapabilityTypeInput extends Component
     return (
       <div className="d-flex flex-column">
         <input className="form-control-lg mb-2"
-              disabled={!this.state.cm_available}
-              type="text"
-              value={this.state.name}
-              onChange={this.searchCapability}/>
+               type="text"
+               value={this.state.capability}
+               onChange={this.searchCapability}/>
+        {this.renderCapabilitySearchResults(this.state.capabilities_results)}
+      </div>
+    );
+    }
+}
+
+class ImplementationTypeInput extends Component
+{
+  constructor(props)
+  {
+    super(props);
+    this.state = {
+      implementation: props.implementation.implementation,
+      capabilities_results: [],
+      capability: '',
+      target: '',
+      description: '',
+      cm_available: false,
+    };
+    
+    this.options = {
+      shouldSort: true,
+      threshold: 0.6,
+      location: 0,
+      distance: 100,
+      maxPatternLength: 32,
+      minMatchCharLength: 1,
+      keys: [
+        "implementation",
+      ]
+    };
+    // TODO filter - modify the one from capability class copy pasted below:
+    this.implementations = new Set();
+    this.implementation_objects = []
+
+    this.searchCapability = this.searchCapability.bind(this);
+    this.selectCapabilitySearchResult = this.selectCapabilitySearchResult.bind(this);
+    this.reconstructAndUpdateValue = this.reconstructAndUpdateValue.bind(this);
+  }
+
+  componentDidMount()
+  {
+    if(!this.props.capabilitiesFuse)
+    {
+      this.setState({cm_available:false});
+    } else {
+      this.setState({cm_available:true});
+    }
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    if (prevProps.capability !== this.props.capability)
+    {
+      for (let index = 0; index < this.props.available_capabilities.length; index++) {
+        if (this.props.available_capabilities[index].capability === this.props.capability)
+        {
+          if (!this.implementations.has(this.props.available_capabilities[index].implementation))
+          {
+            this.implementation_objects.push(this.props.available_capabilities[index]);
+          }
+          this.implementations.add(this.props.available_capabilities[index].implementation);
+        }
+      }
+
+      this.implementation_fuse = new Fuse(this.implementation_objects, this.options);
+    }
+  }
+
+  searchCapability(event)
+  {
+    if (this.implementation_fuse)
+    {
+      var results = this.implementation_fuse.search(event.target.value);
+      this.setState({capabilities_results: results.slice(0,5)});
+    }
+    this.setState({implementation: event.target.value});
+
+    this.reconstructAndUpdateValue(event.target.value);
+  }
+
+  selectCapabilitySearchResult(result)
+  {
+    this.setState({implementation: result});
+    this.setState({capabilities_results: []});
+
+    this.reconstructAndUpdateValue(result);
+  }
+
+  reconstructAndUpdateValue(implementation)
+  {
+    var reconstructed = {"py/object": "bt_capabilities.nodes.capability.ImplementationType", "implementation": implementation};
+    this.props.onNewValue(reconstructed);
+  }
+
+  renderCapabilitySearchResults(results)
+  {
+    if(results.length > 0)
+    {
+      var result_rows = results.map(x => {
+        return (
+          <div className="list-group-item search-result align-items-start" onClick={() => this.selectCapabilitySearchResult(x.implementation)}>
+            <div className="d-flex w-100 justify-content-between">
+              <span>{x.implementation}</span>
+              <i class="far fa-file-code" title={x.capability.path}></i>
+            </div>
+          </div>
+        );
+      });
+
+      return (
+        <div className="mb-2 search-results" ref={node => this.node = node}>
+          <div className="list-group">
+              {result_rows}
+          </div>
+        </div>
+      );
+    } else {
+      return null;
+    }
+  }
+
+  render()
+  {
+    return (
+      <div className="d-flex flex-column">
+        <input className="form-control-lg mb-2"
+               disabled={this.props.capability === null}
+               type="text"
+               value={this.state.implementation}
+               onChange={this.searchCapability}/>
         {this.renderCapabilitySearchResults(this.state.capabilities_results)}
       </div>
     );
@@ -5943,7 +6292,6 @@ class DropDown extends Component
   }
 
   handleChange = (event) => {
-    console.log(event.target.value);
     var json = this.state.json;
     json.logger_level = event.target.value;
     this.setState({json:json, logger_level:event.target.value});

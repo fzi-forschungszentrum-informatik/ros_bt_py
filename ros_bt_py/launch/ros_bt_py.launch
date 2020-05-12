@@ -33,7 +33,7 @@
   
   <!-- rosbridge that provides the websocket connection for the web interface -->
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch">
-    <arg name="services_glob" default="[*/rosapi/*, */tree_node/*]" />
+    <arg name="services_glob" default="[*/rosapi/*, */tree_node/*, */capability_manager/*]" />
   </include>
 
   <!-- webserver -->

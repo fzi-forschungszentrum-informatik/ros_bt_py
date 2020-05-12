@@ -39,12 +39,16 @@ class App extends Component
       error_history_sorting_asc: false,
       selected_edge: null,
       available_nodes: [],
+      available_capabilities: [],
+      filtered_nodes: [],
+      filtered_capabilities: [],
       subtree_names: [],
       selected_node: null, // FIXME
       selected_node_names: [],
       copied_node: null,
       showDataGraph: true,
       dragging_node_list_item: null,
+      dragging_capability_list_item: null,
       last_tree_msg: null,
       // Can be 'nodelist' or 'editor'. The value decides whether the
       // "Add node" or "change node options" widget is shown.
@@ -67,6 +71,9 @@ class App extends Component
       nodelist_visible: true,
       executionbar_visible: true,
     };
+
+    this.nodes_fuse = null;
+    this.capabilities_fuse = null;
 
     ros.on("connection", function(e) {
       console.log("Connected to websocket");
@@ -140,7 +147,7 @@ class App extends Component
         this.capabilities_topic = new ROSLIB.Topic({
           ros : this.state.ros,
           name : this.state.cm_namespace + 'capabilities',
-          messageType : 'ros_ta_msgs/Capabilities'
+          messageType : 'bt_capabilities_msgs/Capabilities'
         });
         this.capabilities_topic.subscribe(this.onCapabilitiesUpdate);
       }
@@ -163,6 +170,7 @@ class App extends Component
     this.onChangeErrorHistorySorting = this.onChangeErrorHistorySorting.bind(this);
     this.onNodeListSelectionChange = this.onNodeListSelectionChange.bind(this);
     this.onNodeListDragging = this.onNodeListDragging.bind(this);
+    this.onCapabilityDragging = this.onCapabilityDragging.bind(this);
     this.onChangeFileModal = this.onChangeFileModal.bind(this);
     this.check_dragging = this.check_dragging.bind(this);
     this.onNodeChanged = this.onNodeChanged.bind(this);
@@ -182,6 +190,8 @@ class App extends Component
     this.onPublishingSubtreesChange = this.onPublishingSubtreesChange.bind(this);
     this.onPackagesUpdate = this.onPackagesUpdate.bind(this);
     this.onCapabilitiesUpdate = this.onCapabilitiesUpdate.bind(this);
+    this.handleNodeAndCapabilitySearch = this.handleNodeAndCapabilitySearch.bind(this);
+    this.handleNodeAndCapabilitySearchClear = this.handleNodeAndCapabilitySearchClear.bind(this);
   }
 
   onTreeUpdate(msg)
@@ -300,8 +310,13 @@ class App extends Component
     this.last_received_capabilities_msg = msg;
     this.capabilities = [];
     for (var i = 0; i < msg.capabilities.length; i++) {
-      var cap = {name:msg.capabilities[i].name, description:msg.capabilities[i].description, capability:msg.capabilities[i]};
-      this.capabilities.push(cap);
+      var capability = {
+        capability: msg.capabilities[i].capability,
+        implementation: msg.capabilities[i].implementation,
+        description: msg.capabilities[i].description,
+        capability_object: msg.capabilities[i]
+      };
+      this.capabilities.push(capability);
     }
     var options = {
       shouldSort: true,
@@ -311,13 +326,14 @@ class App extends Component
       maxPatternLength: 32,
       minMatchCharLength: 1,
       keys: [
-        "name",
+        "capability",
+        "implementation",
         "description"
       ]
     };
-    this.capabilitiesFuse = new Fuse(this.capabilities, options);
+    this.capabilities_fuse = new Fuse(this.capabilities, options);
 
-    this.setState({cm_available: true});
+    this.setState({cm_available: true, available_capabilities: this.capabilities});
   }
 
   changeSkin(skin)
@@ -455,7 +471,7 @@ class App extends Component
           this.capabilities_topic = new ROSLIB.Topic({
             ros : this.state.ros,
             name : this.state.cm_namespace + 'capabilities',
-            messageType : 'ros_ta_msgs/Capabilities'
+            messageType : 'bt_capabilities_msgs/Capabilities'
           });
           this.capabilities_topic.subscribe(this.onCapabilitiesUpdate);
         }
@@ -536,6 +552,32 @@ class App extends Component
         function(response) {
           if (response.success) {
             this.setState({available_nodes: response.available_nodes});
+            var options = {
+              shouldSort: true,
+              threshold: 0.6,
+              location: 0,
+              distance: 100,
+              maxPatternLength: 32,
+              minMatchCharLength: 1,
+              keys: [
+                "node_class",
+                "node_type",
+                "module",
+                "tags"]
+            };
+            var nodes = response.available_nodes.map( (node) => {
+              if (node.max_children < 0)
+              {
+                node.node_type = "Flow control";
+              } else if (node.max_children > 0)
+              {
+                node.node_type = "Decorator";
+              } else {
+                node.node_type = "Leaf";
+              }
+              return node;
+            });
+            this.nodes_fuse = new Fuse(nodes, options)
           }
           else {
             this.onError('Failed to get list of nodes: ' + response.error_message);
@@ -629,6 +671,8 @@ class App extends Component
         }  
       }
     }.bind(this),false);
+
+    this.nameInput.focus();
   }
 
   componentWillUnmount()
@@ -689,6 +733,11 @@ class App extends Component
     this.setState({dragging_node_list_item: dragging});
   }
 
+  onCapabilityDragging(dragging)
+  {
+    this.setState({dragging_capability_list_item: dragging});
+  }
+
   onChangeFileModal(mode)
   {
     this.setState({show_file_modal: mode});
@@ -699,6 +748,10 @@ class App extends Component
     if (this.state.dragging_node_list_item)
     {
       this.setState({dragging_node_list_item: null});
+    }
+    if (this.state.dragging_capability_list_item)
+    {
+      this.setState({dragging_capability_list_item: null});
     }
   }
 
@@ -783,6 +836,37 @@ class App extends Component
     this.setState({selected_edge: new_selected_edge});
   }
 
+
+  handleNodeAndCapabilitySearch(e)
+  {
+    if (this.nodes_fuse)
+    {
+      var results = this.nodes_fuse.search(e.target.value);
+      this.setState({filtered_nodes: results});
+    }
+
+    if (this.nodes_fuse)
+    {
+      var results = this.capabilities_fuse.search(e.target.value);
+      this.setState({filtered_capabilities: results});
+    }
+
+    this.setState({node_and_capability_search: e.target.value});
+
+    if (e.target.value === '')
+    {
+      this.setState({filtered_nodes: null, filtered_capabilities: null});
+    }
+  }
+
+  handleNodeAndCapabilitySearchClear(e)
+  {
+    if (e.keyCode == 27) // ESC
+    {
+      this.setState({node_and_capability_search: '', filtered_nodes: null, filtered_capabilities: null});
+    }
+  }
+
   render()
   {
     var selectedNodeComponent = null;
@@ -800,7 +884,7 @@ class App extends Component
           selectedNodeNames={this.state.selected_node_names}
           tree_message={this.state.last_tree_msg}
           packagesFuse={this.packagesFuse}
-          capabilitiesFuse={this.capabilitiesFuse}
+          capabilitiesFuse={this.capabilities_fuse}
           onError={this.onError}
           onSelectionChange={this.onEditorSelectionChange}
           onMultipleSelectionChange={this.onMultipleSelectionChange}
@@ -832,7 +916,8 @@ class App extends Component
           node={this.state.selected_node}
           parents={this.findPossibleParents()}
           messagesFuse={this.messagesFuse}
-          capabilitiesFuse={this.capabilitiesFuse}
+          capabilitiesFuse={this.capabilities_fuse}
+          available_capabilities={this.state.available_capabilities}
           onError={this.onError}
           onNodeChanged={this.onNodeChanged}
           changeCopyMode={this.changeCopyMode}
@@ -855,7 +940,8 @@ class App extends Component
           nodeInfo={this.state.selected_node_info}
           availableNodes={this.state.available_nodes}
           messagesFuse={this.messagesFuse}
-          capabilitiesFuse={this.capabilitiesFuse}
+          capabilitiesFuse={this.capabilities_fuse}
+          available_capabilities={this.state.available_capabilities}
           onError={this.onError}
           onNodeChanged={this.onNodeChanged}
           changeCopyMode={this.changeCopyMode}
@@ -864,7 +950,7 @@ class App extends Component
     }
 
     var dragging_cursor = '';
-    if(this.state.dragging_node_list_item)
+    if(this.state.dragging_node_list_item || this.state.dragging_capability_list_item)
     {
       dragging_cursor = 'cursor-grabbing'
     }
@@ -886,12 +972,37 @@ class App extends Component
                   >
             <i class="fas fa-angle-double-left show-button-icon"></i>
           </button>
+          <div className="available-nodes m-1">
+            <PackageLoader key={this.state.bt_namespace}
+                          getNodes={this.getNodes}/>
+            <div className="border rounded mb-2">
+              <div className="form-group row mt-2 mb-2 ml-1 mr-1">
+                <label for="nodelist_search" className="col-sm-2 col-form-label">Search:</label>
+                <div class="col-sm-10">
+                  <input  id="nodelist_search"
+                          type="text"
+                          ref={(input) => { this.nameInput = input; }}
+                          className="form-control"
+                          value={this.state.node_and_capability_search}
+                          onChange={this.handleNodeAndCapabilitySearch}
+                          onKeyDown={this.handleNodeAndCapabilitySearchClear}/>
+                </div>
+              </div>
+            </div>
+          </div>
           <NodeList key={this.state.bt_namespace + this.state.current_time}
                     availableNodes={this.state.available_nodes}
-                    dragging_node_list_item={this.state.dragging_node_list_item}
+                    filtered_nodes={this.state.filtered_nodes}
                     getNodes={this.getNodes}
+                    dragging_node_list_item={this.state.dragging_node_list_item}
                     onSelectionChange={this.onNodeListSelectionChange}
                     onNodeListDragging={this.onNodeListDragging}/>
+          <CapabilityList key={this.state.cm_namespace}
+                          capability_list_collapsed={!this.state.cm_available}
+                          availableCapabilities={this.state.available_capabilities}
+                          filtered_capabilities={this.state.filtered_capabilities}
+                          dragging_capability_list_item={this.state.dragging_capability_list_item}
+                          onCapabilityDragging={this.onCapabilityDragging}/>
         </div>
       );
       main_col = 'col-9 scroll-col';
@@ -953,7 +1064,6 @@ class App extends Component
                        onSelectedPackageChange={this.onSelectedPackageChange}/>
         </ReactModal>
         {execution_bar}
-
         <div className="container-fluid">
           <div className="row row-height">
             {nodelist}
@@ -1009,13 +1119,15 @@ class App extends Component
                                           subtreeNames={this.state.subtree_names}
                                           publishing_subtrees={this.state.publishing_subtrees}
                                           dragging_node_list_item={this.state.dragging_node_list_item}
+                                          dragging_capability_list_item={this.state.dragging_capability_list_item}
                                           onSelectionChange={this.onEditorSelectionChange}
-                                          onMultipleSelectionChange={this.onMultipleSelectionChange} // FIXME: DO NOT COMMIT
-                                          selectedNodeNames={this.state.selected_node_names}         // FIXME: DO NOT COMMIT
+                                          onMultipleSelectionChange={this.onMultipleSelectionChange}
+                                          selectedNodeNames={this.state.selected_node_names}
                                           onSelectedEdgeChange={this.onSelectedEdgeChange}
                                           showDataGraph={this.state.showDataGraph}
                                           onSelectedTreeChange={this.onSelectedTreeChange}
                                           onNodeListDragging={this.onNodeListDragging}
+                                          onCapabilityDragging={this.onCapabilityDragging}
                                           onError={this.onError}
                                           skin={this.state.skin}/>
                   </div>
