@@ -42,7 +42,8 @@
   <test_depend>std_msgs</test_depend>
   <test_depend>std_srvs</test_depend>
   <test_depend>actionlib_tutorials</test_depend>
-  <test_depend>python-mock</test_depend>
+  <test_depend condition="$ROS_PYTHON_VERSION == 2">python-mock</test_depend>
+  <test_depend condition="$ROS_PYTHON_VERSION == 3">python3-mock</test_depend>
   <test_depend>python-requests</test_depend>
   <!-- The export tag contains other, unspecified, tags -->
   <export>
