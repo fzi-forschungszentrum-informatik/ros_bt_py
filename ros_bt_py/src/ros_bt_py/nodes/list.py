@@ -135,7 +135,7 @@ class IsInList(Leaf):
 
 
 @define_bt_node(NodeConfig(
-    version='0.9.2',
+    version='1.0.0',
     options={'item_type': type},
     inputs={'list': list},
     outputs={'list_item': OptionRef('item_type')
