@@ -32,6 +32,7 @@ variables:
   CATKIN_ROOT: ${HOME}/catkin_workspace
 
   BUILD_INDIGO: "false"
+  BUILD_NOETIC: "false"
 
 .clang-tidy-check:
   tags:

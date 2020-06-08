@@ -251,3 +251,14 @@ class TestIterateList(unittest.TestCase):
         self.assertEqual(self.iterate.untick(), Node.IDLE)
         self.assertEqual(self.iterate.reset(), Node.IDLE)
         self.assertEqual(self.iterate.shutdown(), Node.SHUTDOWN)
+
+    def testIterateWithoutChildEmptyList(self):
+        self.iterate.inputs['list'] = []
+
+        self.iterate.setup()
+
+        self.assertEqual(self.iterate.tick(), Node.SUCCEEDED)
+
+        self.assertEqual(self.iterate.untick(), Node.IDLE)
+        self.assertEqual(self.iterate.reset(), Node.IDLE)
+        self.assertEqual(self.iterate.shutdown(), Node.SHUTDOWN)
