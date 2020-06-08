@@ -33,7 +33,8 @@
   <exec_depend>ros_bt_py_msgs</exec_depend>
   <exec_depend>tf</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
-  <exec_depend>python-jsonpickle</exec_depend>
+  <exec_depend condition="$ROS_PYTHON_VERSION == 2">python-jsonpickle</exec_depend>
+  <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-jsonpickle</exec_depend>
   <exec_depend>roswww</exec_depend>
   <exec_depend>rosbridge_suite</exec_depend>
   <exec_depend>catkin</exec_depend>
@@ -44,7 +45,8 @@
   <test_depend>actionlib_tutorials</test_depend>
   <test_depend condition="$ROS_PYTHON_VERSION == 2">python-mock</test_depend>
   <test_depend condition="$ROS_PYTHON_VERSION == 3">python3-mock</test_depend>
-  <test_depend>python-requests</test_depend>
+  <test_depend condition="$ROS_PYTHON_VERSION == 2">python-requests</test_depend>
+  <test_depend condition="$ROS_PYTHON_VERSION == 3">python3-requests</test_depend>
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
