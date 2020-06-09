@@ -4,5 +4,4 @@ include:
     file: '/gitlab-ci-yml/catkin_pipeline.yml'
 
 variables:
-  BUILD_MELODIC: "true"
   BUILD_NOETIC: "true"

@@ -135,7 +135,7 @@ class IsInList(Leaf):
 
 
 @define_bt_node(NodeConfig(
-    version='0.9.2',
+    version='1.0.0',
     options={'item_type': type},
     inputs={'list': list},
     outputs={'list_item': OptionRef('item_type')
@@ -166,7 +166,12 @@ class IterateList(Decorator):
             self.logwarn('Input list changed - resetting iterator')
             self.reset_counter()
 
-        self.outputs['list_item'] = self.inputs['list'][self.counter]
+        # if no items in 'list' directly succeed
+        if len(self.inputs['list']) > 0:
+            self.outputs['list_item'] = self.inputs['list'][self.counter]
+        else:
+            self.logwarn('Nothing to iterate, input list is empty')
+            return NodeMsg.SUCCEEDED
 
         if len(self.children) == 0:
             self.counter += 1
