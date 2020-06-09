@@ -1,0 +1,20 @@
+name: ''
+path: ''
+root_name: ''
+nodes: 
+  - 
+    module: "ros_bt_py.nodes.decorators"
+    node_class: "RepeatIfFail"
+    version: ""
+    max_children: 1
+    name: "RepeatIfFail"
+    child_names: []
+    options: []
+    inputs: []
+    outputs: []
+    option_wirings: []
+    state: "UNINITIALIZED"
+data_wirings: []
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: []
