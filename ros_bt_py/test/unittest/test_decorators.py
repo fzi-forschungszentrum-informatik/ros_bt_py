@@ -11,7 +11,7 @@ from ros_bt_py.nodes.mock_nodes import MockLeaf, MockUtilityLeaf
 from ros_bt_py.nodes.decorators import IgnoreFailure, IgnoreSuccess, UntilSuccess
 from ros_bt_py.nodes.decorators import Retry, Optional, IgnoreRunning
 from ros_bt_py.nodes.decorators import Inverter, Repeat, RepeatAlways, RepeatUntilFail
-from ros_bt_py.nodes.decorators import Throttle, ThrottleSuccess
+from ros_bt_py.nodes.decorators import RepeatIfFail, Throttle, ThrottleSuccess
 from rospy import Time
 
 
@@ -345,6 +345,39 @@ class TestDecorators(unittest.TestCase):
         self.assertEqual(repeat_until_fail.untick(), Node.PAUSED)
         self.assertEqual(repeat_until_fail.reset(), Node.IDLE)
         self.assertEqual(repeat_until_fail.shutdown(), Node.SHUTDOWN)
+
+    def testRepeatIfFail(self):
+        repeat_if_fail = RepeatIfFail()
+        repeat_if_fail.setup()
+        self.assertEqual(repeat_if_fail.tick(), Node.SUCCEEDED)
+        self.assertEqual(repeat_if_fail.untick(), Node.IDLE)
+        self.assertEqual(repeat_if_fail.reset(), Node.IDLE)
+        self.assertEqual(repeat_if_fail.shutdown(), Node.SHUTDOWN)
+
+        magic_leaf = MockLeaf(name='magic_leaf',
+                              options={'output_type': int,
+                                       'state_values': [],
+                                       'output_values': []})
+        magic_leaf._do_tick = mock.MagicMock()
+
+        # Should tick its child and return its state
+        repeat_if_fail.add_child(magic_leaf)
+        repeat_if_fail.setup()
+
+        magic_leaf._do_tick.return_value = Node.FAILED
+        self.assertEqual(repeat_if_fail.tick(), Node.RUNNING)
+        magic_leaf._do_tick.assert_called()
+        magic_leaf._do_tick.reset_mock()
+
+        magic_leaf._do_tick.return_value = Node.SUCCEEDED
+
+        self.assertEqual(repeat_if_fail.tick(), Node.SUCCEEDED)
+        magic_leaf._do_tick.assert_called()
+        magic_leaf._do_tick.reset_mock()
+
+        self.assertEqual(repeat_if_fail.untick(), Node.PAUSED)
+        self.assertEqual(repeat_if_fail.reset(), Node.IDLE)
+        self.assertEqual(repeat_if_fail.shutdown(), Node.SHUTDOWN)
 
     def testOptional(self):
         optional = Optional()
