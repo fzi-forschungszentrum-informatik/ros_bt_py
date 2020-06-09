@@ -441,11 +441,11 @@ class RepeatUntilFail(Decorator):
             return child.untick()
         return NodeMsg.IDLE
 
-
     # Decorator's default utility calculation works here
     #
     # def _do_calculate_utility(self):
     #     pass
+
 
 @define_bt_node(NodeConfig(
     version='0.9.0',
