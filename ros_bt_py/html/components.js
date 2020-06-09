@@ -1289,6 +1289,22 @@ class LoadSaveControls extends Component
         }
         var msg = jsyaml.safeDump(this.props.tree_message);
         this.downloadURI('data:text/plain,'+encodeURIComponent(msg), "tree.yaml");
+        this.control_tree_execution_service.callService(
+          new ROSLIB.ServiceRequest({
+            // TICK_ONCE = 1
+            // TICK_PERIODICALLY = 2
+            // TICK_UNTIL_RESULT = 3
+            // STOP = 4
+            // RESET = 5
+            // SHUTDOWN = 6
+            // SETUP_AND_SHUTDOWN = 7
+            command: 6
+          }),
+          function(response) {
+            if (response.success) {
+              console.log('shutdown tree successfully');
+            }
+          }.bind(this));
       }.bind(this));
   }
 
@@ -1318,6 +1334,22 @@ class LoadSaveControls extends Component
           this.props.onError('Could not reset tree before saving, the tree might be filled with old "output" values. ' + response.error_message);
         }
         this.props.onChangeFileModal('save');
+        this.control_tree_execution_service.callService(
+          new ROSLIB.ServiceRequest({
+            // TICK_ONCE = 1
+            // TICK_PERIODICALLY = 2
+            // TICK_UNTIL_RESULT = 3
+            // STOP = 4
+            // RESET = 5
+            // SHUTDOWN = 6
+            // SETUP_AND_SHUTDOWN = 7
+            command: 6
+          }),
+          function(response) {
+            if (response.success) {
+              console.log('shutdown tree successfully');
+            }
+          }.bind(this));
       }.bind(this));
   }
 
