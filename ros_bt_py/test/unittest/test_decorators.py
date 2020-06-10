@@ -359,20 +359,18 @@ class TestDecorators(unittest.TestCase):
                                        'state_values': [],
                                        'output_values': []})
         magic_leaf._do_tick = mock.MagicMock()
+        magic_leaf._do_tick.return_value = Node.FAILED
 
         # Should tick its child and return its state
         repeat_if_fail.add_child(magic_leaf)
         repeat_if_fail.setup()
 
-        magic_leaf._do_tick.return_value = Node.FAILED
         self.assertEqual(repeat_if_fail.tick(), Node.RUNNING)
-        magic_leaf._do_tick.assert_called()
         magic_leaf._do_tick.reset_mock()
 
         magic_leaf._do_tick.return_value = Node.SUCCEEDED
 
         self.assertEqual(repeat_if_fail.tick(), Node.SUCCEEDED)
-        magic_leaf._do_tick.assert_called()
         magic_leaf._do_tick.reset_mock()
 
         self.assertEqual(repeat_if_fail.untick(), Node.PAUSED)
