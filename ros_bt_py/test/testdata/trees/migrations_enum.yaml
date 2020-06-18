@@ -1,0 +1,127 @@
+name: ''
+path: ''
+root_name: ''
+nodes: 
+  - 
+    module: "ros_bt_py.ros_nodes.enum"
+    node_class: "Enum"
+    version: ""
+    max_children: 0
+    name: "Enum"
+    child_names: []
+    options: 
+      - 
+        key: "ros_message_type"
+        serialized_value: "{\"py/type\": \"ros_bt_py_msgs.msg._Tree.Tree\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "constant_name"
+        serialized_value: "{\"py/object\": \"ros_bt_py.ros_helpers.EnumValue\", \"field_names\": [\"DEBUGGING\"\
+  , \"EDITABLE\", \"ERROR\", \"IDLE\", \"STOP_REQUESTED\", \"TICKING\", \"WAITING_FOR_TICK\"\
+  ], \"enum_value\": \"IDLE\"}"
+        serialized_type: "{\"py/type\": \"ros_bt_py.ros_helpers.EnumValue\"}"
+    inputs: []
+    outputs: 
+      - 
+        key: "out"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+    option_wirings: 
+      - 
+        source: "ros_message_type"
+        target: "constant_name"
+    state: "SHUTDOWN"
+  - 
+    module: "ros_bt_py.ros_nodes.enum"
+    node_class: "EnumFields"
+    version: ""
+    max_children: 0
+    name: "EnumFields"
+    child_names: []
+    options: 
+      - 
+        key: "ros_message_type"
+        serialized_value: "{\"py/type\": \"ros_bt_py_msgs.msg._Tree.Tree\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: []
+    outputs: 
+      - 
+        key: "DEBUGGING"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "EDITABLE"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "STOP_REQUESTED"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "IDLE"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "TICKING"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "ERROR"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+      - 
+        key: "WAITING_FOR_TICK"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+    option_wirings: []
+    state: "SHUTDOWN"
+  - 
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    version: "0.9.0"
+    max_children: -1
+    name: "Sequence"
+    child_names:
+      - Enum
+      - EnumFields
+    options: []
+    inputs: []
+    outputs: []
+    option_wirings: []
+    state: "SHUTDOWN"
+data_wirings: []
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: 
+  - 
+    node_name: "Enum"
+    data_kind: "outputs"
+    data_key: "out"
+  - 
+    node_name: "EnumFields"
+    data_kind: "outputs"
+    data_key: "DEBUGGING"
+  - 
+    node_name: "EnumFields"
+    data_kind: "outputs"
+    data_key: "EDITABLE"
+  - 
+    node_name: "EnumFields"
+    data_kind: "outputs"
+    data_key: "STOP_REQUESTED"
+  - 
+    node_name: "EnumFields"
+    data_kind: "outputs"
+    data_key: "IDLE"
+  - 
+    node_name: "EnumFields"
+    data_kind: "outputs"
+    data_key: "TICKING"
+  - 
+    node_name: "EnumFields"
+    data_kind: "outputs"
+    data_key: "ERROR"
+  - 
+    node_name: "EnumFields"
+    data_kind: "outputs"
+    data_key: "WAITING_FOR_TICK"

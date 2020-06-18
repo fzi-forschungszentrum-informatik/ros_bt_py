@@ -14,6 +14,7 @@ from ros_bt_py_msgs.srv import GetPackageStructureResponse, FixYamlRequest
 
 from ros_bt_py.node import increment_name
 from ros_bt_py.helpers import fix_yaml
+from ros_bt_py.ros_helpers import get_message_constant_fields
 
 
 class PackageManager(object):
@@ -114,6 +115,23 @@ class PackageManager(object):
             response.success = False
             response.error_message = "Could not get message fields for {}: {}".format(
                 request.message_type, e)
+        return response
+
+    def get_message_constant_fields_handler(self, request):
+        response = GetMessageFieldsResponse()
+        if request.service:
+            # not supported yet
+            response.success = False
+            response.error_message = "Constant message fields for services are not yet supported"
+        else:
+            try:
+                message_class = roslib.message.get_message_class(request.message_type)
+                response.field_names = get_message_constant_fields(message_class)
+                response.success = True
+            except Exception as e:
+                response.success = False
+                response.error_message = "Could not get message fields for {}: {}".format(
+                    request.message_type, e)
         return response
 
     def publish_packages_list(self):
