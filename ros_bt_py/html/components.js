@@ -167,6 +167,12 @@ function getDefaultValue(typeName, options)
             value: {"py/object": "ros_bt_py.ros_helpers.LoggerLevel", "logger_level": 1}
     };
   }
+  else if (typeName === 'ros_bt_py.ros_helpers.EnumValue')
+  {
+    return {type: 'ros_bt_py.ros_helpers.EnumValue',
+            value: {"py/object": "ros_bt_py.ros_helpers.EnumValue", "enum_value": "", "field_names": []}
+    };
+  }
   else
   {
     return {type: '__' + typeName,
@@ -5373,6 +5379,12 @@ class EditableNode extends Component
       name: props.bt_namespace + 'get_message_fields',
       serviceType: 'ros_bt_py_msgs/GetMessageFields'
     });
+
+    this.get_message_constant_fields_service = new ROSLIB.Service({
+      ros: props.ros,
+      name: props.bt_namespace + 'get_message_constant_fields',
+      serviceType: 'ros_bt_py_msgs/GetMessageFields'
+    });
   }
 
   selectMessageResult(result)
@@ -5520,30 +5532,63 @@ class EditableNode extends Component
   {
     if (this.props.option_wirings)
     {
-      this.props.option_wirings.forEach(function(option_wiring) {
-        if (option_wiring.source === key)
-        {
-          var referenced_option = this.props.options.filter(function(item){
-            return item.key == option_wiring.source;
-          });
-
-          if (referenced_option && referenced_option.length > 0)
+      // special case for ros_bt_py.ros_nodes.enum.Enum
+      if (this.props.module === 'ros_bt_py.ros_nodes.enum' && this.props.nodeClass === 'Enum')
+      {
+        this.props.option_wirings.forEach(function(option_wiring) {
+          if (option_wiring.source === key)
           {
-            var message = getMessageType(new_value);
-            this.get_message_fields_service.callService(
-              new ROSLIB.ServiceRequest({
-                message_type: message.message_type,
-                service: message.service
-              }),
-              function(response) {
-                if (response.success) {
-                  var obj = JSON.parse(response.fields);
-                  this.props.updateValue('options', option_wiring.target, obj);
-                }
-              }.bind(this));
+            var referenced_option = this.props.options.filter(function(item){
+              return item.key == option_wiring.source;
+            });
+
+            if (referenced_option && referenced_option.length > 0)
+            {
+              var message = getMessageType(new_value);
+              this.get_message_constant_fields_service.callService(
+                new ROSLIB.ServiceRequest({
+                  message_type: message.message_type,
+                  service: message.service
+                }),
+                function(response) {
+                  var obj = getDefaultValue('ros_bt_py.ros_helpers.EnumValue', null);
+
+                  if (response.success) {
+                    obj.value['field_names'] = response.field_names;
+                    obj.value['enum_value'] = response.field_names[0];
+                  }
+                  this.props.updateValue('options', option_wiring.target, obj.value);
+
+                }.bind(this));
+            }
           }
-        }
-      }.bind(this));
+        }.bind(this));
+      } else {
+        this.props.option_wirings.forEach(function(option_wiring) {
+          if (option_wiring.source === key)
+          {
+            var referenced_option = this.props.options.filter(function(item){
+              return item.key == option_wiring.source;
+            });
+
+            if (referenced_option && referenced_option.length > 0)
+            {
+              var message = getMessageType(new_value);
+              this.get_message_fields_service.callService(
+                new ROSLIB.ServiceRequest({
+                  message_type: message.message_type,
+                  service: message.service
+                }),
+                function(response) {
+                  if (response.success) {
+                    var obj = JSON.parse(response.fields);
+                    this.props.updateValue('options', option_wiring.target, obj);
+                  }
+                }.bind(this));
+            }
+          }
+        }.bind(this));
+      }
     }
   }
 
@@ -5818,6 +5863,20 @@ class EditableNode extends Component
                       message_type={paramItem.value.type}
                       onFocus={this.onFocus}
                       onNewValue={onNewValue}/>
+          </label>
+        </div>
+      );
+    }
+    else if (valueType === 'ros_bt_py.ros_helpers.EnumValue')
+    {
+      return (
+        <div className="form-group">
+          <label className="d-block">{paramItem.key}
+            <EnumDropDown json={paramItem.value.value}
+                          message_type={paramItem.value.type}
+                          onValidityChange={onValidityChange}
+                          onFocus={this.onFocus}
+                          onNewValue={onNewValue}/>
           </label>
         </div>
       );
@@ -6340,6 +6399,84 @@ class DropDown extends Component
         <option value="warning">WARNING</option>
         <option value="error">ERROR</option>
         <option value="fatal">FATAL</option>
+      </select>
+    );
+  }
+}
+
+class EnumDropDown extends Component
+{
+  constructor(props)
+  {
+    super(props);
+
+    var enum_value = '';
+    var field_names = [];
+    if (props.json.enum_value !== undefined)
+    {
+      enum_value = props.json.enum_value;
+    }
+
+    if (props.json.field_names !== undefined)
+    {
+      field_names = props.json.field_names;
+    }
+
+    this.state = {
+      json: props.json,
+      enum_value: enum_value,
+      field_names: field_names
+    };
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    if (JSON.stringify(this.props.json) != JSON.stringify(prevProps.json)) {
+      var enum_value = '';
+      var field_names = []
+      if (this.props.json.value !== undefined)
+      {
+        enum_value = this.props.json.value.enum_value;
+        field_names = this.props.json.value.field_names;
+      } else {
+        enum_value = this.props.json.enum_value;
+        field_names = this.props.json.field_names;
+      }
+
+      this.setState({json: this.props.json,
+        enum_value: enum_value,
+        field_names: field_names
+      });
+
+      if (field_names.length > 0)
+      {
+        this.props.onValidityChange(true);
+      } else {
+        this.props.onValidityChange(false);
+      }
+    }
+  }
+
+  handleChange = (event) => {
+    this.setState({enum_value:event.target.value});
+
+    var json = {type: 'ros_bt_py.ros_helpers.EnumValue',
+                value: {"py/object": "ros_bt_py.ros_helpers.EnumValue", "enum_value": event.target.value, "field_names": this.state.field_names}
+    };
+
+    this.props.onNewValue(json.value);
+  };
+
+  render()
+  {
+    var items = null;
+    items = this.state.field_names
+        .map( (item) => {
+          return (<option value={item}>{item}</option>);
+      });
+
+    return (
+      <select value={this.state.enum_value} onChange={this.handleChange}>
+        {items}
       </select>
     );
   }

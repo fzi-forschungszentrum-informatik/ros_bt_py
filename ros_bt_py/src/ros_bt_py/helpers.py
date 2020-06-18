@@ -2,7 +2,7 @@ import logging
 import rospy
 import functools
 from collections import OrderedDict
-from ros_bt_py.ros_helpers import LoggerLevel
+from ros_bt_py.ros_helpers import EnumValue, LoggerLevel
 
 from ros_bt_py_msgs.srv import FixYamlResponse
 
@@ -140,6 +140,8 @@ def get_default_value(data_type, ros=False):
         return OrderedDict()
     elif data_type is LoggerLevel:
         return LoggerLevel()
+    elif data_type is EnumValue:
+        return EnumValue()
     elif ros:
         return data_type()
     else:

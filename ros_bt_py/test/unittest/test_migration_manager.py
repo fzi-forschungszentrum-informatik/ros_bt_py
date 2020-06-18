@@ -482,6 +482,14 @@ class TestMigrationManager(unittest.TestCase):
         self.assertTrue(migrate_reply.success)
         self.assertTrue(migrate_reply.migrated)
 
+        tree.path = 'package://ros_bt_py/test/testdata/trees/' \
+                    'migrations_enum.yaml'
+        migrate_request = MigrateTreeRequest(tree=tree)
+
+        migrate_reply = migration_manager.migrate_tree(migrate_request)
+        self.assertTrue(migrate_reply.success)
+        self.assertTrue(migrate_reply.migrated)
+
     @mock.patch('ros_bt_py.migration.getattr')
     def testMigrateTreeError(self, mock_getattr):
         tree_manager = TreeManager()

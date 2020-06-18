@@ -68,6 +68,27 @@ class TestPackageManager(unittest.TestCase):
 
         self.assertFalse(response.success)
 
+    def testGetMessageConstFields(self):
+        request = GetMessageFieldsRequest(
+            message_type='ros_bt_py_msgs/Tree', service=False)
+        response = self.package_manager.get_message_constant_fields_handler(request=request)
+
+        self.assertTrue(response.success)
+        self.assertEqual(len(response.field_names), 7)
+
+        request = GetMessageFieldsRequest(
+            message_type='ros_bt_py_msgs/LoadTreeRequest', service=True)
+        response = self.package_manager.get_message_constant_fields_handler(request=request)
+
+        self.assertFalse(response.success)
+        self.assertEqual(len(response.field_names), 0)
+
+        request = GetMessageFieldsRequest(
+            message_type='ros_bt_py_msgs/ThisMessageDoesNotExist', service=False)
+        response = self.package_manager.get_message_constant_fields_handler(request=request)
+
+        self.assertFalse(response.success)
+
     def testGetPackageStructure(self):
         request = GetPackageStructureRequest(
             package='ros_bt_py_msgs', show_hidden=False)
