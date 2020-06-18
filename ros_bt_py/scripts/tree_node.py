@@ -196,6 +196,10 @@ class TreeNode(object):
                                                         GetMessageFields,
                                                         self.package_manager.get_message_fields)
 
+        self.get_message_constant_fields_service = rospy.Service(
+            '~get_message_constant_fields', GetMessageFields,
+            self.package_manager.get_message_constant_fields_handler)
+
         self.get_package_structure_service = rospy.Service(
             '~get_package_structure', GetPackageStructure,
             self.package_manager.get_package_structure)
