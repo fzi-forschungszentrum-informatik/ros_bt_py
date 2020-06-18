@@ -4,4 +4,4 @@ include:
     file: '/gitlab-ci-yml/catkin_pipeline.yml'
 
 variables:
-  BUILD_NOETIC: "true"
+  BUILD_NOETIC: "false"
