@@ -91,6 +91,8 @@ class Parallel(FlowControl):
         return NodeMsg.IDLE
 
     def _do_untick(self):
+        for child in self.children:
+            child.untick()
         return NodeMsg.IDLE
 
     def _do_calculate_utility(self):
