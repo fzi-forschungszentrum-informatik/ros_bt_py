@@ -1,6 +1,6 @@
 <launch>
   <!-- start rqt_console by default -->
-  <arg name="rqt_console" default="true" />
+  <arg name="rqt_console" default="false" />
   <group if="$(arg rqt_console)">
     <node name="rqt_console" pkg="rqt_console" type="rqt_console" />
   </group>
