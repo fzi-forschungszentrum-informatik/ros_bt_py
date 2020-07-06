@@ -37,10 +37,15 @@
   </include>
 
   <!-- webserver -->
-  <include file="$(find roswww)/launch/roswww.launch">
-    <arg name="webpath" value="html" />
+  <include file="$(find web_server)/launch/web_server.launch">
     <arg name="port" value="$(arg port)" />
-    <arg name="cached" value="false" />
+    <arg name="cache_static_files" value="false" />
+    <arg name="packages" value="[
+        {
+            package: ros_bt_py,
+            directory: html
+        }
+      ]" />
   </include>
 
   <!-- behavior tree backend, responsible for executing the tree -->
