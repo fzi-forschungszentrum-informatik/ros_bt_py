@@ -6273,6 +6273,8 @@ class ImplementationTypeInput extends Component
     this.searchCapability = this.searchCapability.bind(this);
     this.selectCapabilitySearchResult = this.selectCapabilitySearchResult.bind(this);
     this.reconstructAndUpdateValue = this.reconstructAndUpdateValue.bind(this);
+
+    this.reconstructAndUpdateValue("");
   }
 
   componentDidMount()
