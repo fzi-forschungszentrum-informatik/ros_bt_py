@@ -162,6 +162,7 @@ class MathOperandType(object):
     def __init__(self, operand_type):
         self.operand_type = operand_type
 
+
 class MathUnaryOperandType(object):
     def __init__(self, operand_type):
         self.operand_type = operand_type
