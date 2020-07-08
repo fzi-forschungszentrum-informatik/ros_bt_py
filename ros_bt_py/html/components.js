@@ -167,6 +167,30 @@ function getDefaultValue(typeName, options)
             value: {"py/object": "ros_bt_py.ros_helpers.LoggerLevel", "logger_level": 1}
     };
   }
+  else if (typeName === 'ros_bt_py.helpers.MathUnaryOperator')
+  {
+    return {type: 'ros_bt_py.helpers.MathUnaryOperator',
+            value: {"py/object": "ros_bt_py.helpers.MathUnaryOperator", "operator": "sqrt"}
+    };
+  }
+  else if (typeName === 'ros_bt_py.helpers.MathBinaryOperator')
+  {
+    return {type: 'ros_bt_py.helpers.MathBinaryOperator',
+            value: {"py/object": "ros_bt_py.helpers.MathBinaryOperator", "operator": "+"}
+    };
+  }
+  else if (typeName === 'ros_bt_py.helpers.MathOperandType')
+  {
+    return {type: 'ros_bt_py.helpers.MathOperandType',
+            value: {"py/object": "ros_bt_py.helpers.MathOperandType", "operand_type": "float"}
+    };
+  }
+  else if (typeName === 'ros_bt_py.helpers.MathUnaryOperandType')
+  {
+    return {type: 'ros_bt_py.helpers.MathUnaryOperandType',
+            value: {"py/object": "ros_bt_py.helpers.MathUnaryOperandType", "operand_type": "float"}
+    };
+  }
   else if (typeName === 'ros_bt_py.ros_helpers.EnumValue')
   {
     return {type: 'ros_bt_py.ros_helpers.EnumValue',
@@ -5867,6 +5891,58 @@ class EditableNode extends Component
         </div>
       );
     }
+    else if (valueType === 'ros_bt_py.helpers.MathUnaryOperator')
+    {
+      return (
+        <div className="form-group">
+          <label className="d-block">{paramItem.key}
+            <MathUnaryOperatorDropDown json={paramItem.value.value}
+                                       message_type={paramItem.value.type}
+                                       onFocus={this.onFocus}
+                                       onNewValue={onNewValue}/>
+          </label>
+        </div>
+      );
+    }
+    else if (valueType === 'ros_bt_py.helpers.MathBinaryOperator')
+    {
+      return (
+        <div className="form-group">
+          <label className="d-block">{paramItem.key}
+            <MathBinaryOperatorDropDown json={paramItem.value.value}
+                                        message_type={paramItem.value.type}
+                                        onFocus={this.onFocus}
+                                        onNewValue={onNewValue}/>
+          </label>
+        </div>
+      );
+    }
+    else if (valueType === 'ros_bt_py.helpers.MathOperandType')
+    {
+      return (
+        <div className="form-group">
+          <label className="d-block">{paramItem.key}
+            <MathOperandTypeDropDown json={paramItem.value.value}
+                                     message_type={paramItem.value.type}
+                                     onFocus={this.onFocus}
+                                     onNewValue={onNewValue}/>
+          </label>
+        </div>
+      );
+    }
+    else if (valueType === 'ros_bt_py.helpers.MathUnaryOperandType')
+    {
+      return (
+        <div className="form-group">
+          <label className="d-block">{paramItem.key}
+            <MathUnaryOperandTypeDropDown json={paramItem.value.value}
+                                          message_type={paramItem.value.type}
+                                          onFocus={this.onFocus}
+                                          onNewValue={onNewValue}/>
+          </label>
+        </div>
+      );
+    }
     else if (valueType === 'ros_bt_py.ros_helpers.EnumValue')
     {
       return (
@@ -6401,6 +6477,160 @@ class DropDown extends Component
         <option value="warning">WARNING</option>
         <option value="error">ERROR</option>
         <option value="fatal">FATAL</option>
+      </select>
+    );
+  }
+}
+
+class MathUnaryOperatorDropDown extends Component
+{
+  constructor(props)
+  {
+    super(props);
+
+    this.state = {
+      json: props.json,
+      operator: props.json.operator,
+      operators: ['not', 'inv', '~', 'neg', '-', 'pos', '+', 'exp', 'expm1', 'log',
+                  'log1p', 'log10', 'ceil', 'fabs', 'factorial', 'floor', 'sqrt',
+                  'acos', 'asin', 'atan', 'acosh', 'asinh', 'atanh',
+                  'cos', 'sin', 'tan', 'cosh', 'sinh', 'tanh',
+                  'degrees', 'radians', 'erf', 'erfc', 'gamma', 'lgamma']
+    };
+  }
+
+  handleChange = (event) => {
+    var json = this.state.json;
+    json.operator = event.target.value;
+    this.setState({json:json, operator:event.target.value});
+
+    this.props.onNewValue(json);
+  };
+
+  render()
+  {
+    var items = null;
+    items = this.state.operators
+        .map( (item) => {
+          return (<option value={item}>{item}</option>);
+      });
+
+    return (
+      <select value={this.state.operator} onChange={this.handleChange}>
+        {items}
+      </select>
+    );
+  }
+}
+
+class MathBinaryOperatorDropDown extends Component
+{
+  constructor(props)
+  {
+    super(props);
+
+    this.state = {
+      json: props.json,
+      operator: props.json.operator,
+      operators: ['add', '+', 'and', '&', 'div', '/', 'floordiv', '//', 'lshift', '<<',
+                  'mod', '%', 'mul', '*', 'or', '|', 'pow', '**', 'rshift', '>>',
+                  'sub', '-', 'truediv', 'xor', '^']
+    };
+  }
+
+  handleChange = (event) => {
+    var json = this.state.json;
+    json.operator = event.target.value;
+    this.setState({json:json, operator:event.target.value});
+
+    this.props.onNewValue(json);
+  };
+
+  render()
+  {
+    var items = null;
+    items = this.state.operators
+        .map( (item) => {
+          return (<option value={item}>{item}</option>);
+      });
+
+    return (
+      <select value={this.state.operator} onChange={this.handleChange}>
+        {items}
+      </select>
+    );
+  }
+}
+
+class MathOperandTypeDropDown extends Component
+{
+  constructor(props)
+  {
+    super(props);
+
+    this.state = {
+      json: props.json,
+      operand_type: props.json.operand_type,
+      operand_types: ['int', 'float', 'bool']
+    };
+  }
+
+  handleChange = (event) => {
+    var json = this.state.json;
+    json.operand_type = event.target.value;
+    this.setState({json:json, operand_type:event.target.value});
+
+    this.props.onNewValue(json);
+  };
+
+  render()
+  {
+    var items = null;
+    items = this.state.operand_types
+        .map( (item) => {
+          return (<option value={item}>{item}</option>);
+      });
+
+    return (
+      <select value={this.state.operand_type} onChange={this.handleChange}>
+        {items}
+      </select>
+    );
+  }
+}
+
+class MathUnaryOperandTypeDropDown extends Component
+{
+  constructor(props)
+  {
+    super(props);
+
+    this.state = {
+      json: props.json,
+      operand_type: props.json.operand_type,
+      operand_types: ['int', 'float']
+    };
+  }
+
+  handleChange = (event) => {
+    var json = this.state.json;
+    json.operand_type = event.target.value;
+    this.setState({json:json, operand_type:event.target.value});
+
+    this.props.onNewValue(json);
+  };
+
+  render()
+  {
+    var items = null;
+    items = this.state.operand_types
+        .map( (item) => {
+          return (<option value={item}>{item}</option>);
+      });
+
+    return (
+      <select value={this.state.operand_type} onChange={this.handleChange}>
+        {items}
       </select>
     );
   }
