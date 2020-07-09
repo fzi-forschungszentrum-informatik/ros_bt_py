@@ -108,8 +108,9 @@ class TopicMemorySubscriber(Leaf):
 
     def _do_tick(self):
         with self._lock:
-            if (self._msg is None or
-                    (rospy.Time.now() - self._last_time).to_sec() > self.options['memory_delay']):
+            if (self._msg is None
+                    or (rospy.Time.now() - self._last_time).to_sec()
+                    > self.options['memory_delay']):
                 return NodeMsg.FAILED
             self.outputs['message'] = self._msg
         return NodeMsg.SUCCEEDED
@@ -133,8 +134,8 @@ class TopicMemorySubscriber(Leaf):
 
         for topic, topic_type_name in rospy.get_published_topics():
             topic_type = get_message_class(topic_type_name)
-            if (topic == resolved_topic and
-                    topic_type == self.options['topic_type']):
+            if (topic == resolved_topic
+                    and topic_type == self.options['topic_type']):
                 # if the topic we want exists, we can do our job, so
                 # set all the bounds and leave their values at 0
                 return UtilityBounds(

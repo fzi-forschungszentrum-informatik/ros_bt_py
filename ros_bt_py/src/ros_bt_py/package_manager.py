@@ -78,8 +78,8 @@ class PackageManager(object):
                         actions.append(msg_type)
                     append_msg = True
                     for action in actions:
-                        if (msg_type == action + "Feedback" or msg_type == action + "Goal" or
-                                msg_type == action + "Result"):
+                        if (msg_type == action + "Feedback" or msg_type == action + "Goal"
+                                or msg_type == action + "Result"):
                             append_msg = False
                     if append_msg:
                         messages.append(Message(msg=package + "/" + msg_type, service=False))

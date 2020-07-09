@@ -92,8 +92,8 @@ class DebugManager(object):
 
     def is_debugging(self):
         with self._lock:
-            return (self._debug_settings_msg.breakpoint_names or
-                    self._debug_settings_msg.single_step)
+            return (self._debug_settings_msg.breakpoint_names
+                    or self._debug_settings_msg.single_step)
 
     @contextmanager
     def report_state(self, node_instance, state):

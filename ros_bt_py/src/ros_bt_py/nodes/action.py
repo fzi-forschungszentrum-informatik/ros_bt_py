@@ -58,8 +58,8 @@ class Action(Leaf):
         if not self._ac.wait_for_server(rospy.Duration.from_sec(
                 self.options['wait_for_action_server_seconds'])):
             self._action_available = False
-            if ('fail_if_not_available' not in self.options or
-                    not self.options['fail_if_not_available']):
+            if ('fail_if_not_available' not in self.options
+                    or not self.options['fail_if_not_available']):
                 raise BehaviorTreeException(
                     'Action server %s not available after waiting %f seconds!' % (
                         self.options['action_name'],
@@ -79,8 +79,8 @@ class Action(Leaf):
 
     def _do_tick(self):
         if not self._action_available:
-            if ('fail_if_not_available' in self.options and
-                    self.options['fail_if_not_available']):
+            if ('fail_if_not_available' in self.options
+                    and self.options['fail_if_not_available']):
                 return NodeMsg.FAILED
 
         if self._active_goal is not None and self.inputs['goal'] != self._active_goal:
@@ -169,8 +169,8 @@ class Action(Leaf):
 
         for topic, topic_type_name in rospy.get_published_topics(rospy.get_namespace()):
             topic_type = get_message_class(topic_type_name)
-            if (topic == resolved_topic and
-                    topic_type == GoalStatusArray):
+            if (topic == resolved_topic
+                    and topic_type == GoalStatusArray):
                 # if the goal topic exists, we can execute the action, but
                 # don't know much about the bounds, so set them all to
                 # zero

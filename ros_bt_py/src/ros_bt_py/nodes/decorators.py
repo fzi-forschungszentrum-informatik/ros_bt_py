@@ -514,8 +514,8 @@ class Throttle(Decorator):
 
     def _do_tick(self):
         current_time = rospy.Time.now()
-        if (self._last_tick is None or
-                (current_time - self._last_tick).to_sec() > self.options['tick_interval']):
+        if (self._last_tick is None
+                or (current_time - self._last_tick).to_sec() > self.options['tick_interval']):
             for child in self.children:
                 result = child.tick()
                 if result == NodeMsg.RUNNING:
@@ -560,8 +560,9 @@ class ThrottleSuccess(Decorator):
 
     def _do_tick(self):
         current_time = rospy.Time.now()
-        if (self._last_success_tick is None or
-                (current_time - self._last_success_tick).to_sec() > self.options['tick_interval']):
+        if (self._last_success_tick is None
+                or (current_time - self._last_success_tick).to_sec()
+                > self.options['tick_interval']):
             for child in self.children:
                 result = child.tick()
                 if result == NodeMsg.RUNNING:

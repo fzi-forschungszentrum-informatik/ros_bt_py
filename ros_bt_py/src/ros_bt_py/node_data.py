@@ -54,10 +54,10 @@ class NodeData(object):
                                        ('#' if self.updated else ' '))
 
     def __eq__(self, other):
-        return (self.updated == other.updated and
-                self._static == other._static and
-                self._value == other._value and
-                self.data_type == other.data_type)
+        return (self.updated == other.updated
+                and self._static == other._static
+                and self._value == other._value
+                and self.data_type == other.data_type)
 
     def __ne__(self, other):
         return not self == other
@@ -330,13 +330,13 @@ class NodeDataMap(object):
         return key in self._map
 
     def __eq__(self, other):
-        return (self.name == other.name and
-                len(self) == len(other) and
-                all([key in other for key in self]) and
-                all([other[key] == self[key] for key in self]) and
-                len(self.callbacks) == len(other.callbacks) and
-                all([key in other.callbacks for key in self.callbacks]) and
-                all([other.callbacks[key] == self.callbacks[key] for key in self.callbacks]))
+        return (self.name == other.name
+                and len(self) == len(other)
+                and all([key in other for key in self])
+                and all([other[key] == self[key] for key in self])
+                and len(self.callbacks) == len(other.callbacks)
+                and all([key in other.callbacks for key in self.callbacks])
+                and all([other.callbacks[key] == self.callbacks[key] for key in self.callbacks]))
 
     def __ne__(self, other):
         return not self == other

@@ -361,7 +361,7 @@ class Node(object):
             for option_name in self.options:
                 if not self.options.is_updated(option_name) and \
                    option_name not in self.node_config.optional_options:
-                        unset_options.append(option_name)
+                    unset_options.append(option_name)
             if unset_options:
                 msg = 'Trying to tick node with unset options: %s' % str(unset_options)
                 self.logerr(msg)
@@ -551,7 +551,7 @@ class Node(object):
                                    if child.state != NodeMsg.SHUTDOWN]
             if unshutdown_children:
                 self.logwarn('Not all children are shut down after calling shutdown(). '
-                             'List of not-shutdown children and states:\n' +
+                             'List of not-shutdown children and states:\n'
                              '\n'.join(unshutdown_children))
             return self.state
 
@@ -627,8 +627,8 @@ class Node(object):
         would exceed the maximum number of children, `KeyError` if a
         child of the same name already exists
         """
-        if (self.node_config.max_children is not None and
-                len(self.children) == self.node_config.max_children):
+        if (self.node_config.max_children is not None
+                and len(self.children) == self.node_config.max_children):
             error_msg = ('Trying to add child when maximum number of '
                          'children (%d) is already present'
                          % self.node_config.max_children)
@@ -744,8 +744,8 @@ class Node(object):
                     target_map[key] = values[key]
                 except AttributeError as e:
                     if permissive:
-                        if (type(values[key]).__slots__ is not None and
-                                type(values[key])._slot_types is not None):
+                        if (type(values[key]).__slots__ is not None
+                                and type(values[key])._slot_types is not None):
                             fixed_new_value = type(values[key])()
 
                             for i, slot in enumerate(type(values[key]).__slots__):
@@ -775,16 +775,16 @@ class Node(object):
                self.option_wirings)
 
     def __eq__(self, other):
-        return (self.name == other.name and
-                self.parent == other.parent and
-                self.state == other.state and
-                type(self).__module__ == type(other).__module__ and
-                type(self).__name__ == type(other).__name__ and
-                self.options == other.options and
-                self.inputs == other.inputs and
-                self.outputs == other.outputs and
-                self.children == other.children and
-                self.option_wirings == other.option_wirings)
+        return (self.name == other.name
+                and self.parent == other.parent
+                and self.state == other.state
+                and type(self).__module__ == type(other).__module__
+                and type(self).__name__ == type(other).__name__
+                and self.options == other.options
+                and self.inputs == other.inputs
+                and self.outputs == other.outputs
+                and self.children == other.children
+                and self.option_wirings == other.option_wirings)
 
     def __ne__(self, other):
         return not self == other
@@ -866,14 +866,14 @@ class Node(object):
         BehaviorTreeException if
         node cannot be instantiated.
         """
-        if (msg.module not in cls.node_classes or
-                msg.node_class not in cls.node_classes[msg.module]):
+        if (msg.module not in cls.node_classes
+                or msg.node_class not in cls.node_classes[msg.module]):
             # If the node class was not available, try to load it
             load_node_module(msg.module)
 
         # If loading didn't work, abort
-        if (msg.module not in cls.node_classes or
-                msg.node_class not in cls.node_classes[msg.module]):
+        if (msg.module not in cls.node_classes
+                or msg.node_class not in cls.node_classes[msg.module]):
             raise BehaviorTreeException(
                 'Failed to instantiate node from message - node class '
                 'not available. Original message:\n%s' % str(msg))
@@ -1043,16 +1043,16 @@ class Node(object):
 
         for node in subtree.nodes:
             for node_input in node.inputs:
-                if (node.name not in connected_inputs or
-                        node_input.key not in connected_inputs[node.name]):
+                if (node.name not in connected_inputs
+                        or node_input.key not in connected_inputs[node.name]):
                     # Input is unconnected, list it as public
                     subtree.public_node_data.append(NodeDataLocation(
                         node_name=node.name,
                         data_kind=NodeDataLocation.INPUT_DATA,
                         data_key=node_input.key))
             for node_output in node.outputs:
-                if (node.name not in connected_outputs or
-                        node_output.key not in connected_outputs[node.name]):
+                if (node.name not in connected_outputs
+                        or node_output.key not in connected_outputs[node.name]):
                     # Input is unconnected, list it as public
                     subtree.public_node_data.append(NodeDataLocation(
                         node_name=node.name,
@@ -1284,8 +1284,8 @@ class Node(object):
         # If the removed wiring was the last subscription for this
         # datum, set it to None
         if not [sub for sub in self.subscriptions
-                if (sub.target.data_kind == wiring.target.data_kind and
-                    sub.target.data_key == wiring.target.data_key)]:
+                if (sub.target.data_kind == wiring.target.data_kind
+                    and sub.target.data_key == wiring.target.data_key)]:
             if wiring.target.data_kind == NodeDataLocation.INPUT_DATA:
                 self.inputs[wiring.target.data_key] = None
             elif wiring.target.data_kind == NodeDataLocation.OUTPUT_DATA:

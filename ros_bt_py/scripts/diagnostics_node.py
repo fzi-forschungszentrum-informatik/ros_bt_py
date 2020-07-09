@@ -21,6 +21,7 @@ class DiagnosticsNode(object):
             data.state
         ))
 
+
 if __name__ == '__main__':
     rospy.init_node('diagnostics_node')
     rospy.loginfo("initializing diagnostics node...")

@@ -165,8 +165,8 @@ class TestFallback(unittest.TestCase):
         # the last child. In our case, that's one failing and one
         # succeeding child.
         expected_bounds.upper_bound_success = (
-            cheap_fail_bounds.upper_bound_failure +
-            cheap_fail_bounds.upper_bound_success)
+            cheap_fail_bounds.upper_bound_failure
+            + cheap_fail_bounds.upper_bound_success)
 
         self.assertEqual(self.fallback.calculate_utility(),
                          expected_bounds)
@@ -192,16 +192,16 @@ class TestFallback(unittest.TestCase):
         #
         # There's only one way to fail, so those bounds are easy:
         expected_bounds.lower_bound_failure = (
-            cheap_fail_bounds.lower_bound_failure +    # 1.0
-            cheap_success_bounds.lower_bound_failure)  # 5.0
+            cheap_fail_bounds.lower_bound_failure        # 1.0
+            + cheap_success_bounds.lower_bound_failure)  # 5.0
         expected_bounds.upper_bound_failure = (
-            cheap_fail_bounds.upper_bound_failure +    # 1.0
-            cheap_success_bounds.upper_bound_failure)  # 10.0
+            cheap_fail_bounds.upper_bound_failure        # 1.0
+            + cheap_success_bounds.upper_bound_failure)  # 10.0
         # Counterintuitively, the "cheapest" way to success is to
         # execute both children:
         expected_bounds.lower_bound_success = (
-            cheap_fail_bounds.lower_bound_failure +    # 1.0
-            cheap_success_bounds.lower_bound_success)  # 1.0
+            cheap_fail_bounds.lower_bound_failure        # 1.0
+            + cheap_success_bounds.lower_bound_success)  # 1.0
         # And the most "expensive" one is having the first child fail.
         expected_bounds.upper_bound_success = (
             cheap_fail_bounds.upper_bound_success)     # 10.0
@@ -398,8 +398,8 @@ class TestMemoryFallback(unittest.TestCase):
         # the last child. In our case, that's one failing and one
         # succeeding child.
         expected_bounds.upper_bound_success = (
-            cheap_fail_bounds.upper_bound_failure +
-            cheap_fail_bounds.upper_bound_success)
+            cheap_fail_bounds.upper_bound_failure
+            + cheap_fail_bounds.upper_bound_success)
 
         self.assertEqual(self.mem_fallback.calculate_utility(),
                          expected_bounds)

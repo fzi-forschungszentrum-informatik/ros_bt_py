@@ -151,8 +151,8 @@ class RemoteSlot(Leaf):
         return NodeMsg.IDLE
 
     def _do_calculate_utility(self):
-        resolved_service = rospy.resolve_name(self.options['slot_namespace'] +
-                                              '/control_slot_execution')
+        resolved_service = rospy.resolve_name(self.options['slot_namespace']
+                                              + '/control_slot_execution')
 
         try:
             service_type_name = rosservice.get_service_type(resolved_service)
