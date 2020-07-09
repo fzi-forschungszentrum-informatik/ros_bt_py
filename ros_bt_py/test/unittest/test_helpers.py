@@ -4,7 +4,7 @@ import logging
 import rospy
 
 from ros_bt_py.helpers import rospy_log_level_to_logging_log_level, get_default_value
-from ros_bt_py.ros_helpers import LoggerLevel
+from ros_bt_py.ros_helpers import LoggerLevel, EnumValue
 
 
 class TestHelpers(unittest.TestCase):
@@ -31,3 +31,5 @@ class TestHelpers(unittest.TestCase):
 
     def testGetDefaultValue(self):
         self.assertEqual(get_default_value(LoggerLevel).logger_level, 'info')
+
+        self.assertEqual(get_default_value(EnumValue).enum_value, '')

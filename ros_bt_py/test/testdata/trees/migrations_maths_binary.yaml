@@ -1,0 +1,195 @@
+name: ''
+path: ''
+root_name: ''
+nodes: 
+  - 
+    module: "ros_bt_py.nodes.constant"
+    node_class: "Constant"
+    version: "0.9.0"
+    max_children: 0
+    name: "A"
+    child_names: []
+    options: 
+      - 
+        key: "constant_value"
+        serialized_value: "42"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      - 
+        key: "constant_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: []
+    outputs: 
+      - 
+        key: "constant"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    option_wirings: 
+      - 
+        source: "constant_type"
+        target: "constant_value"
+    state: "SHUTDOWN"
+  - 
+    module: "ros_bt_py.nodes.maths"
+    node_class: "Convert"
+    version: "0.9.0"
+    max_children: 0
+    name: "Convert"
+    child_names: []
+    options: 
+      - 
+        key: "input_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      - 
+        key: "output_type"
+        serialized_value: "{\"py/type\": \"__builtin__.str\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: 
+      - 
+        key: "in"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    outputs: 
+      - 
+        key: "out"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+    option_wirings: []
+    state: "SHUTDOWN"
+  - 
+    module: "ros_bt_py.nodes.constant"
+    node_class: "Constant"
+    version: "0.9.0"
+    max_children: 0
+    name: "B"
+    child_names: []
+    options: 
+      - 
+        key: "constant_value"
+        serialized_value: "23"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      - 
+        key: "constant_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs: []
+    outputs: 
+      - 
+        key: "constant"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    option_wirings: 
+      - 
+        source: "constant_type"
+        target: "constant_value"
+    state: "SHUTDOWN"
+  - 
+    module: "ros_bt_py.nodes.log"
+    node_class: "Log"
+    version: "1.0.0"
+    max_children: 0
+    name: "Log"
+    child_names: []
+    options: 
+      - 
+        key: "logger_level"
+        serialized_value: "{\"py/object\": \"ros_bt_py.ros_helpers.LoggerLevel\", \"logger_level\": 1}"
+        serialized_type: "{\"py/type\": \"ros_bt_py.ros_helpers.LoggerLevel\"}"
+    inputs: 
+      - 
+        key: "in"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
+    outputs: []
+    option_wirings: []
+    state: "SHUTDOWN"
+  - 
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    version: "0.9.0"
+    max_children: -1
+    name: "Sequence"
+    child_names: 
+      - A
+      - B
+      - Operation
+      - Convert
+      - Log
+    options: []
+    inputs: []
+    outputs: []
+    option_wirings: []
+    state: "SHUTDOWN"
+  - 
+    module: "ros_bt_py.nodes.maths"
+    node_class: "Operation"
+    version: ""
+    max_children: 0
+    name: "Operation"
+    child_names: []
+    options: 
+      - 
+        key: "operator"
+        serialized_value: "{\"py/object\": \"ros_bt_py.helpers.MathBinaryOperator\", \"operator\": \"+\"}"
+        serialized_type: "{\"py/type\": \"ros_bt_py.helpers.MathBinaryOperator\"}"
+      - 
+        key: "operand_type"
+        serialized_value: "{\"py/object\": \"ros_bt_py.helpers.MathOperandType\", \"operand_type\": \"int\"}"
+        serialized_type: "{\"py/type\": \"ros_bt_py.helpers.MathOperandType\"}"
+    inputs: 
+      - 
+        key: "a"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      - 
+        key: "b"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    outputs: 
+      - 
+        key: "result"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    option_wirings: []
+    state: "SHUTDOWN"
+data_wirings: 
+  - 
+    source: 
+      node_name: "A"
+      data_kind: "outputs"
+      data_key: "constant"
+    target: 
+      node_name: "Operation"
+      data_kind: "inputs"
+      data_key: "a"
+  - 
+    source: 
+      node_name: "B"
+      data_kind: "outputs"
+      data_key: "constant"
+    target: 
+      node_name: "Operation"
+      data_kind: "inputs"
+      data_key: "b"
+  - 
+    source: 
+      node_name: "Operation"
+      data_kind: "outputs"
+      data_key: "result"
+    target: 
+      node_name: "Convert"
+      data_kind: "inputs"
+      data_key: "in"
+  - 
+    source: 
+      node_name: "Convert"
+      data_kind: "outputs"
+      data_key: "out"
+    target: 
+      node_name: "Log"
+      data_kind: "inputs"
+      data_key: "in"
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: []

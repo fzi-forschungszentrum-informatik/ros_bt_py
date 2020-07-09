@@ -1,6 +1,6 @@
 <launch>
   <!-- start rqt_console by default -->
-  <arg name="rqt_console" default="true" />
+  <arg name="rqt_console" default="false" />
   <group if="$(arg rqt_console)">
     <node name="rqt_console" pkg="rqt_console" type="rqt_console" />
   </group>
@@ -78,6 +78,7 @@
       ros_bt_py.nodes.parallel,
       ros_bt_py.nodes.ros_param,
       ros_bt_py.nodes.ros_header,
+      ros_bt_py.nodes.maths,
       ros_bt_py.ros_nodes.message_converters,
       ros_bt_py.ros_nodes.message_from_dict,
       ros_bt_py.ros_nodes.pose_distance,
