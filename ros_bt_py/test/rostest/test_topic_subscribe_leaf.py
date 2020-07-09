@@ -169,6 +169,7 @@ class TestTopicSubscriberLeaf(unittest.TestCase):
                                         has_upper_bound_failure=False)
         self.assertEqual(memory_subscriber_leaf.calculate_utility(), expected_bounds)
 
+
 if __name__ == '__main__':
     rospy.init_node('test_topic_subscribe_leaf')
     import rostest

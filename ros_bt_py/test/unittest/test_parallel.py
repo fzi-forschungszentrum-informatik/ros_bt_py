@@ -218,8 +218,8 @@ class TestParallel(unittest.TestCase):
         expected_bounds.lower_bound_success = cheap_success_bounds.lower_bound_success
         expected_bounds.upper_bound_success = cheap_fail_bounds.upper_bound_success
 
-        expected_bounds.lower_bound_failure = (cheap_success_bounds.lower_bound_failure +
-                                               cheap_fail_bounds.lower_bound_failure)
+        expected_bounds.lower_bound_failure = (cheap_success_bounds.lower_bound_failure
+                                               + cheap_fail_bounds.lower_bound_failure)
         expected_bounds.upper_bound_failure = (cheap_success_bounds.upper_bound_failure +
                                                cheap_fail_bounds.upper_bound_failure)
         self.assertEqual(par.calculate_utility(), expected_bounds)
