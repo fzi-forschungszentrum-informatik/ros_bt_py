@@ -520,4 +520,5 @@ class Migration(object):
                        self.msg.node_class,
                        message)
 
+
 migration = Migration.MigrationDecorator
