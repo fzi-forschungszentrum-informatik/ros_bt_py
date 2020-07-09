@@ -61,8 +61,8 @@ class TopicSubscriber(Leaf):
 
         for topic, topic_type_name in rospy.get_published_topics():
             topic_type = get_message_class(topic_type_name)
-            if (topic == resolved_topic and
-                    topic_type == self.options['topic_type']):
+            if (topic == resolved_topic
+                    and topic_type == self.options['topic_type']):
                 # if the topic we want exists, we can do our job, so
                 # set all the bounds and leave their values at 0
                 return UtilityBounds(
