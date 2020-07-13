@@ -155,6 +155,8 @@ def get_message_constant_fields(message_class):
                    for method in inspect.getmembers(
                        message_class, predicate=inspect.ismethod)]
 
+        numpy_methods = ['deserialize_numpy', 'serialize_numpy']
+
         # filter out everything that is not a CONSTANT
         attributes_message = dir(genpy.Message)
         constants = [item
@@ -162,7 +164,8 @@ def get_message_constant_fields(message_class):
                      if (not item.startswith('_')
                          and item not in methods
                          and item not in msg.__slots__
-                         and item not in attributes_message)]
+                         and item not in attributes_message
+                         and item not in numpy_methods)]
         return constants
     else:
         raise BehaviorTreeException('%s is not a ROS Message' % (
