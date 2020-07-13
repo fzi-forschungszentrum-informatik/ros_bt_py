@@ -5,3 +5,8 @@ include:
 
 variables:
   BUILD_NOETIC: "true"
+
+run_tests_focal_with_current_ros_comm:
+  extends: run_tests_focal
+  before_script:
+    - git clone https://github.com/ros/ros_comm.git ${CATKIN_ROOT}/src/ros_comm
