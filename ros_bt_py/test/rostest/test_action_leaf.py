@@ -100,7 +100,7 @@ class TestActionLeaf(unittest.TestCase):
             'feedback_type': FibonacciFeedback,
             'result_type': FibonacciResult,
             'action_name': '/this_action_does_not_exist',
-            'wait_for_action_server_seconds': 0.1,
+            'wait_for_action_server_seconds': 0.5,
             'timeout_seconds': 0.8,
             'fail_if_not_available': False
         })
@@ -113,7 +113,7 @@ class TestActionLeaf(unittest.TestCase):
             'feedback_type': FibonacciFeedback,
             'result_type': FibonacciResult,
             'action_name': '/this_action_does_not_exist',
-            'wait_for_action_server_seconds': 0.1,
+            'wait_for_action_server_seconds': 0.5,
             'timeout_seconds': 0.8,
             'fail_if_not_available': True
         })
@@ -136,7 +136,7 @@ class TestActionLeaf(unittest.TestCase):
             'feedback_type': FibonacciFeedback,
             'result_type': FibonacciResult,
             'action_name': 'fibonacci_fail',
-            'wait_for_action_server_seconds': 0.1,
+            'wait_for_action_server_seconds': 0.5,
             'timeout_seconds': 0.8,
             'fail_if_not_available': False
         })
