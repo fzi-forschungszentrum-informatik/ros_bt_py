@@ -205,7 +205,7 @@ class TestShoveTree(unittest.TestCase):
             if remote_slot_node.tick() == NodeMsg.RUNNING:
                 is_running = True
                 break
-        if not is_running:
+        if not is_running and remote_slot_node.state != NodeMsg.SUCCEEDED:
             raise Exception('Slot is not running after 16 seconds, but in state %s'
                             % remote_slot_node.state)
 
