@@ -4965,7 +4965,7 @@ class MultipleSelection extends Component
             </button>
           </div>
           <div className="d-flex flex-column">
-            <h5>Capability<i title="Capability" class="fas fa-question-circle"></i></h5>
+            <h5>Capability <i title="Capability" class="fas fa-question-circle"></i></h5>
             <input className="form-control-lg mb-2"
                    type="text"
                    value={this.state.capability}
