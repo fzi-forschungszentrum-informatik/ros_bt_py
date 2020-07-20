@@ -4528,7 +4528,7 @@ class MultipleSelection extends Component
   componentDidUpdate(prevProps, prevState) {
     if (prevState.capability != this.state.capability || prevState.implementation != this.state.implementation || prevState.package != this.state.package)
     {
-      if (this.state.capability !== "" && this.state.implementation !== "" && this.state.package !== "")
+      if (this.state.capability !== "" && this.state.implementation !== "" && this.state.implementation != undefined && this.state.package !== "")
       {
         this.setState({isValid: true});
       } else {
