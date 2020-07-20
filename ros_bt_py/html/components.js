@@ -4446,6 +4446,8 @@ class MultipleSelection extends Component
     this.searchCapability = this.searchCapability.bind(this);
     this.selectCapabilitySearchResult = this.selectCapabilitySearchResult.bind(this);
     this.updateValidity = this.updateValidity.bind(this);
+    this.handleCapabilitySearchClear = this.handleCapabilitySearchClear.bind(this);
+    this.handlePackageSearchClear = this.handlePackageSearchClear.bind(this);
 
     var name = this.props.selectedNodeNames.join('_');
     if (name.length === 0)
@@ -4817,6 +4819,14 @@ class MultipleSelection extends Component
     this.setState({package: event.target.value});
   }
 
+  handlePackageSearchClear(e)
+  {
+    if (e.keyCode == 27) // ESC
+    {
+      this.setState({package_results: []});
+    }
+  }
+
   selectPackageSearchResult(result)
   {
     this.setState({package: result});
@@ -4859,6 +4869,14 @@ class MultipleSelection extends Component
       this.setState({capabilities_results: results.slice(0,5)});
     }
     this.setState({capability: event.target.value});
+  }
+
+  handleCapabilitySearchClear(e)
+  {
+    if (e.keyCode == 27) // ESC
+    {
+      this.setState({capabilities_results: []});
+    }
   }
 
   selectCapabilitySearchResult(result)
@@ -4951,7 +4969,8 @@ class MultipleSelection extends Component
             <input className="form-control-lg mb-2"
                    type="text"
                    value={this.state.capability}
-                   onChange={this.searchCapability}/>
+                   onChange={this.searchCapability}
+                   onKeyDown={this.handleCapabilitySearchClear}/>
             {this.renderCapabilitySearchResults(this.state.capabilities_results)}
             <h5>Implementation <i title="Implementation" class="fas fa-question-circle"></i></h5>
             <input className="form-control-lg mb-2"
@@ -4962,7 +4981,8 @@ class MultipleSelection extends Component
             <input className="form-control-lg mb-2"
                    type="text"
                    value={this.state.package}
-                   onChange={this.searchPackageName}/>
+                   onChange={this.searchPackageName}
+                   onKeyDown={this.handlePackageSearchClear}/>
             {this.renderPackageSearchResults(this.state.package_results)}
             <h5>Description <i title="Description" class="fas fa-question-circle"></i></h5>
             <input className="form-control-lg mb-2"
