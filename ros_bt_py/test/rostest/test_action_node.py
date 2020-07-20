@@ -17,6 +17,7 @@ class FibonacciAction(object):
     def execute_cb(self, goal):
         self._as.set_aborted()
 
+
 if __name__ == '__main__':
     rospy.init_node('test_actions')
     server = FibonacciAction('fibonacci_fail')

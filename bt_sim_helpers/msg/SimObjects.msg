@@ -1,1 +1,0 @@
-SimObject[] sim_objects

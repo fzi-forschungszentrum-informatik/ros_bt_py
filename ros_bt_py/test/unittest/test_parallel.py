@@ -218,10 +218,10 @@ class TestParallel(unittest.TestCase):
         expected_bounds.lower_bound_success = cheap_success_bounds.lower_bound_success
         expected_bounds.upper_bound_success = cheap_fail_bounds.upper_bound_success
 
-        expected_bounds.lower_bound_failure = (cheap_success_bounds.lower_bound_failure +
-                                               cheap_fail_bounds.lower_bound_failure)
-        expected_bounds.upper_bound_failure = (cheap_success_bounds.upper_bound_failure +
-                                               cheap_fail_bounds.upper_bound_failure)
+        expected_bounds.lower_bound_failure = (cheap_success_bounds.lower_bound_failure
+                                               + cheap_fail_bounds.lower_bound_failure)
+        expected_bounds.upper_bound_failure = (cheap_success_bounds.upper_bound_failure
+                                               + cheap_fail_bounds.upper_bound_failure)
         self.assertEqual(par.calculate_utility(), expected_bounds)
 
         par = make_parallel(2)\
@@ -230,10 +230,10 @@ class TestParallel(unittest.TestCase):
 
         # Now that we need two successes, success and failure are
         # basically swapped
-        expected_bounds.lower_bound_success = (cheap_success_bounds.lower_bound_success +
-                                               cheap_fail_bounds.lower_bound_success)
-        expected_bounds.upper_bound_success = (cheap_success_bounds.upper_bound_success +
-                                               cheap_fail_bounds.upper_bound_success)
+        expected_bounds.lower_bound_success = (cheap_success_bounds.lower_bound_success
+                                               + cheap_fail_bounds.lower_bound_success)
+        expected_bounds.upper_bound_success = (cheap_success_bounds.upper_bound_success
+                                               + cheap_fail_bounds.upper_bound_success)
 
         expected_bounds.lower_bound_failure = cheap_fail_bounds.lower_bound_failure
         expected_bounds.upper_bound_failure = cheap_success_bounds.upper_bound_failure
@@ -478,10 +478,10 @@ class TestParallelFailureTolerance(unittest.TestCase):
         expected_bounds.lower_bound_success = cheap_success_bounds.lower_bound_success
         expected_bounds.upper_bound_success = cheap_fail_bounds.upper_bound_success
 
-        expected_bounds.lower_bound_failure = (cheap_success_bounds.lower_bound_failure +
-                                               cheap_fail_bounds.lower_bound_failure)
-        expected_bounds.upper_bound_failure = (cheap_success_bounds.upper_bound_failure +
-                                               cheap_fail_bounds.upper_bound_failure)
+        expected_bounds.lower_bound_failure = (cheap_success_bounds.lower_bound_failure
+                                               + cheap_fail_bounds.lower_bound_failure)
+        expected_bounds.upper_bound_failure = (cheap_success_bounds.upper_bound_failure
+                                               + cheap_fail_bounds.upper_bound_failure)
         self.assertEqual(par.calculate_utility(), expected_bounds)
 
         par = make_parallel_failure_tolerance(2, 0)\
@@ -490,10 +490,10 @@ class TestParallelFailureTolerance(unittest.TestCase):
 
         # Now that we need two successes, success and failure are
         # basically swapped
-        expected_bounds.lower_bound_success = (cheap_success_bounds.lower_bound_success +
-                                               cheap_fail_bounds.lower_bound_success)
-        expected_bounds.upper_bound_success = (cheap_success_bounds.upper_bound_success +
-                                               cheap_fail_bounds.upper_bound_success)
+        expected_bounds.lower_bound_success = (cheap_success_bounds.lower_bound_success
+                                               + cheap_fail_bounds.lower_bound_success)
+        expected_bounds.upper_bound_success = (cheap_success_bounds.upper_bound_success
+                                               + cheap_fail_bounds.upper_bound_success)
 
         expected_bounds.lower_bound_failure = cheap_fail_bounds.lower_bound_failure
         expected_bounds.upper_bound_failure = cheap_success_bounds.upper_bound_failure

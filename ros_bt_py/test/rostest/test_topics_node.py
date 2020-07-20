@@ -12,6 +12,7 @@ class TopicMirror(object):
         rospy.loginfo('Reflecting message %s', str(msg))
         self.publisher.publish(msg)
 
+
 if __name__ == '__main__':
     rospy.init_node('test_topics')
     mirror = TopicMirror()

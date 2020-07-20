@@ -15,5 +15,6 @@ def main():
     print('\n' + padding_str + '\n' + info_str + '\n' + padding_str + '\n')
     return 0
 
+
 if __name__ == '__main__':
     main()

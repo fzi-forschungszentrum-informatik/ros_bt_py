@@ -504,8 +504,8 @@ class TreeManager(object):
             added = 0
             # find nodes whose children are all in the tree already, then add them
             for node in (node for node in tree.nodes
-                         if (node.name not in self.nodes and
-                             all((name in self.nodes for name in node.child_names)))):
+                         if (node.name not in self.nodes
+                             and all((name in self.nodes for name in node.child_names)))):
                 try:
                     instance = self.instantiate_node_from_msg(
                         node, allow_rename=False, permissive=request.permissive)
@@ -660,8 +660,8 @@ class TreeManager(object):
                 # shutdown the tree after the setup and shutdown request
                 request.command = ControlTreeExecutionRequest.SHUTDOWN
 
-        if (request.command == ControlTreeExecutionRequest.STOP or
-                request.command == ControlTreeExecutionRequest.SHUTDOWN):
+        if (request.command == ControlTreeExecutionRequest.STOP
+                or request.command == ControlTreeExecutionRequest.SHUTDOWN):
             if tree_state == Tree.TICKING:
                 with self._state_lock:
                     self.tree_msg.state = Tree.STOP_REQUESTED
@@ -675,8 +675,8 @@ class TreeManager(object):
                     # If we're debugging or setting up (and ROS is not
                     # shutting down), keep sleeping until the thread
                     # finishes
-                    while (self._tick_thread.is_alive() and
-                           not rospy.is_shutdown()):
+                    while (self._tick_thread.is_alive()
+                           and not rospy.is_shutdown()):
                         setting_up = False
                         with self._state_lock:
                             setting_up = self._setting_up
@@ -772,8 +772,8 @@ class TreeManager(object):
                     # If we're debugging or setting up (and ROS is not
                     # shutting down), keep sleepin until the thread
                     # finishes
-                    while (self._tick_thread.is_alive() and
-                           not rospy.is_shutdown()):
+                    while (self._tick_thread.is_alive()
+                           and not rospy.is_shutdown()):
                         setting_up = False
                         with self._state_lock:
                             setting_up = self._setting_up
@@ -802,8 +802,8 @@ class TreeManager(object):
                     response.error_message = str(ex)
                     response.tree_state = self.get_state()
 
-        elif (request.command == ControlTreeExecutionRequest.TICK_PERIODICALLY or
-              request.command == ControlTreeExecutionRequest.TICK_UNTIL_RESULT):
+        elif (request.command == ControlTreeExecutionRequest.TICK_PERIODICALLY
+              or request.command == ControlTreeExecutionRequest.TICK_UNTIL_RESULT):
             if self._tick_thread.is_alive() or tree_state == Tree.TICKING:
                 response.success = False
                 response.error_message = ('Tried to start periodic ticking when tree is '
@@ -1051,14 +1051,14 @@ class TreeManager(object):
         # Unwire wirings that have removed nodes as source or target
         self.unwire_data(WireNodeDataRequest(
             wirings=[wiring for wiring in self.tree_msg.data_wirings
-                     if (wiring.source.node_name in names_to_remove or
-                         wiring.target.node_name in names_to_remove)]))
+                     if (wiring.source.node_name in names_to_remove
+                         or wiring.target.node_name in names_to_remove)]))
 
         # Keep tree_msg up-to-date
         self.tree_msg.data_wirings = [
             wiring for wiring in self.tree_msg.data_wirings
-            if (wiring.source.node_name not in names_to_remove and
-                wiring.target.node_name not in names_to_remove)]
+            if (wiring.source.node_name not in names_to_remove
+                and wiring.target.node_name not in names_to_remove)]
         self.tree_msg.public_node_data = [data for data in self.tree_msg.public_node_data
                                           if data.node_name not in names_to_remove]
 
@@ -1092,8 +1092,8 @@ class TreeManager(object):
         # First unwire all data connection to the existing node
         wire_request = WireNodeDataRequest(
             wirings=[wiring for wiring in self.tree_msg.data_wirings
-                     if (wiring.source.node_name == old_node.name or
-                         wiring.target.node_name == old_node.name)])
+                     if (wiring.source.node_name == old_node.name
+                         or wiring.target.node_name == old_node.name)])
 
         unwire_resp = self.unwire_data(wire_request)
         if not get_success(unwire_resp):
@@ -1179,9 +1179,9 @@ class TreeManager(object):
                     request.node_name,
                     self.tree_msg.name))
 
-        if (request.rename_node and
-                request.new_name != request.node_name and
-                request.new_name in self.nodes):
+        if (request.rename_node
+                and request.new_name != request.node_name
+                and request.new_name in self.nodes):
             return SetOptionsResponse(
                 success=False,
                 error_message=('Unable to rename node %s to %s - a node with '
@@ -1229,8 +1229,8 @@ class TreeManager(object):
                         our_type = type(deserialized_options[option_wiring['target']])
                         if other_type == our_type:
                             incompatible = False
-                        elif (inspect.isclass(other_type) and
-                              genpy.message.Message in other_type.__mro__):
+                        elif (inspect.isclass(other_type)
+                              and genpy.message.Message in other_type.__mro__):
                             try:
                                 genpy.message.fill_message_args(
                                     other_type(),
@@ -1241,13 +1241,13 @@ class TreeManager(object):
                         else:
                             # check if the types are str or unicode and treat them the same
                             if (isinstance(
-                                deserialized_options[option_wiring['target']], str)
+                                    deserialized_options[option_wiring['target']], str)
                                     and other_type == unicode):
-                                        incompatible = False
+                                incompatible = False
                             if (isinstance(
-                                deserialized_options[option_wiring['target']], unicode)
+                                    deserialized_options[option_wiring['target']], unicode)
                                     and other_type == str):
-                                        incompatible = False
+                                incompatible = False
                 if incompatible:
                     incompatible_options.append((key, required_type_name))
 
@@ -1287,8 +1287,8 @@ class TreeManager(object):
         # new node (or the old one, if anything goes wrong).
         wire_request = WireNodeDataRequest(
             wirings=[wiring for wiring in self.tree_msg.data_wirings
-                     if (wiring.source.node_name == node.name or
-                         wiring.target.node_name == node.name)])
+                     if (wiring.source.node_name == node.name
+                         or wiring.target.node_name == node.name)])
 
         unwire_resp = self.unwire_data(wire_request)
         if not get_success(unwire_resp):
@@ -1436,8 +1436,8 @@ class TreeManager(object):
                 error_message="New parent (\"%s\") is not in tree." % request.new_parent_name)
 
         new_parent_max_children = self.nodes[request.new_parent_name].node_config.max_children
-        if (new_parent_max_children is not None and
-                len(self.nodes[request.new_parent_name].children) == new_parent_max_children):
+        if (new_parent_max_children is not None
+                and len(self.nodes[request.new_parent_name].children) == new_parent_max_children):
             return MoveNodeResponse(
                 success=False,
                 error_message=("Cannot move node %s to new parent node %s. "
@@ -1499,8 +1499,8 @@ class TreeManager(object):
         # We're *replacing* one of the children, so there should only
         # be an issue if there were too many children before. Which
         # shouldn't happen. But you know, better safe than sorry!
-        if (new_node_max_children is not None and
-                len(old_node.children) > new_node_max_children):
+        if (new_node_max_children is not None
+                and len(old_node.children) > new_node_max_children):
             return ReplaceNodeResponse(
                 success=False,
                 error_message=("Replacement node (\"{}\") does not support the number of"
@@ -1550,10 +1550,10 @@ class TreeManager(object):
         # parent.children = [C, A]
         #
         # Which is wrong!
-        if (new_node.parent is not None and
-                old_node_parent is not None and
-                new_node.parent.name == old_node_parent.name and
-                old_node_child_index > 0):
+        if (new_node.parent is not None
+                and old_node_parent is not None
+                and new_node.parent.name == old_node_parent.name
+                and old_node_child_index > 0):
             for index, child in enumerate(new_node.parent.children):
                 if child.name == request.new_node_name:
                     if index < old_node_child_index:

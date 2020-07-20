@@ -282,9 +282,11 @@ class TestServiceLeaf(unittest.TestCase):
         node.tick()
         self.assertEqual(node.state, NodeMsg.RUNNING)
 
-        rospy.sleep(0.1)
-        node.tick()
-        self.assertEqual(node.state, NodeMsg.SUCCEEDED)
+        for _ in range(10):
+            rospy.sleep(0.1)
+            node.tick()
+            if node.state != NodeMsg.RUNNING:
+                self.assertEqual(node.state, NodeMsg.SUCCEEDED)
 
     def testUntick(self):
         self.untickTest(self.delay_service_leaf)

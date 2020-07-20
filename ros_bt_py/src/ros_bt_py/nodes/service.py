@@ -287,8 +287,8 @@ class WaitForService(Leaf):
                                                 self.options['service_type'])
 
     def _do_tick(self):
-        if (self._service_proxy.get_state() == AsyncServiceProxy.IDLE or
-                self._service_proxy.get_state() == AsyncServiceProxy.ABORTED):
+        if (self._service_proxy.get_state() == AsyncServiceProxy.IDLE
+                or self._service_proxy.get_state() == AsyncServiceProxy.ABORTED):
             self._last_service_call_time = rospy.Time.now()
             self._service_proxy.wait_for_service(
                 self.options['wait_for_service_seconds'])

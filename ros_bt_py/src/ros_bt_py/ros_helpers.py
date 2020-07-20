@@ -146,8 +146,8 @@ class EnumValue(object):
 def get_message_constant_fields(message_class):
     """Returns all constant fields of a message as a list
     """
-    if (inspect.isclass(message_class) and
-            genpy.message.Message in message_class.__mro__):
+    if (inspect.isclass(message_class)
+            and genpy.message.Message in message_class.__mro__):
         msg = message_class()
 
         attributes = dir(message_class)
@@ -155,14 +155,17 @@ def get_message_constant_fields(message_class):
                    for method in inspect.getmembers(
                        message_class, predicate=inspect.ismethod)]
 
+        numpy_methods = ['deserialize_numpy', 'serialize_numpy']
+
         # filter out everything that is not a CONSTANT
         attributes_message = dir(genpy.Message)
         constants = [item
                      for item in attributes
-                     if (not item.startswith('_') and
-                         item not in methods and
-                         item not in msg.__slots__ and
-                         item not in attributes_message)]
+                     if (not item.startswith('_')
+                         and item not in methods
+                         and item not in msg.__slots__
+                         and item not in attributes_message
+                         and item not in numpy_methods)]
         return constants
     else:
         raise BehaviorTreeException('%s is not a ROS Message' % (

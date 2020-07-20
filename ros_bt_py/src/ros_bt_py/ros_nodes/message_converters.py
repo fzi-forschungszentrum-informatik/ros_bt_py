@@ -30,8 +30,8 @@ class MessageToFields(Leaf):
 
         self.passthrough = True
 
-        if (inspect.isclass(self.options['input_type']) and
-                genpy.message.Message in self.options['input_type'].__mro__):
+        if (inspect.isclass(self.options['input_type'])
+                and genpy.message.Message in self.options['input_type'].__mro__):
             msg = self.options['input_type']()
             for field in msg.__slots__:
                 if isinstance(getattr(msg, field), genpy.rostime.Time):
@@ -109,8 +109,8 @@ class FieldsToMessage(Leaf):
 
         self.passthrough = True
 
-        if (inspect.isclass(self.options['output_type']) and
-                genpy.message.Message in self.options['output_type'].__mro__):
+        if (inspect.isclass(self.options['output_type'])
+                and genpy.message.Message in self.options['output_type'].__mro__):
             msg = self.options['output_type']()
             for field in msg.__slots__:
                 if isinstance(getattr(msg, field), genpy.rostime.Time):

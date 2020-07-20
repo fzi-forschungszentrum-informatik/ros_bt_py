@@ -40,8 +40,8 @@ Useful in many cases indeed."""
             self.loginfo('interpreting False as 0 and True as 1')
         elif self.options['input_type'] is int and self.options['output_type'] is bool:
             self.loginfo('interpreting 0 as False and != 0 as True')
-        elif (self.options['input_type'] in [int, float] and
-              self.options['output_type'] in [int, float]):
+        elif (self.options['input_type'] in [int, float]
+              and self.options['output_type'] in [int, float]):
             pass
         else:
             raise BehaviorTreeException('Conversion between "%s" and "%s" not implemented' % (
@@ -68,8 +68,8 @@ Useful in many cases indeed."""
                 self.outputs['out'] = 1
             else:
                 self.outputs['out'] = 0
-        elif (self.options['input_type'] in [int, float] and
-              self.options['output_type'] in [int, float]):
+        elif (self.options['input_type'] in [int, float]
+              and self.options['output_type'] in [int, float]):
             if self.options['input_type'] is int:
                 if self.options['output_type'] is float:
                     self.outputs['out'] = float(self.inputs['in'])

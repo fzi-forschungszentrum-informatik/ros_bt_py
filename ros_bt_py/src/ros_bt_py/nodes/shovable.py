@@ -130,8 +130,8 @@ class Shovable(Decorator):
         # Note that this and the following are if's, not elif's!
         # This allows execution to "fall through" multiple states in a single tick
         if self._state == Shovable.WAIT_FOR_UTILITY_RESPONSE:
-            if (rospy.Time.now() - self._find_best_executor_start_time >
-                    rospy.Duration(self.options['find_best_executor_timeout_seconds'])):
+            if (rospy.Time.now() - self._find_best_executor_start_time
+                    > rospy.Duration(self.options['find_best_executor_timeout_seconds'])):
                 self.logerr('FindBestExecutor action timed out after %.2f seconds' %
                             self.options['find_best_executor_timeout_seconds'])
                 self._state = Shovable.IDLE
@@ -192,8 +192,8 @@ class Shovable(Decorator):
                 self._state = Shovable.ACTION_CLIENT_INIT
 
             # After the set timeout, give up
-            if (rospy.Time.now() - self._subtree_action_client_creation_time >
-                    rospy.Duration(self.options['wait_for_run_tree_seconds'])):
+            if (rospy.Time.now() - self._subtree_action_client_creation_time
+                    > rospy.Duration(self.options['wait_for_run_tree_seconds'])):
                 self.logerr(('Remote RunTree ActionClient for %s did not finish loading '
                              'after %.2f seconds. giving up.') %
                             (self._remote_namespace + '/run_tree',
@@ -324,8 +324,8 @@ class Shovable(Decorator):
 
         for topic, topic_type_name in rospy.get_published_topics(rospy.get_namespace()):
             topic_type = get_message_class(topic_type_name)
-            if (topic == resolved_topic and
-                    topic_type == GoalStatusArray):
+            if (topic == resolved_topic
+                    and topic_type == GoalStatusArray):
                 # if the goal topic exists, we can execute the action, but
                 # don't know much about the bounds, so set them all to
                 # zero

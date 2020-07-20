@@ -69,13 +69,13 @@ class NodeConfig(object):
                 self.version)
 
     def __eq__(self, other):
-        return (self.inputs == other.inputs and
-                self.outputs == other.outputs and
-                self.options == other.options and
-                self.max_children == other.max_children and
-                self.option_wirings == other.option_wirings and
-                self.optional_options == other.optional_options and
-                self.version == other.version)
+        return (self.inputs == other.inputs
+                and self.outputs == other.outputs
+                and self.options == other.options
+                and self.max_children == other.max_children
+                and self.option_wirings == other.option_wirings
+                and self.optional_options == other.optional_options
+                and self.version == other.version)
 
     def __ne__(self, other):
         return not self == other
