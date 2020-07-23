@@ -1047,12 +1047,12 @@ class SelectEditorSkin extends Component
   {
     return (
       <div>
-        <label className="form-inline m-1">Color scheme:
+        <label className="form-inline m-1">
           <select className="custom-select ml-1"
                   defaultValue="darkmode"
                   onChange={this.onChange}>
-            <option value="darkmode">Dark Mode</option>
-            <option value="light">Light Mode</option>
+            <option value="darkmode">Dark Editor</option>
+            <option value="light">Light Editor</option>
           </select>
         </label>
       </div>
