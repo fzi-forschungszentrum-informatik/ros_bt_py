@@ -780,6 +780,9 @@ function ExecutionBar(props)
       <TickControls
         ros={props.ros}
         bt_namespace={props.currentNamespace}
+        runningCommands={props.runningCommands}
+        onNewRunningCommand={props.onNewRunningCommand}
+        onRunningCommandCompleted={props.onRunningCommandCompleted}
         onError={props.onError}/>
       <Spacer/>
       <LoadSaveControls
@@ -787,6 +790,8 @@ function ExecutionBar(props)
         bt_namespace={props.currentNamespace}
         tree_message={props.tree_message}
         onError={props.onError}
+        onNewRunningCommand={props.onNewRunningCommand}
+        onRunningCommandCompleted={props.onRunningCommandCompleted}
         onChangeFileModal={props.onChangeFileModal}/>
     </header>
   );
@@ -1060,7 +1065,13 @@ class TickControls extends Component
   {
     super(props);
 
+    this.state = {
+      running_commands: props.runningCommands
+    };
+
+    this.controlExec = this.controlExec.bind(this);
   }
+
   componentDidMount()
   {
     this.tick_service = new ROSLIB.Service({
@@ -1068,10 +1079,19 @@ class TickControls extends Component
       name: this.props.bt_namespace + 'control_tree_execution',
       serviceType: 'ros_bt_py_msgs/ControlTreeExecution'
     });
-
   }
+
+  componentDidUpdate(prevProps) {
+    if (this.props.runningCommands !== prevProps.runningCommands) {
+      console.log("COMPONENT DID UPDATE");
+      this.setState({running_commands: this.props.runningCommands});
+    }
+  }
+
   controlExec(command)
   {
+    this.props.onNewRunningCommand(command);
+
     this.tick_service.callService(
       new ROSLIB.ServiceRequest({
         // TICK_ONCE = 1
@@ -1090,47 +1110,78 @@ class TickControls extends Component
         else {
           this.props.onError(response.error_message);
         }
+        this.props.onRunningCommandCompleted(command);
       }.bind(this));
   }
 
   render()
   {
+    var tick_once_classes = "fas fa-check show-button-icon";
+    if (this.state.running_commands != undefined && this.state.running_commands.has(1))
+    {
+      tick_once_classes = "fas fa-check fa-spin show-button-icon";
+    }
+    var tick_periodically_classes = "fas fa-sync show-button-icon";
+    if (this.state.running_commands != undefined && this.state.running_commands.has(2))
+    {
+      tick_periodically_classes = "fas fa-sync fa-spin show-button-icon";
+    }
+    var tick_until_result_classes = "fas fa-play show-button-icon";
+    if (this.state.running_commands != undefined && this.state.running_commands.has(3))
+    {
+      tick_until_result_classes = "fas fa-play fa-spin show-button-icon";
+    }
+    var stop_classes = "fas fa-stop show-button-icon";
+    if (this.state.running_commands != undefined && this.state.running_commands.has(4))
+    {
+      stop_classes = "fas fa-stop fa-spin show-button-icon";
+    }
+    var reset_classes = "fas fa-undo show-button-icon";
+    if (this.state.running_commands != undefined && this.state.running_commands.has(5))
+    {
+      reset_classes = "fas fa-undo fa-spin show-button-icon";
+    }
+    var shutdown_classes = "fas fa-power-off show-button-icon";
+    if (this.state.running_commands != undefined && this.state.running_commands.has(6))
+    {
+      shutdown_classes = "fas fa-power-off fa-spin show-button-icon";
+    }
     return (
       <Fragment>
         <button onClick={this.controlExec.bind(this, 1)}
                 className="btn btn-primary ml-1"
                 title="Tick Once">
-          <i class="fas fa-check show-button-icon"></i>
+          <i class={tick_once_classes}></i>
           <span className="ml-1 hide-button-text-control">Tick Once</span>
         </button>
         <button onClick={this.controlExec.bind(this, 2)}
                 className="btn btn-primary ml-1"
                 title="Tick Periodically">
-          <i class="fas fa-sync show-button-icon"></i>
+          <i class={tick_periodically_classes}></i>
           <span className="ml-1 hide-button-text-control">Tick Periodically</span>
         </button>
         <button onClick={this.controlExec.bind(this, 3)}
                 className="btn btn-primary ml-1"
                 title="Tick Until Result">
-          <i class="fas fa-play show-button-icon"></i>
+          <i class={tick_until_result_classes}></i>
           <span className="ml-1 hide-button-text-control">Tick Until Result</span>
         </button>
         <button onClick={this.controlExec.bind(this, 4)}
                 className="btn btn-primary ml-1"
                 title="Stop">
-          <i class="fas fa-stop show-button-icon"></i>
+          <i class={stop_classes}></i>
           <span className="ml-1 hide-button-text-control">Stop</span>
         </button>
         <button onClick={this.controlExec.bind(this, 5)}
                 className="btn btn-primary ml-1"
                 title="Reset">
-          <i class="fas fa-undo show-button-icon"></i>
+          <i class={reset_classes}></i>
           <span className="ml-1 hide-button-text-control">Reset</span>
         </button>
-        <button onClick={this.controlExec.bind(this, 6)}
+        <button onClick={() => this.controlExec(6)}
                 className="btn btn-primary ml-1"
                 title="Shutdown">
-          <i class="fas fa-power-off show-button-icon"></i>
+          <i class={shutdown_classes}></i>
           <span className="ml-1 hide-button-text-control">Shutdown</span>
         </button>
       </Fragment>
@@ -1299,6 +1350,7 @@ class LoadSaveControls extends Component
 
   saveTree()
   {
+    this.props.onNewRunningCommand(6);
     this.control_tree_execution_service.callService(
       new ROSLIB.ServiceRequest({
         // TICK_ONCE = 1
@@ -1308,34 +1360,58 @@ class LoadSaveControls extends Component
         // RESET = 5
         // SHUTDOWN = 6
         // SETUP_AND_SHUTDOWN = 7
-        command: 5
+        command: 6
       }),
       function(response) {
+        this.props.onRunningCommandCompleted(6);
         if (response.success) {
           console.log('called ControlTreeExecution service successfully');
+          this.props.onNewRunningCommand(5);
+          this.control_tree_execution_service.callService(
+            new ROSLIB.ServiceRequest({
+              // TICK_ONCE = 1
+              // TICK_PERIODICALLY = 2
+              // TICK_UNTIL_RESULT = 3
+              // STOP = 4
+              // RESET = 5
+              // SHUTDOWN = 6
+              // SETUP_AND_SHUTDOWN = 7
+              command: 5
+            }),
+            function(response) {
+              this.props.onRunningCommandCompleted(5);
+              if (response.success) {
+                console.log('called ControlTreeExecution service successfully');
+              }
+              else {
+                this.props.onError('Could not reset tree before saving, the tree might be filled with old "output" values. ' + response.error_message);
+              }
+              var msg = jsyaml.safeDump(this.props.tree_message);
+              this.downloadURI('data:text/plain,'+encodeURIComponent(msg), "tree.yaml");
+              this.props.onNewRunningCommand(6);
+              this.control_tree_execution_service.callService(
+                new ROSLIB.ServiceRequest({
+                  // TICK_ONCE = 1
+                  // TICK_PERIODICALLY = 2
+                  // TICK_UNTIL_RESULT = 3
+                  // STOP = 4
+                  // RESET = 5
+                  // SHUTDOWN = 6
+                  // SETUP_AND_SHUTDOWN = 7
+                  command: 6
+                }),
+                function(response) {
+                  this.props.onRunningCommandCompleted(6);
+                  if (response.success) {
+                    console.log('shutdown tree successfully');
+                  }
+                }.bind(this));
+            }.bind(this));
         }
         else {
-          this.props.onError('Could not reset tree before saving, the tree might be filled with old "output" values. ' + response.error_message);
+          this.props.onError('Could not shutdown tree before saving:' + response.error_message);
         }
-        var msg = jsyaml.safeDump(this.props.tree_message);
-        this.downloadURI('data:text/plain,'+encodeURIComponent(msg), "tree.yaml");
-        this.control_tree_execution_service.callService(
-          new ROSLIB.ServiceRequest({
-            // TICK_ONCE = 1
-            // TICK_PERIODICALLY = 2
-            // TICK_UNTIL_RESULT = 3
-            // STOP = 4
-            // RESET = 5
-            // SHUTDOWN = 6
-            // SETUP_AND_SHUTDOWN = 7
-            command: 6
-          }),
-          function(response) {
-            if (response.success) {
-              console.log('shutdown tree successfully');
-            }
-          }.bind(this));
-      }.bind(this));
+    }.bind(this));
   }
 
   loadFromPackage(event)
@@ -1345,6 +1421,7 @@ class LoadSaveControls extends Component
 
   saveToPackage(event)
   {
+    this.props.onNewRunningCommand(6);
     this.control_tree_execution_service.callService(
       new ROSLIB.ServiceRequest({
         // TICK_ONCE = 1
@@ -1354,33 +1431,55 @@ class LoadSaveControls extends Component
         // RESET = 5
         // SHUTDOWN = 6
         // SETUP_AND_SHUTDOWN = 7
-        command: 5
+        command: 6
       }),
       function(response) {
-        if (response.success) {
-          console.log('called ControlTreeExecution service successfully');
-        }
-        else {
-          this.props.onError('Could not reset tree before saving, the tree might be filled with old "output" values. ' + response.error_message);
-        }
-        this.props.onChangeFileModal('save');
-        this.control_tree_execution_service.callService(
-          new ROSLIB.ServiceRequest({
-            // TICK_ONCE = 1
-            // TICK_PERIODICALLY = 2
-            // TICK_UNTIL_RESULT = 3
-            // STOP = 4
-            // RESET = 5
-            // SHUTDOWN = 6
-            // SETUP_AND_SHUTDOWN = 7
-            command: 6
-          }),
-          function(response) {
-            if (response.success) {
-              console.log('shutdown tree successfully');
-            }
-          }.bind(this));
-      }.bind(this));
+          this.props.onRunningCommandCompleted(6);
+          if (response.success || window.confirm("Could not shutdown tree before saving. Do you want to try saving anyway?"))
+          {
+            this.props.onError('Could not shutdown tree before saving:' + response.error_message);
+            this.props.onNewRunningCommand(5);
+            this.control_tree_execution_service.callService(
+              new ROSLIB.ServiceRequest({
+                // TICK_ONCE = 1
+                // TICK_PERIODICALLY = 2
+                // TICK_UNTIL_RESULT = 3
+                // STOP = 4
+                // RESET = 5
+                // SHUTDOWN = 6
+                // SETUP_AND_SHUTDOWN = 7
+                command: 5
+              }),
+              function(response) {
+                this.props.onRunningCommandCompleted(5);
+                if (response.success) {
+                  console.log('called ControlTreeExecution service successfully');
+                }
+                else {
+                  this.props.onError('Could not reset tree before saving, the tree might be filled with old "output" values. ' + response.error_message);
+                }
+                this.props.onChangeFileModal('save');
+                this.props.onNewRunningCommand(6);
+                this.control_tree_execution_service.callService(
+                  new ROSLIB.ServiceRequest({
+                    // TICK_ONCE = 1
+                    // TICK_PERIODICALLY = 2
+                    // TICK_UNTIL_RESULT = 3
+                    // STOP = 4
+                    // RESET = 5
+                    // SHUTDOWN = 6
+                    // SETUP_AND_SHUTDOWN = 7
+                    command: 6
+                  }),
+                  function(response) {
+                    this.props.onRunningCommandCompleted(6);
+                    if (response.success) {
+                      console.log('shutdown tree successfully');
+                    }
+                  }.bind(this));
+              }.bind(this));
+          }
+    }.bind(this));
   }
 
   render()

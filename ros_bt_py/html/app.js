@@ -70,6 +70,7 @@ class App extends Component
       current_time: null,
       nodelist_visible: true,
       executionbar_visible: true,
+      running_commands: new Set(),
     };
 
     this.nodes_fuse = null;
@@ -192,6 +193,8 @@ class App extends Component
     this.onCapabilitiesUpdate = this.onCapabilitiesUpdate.bind(this);
     this.handleNodeAndCapabilitySearch = this.handleNodeAndCapabilitySearch.bind(this);
     this.handleNodeAndCapabilitySearchClear = this.handleNodeAndCapabilitySearchClear.bind(this);
+    this.onNewRunningCommand = this.onNewRunningCommand.bind(this);
+    this.onRunningCommandCompleted = this.onRunningCommandCompleted.bind(this);
   }
 
   onTreeUpdate(msg)
@@ -859,6 +862,25 @@ class App extends Component
     }
   }
 
+  onNewRunningCommand(command)
+  {
+    this.setState(({ running_commands }) => ({
+      running_commands: new Set(running_commands).add(command)
+    }));
+  }
+
+  onRunningCommandCompleted(command)
+  {
+    this.setState(({ running_commands }) => {
+      const new_running_commands = new Set(running_commands);
+      new_running_commands.delete(command);
+
+      return {
+        running_commands: new_running_commands
+      };
+    });
+  }
+
   handleNodeAndCapabilitySearchClear(e)
   {
     if (e.keyCode == 27) // ESC
@@ -1036,6 +1058,9 @@ class App extends Component
                       onSelectedTreeChange={this.onSelectedTreeChange}
                       onNamespaceChange={this.onNamespaceChange}
                       onError={this.onError}
+                      runningCommands={this.state.running_commands}
+                      onNewRunningCommand={this.onNewRunningCommand}
+                      onRunningCommandCompleted={this.onRunningCommandCompleted}
                       onPublishingSubtreesChange={this.onPublishingSubtreesChange}
                       onChangeFileModal={this.onChangeFileModal}/>
       );
