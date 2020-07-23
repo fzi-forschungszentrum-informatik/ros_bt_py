@@ -259,6 +259,12 @@ function getShortDoc(doc) {
   }
 }
 
+function uniqueArray(array, property) {
+  return array.filter((object, position, array) => {
+      return array.map(mapObject => mapObject[property]).indexOf(object[property]) === position;
+  });
+}
+
 class NodeListItem extends Component {
   constructor(props)
   {
@@ -4529,7 +4535,6 @@ class MultipleSelection extends Component
     super(props);
 
     this.setFilename = this.setFilename.bind(this);
-    this.setCapability = this.setCapability.bind(this);
     this.setImplementation = this.setImplementation.bind(this);
     this.setDescription = this.setDescription.bind(this);
     this.setTarget = this.setTarget.bind(this);
@@ -4537,6 +4542,11 @@ class MultipleSelection extends Component
     this.selectPackageSearchResult = this.selectPackageSearchResult.bind(this);
     this.onClickCreateCoordinatorTree = this.onClickCreateCoordinatorTree.bind(this);
     this.onClickCreateSubtree = this.onClickCreateSubtree.bind(this);
+    this.searchCapability = this.searchCapability.bind(this);
+    this.selectCapabilitySearchResult = this.selectCapabilitySearchResult.bind(this);
+    this.updateValidity = this.updateValidity.bind(this);
+    this.handleCapabilitySearchClear = this.handleCapabilitySearchClear.bind(this);
+    this.handlePackageSearchClear = this.handlePackageSearchClear.bind(this);
 
     var name = this.props.selectedNodeNames.join('_');
     if (name.length === 0)
@@ -4545,7 +4555,9 @@ class MultipleSelection extends Component
     }
 
     this.state = {name: name,
+                  isValid: false,
                   capability: this.props.capability,
+                  capabilities_results: [],
                   implementation: this.props.implementation,
                   target: '',
                   description: '',
@@ -4612,6 +4624,18 @@ class MultipleSelection extends Component
   componentDidMount()
   {
     document.addEventListener('click', this.handleClick);
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    if (prevState.capability != this.state.capability || prevState.implementation != this.state.implementation || prevState.package != this.state.package)
+    {
+      if (this.state.capability !== "" && this.state.implementation !== "" && this.state.implementation != undefined && this.state.package !== "")
+      {
+        this.setState({isValid: true});
+      } else {
+        this.setState({isValid: false});
+      }
+    }
   }
 
   handleClick = (event) => {
@@ -4894,6 +4918,13 @@ class MultipleSelection extends Component
     this.setState({package: event.target.value});
   }
 
+  handlePackageSearchClear(e)
+  {
+    if (e.keyCode == 27) // ESC
+    {
+      this.setState({package_results: []});
+    }
+  }
 
   selectPackageSearchResult(result)
   {
@@ -4929,15 +4960,67 @@ class MultipleSelection extends Component
     }
   }
 
+  searchCapability(event)
+  {
+    if (this.props.capabilitiesFuse)
+    {
+      var results = this.props.capabilitiesFuse.search(event.target.value);
+      this.setState({capabilities_results: results.slice(0,5)});
+    }
+    this.setState({capability: event.target.value});
+  }
+
+  handleCapabilitySearchClear(e)
+  {
+    if (e.keyCode == 27) // ESC
+    {
+      this.setState({capabilities_results: []});
+    }
+  }
+
+  selectCapabilitySearchResult(result)
+  {
+    this.setState({capability: result});
+    this.setState({capabilities_results: []});
+  }
+
+  renderCapabilitySearchResults(results)
+  {
+    if(results.length > 0)
+    {
+      var unique_results = uniqueArray(results, 'capability');
+      var result_rows = unique_results.map(x => {
+        return (
+          <div className="list-group-item search-result align-items-start" onClick={() => this.selectCapabilitySearchResult(x.capability)}>
+            <div className="d-flex w-100 justify-content-between">
+              <span>{x.capability}</span>
+              <i class="far fa-file-code" title={x.capability.path}></i>
+            </div>
+          </div>
+        );
+      });
+
+      return (
+        <div className="mb-2 search-results" ref={node => this.node = node}>
+          <div className="list-group">
+              {result_rows}
+          </div>
+        </div>
+      );
+    } else {
+      return null;
+    }
+  }
+
+  updateValidity()
+  {
+
+  }
+
   // FIXME this is temporary...!!!
   setFilename(event)
   {
     this.setState({filename: event.target.value});
-  }
-
-  setCapability(event)
-  {
-    this.setState({capability: event.target.value});
   }
 
   setImplementation(event)
@@ -4975,16 +5058,19 @@ class MultipleSelection extends Component
         <div className="d-flex flex-column">
           <div className="btn-group d-flex mb-2" role="group">
             <button className="btn btn-primary w-30"
-                    onClick={this.onClickCreateCoordinatorTree}>
+                    onClick={this.onClickCreateCoordinatorTree}
+                    disabled={!this.state.isValid}>
               {create_capability_text}
             </button>
           </div>
           <div className="d-flex flex-column">
-            <h5>Capability (dropdown?) <i title="Capability" class="fas fa-question-circle"></i></h5>
+            <h5>Capability <i title="Capability" class="fas fa-question-circle"></i></h5>
             <input className="form-control-lg mb-2"
                    type="text"
                    value={this.state.capability}
-                   onChange={this.setCapability}/>
+                   onChange={this.searchCapability}
+                   onKeyDown={this.handleCapabilitySearchClear}/>
+            {this.renderCapabilitySearchResults(this.state.capabilities_results)}
             <h5>Implementation <i title="Implementation" class="fas fa-question-circle"></i></h5>
             <input className="form-control-lg mb-2"
                    type="text"
@@ -4994,7 +5080,8 @@ class MultipleSelection extends Component
             <input className="form-control-lg mb-2"
                    type="text"
                    value={this.state.package}
-                   onChange={this.searchPackageName}/>
+                   onChange={this.searchPackageName}
+                   onKeyDown={this.handlePackageSearchClear}/>
             {this.renderPackageSearchResults(this.state.package_results)}
             <h5>Description <i title="Description" class="fas fa-question-circle"></i></h5>
             <input className="form-control-lg mb-2"
