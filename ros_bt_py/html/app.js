@@ -1069,9 +1069,11 @@ class App extends Component
     }
 
     var tree_name = null;
+    var tree_state = 'UNKNOWN';
     if (this.state.last_tree_msg)
     {
       tree_name = this.state.last_tree_msg.name;
+      tree_state = this.state.last_tree_msg.state;
     }
 
     return (
@@ -1129,6 +1131,14 @@ class App extends Component
                                type="text"
                                disabled={true}
                                value={tree_name}/>
+                      </label>
+                    </div>
+                    <div>
+                      <label className="form-inline m-1 ml-2">State:
+                        <input className="ml-1"
+                               type="text"
+                               disabled={true}
+                               value={tree_state}/>
                       </label>
                     </div>
                     <Spacer />
