@@ -1363,7 +1363,8 @@ class LoadSaveControls extends Component
       }),
       function(response) {
         this.props.onRunningCommandCompleted(6);
-        if (response.success) {
+        if (response.success || window.confirm("Could not shutdown tree before saving. Do you want to try saving anyway? Error message: \n" + response.error_message))
+        {
           console.log('called ControlTreeExecution service successfully');
           this.props.onNewRunningCommand(5);
           this.control_tree_execution_service.callService(
@@ -1434,7 +1435,7 @@ class LoadSaveControls extends Component
       }),
       function(response) {
           this.props.onRunningCommandCompleted(6);
-          if (response.success || window.confirm("Could not shutdown tree before saving. Do you want to try saving anyway?"))
+          if (response.success || window.confirm("Could not shutdown tree before saving. Do you want to try saving anyway? Error message: \n" + response.error_message))
           {
             this.props.onError('Could not shutdown tree before saving:' + response.error_message);
             this.props.onNewRunningCommand(5);
