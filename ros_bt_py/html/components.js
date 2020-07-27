@@ -1089,7 +1089,6 @@ class TickControls extends Component
 
   componentDidUpdate(prevProps) {
     if (this.props.runningCommands !== prevProps.runningCommands) {
-      console.log("COMPONENT DID UPDATE");
       this.setState({running_commands: this.props.runningCommands});
     }
   }
@@ -1366,11 +1365,12 @@ class LoadSaveControls extends Component
         // RESET = 5
         // SHUTDOWN = 6
         // SETUP_AND_SHUTDOWN = 7
-        command: 6
+        command: 7
       }),
       function(response) {
         this.props.onRunningCommandCompleted(6);
-        if (response.success) {
+        if (response.success || window.confirm("Could not shutdown tree before saving. Do you want to try saving anyway? Error message: \n" + response.error_message))
+        {
           console.log('called ControlTreeExecution service successfully');
           this.props.onNewRunningCommand(5);
           this.control_tree_execution_service.callService(
@@ -1437,11 +1437,11 @@ class LoadSaveControls extends Component
         // RESET = 5
         // SHUTDOWN = 6
         // SETUP_AND_SHUTDOWN = 7
-        command: 6
+        command: 7
       }),
       function(response) {
           this.props.onRunningCommandCompleted(6);
-          if (response.success || window.confirm("Could not shutdown tree before saving. Do you want to try saving anyway?"))
+          if (response.success || window.confirm("Could not shutdown tree before saving. Do you want to try saving anyway? Error message: \n" + response.error_message))
           {
             this.props.onError('Could not shutdown tree before saving:' + response.error_message);
             this.props.onNewRunningCommand(5);
