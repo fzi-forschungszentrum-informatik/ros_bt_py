@@ -161,6 +161,8 @@ class Subtree(Leaf):
         return new_state
 
     def _do_reset(self):
+        if not self.root:
+            return NodeMsg.IDLE
         new_state = self.root.reset()
         if self.debug_manager and self.debug_manager.get_publish_subtrees():
             self.manager.name = self.name
@@ -170,6 +172,8 @@ class Subtree(Leaf):
         return new_state
 
     def _do_shutdown(self):
+        if not self.root:
+            return NodeMsg.SHUTDOWN
         self.root.shutdown()
         if self.debug_manager and self.debug_manager.get_publish_subtrees():
             self.manager.name = self.name
