@@ -30,6 +30,23 @@ class TestSubtree(unittest.TestCase):
         subtree.untick()
         self.assertEqual(subtree.state, NodeMsg.IDLE)
 
+    def testSubtreeShutdownBeforeSetup(self):
+        subtree = Subtree(options=self.subtree_options)
+
+        self.assertTrue(subtree.outputs['load_success'])
+
+        subtree.shutdown()
+        self.assertEqual(subtree.state, NodeMsg.SHUTDOWN)
+
+    def testSubtreeResetBeforeSetup(self):
+        subtree = Subtree(options=self.subtree_options)
+
+        self.assertTrue(subtree.outputs['load_success'])
+
+        subtree.shutdown()
+        subtree.reset()
+        self.assertEqual(subtree.state, NodeMsg.IDLE)
+
     def testSubtreeLoadError(self):
         path = 'package://ros_bt_py/test/testdata/trees/this_tree_does_not_exist.yaml'
         subtree = Subtree(options={
