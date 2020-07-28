@@ -705,3 +705,47 @@ class Optional(Decorator):
         # pretty much guaranteed to have a better Utility score than
         # us)
         return UtilityBounds(can_execute=True)
+
+
+@define_bt_node(NodeConfig(
+    version='0.9.0',
+    options={},
+    inputs={'watch': str},
+    outputs={},
+    max_children=1))
+class Watch(Decorator):
+    """Untick child if watch string changed
+
+    """
+    def _do_setup(self):
+        self.previous_watch = float("NaN")
+        for child in self.children:
+            child.setup()
+
+    def _do_tick(self):
+        if len(self.children) == 0:
+            return NodeMsg.SUCCEEDED
+
+        child = self.children[0]
+        if self.previous_watch != self.inputs['watch']:
+            child.untick()
+            self.previous_watch = self.inputs['watch']
+
+        return self.children[0].tick()
+
+    def _do_shutdown(self):
+        self.previous_watch = float("NaN")
+        for child in self.children:
+            return child.shutdown()
+
+    def _do_reset(self):
+        self.previous_watch = float("NaN")
+        for child in self.children:
+            return child.reset()
+        return NodeMsg.IDLE
+
+    def _do_untick(self):
+        self.previous_watch = float("NaN")
+        for child in self.children:
+            return child.untick()
+        return NodeMsg.IDLE
