@@ -29,6 +29,7 @@ from ros_bt_py_msgs.srv import GetSubtreeResponse
 from ros_bt_py_msgs.srv import SetExecutionModeResponse
 from ros_bt_py_msgs.srv import SetOptionsRequest, SetOptionsResponse
 from ros_bt_py_msgs.srv import ModifyBreakpointsResponse
+from ros_bt_py_msgs.srv import ChangeTreeNameResponse
 from ros_bt_py_msgs.msg import Tree
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import DocumentedNode
@@ -436,8 +437,7 @@ class TreeManager(object):
                     response = self.parse_tree_yaml(tree_yaml=fix_yaml_response.fixed_yaml)
                 tree = response.tree
 
-        if tree.name == '':
-            tree.name = file_name
+        tree.name = file_name
 
         response.success = True
         response.tree = tree
@@ -973,6 +973,19 @@ class TreeManager(object):
         response = ReloadTreeResponse()
         response.success = load_response.success
         response.error_message = load_response.error_message
+
+        return response
+
+    @is_edit_service
+    def change_tree_name(self, request):
+        """Changes the name of the currently loaded tree
+        """
+        self.tree_msg.name = request.name
+
+        self.publish_info(self.debug_manager.get_debug_info_msg())
+
+        response = ChangeTreeNameResponse()
+        response.success = True
 
         return response
 

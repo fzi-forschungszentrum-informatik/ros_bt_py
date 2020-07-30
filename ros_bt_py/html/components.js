@@ -3890,6 +3890,12 @@ class FileBrowser extends Component{
       serviceType: 'ros_bt_py_msgs/SaveTree'
     });
 
+    this.change_tree_name_service = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'change_tree_name',
+      serviceType: 'ros_bt_py_msgs/ChangeTreeName'
+    });
+
     if (this.props.last_selected_package !== "")
     {
       this.selectPackageSearchResult(this.props.last_selected_package);
@@ -4329,6 +4335,18 @@ class FileBrowser extends Component{
                                   if (response.success) {
                                     console.log('called SaveTree service successfully');
                                     this.props.onChangeFileModal(null);
+                                    var change_tree_name_request = {
+                                      name: this.state.selected_file
+                                    };
+                                    this.change_tree_name_service.callService(
+                                      new ROSLIB.ServiceRequest(change_tree_name_request),
+                                      function(change_tree_name_response) {
+                                        if (change_tree_name_response.success) {
+                                          console.log('Successfully changed tree name');
+                                        } else {
+                                          console.log('Could not change tree name');
+                                        }
+                                      }.bind(this));
                                   }
                                   else {
                                     this.setState({error_message: response.error_message});

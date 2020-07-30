@@ -10,7 +10,8 @@ from ros_bt_py_msgs.srv import (AddNode, AddNodeAtIndex, ControlTreeExecution, M
                                 SetOptions, Continue, LoadTree, LoadTreeFromPath, MoveNode,
                                 ReplaceNode, GetSubtree, ClearTree, MorphNode, SaveTree, FixYaml)
 from ros_bt_py_msgs.srv import (LoadTreeRequest, ControlTreeExecutionRequest, GetMessageFields,
-                                GetPackageStructure, MigrateTree, GenerateSubtree, ReloadTree)
+                                GetPackageStructure, MigrateTree, GenerateSubtree, ReloadTree,
+                                ChangeTreeName)
 from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message
 from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.migration import MigrationManager
@@ -145,6 +146,10 @@ class TreeNode(object):
         self.reload_service = rospy.Service('~reload',
                                             ReloadTree,
                                             self.tree_manager.reload_tree)
+
+        self.change_tree_name_service = rospy.Service('~change_tree_name',
+                                            ChangeTreeName,
+                                            self.tree_manager.change_tree_name)
 
         self.fix_yaml_service = rospy.Service('~fix_yaml',
                                               FixYaml,

@@ -242,6 +242,9 @@ class PackageManager(object):
             save_path = save_path.rstrip(os.sep)  # split trailing /
             path, filename = os.path.split(save_path)
 
+            # set tree name to filename
+            request.tree.name = filename
+
             try:
                 os.makedirs(path)
             except OSError:
