@@ -148,8 +148,8 @@ class TreeNode(object):
                                             self.tree_manager.reload_tree)
 
         self.change_tree_name_service = rospy.Service('~change_tree_name',
-                                            ChangeTreeName,
-                                            self.tree_manager.change_tree_name)
+                                                      ChangeTreeName,
+                                                      self.tree_manager.change_tree_name)
 
         self.fix_yaml_service = rospy.Service('~fix_yaml',
                                               FixYaml,
