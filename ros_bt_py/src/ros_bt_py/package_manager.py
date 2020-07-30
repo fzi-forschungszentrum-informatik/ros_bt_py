@@ -13,7 +13,7 @@ from ros_bt_py_msgs.srv import GetMessageFields, GetMessageFieldsResponse, SaveT
 from ros_bt_py_msgs.srv import GetPackageStructureResponse, FixYamlRequest
 
 from ros_bt_py.node import increment_name
-from ros_bt_py.helpers import fix_yaml
+from ros_bt_py.helpers import fix_yaml, remove_input_output_values
 from ros_bt_py.ros_helpers import get_message_constant_fields
 
 
@@ -229,6 +229,9 @@ class PackageManager(object):
         in response.file_path in the package:// style
         """
         response = SaveTreeResponse()
+
+        # remove input and output values from nodes
+        request.tree = remove_input_output_values(tree=request.tree)
 
         try:
             package_path = self.rospack.get_path(request.package)

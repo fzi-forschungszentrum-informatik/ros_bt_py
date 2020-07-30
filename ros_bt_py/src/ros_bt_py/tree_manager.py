@@ -36,7 +36,7 @@ from ros_bt_py_msgs.msg import DocumentedNode
 from ros_bt_py_msgs.msg import NodeData, NodeDataLocation, NodeOptionWiring
 
 from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, TreeTopologyError
-from ros_bt_py.helpers import fix_yaml
+from ros_bt_py.helpers import fix_yaml, remove_input_output_values
 from ros_bt_py.node import Node, load_node_module, increment_name
 from ros_bt_py.debug_manager import DebugManager
 
@@ -474,7 +474,8 @@ class TreeManager(object):
             response.error_message = load_response.error_message
             return response
 
-        tree = load_response.tree
+        # remove input and output values from nodes
+        tree = remove_input_output_values(tree=load_response.tree)
 
         # we should have a tree message with all the info we need now
 
