@@ -435,7 +435,8 @@ class TreeManager(object):
 
                     # try parsing again with fixed tree_yaml:
                     response = self.parse_tree_yaml(tree_yaml=fix_yaml_response.fixed_yaml)
-                tree = response.tree
+                # remove input and output values from nodes
+                tree = remove_input_output_values(tree=response.tree)
 
         tree.name = file_name
 
@@ -474,8 +475,7 @@ class TreeManager(object):
             response.error_message = load_response.error_message
             return response
 
-        # remove input and output values from nodes
-        tree = remove_input_output_values(tree=load_response.tree)
+        tree = load_response.tree
 
         # we should have a tree message with all the info we need now
 
