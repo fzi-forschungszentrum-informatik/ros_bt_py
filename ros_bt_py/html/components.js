@@ -775,6 +775,8 @@ function ExecutionBar(props)
         ros={props.ros}
         connected={props.connected}
         cm_available={props.cm_available}
+        packages_available={props.packages_available}
+        messages_available={props.messages_available}
         currentNamespace={props.currentNamespace}
         onNamespaceChange={props.onNamespaceChange}
         onError={props.onError}/>
@@ -939,12 +941,31 @@ class NamespaceSelect extends Component
     if (!this.props.connected) {
       connected_class = "fas fa-wifi disconnected";
       connected_title = "Disconnected";
+    } else {
+      if (!this.props.packages_available)
+      {
+        connected_class = "fas fa-wifi packages-missing";
+        connected_title += ", package list not (yet) available. File browser will not work.";
+      } else if (!this.props.messages_available)
+      {
+        connected_class = "fas fa-wifi messages-missing";
+        connected_title += ", message info not (yet) available. ROS-type autocompletion will not work.";
+      }
     }
 
     if (this.props.cm_available && this.props.connected)
     {
       connected_class = "fas fa-wifi cm_available"
       connected_title = "Connected, Capability Manager available"
+      if (!this.props.packages_available)
+      {
+        connected_class = "fas fa-wifi packages-missing";
+        connected_title += ", package list not (yet) available. File browser will not work.";
+      } else if (!this.props.messages_available)
+      {
+        connected_class = "fas fa-wifi messages-missing";
+        connected_title += ", message info not (yet) available. ROS-type autocompletion will not work.";
+      }
     }
 
     return (
@@ -4503,6 +4524,11 @@ class FileBrowser extends Component{
     } else if (this.props.mode === "load")
     {
       title = "Load tree from package";
+    }
+
+    if (!this.props.packages_available)
+    {
+      title += ". Please wait, package list is loading...";
     }
 
     var package_name_element = null;

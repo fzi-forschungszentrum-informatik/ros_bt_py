@@ -336,6 +336,16 @@ div.jsoneditor-menu {
   color: #007bff;
 }
 
+.packages-missing {
+  padding: 0.25rem;
+  color: #ff7300;
+}
+
+.messages-missing {
+  padding: 0.25rem;
+  color: #ffd000;
+}
+
 .filebrowser-bar:hover {
   background-color: #007bff;
   color: #ffffff;
