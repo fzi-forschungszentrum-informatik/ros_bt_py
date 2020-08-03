@@ -197,6 +197,7 @@ class TreeNode(object):
         self.package_manager = PackageManager(publish_message_list_callback=self.message_list_pub,
                                               publish_packages_list_callback=self.packages_list_pub)
 
+        self.package_manager.publish_packages_list()
         self.get_message_fields_service = rospy.Service('~get_message_fields',
                                                         GetMessageFields,
                                                         self.package_manager.get_message_fields)
@@ -213,6 +214,7 @@ class TreeNode(object):
                                                SaveTree,
                                                self.package_manager.save_tree)
 
+        self.package_manager.publish_message_list()
         rospy.loginfo("initialized package manager")
         rospy.loginfo("initialized tree node")
 

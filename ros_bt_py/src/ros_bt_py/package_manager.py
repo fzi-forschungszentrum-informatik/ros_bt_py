@@ -29,15 +29,7 @@ class PackageManager(object):
         self.item_id = 0
 
         self.message_list_pub = publish_message_list_callback
-        if self.message_list_pub is None:
-            rospy.loginfo('No callback for publishing message list data provided.')
-        else:
-            self.publish_message_list()
         self.packages_list_pub = publish_packages_list_callback
-        if self.packages_list_pub is None:
-            rospy.loginfo('No callback for publishing packages list data provided.')
-        else:
-            self.publish_packages_list()
 
     def _get_package_paths(self, pkgname, rospack):
         _catkin_workspace_to_source_spaces = {}
@@ -58,6 +50,9 @@ class PackageManager(object):
         """Publishes a list of all ROS messages/services available on the system.
         Uses a similar strategy to rosmsg/rossrv to detect message/service files.
         """
+        if self.message_list_pub is None:
+            rospy.logwarn('No callback for publishing message list data provided.')
+            return
         rospack = rospkg.RosPack()
 
         messages = []
@@ -135,6 +130,9 @@ class PackageManager(object):
         return response
 
     def publish_packages_list(self):
+        if self.packages_list_pub is None:
+            rospy.logwarn('No callback for publishing packages list data provided.')
+            return
         # get source_paths, which allows us to restrict the package list to packages
         # within the source space
         # this is needed because we should only ever add files to packages in the source space

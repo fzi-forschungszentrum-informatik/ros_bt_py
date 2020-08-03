@@ -46,6 +46,12 @@ class TestPackageManager(unittest.TestCase):
     def testPackageManagerWithoutCallbacks(self):
         package_manager = PackageManager(publish_message_list_callback=None,
                                          publish_packages_list_callback=None)
+        package_manager.publish_message_list()
+        package_manager.publish_packages_list()
+
+    def testPackageManagerWithCallbacks(self):
+        self.package_manager.publish_message_list()
+        self.package_manager.publish_packages_list()
 
     def testGetMessageFields(self):
         request = GetMessageFieldsRequest(
