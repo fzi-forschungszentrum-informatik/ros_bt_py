@@ -71,6 +71,8 @@ class App extends Component
       nodelist_visible: true,
       executionbar_visible: true,
       running_commands: new Set(),
+      packages_available: false,
+      messages_available: false,
     };
 
     this.nodes_fuse = null;
@@ -82,7 +84,10 @@ class App extends Component
     }.bind(this));
 
     ros.on("close", function(e) {
-      this.setState({connected: false});
+      this.setState({connected: false,
+                     cm_available: false,
+                     packages_available: false,
+                     messages_available: false});
       console.log("Connection to websocket closed, reconnecting in 5s");
       setTimeout(function() {
         ros.connect(ros_uri);
@@ -284,6 +289,7 @@ class App extends Component
         "msg"]
     };
     this.messagesFuse = new Fuse(this.messages, options);
+    this.setState({messages_available: true});
   }
 
   onPackagesUpdate(msg)
@@ -305,6 +311,8 @@ class App extends Component
       ]
     };
     this.packagesFuse = new Fuse(this.packages, options);
+
+    this.setState({packages_available: true});
   }
 
   onCapabilitiesUpdate(msg)
@@ -1052,6 +1060,8 @@ class App extends Component
                       ros={this.state.ros}
                       connected={this.state.connected}
                       cm_available={this.state.cm_available}
+                      packages_available={this.state.packages_available}
+                      messages_available={this.state.messages_available}
                       subtreeNames={this.state.subtree_names}
                       currentNamespace={this.state.bt_namespace}
                       tree_message={this.state.last_tree_msg}
@@ -1083,6 +1093,7 @@ class App extends Component
           <FileBrowser ros={this.state.ros}
                        bt_namespace={this.state.bt_namespace}
                        packagesFuse={this.packagesFuse}
+                       packages_available={this.state.packages_available}
                        onError={this.onError}
                        mode={this.state.show_file_modal}
                        tree_message={this.state.last_tree_msg}

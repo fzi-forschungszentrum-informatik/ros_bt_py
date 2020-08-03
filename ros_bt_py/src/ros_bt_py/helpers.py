@@ -108,6 +108,18 @@ def fix_yaml(request):
     return response
 
 
+def remove_input_output_values(tree):
+    """Removes all input and output values from the tree nodes.
+    This is achieved by replacing every nodes input/output serialized_value with "null"
+    """
+    for node in tree.nodes:
+        for node_input in node.inputs:
+            node_input.serialized_value = "null"
+        for node_output in node.outputs:
+            node_output.serialized_value = "null"
+    return tree
+
+
 # handling nested objects,
 # see https://stackoverflow.com/questions/31174295/getattr-and-setattr-on-nested-objects
 def rgetattr(obj, attr, *args):

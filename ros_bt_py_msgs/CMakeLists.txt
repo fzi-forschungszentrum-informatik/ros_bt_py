@@ -34,6 +34,7 @@ add_service_files(
   FILES
   AddNode.srv
   AddNodeAtIndex.srv
+  ChangeTreeName.srv
   ClearTree.srv
   Continue.srv
   ControlTreeExecution.srv

@@ -17,7 +17,8 @@ from ros_bt_py_msgs.srv import (WireNodeDataRequest, AddNodeRequest, RemoveNodeR
                                 MorphNodeRequest, ClearTreeRequest, LoadTreeFromPathRequest,
                                 SetExecutionModeResponse, ModifyBreakpointsRequest,
                                 GetSubtreeRequest, ReloadTreeRequest, WireNodeDataResponse,
-                                RemoveNodeResponse, GenerateSubtreeRequest, AddNodeAtIndexRequest)
+                                RemoveNodeResponse, GenerateSubtreeRequest, AddNodeAtIndexRequest,
+                                ChangeTreeNameRequest)
 
 from ros_bt_py.node import Node, Leaf, FlowControl, define_bt_node
 from ros_bt_py.node_config import NodeConfig
@@ -2352,7 +2353,7 @@ class TestTreeManager(unittest.TestCase):
 
         response = self.manager.load_tree(load_request)
         self.assertTrue(get_success(response))
-        self.assertEqual(self.manager.tree_msg.name, 'hello there')
+        self.assertEqual(self.manager.tree_msg.name, 'with_name.yaml')
 
     def testLoadFromInvalidFiles(self):
         load_request = LoadTreeRequest(tree=Tree(
@@ -2524,6 +2525,13 @@ class TestTreeManager(unittest.TestCase):
         reload_response = self.manager.reload_tree(request=ReloadTreeRequest())
 
         self.assertTrue(get_success(reload_response))
+
+    def testChangeTreeName(self):
+        change_response = self.manager.change_tree_name(request=ChangeTreeNameRequest(name='hi'))
+
+        self.assertTrue(get_success(change_response))
+
+        self.assertEqual(self.tree_msg.name, 'hi')
 
     def testGenerateSubtree(self):
         res = self.manager.generate_subtree(request=GenerateSubtreeRequest())

@@ -10,7 +10,8 @@ from ros_bt_py_msgs.srv import (AddNode, AddNodeAtIndex, ControlTreeExecution, M
                                 SetOptions, Continue, LoadTree, LoadTreeFromPath, MoveNode,
                                 ReplaceNode, GetSubtree, ClearTree, MorphNode, SaveTree, FixYaml)
 from ros_bt_py_msgs.srv import (LoadTreeRequest, ControlTreeExecutionRequest, GetMessageFields,
-                                GetPackageStructure, MigrateTree, GenerateSubtree, ReloadTree)
+                                GetPackageStructure, MigrateTree, GenerateSubtree, ReloadTree,
+                                ChangeTreeName)
 from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message
 from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.migration import MigrationManager
@@ -146,6 +147,10 @@ class TreeNode(object):
                                             ReloadTree,
                                             self.tree_manager.reload_tree)
 
+        self.change_tree_name_service = rospy.Service('~change_tree_name',
+                                                      ChangeTreeName,
+                                                      self.tree_manager.change_tree_name)
+
         self.fix_yaml_service = rospy.Service('~fix_yaml',
                                               FixYaml,
                                               fix_yaml)
@@ -192,6 +197,7 @@ class TreeNode(object):
         self.package_manager = PackageManager(publish_message_list_callback=self.message_list_pub,
                                               publish_packages_list_callback=self.packages_list_pub)
 
+        self.package_manager.publish_packages_list()
         self.get_message_fields_service = rospy.Service('~get_message_fields',
                                                         GetMessageFields,
                                                         self.package_manager.get_message_fields)
@@ -208,6 +214,7 @@ class TreeNode(object):
                                                SaveTree,
                                                self.package_manager.save_tree)
 
+        self.package_manager.publish_message_list()
         rospy.loginfo("initialized package manager")
         rospy.loginfo("initialized tree node")
 

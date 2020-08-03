@@ -775,6 +775,8 @@ function ExecutionBar(props)
         ros={props.ros}
         connected={props.connected}
         cm_available={props.cm_available}
+        packages_available={props.packages_available}
+        messages_available={props.messages_available}
         currentNamespace={props.currentNamespace}
         onNamespaceChange={props.onNamespaceChange}
         onError={props.onError}/>
@@ -939,12 +941,31 @@ class NamespaceSelect extends Component
     if (!this.props.connected) {
       connected_class = "fas fa-wifi disconnected";
       connected_title = "Disconnected";
+    } else {
+      if (!this.props.packages_available)
+      {
+        connected_class = "fas fa-wifi packages-missing";
+        connected_title += ", package list not (yet) available. File browser will not work.";
+      } else if (!this.props.messages_available)
+      {
+        connected_class = "fas fa-wifi messages-missing";
+        connected_title += ", message info not (yet) available. ROS-type autocompletion will not work.";
+      }
     }
 
     if (this.props.cm_available && this.props.connected)
     {
       connected_class = "fas fa-wifi cm_available"
       connected_title = "Connected, Capability Manager available"
+      if (!this.props.packages_available)
+      {
+        connected_class = "fas fa-wifi packages-missing";
+        connected_title += ", package list not (yet) available. File browser will not work.";
+      } else if (!this.props.messages_available)
+      {
+        connected_class = "fas fa-wifi messages-missing";
+        connected_title += ", message info not (yet) available. ROS-type autocompletion will not work.";
+      }
     }
 
     return (
@@ -3890,6 +3911,12 @@ class FileBrowser extends Component{
       serviceType: 'ros_bt_py_msgs/SaveTree'
     });
 
+    this.change_tree_name_service = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'change_tree_name',
+      serviceType: 'ros_bt_py_msgs/ChangeTreeName'
+    });
+
     if (this.props.last_selected_package !== "")
     {
       this.selectPackageSearchResult(this.props.last_selected_package);
@@ -4329,6 +4356,18 @@ class FileBrowser extends Component{
                                   if (response.success) {
                                     console.log('called SaveTree service successfully');
                                     this.props.onChangeFileModal(null);
+                                    var change_tree_name_request = {
+                                      name: this.state.selected_file
+                                    };
+                                    this.change_tree_name_service.callService(
+                                      new ROSLIB.ServiceRequest(change_tree_name_request),
+                                      function(change_tree_name_response) {
+                                        if (change_tree_name_response.success) {
+                                          console.log('Successfully changed tree name');
+                                        } else {
+                                          console.log('Could not change tree name');
+                                        }
+                                      }.bind(this));
                                   }
                                   else {
                                     this.setState({error_message: response.error_message});
@@ -4485,6 +4524,11 @@ class FileBrowser extends Component{
     } else if (this.props.mode === "load")
     {
       title = "Load tree from package";
+    }
+
+    if (!this.props.packages_available)
+    {
+      title += ". Please wait, package list is loading...";
     }
 
     var package_name_element = null;
