@@ -5,11 +5,3 @@ include:
 
 variables:
   BUILD_NOETIC: "true"
-
-run_tests_focal:
-  before_script:
-    - git clone https://github.com/ros/ros_comm.git ${CATKIN_ROOT}/src/ros_comm
-    - mv ${CATKIN_ROOT}/src/ros_comm/tools/rostest ${CATKIN_ROOT}/src/rostest
-    - sed -i 's/CATKIN_ENABLE_TESTING/FALSE/g' ${CATKIN_ROOT}/src/rostest/CMakeLists.txt
-    - rm -rf ${CATKIN_ROOT}/src/ros_comm/
-    - rm -rf ${CATKIN_ROOT}/src/rostest/test/
