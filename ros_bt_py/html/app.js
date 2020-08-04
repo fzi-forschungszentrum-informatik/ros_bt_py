@@ -856,7 +856,7 @@ class App extends Component
       this.setState({filtered_nodes: results});
     }
 
-    if (this.nodes_fuse)
+    if (this.capabilities_fuse)
     {
       var results = this.capabilities_fuse.search(e.target.value);
       this.setState({filtered_capabilities: results});

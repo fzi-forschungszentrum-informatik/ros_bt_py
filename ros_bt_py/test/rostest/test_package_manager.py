@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from copy import deepcopy
 from threading import Lock
 import unittest
 
@@ -11,9 +12,10 @@ import rospy
 
 from ros_bt_py_msgs.msg import Tree
 from ros_bt_py_msgs.srv import GetMessageFieldsRequest, GetPackageStructureRequest
-from ros_bt_py_msgs.srv import SaveTreeRequest
+from ros_bt_py_msgs.srv import SaveTreeRequest, LoadTreeRequest, ControlTreeExecutionRequest
 
 from ros_bt_py.package_manager import PackageManager
+from ros_bt_py.tree_manager import TreeManager
 
 PKG = 'ros_bt_py'
 
@@ -198,6 +200,55 @@ class TestPackageManager(unittest.TestCase):
         response = self.package_manager.save_tree(request=request)
 
         self.assertTrue(response.success)
+
+    def testSaveAndReloadTree(self):
+        manager = TreeManager()
+        load_request = LoadTreeRequest(
+            tree=Tree(
+                path='package://ros_bt_py/test/testdata/trees/load_save.yaml'),
+            permissive=True)
+        response = manager.load_tree(load_request)
+
+        self.assertTrue(response.success)
+
+        tree_loaded = deepcopy(manager.to_msg())
+
+        manager.tick(once=True)
+
+        tree_ticked = deepcopy(manager.to_msg())
+
+        self.assertNotEqual(tree_loaded, tree_ticked)
+
+        execution_request = ControlTreeExecutionRequest(
+            command=ControlTreeExecutionRequest.SHUTDOWN)
+        self.assertTrue(manager.control_execution(execution_request).success)
+
+        tree_shutdown = deepcopy(manager.to_msg())
+
+        request = SaveTreeRequest(
+            filename='test/testdata/save_data/generated_files/generated_file',
+            package='ros_bt_py',
+            tree=tree_shutdown,
+            allow_overwrite=True,
+            allow_rename=False
+        )
+
+        response = self.package_manager.save_tree(request=request)
+
+        self.assertTrue(response.success)
+
+        load_request = LoadTreeRequest(
+            tree=Tree(
+                path='package://ros_bt_py/test/testdata/save_data/generated_files/generated_file'),
+            permissive=True)
+        response = manager.load_tree(load_request)
+
+        self.assertTrue(response.success)
+
+        tree_loaded_again = deepcopy(manager.to_msg())
+        tree_loaded_again.name = 'load_save.yaml'
+
+        self.assertEqual(tree_loaded, tree_loaded_again)
 
     def testSaveTreeWithMockedRename(self):
         def side_effect(value):

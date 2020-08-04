@@ -1386,57 +1386,28 @@ class LoadSaveControls extends Component
         // RESET = 5
         // SHUTDOWN = 6
         // SETUP_AND_SHUTDOWN = 7
-        command: 7
+        command: 6
       }),
       function(response) {
         this.props.onRunningCommandCompleted(6);
         if (response.success || window.confirm("Could not shutdown tree before saving. Do you want to try saving anyway? Error message: \n" + response.error_message))
         {
           console.log('called ControlTreeExecution service successfully');
-          this.props.onNewRunningCommand(5);
-          this.control_tree_execution_service.callService(
-            new ROSLIB.ServiceRequest({
-              // TICK_ONCE = 1
-              // TICK_PERIODICALLY = 2
-              // TICK_UNTIL_RESULT = 3
-              // STOP = 4
-              // RESET = 5
-              // SHUTDOWN = 6
-              // SETUP_AND_SHUTDOWN = 7
-              command: 5
-            }),
-            function(response) {
-              this.props.onRunningCommandCompleted(5);
-              if (response.success) {
-                console.log('called ControlTreeExecution service successfully');
-              }
-              else {
-                this.props.onError('Could not reset tree before saving, the tree might be filled with old "output" values. ' + response.error_message);
-              }
-              var msg = jsyaml.safeDump(this.props.tree_message);
-              this.downloadURI('data:text/plain,'+encodeURIComponent(msg), "tree.yaml");
-              this.props.onNewRunningCommand(6);
-              this.control_tree_execution_service.callService(
-                new ROSLIB.ServiceRequest({
-                  // TICK_ONCE = 1
-                  // TICK_PERIODICALLY = 2
-                  // TICK_UNTIL_RESULT = 3
-                  // STOP = 4
-                  // RESET = 5
-                  // SHUTDOWN = 6
-                  // SETUP_AND_SHUTDOWN = 7
-                  command: 6
-                }),
-                function(response) {
-                  this.props.onRunningCommandCompleted(6);
-                  if (response.success) {
-                    console.log('shutdown tree successfully');
-                  }
-                }.bind(this));
-            }.bind(this));
-        }
-        else {
-          this.props.onError('Could not shutdown tree before saving:' + response.error_message);
+
+          var tree = this.props.tree_message;
+          // remove inputs / outputs
+          for (var node in tree.nodes) {
+            for (var node_input in tree.nodes[node].inputs) {
+              tree.nodes[node].inputs[node_input].serialized_value = "null";
+            }
+            for (var node_output in tree.nodes[node].outputs) {
+              tree.nodes[node].outputs[node_output].serialized_value = "null";
+            }
+          }
+
+          var msg = jsyaml.safeDump(tree);
+
+          this.downloadURI('data:text/plain,'+encodeURIComponent(msg), "tree.yaml");
         }
     }.bind(this));
   }
@@ -1458,53 +1429,20 @@ class LoadSaveControls extends Component
         // RESET = 5
         // SHUTDOWN = 6
         // SETUP_AND_SHUTDOWN = 7
-        command: 7
+        command: 6
       }),
       function(response) {
           this.props.onRunningCommandCompleted(6);
-          if (response.success || window.confirm("Could not shutdown tree before saving. Do you want to try saving anyway? Error message: \n" + response.error_message))
+          if (response.success)
           {
+            this.props.onChangeFileModal('save');
+          } else {
             this.props.onError('Could not shutdown tree before saving:' + response.error_message);
-            this.props.onNewRunningCommand(5);
-            this.control_tree_execution_service.callService(
-              new ROSLIB.ServiceRequest({
-                // TICK_ONCE = 1
-                // TICK_PERIODICALLY = 2
-                // TICK_UNTIL_RESULT = 3
-                // STOP = 4
-                // RESET = 5
-                // SHUTDOWN = 6
-                // SETUP_AND_SHUTDOWN = 7
-                command: 5
-              }),
-              function(response) {
-                this.props.onRunningCommandCompleted(5);
-                if (response.success) {
-                  console.log('called ControlTreeExecution service successfully');
-                }
-                else {
-                  this.props.onError('Could not reset tree before saving, the tree might be filled with old "output" values. ' + response.error_message);
-                }
-                this.props.onChangeFileModal('save');
-                this.props.onNewRunningCommand(6);
-                this.control_tree_execution_service.callService(
-                  new ROSLIB.ServiceRequest({
-                    // TICK_ONCE = 1
-                    // TICK_PERIODICALLY = 2
-                    // TICK_UNTIL_RESULT = 3
-                    // STOP = 4
-                    // RESET = 5
-                    // SHUTDOWN = 6
-                    // SETUP_AND_SHUTDOWN = 7
-                    command: 6
-                  }),
-                  function(response) {
-                    this.props.onRunningCommandCompleted(6);
-                    if (response.success) {
-                      console.log('shutdown tree successfully');
-                    }
-                  }.bind(this));
-              }.bind(this));
+
+            if (window.confirm("Could not shutdown tree before saving. Do you want to try saving anyway? Error message: \n" + response.error_message))
+            {
+              this.props.onChangeFileModal('save');
+            }
           }
     }.bind(this));
   }
