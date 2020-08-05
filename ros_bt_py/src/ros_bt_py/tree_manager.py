@@ -1882,20 +1882,16 @@ class TreeManager(object):
         return name
 
     def to_msg(self):
-        # TODO(nberg): Maybe switch over to using
-        # root.get_subtree_msg(), but for now we maybe don't want that
-        # overhead?
-        self.tree_msg.nodes = [node.to_msg() for node in self.nodes.values()]
-
-        # TODO(khermann): using root.get_subtree_msg() here anyway
-        # to get the correct public_node_data. Monitor overhead of this decision
         try:
             root = self.find_root()
             if root is not None:
                 subtree = root.get_subtree_msg()[0]
+                self.tree_msg.nodes = subtree.nodes
                 self.tree_msg.public_node_data = subtree.public_node_data
         except TreeTopologyError as exc:
             rospy.logwarn("Strange topology %s" % exc)
+            # build a tree_msg out of this strange topology, so the user can fix it in the editor
+            self.tree_msg.nodes = [node.to_msg() for node in self.nodes.values()]
         return self.tree_msg
 
 
