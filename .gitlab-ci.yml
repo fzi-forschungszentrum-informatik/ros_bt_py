@@ -6,5 +6,20 @@ include:
 build_bionic:
   needs: ["catkin_lint_bionic"]
 
+build_focal:
+  needs: ["catkin_lint_focal"]
+
+build_xenial:
+  needs: ["catkin_lint_xenial"]
+
+run_tests_bionic:
+  needs: ["build_bionic"]
+
+run_tests_focal:
+  needs: ["build_focal"]
+
+run_tests_xenial:
+  needs: ["build_xenial"]
+
 variables:
   BUILD_NOETIC: "true"
