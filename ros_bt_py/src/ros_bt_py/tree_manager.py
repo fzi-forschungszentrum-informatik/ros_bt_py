@@ -141,6 +141,7 @@ class TreeManager(object):
         self.tree_msg = Tree()
         self.tree_msg.name = name if name else ''
         self.tree_msg.tick_frequency_hz = tick_frequency_hz
+        self.rate = rospy.Rate(hz=self.tree_msg.tick_frequency_hz)
 
         self._last_error = None
         with self._state_lock:
@@ -249,10 +250,9 @@ class TreeManager(object):
             root.setup()
             with self._state_lock:
                 self._setting_up = False
-        sleep_duration_sec = (1.0 / self.tree_msg.tick_frequency_hz)
 
         while True:
-            start_time = time.time()
+            #start_time = time.time()
             if self.get_state() == Tree.STOP_REQUESTED:
                 break
             root.tick()
@@ -269,12 +269,10 @@ class TreeManager(object):
                     self.tree_msg.state = Tree.WAITING_FOR_TICK
                 return
 
-            tick_duration = time.time() - start_time
-            if tick_duration > sleep_duration_sec:
+            if self.rate.remaining().to_nsec() < 0:
                 rospy.logwarn('Tick took longer than set period, cannot tick at %.2f Hz',
                               self.tree_msg.tick_frequency_hz)
-            else:
-                rospy.sleep(sleep_duration_sec - tick_duration)
+            self.rate.sleep()
 
         # Ensure all nodes are stopped and not doing anything in
         # the background.
@@ -542,6 +540,7 @@ class TreeManager(object):
         if self.tree_msg.tick_frequency_hz == 0.0:
             rospy.logwarn('Tick frequency of loaded tree is 0, defaulting to 10Hz')
             self.tree_msg.tick_frequency_hz = 10.0
+            self.rate = rospy.Rate(hz=self.tree_msg.tick_frequency_hz)
         # Ensure Tree is editable after loading
         with self._state_lock:
             self.tree_msg.state = Tree.EDITABLE
@@ -826,9 +825,11 @@ class TreeManager(object):
                     # Use provided tick frequency, if any
                     if request.tick_frequency_hz != 0:
                         self.tree_msg.tick_frequency_hz = request.tick_frequency_hz
+                        self.rate = rospy.Rate(hz=self.tree_msg.tick_frequency_hz)
                     if self.tree_msg.tick_frequency_hz == 0:
                         rospy.logwarn('Loaded tree had frequency 0Hz. Defaulting to 10Hz')
                         self.tree_msg.tick_frequency_hz = 10.0
+                        self.rate = rospy.Rate(hz=self.tree_msg.tick_frequency_hz)
                     self._tick_thread.start()
                     response.success = True
                     response.tree_state = Tree.TICKING
