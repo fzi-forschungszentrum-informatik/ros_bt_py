@@ -17,6 +17,7 @@ from ros_bt_py.nodes.subtree import Subtree
 
 class TestDebugManager(unittest.TestCase):
     def setUp(self):
+        rospy.rostime.set_rostime_initialized(True)
         self.debug_settings_msg = None
         self.debug_info_msg = None
         self.diagnostics_messages = []
