@@ -201,16 +201,17 @@ class TreeManager(object):
             self.tick()
         except Exception as ex:
             # TODO(nberg): don't catch the ROSException that is raised on shutdown
-            rospy.logerr('Encountered error while ticking tree: %s, %s',
-                         ex,
-                         traceback.format_exc())
+            rospy.logerr('Encountered error while ticking tree: %s, %s' % (
+                ex,
+                traceback.format_exc()
+            ))
             with self._state_lock:
                 if self.show_traceback_on_exception:
-                    self._last_error = '{}, {}'.format(
+                    self._last_error = '%s, %s' % (
                         ex,
                         traceback.format_exc())
                 else:
-                    self._last_error = '{}'.format(ex)
+                    self._last_error = '%s' % (ex)
 
                 self.tree_msg.state = Tree.ERROR
 
@@ -269,7 +270,7 @@ class TreeManager(object):
                 return
 
             if self.rate.remaining().to_nsec() < 0:
-                rospy.logwarn('Tick took longer than set period, cannot tick at %.2f Hz',
+                rospy.logwarn('Tick took longer than set period, cannot tick at %.2f Hz' %
                               self.tree_msg.tick_frequency_hz)
             self.rate.sleep()
 
@@ -1517,8 +1518,8 @@ class TreeManager(object):
                 and len(old_node.children) > new_node_max_children):
             return ReplaceNodeResponse(
                 success=False,
-                error_message=("Replacement node (\"{}\") does not support the number of"
-                               "children required ({} has {} children, {} supports {}.").format(
+                error_message=("Replacement node (\"%s\") does not support the number of"
+                               "children required (%s has %s children, %s supports %s.") % (
                                    request.new_node_name,
                                    request.old_node_name,
                                    len(old_node.children),
