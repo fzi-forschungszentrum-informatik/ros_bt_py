@@ -251,7 +251,6 @@ class TreeManager(object):
                 self._setting_up = False
 
         while True:
-            #start_time = time.time()
             if self.get_state() == Tree.STOP_REQUESTED:
                 break
             root.tick()
