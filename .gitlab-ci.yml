@@ -3,5 +3,8 @@ include:
     ref: master
     file: '/gitlab-ci-yml/catkin_pipeline.yml'
 
+build_bionic:
+  needs: ["catkin_lint_bionic"]
+
 variables:
   BUILD_NOETIC: "true"
