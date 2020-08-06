@@ -32,6 +32,11 @@ class TestNodeData(unittest.TestCase):
         data.set(1)
         self.assertEqual(data.get(), 1)
 
+    def testRepr(self):
+        data = NodeData(data_type=int)
+        data.set(1)
+        self.assertEqual(repr(data), '1 (int) [#]')
+
     def testUpdated(self):
         data = NodeData(data_type=int, initial_value=0)
 
