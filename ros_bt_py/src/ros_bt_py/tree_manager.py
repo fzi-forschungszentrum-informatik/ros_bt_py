@@ -159,7 +159,7 @@ class TreeManager(object):
         with self._state_lock:
             return self.tree_msg.state
 
-    def publish_info(self, debug_info_msg=None):
+    def publish_info(self, debug_info_msg=None, ticked=False):
         """Publish the current tree state using the callback supplied to the constructor
 
         In most cases, you'll want that callback to publish to a ROS
@@ -168,7 +168,7 @@ class TreeManager(object):
         If debugging is enabled, also publish debug info.
         """
         if self.publish_tree:
-            self.publish_tree(self.to_msg())
+            self.publish_tree(self.to_msg(ticked=ticked))
         if debug_info_msg and self.publish_debug_info:
             self.publish_debug_info(debug_info_msg)
 
@@ -256,7 +256,7 @@ class TreeManager(object):
             if self.get_state() == Tree.STOP_REQUESTED:
                 break
             root.tick()
-            self.publish_info(self.debug_manager.get_debug_info_msg())
+            self.publish_info(self.debug_manager.get_debug_info_msg(), ticked=True)
 
             if self._stop_after_result:
                 if root.state != NodeMsg.RUNNING:
@@ -1882,7 +1882,11 @@ class TreeManager(object):
             name = increment_name(name)
         return name
 
-    def to_msg(self):
+    def to_msg(self, ticked=False):
+        if ticked:
+            # early exit during ticking
+            self.tree_msg.nodes = [node.to_msg() for node in self.nodes.values()]
+            return self.tree_msg
         try:
             root = self.find_root()
             if root is not None:
