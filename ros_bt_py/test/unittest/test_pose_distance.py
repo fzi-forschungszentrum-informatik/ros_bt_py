@@ -1,4 +1,3 @@
-import jsonpickle
 import unittest
 
 from geometry_msgs.msg import Point, Pose, Quaternion

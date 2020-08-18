@@ -66,10 +66,14 @@ class TestNodeDataMap(unittest.TestCase):
 
         if sys.version_info[0] == 2:
             self.assertEqual(
-                self.map.get_serialized_type('integer'), '{"py/type": "__builtin__.int"}')
+                self.map.get_serialized_type('integer'), '{"py/type": "builtins.int"}')
+            self.assertEqual(
+                self.map.get_type('integer'), int)
         else:
             self.assertEqual(
                 self.map.get_serialized_type('integer'), '{"py/type": "builtins.int"}')
+            self.assertEqual(
+                self.map.get_type('integer'), int)
         self.assertRaises(KeyError, self.map.get_serialized_type, 'does_not_exist')
 
         self.assertEqual(self.map.get_type('integer'), int)

@@ -1,5 +1,4 @@
 from copy import deepcopy
-import jsonpickle
 import random
 import unittest
 import types
@@ -15,6 +14,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 from ros_bt_py.nodes.passthrough_node import PassthroughNode
 from ros_bt_py.nodes.mock_nodes import MockUtilityLeaf
 from ros_bt_py.node_data import NodeDataMap, NodeData as NodeDataObj
+from ros_bt_py.helpers import json_encode, json_decode
 
 try:
     range = xrange
@@ -547,9 +547,9 @@ class TestPassthroughNode(unittest.TestCase):
             module="ros_bt_py.nodes.passthrough_node",
             node_class="PassthroughNode",
             inputs=[NodeData(key="in",
-                             serialized_value=jsonpickle.encode(42))],
+                             serialized_value=json_encode(42))],
             options=[NodeData(key='passthrough_type',
-                              serialized_value=jsonpickle.encode(int))])
+                              serialized_value=json_encode(int))])
         instance = Node.from_msg(msg)
 
         node_class = type(instance)
@@ -586,7 +586,7 @@ class TestPassthroughNode(unittest.TestCase):
             node_class="PassthroughNode",
             inputs=[NodeData(key="in", serialized_value='nope')],
             options=[NodeData(key="passthrough_type",
-                              serialized_value=jsonpickle.encode(int))])
+                              serialized_value=json_encode(int))])
         self.assertRaises(BehaviorTreeException, Node.from_msg, msg)
 
     def testNodeFromMsgInvalidOutput(self):
@@ -594,10 +594,10 @@ class TestPassthroughNode(unittest.TestCase):
             module="ros_bt_py.nodes.passthrough_node",
             node_class="PassthroughNode",
             inputs=[NodeData(key="in",
-                             serialized_value=jsonpickle.encode(42))],
+                             serialized_value=json_encode(42))],
             outputs=[NodeData(key="out", serialized_value='nope')],
             options=[NodeData(key="passthrough_type",
-                              serialized_value=jsonpickle.encode(int))])
+                              serialized_value=json_encode(int))])
         self.assertRaises(BehaviorTreeException, Node.from_msg, msg)
 
     def testNodeToMsg(self):
@@ -609,7 +609,7 @@ class TestPassthroughNode(unittest.TestCase):
         self.assertEqual(msg.node_class, PassthroughNode.__name__)
         self.assertEqual(len(msg.options), len(node.options))
         self.assertEqual(msg.options[0].key, 'passthrough_type')
-        self.assertEqual(jsonpickle.decode(msg.options[0].serialized_value), int)
+        self.assertEqual(json_decode(msg.options[0].serialized_value), int)
         self.assertEqual(len(msg.inputs), len(node.inputs))
         self.assertEqual(len(msg.outputs), len(node.outputs))
         self.assertEqual(msg.state, node.state)
@@ -628,8 +628,8 @@ class TestPassthroughNode(unittest.TestCase):
             node_class="PassthroughNode",
             version="0.9.0",
             options=[NodeData(key='passthrough_type',
-                              serialized_value=jsonpickle.encode(int),
-                              serialized_type=jsonpickle.encode(type))])
+                              serialized_value=json_encode(int),
+                              serialized_type=json_encode(type))])
         instance = Node.from_msg(msg)
         self.assertEqual(instance.state, NodeMsg.UNINITIALIZED)
 

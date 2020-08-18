@@ -1,7 +1,6 @@
-import jsonpickle
 import rospy
 
-from ros_bt_py.helpers import loglevel_is
+from ros_bt_py.helpers import loglevel_is, json_encode, json_decode
 
 try:  # pragma: no cover
     basestring
@@ -32,7 +31,7 @@ class NodeData(object):
     def __init__(self, data_type, initial_value=None, static=False):
         self.updated = False
         self._value = None
-        self._serialized_value = jsonpickle.encode(None)
+        self._serialized_value = json_encode(None)
         self._static = static
 
         # Relax type checking for string types
@@ -41,7 +40,7 @@ class NodeData(object):
         else:
             self.data_type = data_type
 
-        self._serialized_type = jsonpickle.encode(self.data_type)
+        self._serialized_type = json_encode(self.data_type)
 
         # use set here to ensure initial_value is the right type
         # this also sets updated to True
@@ -102,7 +101,7 @@ class NodeData(object):
                 raise TypeError('Expected data to be of type {}, got {} instead'.format(
                     self.data_type.__name__, type(new_value).__name__))
         if self._serialized_value is not None and new_value != self._value:
-            self._serialized_value = jsonpickle.encode(new_value)
+            self._serialized_value = json_encode(new_value)
         self._value = new_value
         self.set_updated()
 
@@ -119,7 +118,7 @@ class NodeData(object):
 
     def get_serialized(self):
         if self._serialized_value is None:
-            self._serialized_value = jsonpickle.encode(self._value)
+            self._serialized_value = json_encode(self._value)
         return self._serialized_value
 
     def get_serialized_type(self):

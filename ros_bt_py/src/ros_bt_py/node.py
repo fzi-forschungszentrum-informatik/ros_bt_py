@@ -2,7 +2,6 @@ from contextlib import contextmanager
 from copy import deepcopy
 
 import importlib
-import jsonpickle
 import re
 
 import rospy
@@ -16,7 +15,7 @@ from ros_bt_py_msgs.msg import UtilityBounds
 from ros_bt_py.exceptions import BehaviorTreeException, NodeStateError, NodeConfigError
 from ros_bt_py.node_data import NodeData, NodeDataMap
 from ros_bt_py.node_config import NodeConfig, OptionRef
-from ros_bt_py.helpers import get_default_value
+from ros_bt_py.helpers import get_default_value, json_encode, json_decode
 
 try:  # pragma: no cover
     basestring
@@ -884,7 +883,7 @@ class Node(object):
         options_dict = {}
         try:
             for option in msg.options:
-                options_dict[option.key] = jsonpickle.decode(option.serialized_value)
+                options_dict[option.key] = json_decode(option.serialized_value)
         except ValueError as e:
             raise BehaviorTreeException('Failed to instantiate node from message: %s' %
                                         str(e))
@@ -905,7 +904,7 @@ class Node(object):
         try:
             for input_msg in msg.inputs:
                 try:
-                    node_instance.inputs[input_msg.key] = jsonpickle.decode(
+                    node_instance.inputs[input_msg.key] = json_decode(
                         input_msg.serialized_value)
                 except KeyError as e:
                     rospy.logwarn("Could not set a non existing input %s", str(e))
@@ -923,7 +922,7 @@ class Node(object):
         try:
             for output_msg in msg.outputs:
                 try:
-                    node_instance.outputs[output_msg.key] = jsonpickle.decode(
+                    node_instance.outputs[output_msg.key] = json_decode(
                         output_msg.serialized_value)
                 except KeyError as e:
                     rospy.logwarn("Could not set a non existing output %s", str(e))

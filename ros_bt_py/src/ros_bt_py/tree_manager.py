@@ -2,7 +2,6 @@ from copy import deepcopy
 from functools import wraps
 from threading import Thread, Lock, RLock
 import time
-import jsonpickle
 import yaml
 import inspect
 import traceback
@@ -36,7 +35,7 @@ from ros_bt_py_msgs.msg import DocumentedNode
 from ros_bt_py_msgs.msg import NodeData, NodeDataLocation, NodeOptionWiring
 
 from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, TreeTopologyError
-from ros_bt_py.helpers import fix_yaml, remove_input_output_values
+from ros_bt_py.helpers import fix_yaml, remove_input_output_values, json_encode, json_decode
 from ros_bt_py.node import Node, load_node_module, increment_name
 from ros_bt_py.debug_manager import DebugManager
 
@@ -1207,7 +1206,7 @@ class TreeManager(object):
         unknown_options = []
         preliminary_incompatible_options = []
         try:
-            deserialized_options = dict((option.key, jsonpickle.decode(option.serialized_value))
+            deserialized_options = dict((option.key, json_decode(option.serialized_value))
                                         for option in request.options)
         except ValueError as ex:
             return SetOptionsResponse(
@@ -1755,7 +1754,7 @@ class TreeManager(object):
 
         def to_node_data(data_map):
             return [NodeData(key=name,
-                             serialized_value=jsonpickle.encode(type_or_ref))
+                             serialized_value=json_encode(type_or_ref))
                     for (name, type_or_ref) in data_map.items()]
 
         for (module, nodes) in Node.node_classes.items():

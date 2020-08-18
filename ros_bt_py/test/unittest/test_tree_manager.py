@@ -4,7 +4,6 @@ try:
 except ImportError:
     import mock
 
-import jsonpickle
 import sys
 import time
 
@@ -29,6 +28,7 @@ from ros_bt_py.tree_manager import TreeManager
 from ros_bt_py.tree_manager import (get_success as tm_get_success,
                                     get_error_message as tm_get_error_message)
 
+from ros_bt_py.helpers import json_encode, json_decode
 from ros_bt_py.ros_helpers import LoggerLevel
 
 try:
@@ -77,17 +77,17 @@ class TestTreeManager(unittest.TestCase):
             module='ros_bt_py.nodes.passthrough_node',
             node_class='PassthroughNode',
             inputs=[NodeData(key='in',
-                             serialized_value=jsonpickle.encode(42))],
+                             serialized_value=json_encode(42))],
             options=[NodeData(key='passthrough_type',
-                              serialized_value=jsonpickle.encode(int))])
+                              serialized_value=json_encode(int))])
 
         self.constant_msg = NodeMsg(
             module='ros_bt_py.nodes.constant',
             node_class='Constant',
             options=[NodeData(key='constant_type',
-                              serialized_value=jsonpickle.encode(int)),
+                              serialized_value=json_encode(int)),
                      NodeData(key='constant_value',
-                              serialized_value=jsonpickle.encode(42))])
+                              serialized_value=json_encode(42))])
 
         self.sequence_msg = NodeMsg(
             module='ros_bt_py.nodes.sequence',
@@ -101,11 +101,11 @@ class TestTreeManager(unittest.TestCase):
             module='ros_bt_py.nodes.mock_nodes',
             node_class='MockLeaf',
             options=[NodeData(key='output_type',
-                              serialized_value=jsonpickle.encode(str)),
+                              serialized_value=json_encode(str)),
                      NodeData(key='state_values',
-                              serialized_value=jsonpickle.encode([NodeMsg.SUCCEEDED])),
+                              serialized_value=json_encode([NodeMsg.SUCCEEDED])),
                      NodeData(key='output_values',
-                              serialized_value=jsonpickle.encode(['Yay!']))])
+                              serialized_value=json_encode(['Yay!']))])
 
     def testEnsureTickFrequencyGreaterZero(self):
         manager = TreeManager(tick_frequency_hz=0)
@@ -783,7 +783,7 @@ class TestTreeManager(unittest.TestCase):
         self.node_msg.options = [
             NodeData(key='passthrough_type',
                      # passthrough_type must be a type, not an int
-                     serialized_value=jsonpickle.encode(42))]
+                     serialized_value=json_encode(42))]
         add_request = AddNodeRequest(node=self.node_msg)
         response = self.manager.add_node(add_request)
 
@@ -1425,7 +1425,7 @@ class TestTreeManager(unittest.TestCase):
     def testTick(self):
         add_request = AddNodeRequest(node=self.node_msg)
         add_request.node.inputs.append(NodeData(key='in',
-                                                serialized_value=jsonpickle.encode(42)))
+                                                serialized_value=json_encode(42)))
 
         response = self.manager.add_node(add_request)
         self.assertTrue(get_success(response))
@@ -1441,14 +1441,14 @@ class TestTreeManager(unittest.TestCase):
                        node in self.tree_msg.nodes])
         node_msg = next((node for
                          node in self.tree_msg.nodes if node.name == response.actual_node_name))
-        self.assertEqual(jsonpickle.decode(node_msg.inputs[0].serialized_value), 42)
-        self.assertEqual(jsonpickle.decode(node_msg.outputs[0].serialized_value), 42)
+        self.assertEqual(json_decode(node_msg.inputs[0].serialized_value), 42)
+        self.assertEqual(json_decode(node_msg.outputs[0].serialized_value), 42)
 
     def testControlTree(self):
         add_request = AddNodeRequest(node=self.node_msg)
         add_request.node.name = 'passthrough'
         add_request.node.inputs.append(NodeData(key='in',
-                                                serialized_value=jsonpickle.encode(42)))
+                                                serialized_value=json_encode(42)))
 
         self.assertTrue(self.manager.add_node(add_request).success)
         self.assertEqual(self.manager.nodes['passthrough'].inputs['in'], 42)
@@ -1561,9 +1561,9 @@ class TestTreeManager(unittest.TestCase):
             module='ros_bt_py.nodes.random_number',
             node_class='RandomInt',
             options=[NodeData(key='min',
-                              serialized_value=jsonpickle.encode(1)),
+                              serialized_value=json_encode(1)),
                      NodeData(key='max',
-                              serialized_value=jsonpickle.encode(0))])
+                              serialized_value=json_encode(0))])
         add_request = AddNodeRequest(node=random_int_msg,
                                      allow_rename=True)
         self.assertTrue(self.manager.add_node(add_request).success)
@@ -1808,7 +1808,7 @@ class TestTreeManager(unittest.TestCase):
         add_request = AddNodeRequest(node=self.node_msg)
         add_request.node.name = 'passthrough'
         add_request.node.inputs.append(NodeData(key='in',
-                                                serialized_value=jsonpickle.encode(42)))
+                                                serialized_value=json_encode(42)))
 
         self.assertTrue(self.manager.add_node(add_request).success)
         self.assertEqual(self.manager.nodes['passthrough'].inputs['in'], 42)
@@ -1833,7 +1833,7 @@ class TestTreeManager(unittest.TestCase):
         add_request = AddNodeRequest(node=self.node_msg)
         add_request.node.name = 'passthrough'
         add_request.node.inputs.append(NodeData(key='in',
-                                                serialized_value=jsonpickle.encode(42)))
+                                                serialized_value=json_encode(42)))
 
         self.assertTrue(self.manager.add_node(add_request).success)
         self.assertEqual(self.manager.nodes['passthrough'].inputs['in'], 42)
@@ -1860,7 +1860,7 @@ class TestTreeManager(unittest.TestCase):
         add_request = AddNodeRequest(node=self.node_msg)
         add_request.node.name = 'passthrough'
         add_request.node.inputs.append(NodeData(key='in',
-                                                serialized_value=jsonpickle.encode(42)))
+                                                serialized_value=json_encode(42)))
 
         self.assertTrue(self.manager.add_node(add_request).success)
         self.assertEqual(self.manager.nodes['passthrough'].inputs['in'], 42)
@@ -1892,7 +1892,7 @@ class TestTreeManager(unittest.TestCase):
         add_request = AddNodeRequest(node=self.node_msg)
         add_request.node.name = 'passthrough'
         add_request.node.inputs.append(NodeData(key='in',
-                                                serialized_value=jsonpickle.encode(42)))
+                                                serialized_value=json_encode(42)))
 
         self.assertTrue(self.manager.add_node(add_request).success)
         self.assertEqual(self.manager.nodes['passthrough'].inputs['in'], 42)
@@ -1927,14 +1927,14 @@ class TestTreeManager(unittest.TestCase):
         # There's only one node...
         node = self.tree_msg.nodes[0]
         # and it only has one option
-        self.assertEqual(node.options[0].serialized_value, jsonpickle.encode(int))
+        self.assertEqual(node.options[0].serialized_value, json_encode(int))
 
         # a node that is not in the tree should fail
         self.assertFalse(get_success(self.manager.set_options(
             SetOptionsRequest(node_name='not_in_tree',
                               rename_node=False,
                               options=[NodeData(key='passthrough_type',
-                                                serialized_value=jsonpickle.encode(str))]))))
+                                                serialized_value=json_encode(str))]))))
 
         # unparseable values should fail
         self.assertFalse(get_success(self.manager.set_options(
@@ -1948,14 +1948,14 @@ class TestTreeManager(unittest.TestCase):
             SetOptionsRequest(node_name='PassthroughNode',
                               rename_node=False,
                               options=[NodeData(key='invalid_key',
-                                                serialized_value=jsonpickle.encode(str))]))))
+                                                serialized_value=json_encode(str))]))))
 
         # assigning values of the wrong type should also fail
         self.assertFalse(get_success(self.manager.set_options(
             SetOptionsRequest(node_name='PassthroughNode',
                               rename_node=False,
                               options=[NodeData(key='passthrough_type',
-                                                serialized_value=jsonpickle.encode(
+                                                serialized_value=json_encode(
                                                     'I am not a type, but a string!'))]))))
 
         # finally, this is valid :)
@@ -1963,9 +1963,9 @@ class TestTreeManager(unittest.TestCase):
             SetOptionsRequest(node_name='PassthroughNode',
                               rename_node=False,
                               options=[NodeData(key='passthrough_type',
-                                                serialized_value=jsonpickle.encode(str))]))))
+                                                serialized_value=json_encode(str))]))))
         node = self.tree_msg.nodes[0]
-        self.assertEqual(node.options[0].serialized_value, jsonpickle.encode(str))
+        self.assertEqual(node.options[0].serialized_value, json_encode(str))
 
     def testSetSomeOptions(self):
         self.assertTrue(get_success(self.manager.add_node(
@@ -1977,7 +1977,7 @@ class TestTreeManager(unittest.TestCase):
             SetOptionsRequest(node_name='Constant',
                               rename_node=False,
                               options=[NodeData(key='constant_value',
-                                                serialized_value=jsonpickle.encode(23))]))))
+                                                serialized_value=json_encode(23))]))))
 
     def testRename(self):
         self.sequence_msg.name = 'foo'
@@ -2038,7 +2038,7 @@ class TestTreeManager(unittest.TestCase):
         self.assertTrue(get_success(self.manager.set_options(SetOptionsRequest(
             node_name='child1',
             options=[NodeData(key='passthrough_type',
-                              serialized_value=jsonpickle.encode(int))]))))
+                              serialized_value=json_encode(int))]))))
 
         # Should fail because the wiring cannot be re-established
         # (child1.out is now a str, but child2.in still expects an
@@ -2046,7 +2046,7 @@ class TestTreeManager(unittest.TestCase):
         failed_res = self.manager.set_options(SetOptionsRequest(
             node_name='child1',
             options=[NodeData(key='passthrough_type',
-                              serialized_value=jsonpickle.encode(str))]))
+                              serialized_value=json_encode(str))]))
         self.assertFalse(get_success(failed_res))
 
         # The failed attempt should reset everything to the way it was
@@ -2054,7 +2054,7 @@ class TestTreeManager(unittest.TestCase):
         retry_res = self.manager.set_options(SetOptionsRequest(
             node_name='child1',
             options=[NodeData(key='passthrough_type',
-                              serialized_value=jsonpickle.encode(int))]))
+                              serialized_value=json_encode(int))]))
         self.assertTrue(get_success(retry_res), get_error_message(retry_res))
 
         # Renaming should work
@@ -2086,53 +2086,53 @@ class TestTreeManager(unittest.TestCase):
 
         node = self.manager.nodes[add_response.actual_node_name]
 
-        self.assertEqual(node.options.get_serialized('constant_value'), jsonpickle.encode(42))
+        self.assertEqual(node.options.get_serialized('constant_value'), json_encode(42))
 
-        self.assertEqual(node.options.get_serialized('constant_type'), jsonpickle.encode(int))
+        self.assertEqual(node.options.get_serialized('constant_type'), json_encode(int))
 
         # Changing type and value at the same time should work
         set_options_response = self.manager.set_options(SetOptionsRequest(
             node_name=add_response.actual_node_name,
             options=[NodeData(key='constant_value',
-                              serialized_value=jsonpickle.encode('foo')),
+                              serialized_value=json_encode('foo')),
                      NodeData(key='constant_type',
-                              serialized_value=jsonpickle.encode(str))]))
+                              serialized_value=json_encode(str))]))
 
         self.assertTrue(get_success(set_options_response))
 
         # The node has been replaced, so we need an updated reference
         node = self.manager.nodes[add_response.actual_node_name]
 
-        self.assertEqual(node.options.get_serialized('constant_value'), jsonpickle.encode('foo'))
+        self.assertEqual(node.options.get_serialized('constant_value'), json_encode('foo'))
 
-        self.assertEqual(node.options.get_serialized('constant_type'), jsonpickle.encode(str))
+        self.assertEqual(node.options.get_serialized('constant_type'), json_encode(str))
 
         # Changing type and value at the same time should work
         # str and unicode are considered equal
         set_options_response = self.manager.set_options(SetOptionsRequest(
             node_name=add_response.actual_node_name,
             options=[NodeData(key='constant_value',
-                              serialized_value=jsonpickle.encode('bar')),
+                              serialized_value=json_encode('bar')),
                      NodeData(key='constant_type',
-                              serialized_value=jsonpickle.encode(unicode))]))
+                              serialized_value=json_encode(unicode))]))
 
         self.assertTrue(get_success(set_options_response))
 
         # The node has been replaced, so we need an updated reference
         node = self.manager.nodes[add_response.actual_node_name]
 
-        self.assertEqual(node.options.get_serialized('constant_value'), jsonpickle.encode('bar'))
+        self.assertEqual(node.options.get_serialized('constant_value'), json_encode('bar'))
 
-        self.assertEqual(node.options.get_serialized('constant_type'), jsonpickle.encode(unicode))
+        self.assertEqual(node.options.get_serialized('constant_type'), json_encode(unicode))
 
         # Changing type and value also works with ROS Messages
         tree_msg = Tree(name='test')
         set_options_response = self.manager.set_options(SetOptionsRequest(
             node_name=add_response.actual_node_name,
             options=[NodeData(key='constant_value',
-                              serialized_value=jsonpickle.encode(tree_msg)),
+                              serialized_value=json_encode(tree_msg)),
                      NodeData(key='constant_type',
-                              serialized_value=jsonpickle.encode(Tree))]))
+                              serialized_value=json_encode(Tree))]))
 
         self.assertTrue(get_success(set_options_response))
 
@@ -2140,9 +2140,9 @@ class TestTreeManager(unittest.TestCase):
         node = self.manager.nodes[add_response.actual_node_name]
 
         self.assertEqual(node.options.get_serialized('constant_value'),
-                         jsonpickle.encode(tree_msg))
+                         json_encode(tree_msg))
 
-        self.assertEqual(node.options.get_serialized('constant_type'), jsonpickle.encode(Tree))
+        self.assertEqual(node.options.get_serialized('constant_type'), json_encode(Tree))
 
     def testSetOptionsChangeTypeWithOptionWiringsBroken(self):
         add_response = self.manager.add_node(AddNodeRequest(node=self.constant_msg))
@@ -2166,9 +2166,9 @@ class TestTreeManager(unittest.TestCase):
         set_options_response = self.manager.set_options(SetOptionsRequest(
             node_name=add_response.actual_node_name,
             options=[NodeData(key='constant_value',
-                              serialized_value=jsonpickle.encode('foo')),
+                              serialized_value=json_encode('foo')),
                      NodeData(key='constant_type',
-                              serialized_value=jsonpickle.encode(str))]))
+                              serialized_value=json_encode(str))]))
 
         self.assertFalse(get_success(set_options_response))
 
@@ -2195,7 +2195,7 @@ class TestTreeManager(unittest.TestCase):
             SetOptionsRequest(node_name='Constant',
                               rename_node=False,
                               options=[NodeData(key='constant_value',
-                                                serialized_value=jsonpickle.encode(23))]))))
+                                                serialized_value=json_encode(23))]))))
 
     def testSetOptionsErrorOnRemove(self):
         self.sequence_msg.name = 'outer_seq'
@@ -2339,6 +2339,21 @@ class TestTreeManager(unittest.TestCase):
         load_request = LoadTreeFromPathRequest(
             path='package://ros_bt_py/test/testdata/trees/subtree_constant.yaml')
         self.assertTrue(get_success(self.manager.load_tree_from_path(load_request)))
+
+    def testLoadTreeFromPathBuiltins(self):
+        load_request = LoadTreeFromPathRequest(
+            path='package://ros_bt_py/test/testdata/trees/builtins_constant.yaml')
+        self.assertTrue(get_success(self.manager.load_tree_from_path(load_request)))
+
+        node = self.manager.nodes['Constant']
+
+        self.assertEqual(node.options.get_serialized('constant_value'), json_encode(42))
+
+        self.assertEqual(node.options.get_serialized('constant_type'), json_encode(int))
+
+        self.assertEqual(node.options.get_type('constant_value'), int)
+
+        self.assertEqual(node.options.get_type('constant_type'), type)
 
     def testLoadWithAndWithoutName(self):
         load_request = LoadTreeRequest(tree=Tree(
@@ -2636,9 +2651,9 @@ class TestWiringServices(unittest.TestCase):
             module='ros_bt_py.nodes.passthrough_node',
             node_class='PassthroughNode',
             inputs=[NodeData(key='in',
-                             serialized_value=jsonpickle.encode(42))],
+                             serialized_value=json_encode(42))],
             options=[NodeData(key='passthrough_type',
-                              serialized_value=jsonpickle.encode(int))])
+                              serialized_value=json_encode(int))])
         self.sequence_msg = NodeMsg(
             module='ros_bt_py.nodes.sequence',
             node_class='Sequence')
@@ -2776,15 +2791,15 @@ class TestWiringServices(unittest.TestCase):
             module='ros_bt_py.nodes.constant',
             node_class='Constant',
             options=[NodeData(key='constant_type',
-                              serialized_value=jsonpickle.encode(str)),
+                              serialized_value=json_encode(str)),
                      NodeData(key='constant_value',
-                              serialized_value=jsonpickle.encode('hello'))])
+                              serialized_value=json_encode('hello'))])
 
         log_msg = NodeMsg(
             module='ros_bt_py.nodes.log',
             node_class='Log',
             options=[NodeData(key='logger_level',
-                              serialized_value=jsonpickle.encode(
+                              serialized_value=json_encode(
                                   LoggerLevel(logger_level='info')))])
 
         add_response = manager.add_node(AddNodeRequest(node=sequence_msg))

@@ -7,7 +7,6 @@ try:  # pragma: no cover
     from itertools import izip
 except ImportError:  # pragma: no cover
     izip = zip
-import jsonpickle
 import os
 import sys
 import traceback
@@ -27,7 +26,7 @@ from ros_bt_py.node_data import NodeData
 from ros_bt_py.exceptions import MigrationException
 
 from ros_bt_py.ros_helpers import LoggerLevel
-from ros_bt_py.helpers import get_default_value
+from ros_bt_py.helpers import get_default_value, json_encode, json_decode
 
 
 def load_migration_module(package_name):
@@ -365,7 +364,7 @@ class Migration(object):
     def get_option(self, key):
         for option in self.msg.options:
             if option.key == key:
-                return jsonpickle.decode(option.serialized_value)
+                return json_decode(option.serialized_value)
         raise MigrationException('option key "%s" does not exists!' % key)
 
     def add_option(self, key, data_type, initial_value=None, static=False):
@@ -453,7 +452,7 @@ class Migration(object):
                 available = False
                 for option in self.msg.options:
                     if data_type.option_key == option.key:
-                        data_type = jsonpickle.decode(option.serialized_value)
+                        data_type = json_decode(option.serialized_value)
                         available = True
                         break
                 if not available:
