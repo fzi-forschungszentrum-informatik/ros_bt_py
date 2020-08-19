@@ -1,5 +1,3 @@
-[![pipeline status](/../badges/master/pipeline.svg)](/) [![coverage](/../badges/master/coverage.svg)](/)
-
 # Welcome to ros_bt_py!
 
 This is a [Behavior
@@ -16,6 +14,8 @@ Its claim to fame is the ability to *shove*, or transparently
 remote-execute, parts of a Behavior Tree.
 
 ## Documentation
+
+The [main documentation effort nowadays is found in the repositories wiki](https://ids-git.fzi.de/ros/ros_bt_py/-/wikis/home).
 
 All of this (and more) is explained in the Master Thesis "Distributed
 Execution of Behavior Trees using Heterogeneous Robot Teams" by Nils Berg (link
@@ -41,14 +41,13 @@ $ cd catkin_workspace
 $ rosdep install --from-paths src --ignore-src -r -y
 ```
 
-One dependency, `jsonpickle` might not be registered in rosdep yet. Please
-install it manually, either from the package sources of your distro
-(i.e. apt) or via pip.
-
 **Warning**
-PyYaml 5.x breaks interoperability with saved trees, make sure you have PyYaml <= 3.13 installed!
-```
-pip install 'pyyaml<=3.13'
+rosapi <=0.11.9 has issues with service calls with non empty requests on python3 (ROS >= noetic).
+The following error in the terminal window where your started ros_bt_py is a indication of this issue:
+` Error processing request: field services must be a list or tuple type`
+As of August 2020, mitigating this means using the latest git version of the rosbridge_suite, of which rosapi is a part of.
+```bash
+git clone https://github.com/RobotWebTools/rosbridge_suite.git
 ```
 
 **Warning**

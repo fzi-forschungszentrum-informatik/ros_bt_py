@@ -1,3 +1,5 @@
+import sys
+import jsonpickle
 import logging
 import rospy
 import functools
@@ -158,6 +160,24 @@ def get_default_value(data_type, ros=False):
         return data_type()
     else:
         return {}
+
+
+def json_encode(data):
+    """Wrapper for jsonpickle.encode
+    Makes sure that python2 __builtin__ gets encoded as python3 builtins
+    """
+    return jsonpickle.encode(data).replace('builtins.', '__builtin__.')
+
+
+def json_decode(data):
+    """Wrapper for jsonpickle.decode
+    Makes sure that python3 builtins get treated as __builtin__ in python2
+    """
+    if sys.version_info.major == 2:
+        data = data.replace('builtins.', '__builtin__.')
+    elif sys.version_info.major >= 2:
+        data = data.replace('__builtin__.', 'builtins.')
+    return jsonpickle.decode(data)
 
 
 class MathUnaryOperator(object):

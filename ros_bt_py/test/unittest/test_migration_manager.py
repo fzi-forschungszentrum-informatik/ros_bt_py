@@ -4,7 +4,6 @@ try:
 except ImportError:
     import mock
 
-import jsonpickle
 import sys
 import time
 

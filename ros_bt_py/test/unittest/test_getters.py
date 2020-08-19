@@ -1,4 +1,3 @@
-import jsonpickle
 import unittest
 
 from ros_bt_py_msgs.msg import Node as NodeMsg

@@ -6,7 +6,6 @@ try:
 except ImportError:
     import mock
 
-import jsonpickle
 import rospy
 import rosservice
 
@@ -19,6 +18,7 @@ from ros_bt_py_msgs.msg import Tree, Node as NodeMsg, UtilityBounds
 
 from ros_bt_py.nodes.remote_slot import RemoteSlot
 
+from ros_bt_py.helpers import json_encode, json_decode
 from ros_bt_py.ros_helpers import AsyncServiceProxy
 
 PKG = 'ros_bt_py'
@@ -495,21 +495,21 @@ def get_node_by_name(tree_msg, node_name):
 def get_input(node_msg, key):
     for input_msg in node_msg.inputs:
         if input_msg.key == key:
-            return jsonpickle.decode(input_msg.serialized_value)
+            return json_decode(input_msg.serialized_value)
     return None
 
 
 def get_output(node_msg, key):
     for output_msg in node_msg.outputs:
         if output_msg.key == key:
-            return jsonpickle.decode(output_msg.serialized_value)
+            return json_decode(output_msg.serialized_value)
     return None
 
 
 def get_option(node_msg, key):
     for option_msg in node_msg.options:
         if option_msg.key == key:
-            return jsonpickle.decode(option_msg.serialized_value)
+            return json_decode(option_msg.serialized_value)
     return None
 
 

@@ -1,5 +1,3 @@
-import jsonpickle
-
 from actionlib.simple_action_client import SimpleActionClient
 from actionlib_msgs.msg import GoalStatus, GoalStatusArray
 from roslib.message import get_message_class
@@ -14,6 +12,7 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py.node import Decorator, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
+from ros_bt_py.helpers import json_encode, json_decode
 from ros_bt_py.ros_helpers import AsyncServiceProxy
 from ros_bt_py.exceptions import BehaviorTreeException
 
@@ -246,7 +245,7 @@ class Shovable(Decorator):
                         for output in node.outputs:
                             if output.key in self._external_outputs_by_name[node.name]:
                                 self._children_with_external_outputs[node.name]\
-                                    .outputs[output.key] = jsonpickle.decode(
+                                    .outputs[output.key] = json_decode(
                                         output.serialized_value)
                         self._children_with_external_outputs[node.name]._handle_outputs()
                     if node.name == final_tree.root_name:

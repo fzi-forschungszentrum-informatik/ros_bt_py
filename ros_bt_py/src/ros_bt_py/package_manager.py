@@ -1,4 +1,3 @@
-import jsonpickle
 import os
 
 import roslib.message
@@ -13,7 +12,7 @@ from ros_bt_py_msgs.srv import GetMessageFields, GetMessageFieldsResponse, SaveT
 from ros_bt_py_msgs.srv import GetPackageStructureResponse, FixYamlRequest
 
 from ros_bt_py.node import increment_name
-from ros_bt_py.helpers import fix_yaml, remove_input_output_values
+from ros_bt_py.helpers import fix_yaml, remove_input_output_values, json_encode, json_decode
 from ros_bt_py.ros_helpers import get_message_constant_fields
 
 
@@ -104,7 +103,7 @@ class PackageManager(object):
                 message_class = roslib.message.get_message_class(request.message_type)
             for field in str(message_class()).split("\n"):
                 response.field_names.append(field.split(":")[0].strip())
-            response.fields = jsonpickle.encode(message_class())
+            response.fields = json_encode(message_class())
             response.success = True
         except Exception as e:
             response.success = False
@@ -198,7 +197,7 @@ class PackageManager(object):
                 path=package_path, show_hidden=request.show_hidden)
 
             response.success = True
-            response.package_structure = jsonpickle.encode(package_structure)
+            response.package_structure = json_encode(package_structure)
         except rospkg.common.ResourceNotFound:
             response.success = False
             response.error_message = 'Package "{}" does not exist'.format(request.package)
