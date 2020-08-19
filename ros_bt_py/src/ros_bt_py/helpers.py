@@ -166,7 +166,7 @@ def json_encode(data):
     """Wrapper for jsonpickle.encode
     Makes sure that python2 __builtin__ gets encoded as python3 builtins
     """
-    return jsonpickle.encode(data).replace('__builtin__.', 'builtins.')
+    return jsonpickle.encode(data).replace('builtins.', '__builtin__.')
 
 
 def json_decode(data):
@@ -175,6 +175,8 @@ def json_decode(data):
     """
     if sys.version_info.major == 2:
         data = data.replace('builtins.', '__builtin__.')
+    elif sys.version_info.major >= 2:
+        data = data.replace('__builtin__.', 'builtins.')
     return jsonpickle.decode(data)
 
 

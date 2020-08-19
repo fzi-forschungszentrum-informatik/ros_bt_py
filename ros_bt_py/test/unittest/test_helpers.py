@@ -41,7 +41,10 @@ class TestHelpers(unittest.TestCase):
         self.assertEqual(get_default_value(EnumValue).enum_value, '')
 
     def testJsonEncode(self):
-        self.assertEqual(json_encode(int), '{"py/type": "builtins.int"}')
+        self.assertEqual(json_encode(int), '{"py/type": "__builtin__.int"}')
 
     def testJsonDecode(self):
-        self.assertEqual(json_decode('{"py/type": "builtins.int"}'), int)
+        if sys.version_info.major == 2:
+            self.assertEqual(json_decode('{"py/type": "__builtin__.int"}'), int)
+        else:
+            self.assertEqual(json_decode('{"py/type": "builtins.int"}'), int)
