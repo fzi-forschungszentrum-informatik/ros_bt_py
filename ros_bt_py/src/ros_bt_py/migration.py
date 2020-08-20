@@ -1,6 +1,4 @@
-from collections import OrderedDict
 from copy import deepcopy
-from functools import wraps
 import importlib
 import inspect
 try:  # pragma: no cover
@@ -10,9 +8,7 @@ except ImportError:  # pragma: no cover
 import os
 import sys
 import traceback
-import yaml
 
-import genpy
 import rospkg
 import rospy
 
