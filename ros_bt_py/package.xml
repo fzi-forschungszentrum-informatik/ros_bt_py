@@ -53,6 +53,12 @@
   <test_depend condition="$ROS_PYTHON_VERSION == 3">python3-mock</test_depend>
   <test_depend condition="$ROS_PYTHON_VERSION == 2">python-requests</test_depend>
   <test_depend condition="$ROS_PYTHON_VERSION == 3">python3-requests</test_depend>
+
+  <test_depend condition="$ROS_PYTHON_VERSION == 2">python-autobahn</test_depend>
+  <test_depend condition="$ROS_PYTHON_VERSION == 3">python3-autobahn</test_depend>
+  <!-- twisted really needed? -->
+  <test_depend condition="$ROS_PYTHON_VERSION == 2">python-twisted-core</test_depend>
+  <test_depend condition="$ROS_PYTHON_VERSION == 3">python3-twisted</test_depend>
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <!-- Other tools can request additional information be placed here -->
