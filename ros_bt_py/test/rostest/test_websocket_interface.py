@@ -39,7 +39,7 @@ class SubscribePackagesClientProtocol(WebSocketClientProtocol):
         self.sendMessage(encoded_message)
 
     def onMessage(self, payload, binary):
-        self.__class__.received.append(payload)
+        self.__class__.received.append(payload.decode())
 
 
 class ServiceCallGetAvailableNodesClientProtocol(WebSocketClientProtocol):
@@ -59,7 +59,7 @@ class ServiceCallGetAvailableNodesClientProtocol(WebSocketClientProtocol):
         self.sendMessage(encoded_message)
 
     def onMessage(self, payload, binary):
-        self.__class__.received.append(payload)
+        self.__class__.received.append(payload.decode())
 
 
 class TestTreeNodeOverWebsocket(unittest.TestCase):
