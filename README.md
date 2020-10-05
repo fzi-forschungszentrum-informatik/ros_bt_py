@@ -42,6 +42,17 @@ $ rosdep install --from-paths src --ignore-src -r -y
 ```
 
 **Warning**
+If you get the following error:
+```bash
+ERROR: the following packages/stacks could not have their rosdep keys resolved to system dependencies:
+ros_bt_py: Cannot locate rosdep definition for [web_server]
+```
+You probably need to add the [web_server](https://ids-git.fzi.de/ros/web_server) package to your workspace as well:
+```bash
+git clone https://ids-git.fzi.de/ros/web_server
+```
+
+**Warning**
 rosapi <=0.11.9 has issues with service calls with non empty requests on python3 (ROS >= noetic).
 The following error in the terminal window where your started ros_bt_py is a indication of this issue:
 ` Error processing request: field services must be a list or tuple type`
