@@ -24,7 +24,7 @@ class TestActionLeaf(unittest.TestCase):
             'feedback_type': FibonacciFeedback,
             'result_type': FibonacciResult,
             'action_name': '/fibonacci',
-            'wait_for_action_server_seconds': 1.0,
+            'wait_for_action_server_seconds': 2.0,
             # time out slightly before the server sends a second piece of
             # feedback
             'timeout_seconds': 0.8
@@ -149,8 +149,9 @@ class TestActionLeaf(unittest.TestCase):
         action.tick()
         self.assertEqual(action.state, NodeMsg.RUNNING)
 
-        rospy.sleep(0.1)
+        rospy.sleep(0.5)
         action.tick()
+        rospy.sleep(0.5)
         self.assertEqual(action.state, NodeMsg.FAILED)
 
 
