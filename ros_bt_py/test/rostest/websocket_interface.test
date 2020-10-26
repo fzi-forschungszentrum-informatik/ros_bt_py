@@ -1,0 +1,48 @@
+<launch>
+  <!-- An attempt to create some low-hanging fruit end-to-end tests.
+
+       This will start the relevant nodes from launch/ros_bt_py.launch
+       and attempt to access some of the services/topics via the websocket
+       that is provided via rosbridge_suite.
+  -->
+
+    <!-- rosbridge that provides the websocket connection for the web interface -->
+  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch">
+    <arg name="services_glob" default="[*/rosapi/*, */tree_node/*, */capability_manager/*]" />
+    <arg name="port" value="0" /> <!-- pick a free port -->
+  </include>
+
+  <!-- webserver -->
+  <!-- <include file="$(find web_server)/launch/web_server.launch">
+    <arg name="port" value="$(arg port)" />
+    <arg name="cache_static_files" value="false" />
+    <arg name="packages" value="[
+        {
+            package: ros_bt_py,
+            directory: html
+        }
+      ]" />
+  </include> -->
+
+  <!-- behavior tree backend, responsible for executing the tree -->
+  <node name="tree_node" pkg="ros_bt_py" type="tree_node.py" output="screen"
+        respawn="false">
+    <!-- a list of modules that are availble in the editor web interface -->
+    <rosparam param="node_modules" subst_value="True">
+      [
+      ros_bt_py.nodes.constant,
+      ]
+    </rosparam>
+    <param name="show_traceback_on_exception" value="true" />
+    <param name="load_default_tree" value="false" />
+    <param name="load_default_tree_permissive" value="false" />
+    <param name="default_tree_path" value="$" />
+    <param name="default_tree_tick_frequency_hz" value="1" />
+    <param name="default_tree_control_command" value="0" />
+  </node>
+
+  <test test-name="test_websocket_interface"
+        pkg="ros_bt_py"
+        type="test_websocket_interface.py"
+        time-limit="100.0" />
+</launch>

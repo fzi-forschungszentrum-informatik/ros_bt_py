@@ -1,11 +1,9 @@
 from copy import deepcopy
 from functools import wraps
 from threading import Thread, Lock, RLock
-import time
 import yaml
 import inspect
 import traceback
-import re
 import os
 
 import genpy
@@ -140,6 +138,7 @@ class TreeManager(object):
         self.tree_msg = Tree()
         self.tree_msg.name = name if name else ''
         self.tree_msg.tick_frequency_hz = tick_frequency_hz
+        self.rate = rospy.Rate(hz=self.tree_msg.tick_frequency_hz)
 
         self._last_error = None
         with self._state_lock:
@@ -158,7 +157,7 @@ class TreeManager(object):
         with self._state_lock:
             return self.tree_msg.state
 
-    def publish_info(self, debug_info_msg=None):
+    def publish_info(self, debug_info_msg=None, ticked=False):
         """Publish the current tree state using the callback supplied to the constructor
 
         In most cases, you'll want that callback to publish to a ROS
@@ -167,7 +166,7 @@ class TreeManager(object):
         If debugging is enabled, also publish debug info.
         """
         if self.publish_tree:
-            self.publish_tree(self.to_msg())
+            self.publish_tree(self.to_msg(ticked=ticked))
         if debug_info_msg and self.publish_debug_info:
             self.publish_debug_info(debug_info_msg)
 
@@ -199,16 +198,17 @@ class TreeManager(object):
             self.tick()
         except Exception as ex:
             # TODO(nberg): don't catch the ROSException that is raised on shutdown
-            rospy.logerr('Encountered error while ticking tree: %s, %s',
-                         ex,
-                         traceback.format_exc())
+            rospy.logerr('Encountered error while ticking tree: %s, %s' % (
+                ex,
+                traceback.format_exc()
+            ))
             with self._state_lock:
                 if self.show_traceback_on_exception:
-                    self._last_error = '{}, {}'.format(
+                    self._last_error = '%s, %s' % (
                         ex,
                         traceback.format_exc())
                 else:
-                    self._last_error = '{}'.format(ex)
+                    self._last_error = '%s' % (ex)
 
                 self.tree_msg.state = Tree.ERROR
 
@@ -248,14 +248,12 @@ class TreeManager(object):
             root.setup()
             with self._state_lock:
                 self._setting_up = False
-        sleep_duration_sec = (1.0 / self.tree_msg.tick_frequency_hz)
 
         while True:
-            start_time = time.time()
             if self.get_state() == Tree.STOP_REQUESTED:
                 break
             root.tick()
-            self.publish_info(self.debug_manager.get_debug_info_msg())
+            self.publish_info(self.debug_manager.get_debug_info_msg(), ticked=True)
 
             if self._stop_after_result:
                 if root.state != NodeMsg.RUNNING:
@@ -268,12 +266,10 @@ class TreeManager(object):
                     self.tree_msg.state = Tree.WAITING_FOR_TICK
                 return
 
-            tick_duration = time.time() - start_time
-            if tick_duration > sleep_duration_sec:
-                rospy.logwarn('Tick took longer than set period, cannot tick at %.2f Hz',
+            if self.rate.remaining().to_nsec() < 0:
+                rospy.logwarn('Tick took longer than set period, cannot tick at %.2f Hz' %
                               self.tree_msg.tick_frequency_hz)
-            else:
-                rospy.sleep(sleep_duration_sec - tick_duration)
+            self.rate.sleep()
 
         # Ensure all nodes are stopped and not doing anything in
         # the background.
@@ -541,6 +537,7 @@ class TreeManager(object):
         if self.tree_msg.tick_frequency_hz == 0.0:
             rospy.logwarn('Tick frequency of loaded tree is 0, defaulting to 10Hz')
             self.tree_msg.tick_frequency_hz = 10.0
+            self.rate = rospy.Rate(hz=self.tree_msg.tick_frequency_hz)
         # Ensure Tree is editable after loading
         with self._state_lock:
             self.tree_msg.state = Tree.EDITABLE
@@ -825,9 +822,11 @@ class TreeManager(object):
                     # Use provided tick frequency, if any
                     if request.tick_frequency_hz != 0:
                         self.tree_msg.tick_frequency_hz = request.tick_frequency_hz
+                        self.rate = rospy.Rate(hz=self.tree_msg.tick_frequency_hz)
                     if self.tree_msg.tick_frequency_hz == 0:
                         rospy.logwarn('Loaded tree had frequency 0Hz. Defaulting to 10Hz')
                         self.tree_msg.tick_frequency_hz = 10.0
+                        self.rate = rospy.Rate(hz=self.tree_msg.tick_frequency_hz)
                     self._tick_thread.start()
                     response.success = True
                     response.tree_state = Tree.TICKING
@@ -1516,8 +1515,8 @@ class TreeManager(object):
                 and len(old_node.children) > new_node_max_children):
             return ReplaceNodeResponse(
                 success=False,
-                error_message=("Replacement node (\"{}\") does not support the number of"
-                               "children required ({} has {} children, {} supports {}.").format(
+                error_message=("Replacement node (\"%s\") does not support the number of"
+                               "children required (%s has %s children, %s supports %s.") % (
                                    request.new_node_name,
                                    request.old_node_name,
                                    len(old_node.children),
@@ -1881,21 +1880,21 @@ class TreeManager(object):
             name = increment_name(name)
         return name
 
-    def to_msg(self):
-        # TODO(nberg): Maybe switch over to using
-        # root.get_subtree_msg(), but for now we maybe don't want that
-        # overhead?
-        self.tree_msg.nodes = [node.to_msg() for node in self.nodes.values()]
-
-        # TODO(khermann): using root.get_subtree_msg() here anyway
-        # to get the correct public_node_data. Monitor overhead of this decision
+    def to_msg(self, ticked=False):
+        if ticked:
+            # early exit during ticking
+            self.tree_msg.nodes = [node.to_msg() for node in self.nodes.values()]
+            return self.tree_msg
         try:
             root = self.find_root()
             if root is not None:
                 subtree = root.get_subtree_msg()[0]
+                self.tree_msg.nodes = subtree.nodes
                 self.tree_msg.public_node_data = subtree.public_node_data
         except TreeTopologyError as exc:
             rospy.logwarn("Strange topology %s" % exc)
+            # build a tree_msg out of this strange topology, so the user can fix it in the editor
+            self.tree_msg.nodes = [node.to_msg() for node in self.nodes.values()]
         return self.tree_msg
 
 

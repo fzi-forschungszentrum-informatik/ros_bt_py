@@ -27,17 +27,17 @@ def load_file(path):
         file_path = package_path + path[len('package://') + len(package_name):]
     else:
         raise LoadFileError('File path "%s" is malformed. It needs to start '
-                            'with either "file://" or "package://"'.format(path))
+                            'with either "file://" or "package://"' % (path))
     try:
         data_file = open(file_path, 'r')
     except IOError as ex:
-        error_msg = 'Error opening file %s: %s'.format(file_path, str(ex))
+        error_msg = 'Error opening file %s: %s' % (file_path, str(ex))
         raise LoadFileError(error_msg)
     with data_file:
         try:
             data = yaml.safe_load(data_file)
         except yaml.YAMLError as ex:
-            raise LoadFileError('Yaml error in file {}: {}'.format(file_path, str(ex)))
+            raise LoadFileError('Yaml error in file %s: %s' % (file_path, str(ex)))
     return data
 
 

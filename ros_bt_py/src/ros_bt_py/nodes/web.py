@@ -59,8 +59,7 @@ class DownloadImage(Leaf):
             if r.status_code != 200:
                 self.outputs['download_success'] = False
                 self.outputs['download_error_msg'] = (
-                    'Could not download image, http error code: {}'
-                    .format(r.status_code))
+                    'Could not download image, http error code: %s' % (r.status_code))
                 self.outputs['filepath'] = ''
                 return NodeMsg.FAILED
 

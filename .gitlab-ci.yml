@@ -3,5 +3,35 @@ include:
     ref: master
     file: '/gitlab-ci-yml/catkin_pipeline.yml'
 
+build_bionic:
+  needs: ["catkin_lint_bionic"]
+
+build_focal:
+  needs: ["catkin_lint_focal"]
+
+build_xenial:
+  needs: ["catkin_lint_xenial"]
+
+run_tests_bionic:
+  needs: ["build_bionic"]
+  retry:
+    max: 1
+    when:
+      - script_failure
+
+run_tests_focal:
+  needs: ["build_focal"]
+  retry:
+    max: 1
+    when:
+      - script_failure
+
+run_tests_xenial:
+  needs: ["build_xenial"]
+  retry:
+    max: 1
+    when:
+      - script_failure
+
 variables:
   BUILD_NOETIC: "true"

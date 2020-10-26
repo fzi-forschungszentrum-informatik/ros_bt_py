@@ -107,7 +107,7 @@ class PackageManager(object):
             response.success = True
         except Exception as e:
             response.success = False
-            response.error_message = "Could not get message fields for {}: {}".format(
+            response.error_message = "Could not get message fields for %s: %s" % (
                 request.message_type, e)
         return response
 
@@ -124,7 +124,7 @@ class PackageManager(object):
                 response.success = True
             except Exception as e:
                 response.success = False
-                response.error_message = "Could not get message fields for {}: {}".format(
+                response.error_message = "Could not get message fields for %s: %s" % (
                     request.message_type, e)
         return response
 
@@ -200,7 +200,7 @@ class PackageManager(object):
             response.package_structure = json_encode(package_structure)
         except rospkg.common.ResourceNotFound:
             response.success = False
-            response.error_message = 'Package "{}" does not exist'.format(request.package)
+            response.error_message = 'Package "%s" does not exist' % (request.package)
 
         return response
 
@@ -280,9 +280,9 @@ class PackageManager(object):
 
         except rospkg.common.ResourceNotFound:
             response.success = False
-            response.error_message = 'Package "{}" does not exist'.format(request.package)
+            response.error_message = 'Package "%s" does not exist' % (request.package)
         except IOError:
             response.success = False
-            response.error_message = 'IOError on file: "{}"'.format(request.filename)
+            response.error_message = 'IOError on file: "%s"' % (request.filename)
 
         return response

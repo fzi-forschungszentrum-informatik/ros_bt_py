@@ -48,9 +48,9 @@ class NodeData(object):
             self.set(initial_value)
 
     def __repr__(self):
-        return '{!s} ({}) [{}]'.format(self._value,
-                                       self.data_type.__name__,
-                                       ('#' if self.updated else ' '))
+        return '%s (%s) [%s]' % (self._value,
+                                 self.data_type.__name__,
+                                 ('#' if self.updated else ' '))
 
     def __eq__(self, other):
         return (self.updated == other.updated
@@ -93,12 +93,12 @@ class NodeData(object):
             else:
                 if type(new_value) == dict and "py/type" in new_value:
                     raise TypeError(
-                        ('Expected data to be of type {}, got {} instead. '
-                         'Looks like failed jsonpickle decode, does type {} exist?').format(
+                        ('Expected data to be of type %s, got %s instead. '
+                         'Looks like failed jsonpickle decode, does type %s exist?') % (
                              self.data_type.__name__,
                              type(new_value).__name__,
                              new_value['py/type']))
-                raise TypeError('Expected data to be of type {}, got {} instead'.format(
+                raise TypeError('Expected data to be of type %s, got %s instead' % (
                     self.data_type.__name__, type(new_value).__name__))
         if self._serialized_value is not None and new_value != self._value:
             self._serialized_value = json_encode(new_value)

@@ -1,10 +1,8 @@
 from copy import deepcopy
 from contextlib import contextmanager
 import inspect
-import math
 from sys import getrecursionlimit
 from threading import Event, Lock
-import time
 
 import rospy
 
@@ -228,7 +226,7 @@ class DebugManager(object):
 
         If this method is called when `publish_subtrees` is `False`.
         """
-        subtree_name = '{}.{}'.format(node_name, subtree_msg.name)
+        subtree_name = '%s.%s' % (node_name, subtree_msg.name)
         with self._lock:
             if not self._debug_settings_msg.publish_subtrees:
                 raise BehaviorTreeException(
