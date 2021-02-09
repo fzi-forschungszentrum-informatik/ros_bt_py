@@ -32,7 +32,7 @@
   border-color: #4E5666;
   color: #eff0f4;
   fill: #eff0f4;
-  max-width: 200px;
+  /*FIXME: max-width: 200px;*/
   overflow-wrap: break-word;
   -webkit-user-select: none;
   -moz-user-select: none;

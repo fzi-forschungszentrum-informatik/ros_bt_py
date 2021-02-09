@@ -265,6 +265,18 @@ function uniqueArray(array, property) {
   });
 }
 
+// see: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/Reduce#grouping_objects_by_a_property
+function groupBy(objectArray, property) {
+  return objectArray.reduce(function (acc, obj) {
+    let key = obj[property]
+    if (!acc[key]) {
+      acc[key] = []
+    }
+    acc[key].push(obj)
+    return acc
+  }, {})
+}
+
 class NodeListItem extends Component {
   constructor(props)
   {
@@ -599,10 +611,10 @@ class CapabilityListItem extends Component {
       collapsible_icon = "cursor-pointer fas fa-angle-down";
     }
 
-    var border = "border rounded p-2 mb-2";
+    var border = "border rounded p-2 mb-2 ml-2 mr-2";
     if (this.props.highlighted)
     {
-      border = "border rounded border-primary p-2 mb-2";
+      border = "border rounded border-primary p-2 mb-2 ml-2 mr-2";
     }
     return (
       <div className={border}
@@ -611,20 +623,21 @@ class CapabilityListItem extends Component {
            onMouseUp={this.onMouseUp.bind(this)}>
         <div className="d-flex justify-content-between">
           <div className="d-flex minw0">
-            <h4 title={this.props.capability.capability} className="node_class text-truncate">Capability: {this.props.capability.capability}</h4>
+            <h4 title={this.props.capability.capability} className="node_class text-truncate">{this.props.capability.capability}</h4>
             <i title={this.props.capability.description} class="fas fa-question-circle pl-2 pr-2"></i>
           </div>
           <div className="d-flex minw0">
             <i onClick={this.toggleCollapsed.bind(this)} class={collapsible_icon}></i>
           </div>
         </div>
-        <h5 title={this.props.capability.implementation} className="node_class text-truncate">Implementation: {this.props.capability.implementation}</h5>
-        <h5 title={this.props.capability.target} className="node_module text-truncate text-muted">Target: {this.props.capability.capability.target}</h5>
+        {//<h5 title={this.props.capability.implementation} className="node_class text-truncate">Implementation: {this.props.capability.implementation}</h5>
+        }
+        {//<h5 title={this.props.capability.target} className="node_module text-truncate text-muted">Platform: {this.props.capability.target}</h5>
+        }
       </div>
     );
   };
 }
-
 
 class CapabilityList extends Component {
   constructor(props)
@@ -679,7 +692,17 @@ class CapabilityList extends Component {
     {
       capabilities = this.props.filtered_capabilities;
     }
-    var items = capabilities
+
+    var grouped = groupBy(capabilities, 'target');
+    console.log("grouped: ", grouped)
+
+    var colors = ['#007749', '#807F84', '#0E2356', '#2FAE7A', '#ffb800'];
+
+    var list = [];
+    var counter = 0;
+    for (const [key, value] of Object.entries(grouped)) {
+      console.log(`${key}: ${value}`);
+      var items = value
         .map( (capability) => {
           var highlighted = false;
           if (this.props.dragging_capability_list_item
@@ -696,7 +719,55 @@ class CapabilityList extends Component {
                            onSelectionChange={this.props.onSelectionChange}
                            onDragging={this.props.onCapabilityDragging}
                            />);
-    });
+      });
+      if (key === "") {
+        console.log("common capabilities without a target robot");
+        // TODO: make list collapsible
+        // TODO: generate a unique color per platform and add a colored border around the whole platform!
+        list.push( (<div>
+                      <div className="d-flex justify-content-between pl-2">
+                        <div className="d-flex minw0">
+                          <h4 title="Platform-independent capabilities" className="node_class text-truncate">Platform-independent</h4>
+                        </div>
+                      </div>
+                      {items}
+                    </div>) );
+      } else {
+        console.log("capabilities for ", key);
+        const border = {
+          borderColor: colors[counter++ % colors.length],
+          borderStyle: 'solid',
+          borderWidth: 2
+        };
+        list.push( (<div className="rounded mb-1" style={border}>
+          <div className="d-flex justify-content-between pl-2">
+            <div className="d-flex minw0">
+              <h4 title={"Platform-dependent capabilities: " + key} className="node_class text-truncate">{key}</h4>
+            </div>
+          </div>
+          {items}
+        </div>) );
+      }
+    }
+
+    // var items = capabilities
+    //     .map( (capability) => {
+    //       var highlighted = false;
+    //       if (this.props.dragging_capability_list_item
+    //           && this.props.dragging_capability_list_item.capability === capability.capability
+    //           && this.props.dragging_capability_list_item.implementation === capability.implementation
+    //           && this.props.dragging_capability_list_item.capability.path === capability.capability.path)
+    //       {
+    //         highlighted = true;
+    //       }
+    //       return (<CapabilityListItem capability={capability}
+    //                        key={capability.capability + capability.implementation + capability.capability.path}
+    //                        collapsed={true}
+    //                        highlighted={highlighted}
+    //                        onSelectionChange={this.props.onSelectionChange}
+    //                        onDragging={this.props.onCapabilityDragging}
+    //                        />);
+    // });
 
     var capability_list_collapsible_icon = "fas fa-angle-up";
     if (this.state.capability_list_collapsed)
@@ -710,7 +781,7 @@ class CapabilityList extends Component {
         <div className="vertical_list">
           <div className="border rounded mb-2">
             <div onClick={this.toggleCapabilityListCollapsed.bind(this)} className="text-center cursor-pointer font-weight-bold m-2">Capability List <i class={capability_list_collapsible_icon}></i></div>
-            {items}
+            {list}
           </div>
         </div>
       </div>
@@ -2230,6 +2301,10 @@ class D3BehaviorTreeEditor extends Component
     });
     className = className.enter().append("h5").attr("class", "class_name").merge(className);
     className.html(function(d) {
+      // FIXME: hacky
+      // if (d.data.node_class == 'Capability') {
+      //   console.log("data: ", d);
+      // }
       return d.data.node_class;
     });
   }
@@ -4634,10 +4709,15 @@ class MultipleSelection extends Component
 
   buildNodeMessage()
   {
+    // FIXME: this could be WRONG!!!
+    var cap_name = this.state.capability; // + "_" + this.state.implementation;
+    if (this.state.capability == this.state.implementation) {
+      cap_name = this.state.capability;
+    }
     return {
       module: 'bt_capabilities.nodes.capability',
       node_class: 'Capability',
-      name: this.state.capability + "_" + this.state.implementation,
+      name: cap_name,
       options: [{
                   key: 'capability',
                   serialized_value: JSON.stringify({"py/object": "bt_capabilities.nodes.capability.CapabilityType", "capability": this.state.capability})
