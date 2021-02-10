@@ -25,6 +25,10 @@ run_tests_focal:
     max: 1
     when:
       - script_failure
+  artifacts:
+    when: always
+    reports:
+      junit: test_results/ros_bt_py/*.xml
 
 run_tests_xenial:
   needs: ["build_xenial"]
