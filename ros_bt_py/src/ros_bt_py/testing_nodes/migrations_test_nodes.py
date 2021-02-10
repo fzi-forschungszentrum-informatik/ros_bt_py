@@ -199,6 +199,30 @@ class NodeWithWorkingMigrations(Leaf):
 
 @define_bt_node(NodeConfig(
     version='1.0.0',
+    options={'change_type': str},
+    inputs={'change_type': str},
+    outputs={'change_type': str},
+    max_children=0,
+    option_wirings=[]))
+class NodeWithWorkingMigrationsChangeType(Leaf):
+    def _do_setup(self):
+        pass
+
+    def _do_tick(self):
+        return NodeMsg.SUCCEEDED
+
+    def _do_shutdown(self):
+        pass
+
+    def _do_reset(self):
+        return NodeMsg.IDLE
+
+    def _do_untick(self):
+        return NodeMsg.IDLE
+
+
+@define_bt_node(NodeConfig(
+    version='1.0.0',
     options={},
     inputs={},
     outputs={},

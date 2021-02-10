@@ -405,27 +405,32 @@ class Migration(object):
 
     def change_input_type(self, key, data_type):
         # TODO: exception on something really wrong
-        for node_input in self.msg.inputs:
+        for index, node_input in enumerate(self.msg.inputs):
             if node_input.key == key:
-                node_input = self._create_node_data(
+                node_data = self._create_node_data(
                     key=key,
                     data_type=data_type)
+                node_data.serialized_value = "null"
+                self.msg.inputs[index] = node_data
 
     def change_output_type(self, key, data_type):
         # TODO: exception on something really wrong
-        for node_output in self.msg.outputs:
+        for index, node_output in enumerate(self.msg.outputs):
             if node_output.key == key:
-                node_output = self._create_node_data(
+                node_data = self._create_node_data(
                     key=key,
                     data_type=data_type)
+                node_data.serialized_value = "null"
+                self.msg.outputs[index] = node_data
 
-    def change_option_type(self, key, data_type):
+    def change_option_type(self, key, data_type, initial_value=None,):
         # TODO: exception on something really wrong
-        for node_option in self.msg.options:
+        for index, node_option in enumerate(self.msg.options):
             if node_option.key == key:
-                node_option = self._create_node_data(
+                self.msg.options[index] = self._create_node_data(
                     key=key,
-                    data_type=data_type)
+                    data_type=data_type,
+                    initial_value=initial_value)
 
     def make_name_unique(self, name):
         node_names = []
