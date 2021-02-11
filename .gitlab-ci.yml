@@ -1,6 +1,6 @@
 include:
   - project: 'continuous_integration/ci_scripts'
-    ref: fix-pyopenssl-install
+    ref: master
     file: '/gitlab-ci-yml/catkin_pipeline.yml'
 
 build_bionic:
