@@ -11,7 +11,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
     inputs={},
     outputs={'constant': OptionRef('constant_type')},
     max_children=0,
-    option_wirings=[{'source': 'constant_type', 'target': 'constant_value'}],
+    option_wirings=[],
     tags=['constant', 'value', 'variable']))
 class Constant(Leaf):
     """Provide a set value as an output

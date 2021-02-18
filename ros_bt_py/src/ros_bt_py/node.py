@@ -705,14 +705,14 @@ class Node(object):
                     if permissive:
                         if data_type == type:
                             target_map[key] = int
-                            # if data_type is a type check if a option wiring exists
-                            for option_wiring in self.node_config.option_wirings:
-                                if option_wiring['source'] == key:
-                                    # overwrite values and target_map just to be sure
-                                    values[option_wiring['target']] = 0
-                                    if option_wiring['target'] in target_map:
-                                        # overwrite already set target_map
-                                        target_map[option_wiring['target']] = 0
+                            # if data_type is a type check if a OptionRef exists
+                            for key_opt, value_opt in source_map.items():
+                                if isinstance(value_opt, OptionRef):
+                                    if value_opt.option_key == key:
+                                        values[key_opt] = 0
+                                        if key_opt in target_map:
+                                            # overwrite already set target_map
+                                            target_map[key_opt] = 0
                         else:
                             raise e
                     else:

@@ -35,6 +35,7 @@ from ros_bt_py_msgs.msg import NodeData, NodeDataLocation, NodeOptionWiring
 from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, TreeTopologyError
 from ros_bt_py.helpers import fix_yaml, remove_input_output_values, json_encode, json_decode
 from ros_bt_py.node import Node, load_node_module, increment_name
+from ros_bt_py.node_config import OptionRef
 from ros_bt_py.debug_manager import DebugManager
 
 try:  # pragma: no cover
@@ -1235,31 +1236,32 @@ class TreeManager(object):
             # compatible with the new type!
             for key, required_type_name in preliminary_incompatible_options:
                 incompatible = True
-                for option_wiring in node.node_config.option_wirings:
-                    if key == option_wiring['target']:
-                        other_type = deserialized_options[option_wiring['source']]
-                        our_type = type(deserialized_options[option_wiring['target']])
-                        if other_type == our_type:
+                possible_optionref = node.__class__._node_config.options[key]
+
+                if isinstance(possible_optionref, OptionRef):
+                    other_type = deserialized_options[possible_optionref.option_key]
+                    our_type = type(deserialized_options[key])
+                    if other_type == our_type:
+                        incompatible = False
+                    elif (inspect.isclass(other_type)
+                            and genpy.message.Message in other_type.__mro__):
+                        try:
+                            genpy.message.fill_message_args(
+                                other_type(),
+                                [deserialized_options[key]], keys={})
                             incompatible = False
-                        elif (inspect.isclass(other_type)
-                              and genpy.message.Message in other_type.__mro__):
-                            try:
-                                genpy.message.fill_message_args(
-                                    other_type(),
-                                    [deserialized_options[option_wiring['target']]], keys={})
-                                incompatible = False
-                            except genpy.message.MessageException as e:
-                                raise TypeError('ROSMessageException %s' % e)
-                        else:
-                            # check if the types are str or unicode and treat them the same
-                            if (isinstance(
-                                    deserialized_options[option_wiring['target']], str)
-                                    and other_type == unicode):
-                                incompatible = False
-                            if (isinstance(
-                                    deserialized_options[option_wiring['target']], unicode)
-                                    and other_type == str):
-                                incompatible = False
+                        except genpy.message.MessageException as e:
+                            raise TypeError('ROSMessageException %s' % e)
+                    else:
+                        # check if the types are str or unicode and treat them the same
+                        if (isinstance(
+                                deserialized_options[key], str)
+                                and other_type == unicode):
+                            incompatible = False
+                        if (isinstance(
+                                deserialized_options[key], unicode)
+                                and other_type == str):
+                            incompatible = False
                 if incompatible:
                     incompatible_options.append((key, required_type_name))
 

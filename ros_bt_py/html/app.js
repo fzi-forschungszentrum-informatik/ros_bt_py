@@ -944,6 +944,7 @@ class App extends Component
                  '')
           }
           node={this.state.selected_node}
+          availableNodes={this.state.available_nodes}
           parents={this.findPossibleParents()}
           messagesFuse={this.messagesFuse}
           capabilitiesFuse={this.capabilities_fuse}

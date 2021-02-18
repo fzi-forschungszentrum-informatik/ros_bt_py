@@ -14,7 +14,7 @@ from ros_bt_py.ros_helpers import EnumValue, get_message_constant_fields
     inputs={},
     outputs={},
     max_children=0,
-    option_wirings=[{'source': 'ros_message_type', 'target': 'constant_name'}]))
+    option_wirings=[]))
 class Enum(Leaf):
     """Exposes a constant in a ROS message as an output
     """
