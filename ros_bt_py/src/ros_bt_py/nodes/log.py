@@ -1,18 +1,19 @@
 from ros_bt_py_msgs.msg import Node as NodeMsg
 
 from ros_bt_py.node import Leaf, define_bt_node
-from ros_bt_py.node_config import NodeConfig
+from ros_bt_py.node_config import NodeConfig, OptionRef
 from ros_bt_py.ros_helpers import LoggerLevel
 
 
 @define_bt_node(NodeConfig(
-    version='1.0.0',
-    options={'logger_level': LoggerLevel},
-    inputs={'in': str},
+    version='2.0.0',
+    options={'logger_level': LoggerLevel,
+             'log_type': type},
+    inputs={'in': OptionRef('log_type')},
     outputs={},
     max_children=0))
 class Log(Leaf):
-    """Logs the input string to the console with the provided logger_level
+    """Logs the input, converted to string, to the console with the provided logger_level
 
     """
     def _do_setup(self):
@@ -33,7 +34,7 @@ class Log(Leaf):
         return NodeMsg.IDLE
 
     def _do_tick(self):
-        self.log(self.inputs['in'])
+        self.log(str(self.inputs['in']))
         return NodeMsg.SUCCEEDED
 
     def _do_untick(self):

@@ -39,6 +39,19 @@ class TestMigrationManager(unittest.TestCase):
         self.assertTrue(migrate_reply.migrated)
 
         tree.path = 'package://ros_bt_py/test/testdata/trees/' \
+                    'migrations_nodewithworkingmigrations_change_type.yaml'
+        migrate_request = MigrateTreeRequest(tree=tree)
+
+        migrate_reply = migration_manager.migrate_tree(migrate_request)
+        self.assertTrue(migrate_reply.success)
+        self.assertTrue(migrate_reply.migrated)
+
+        node = migrations_test_nodes.NodeWithWorkingMigrationsChangeType({'change_type': 'hi'})
+        node.shutdown()
+        node_msg = node.to_msg()
+        self.assertEqual(migrate_reply.tree.nodes[0], node_msg)
+
+        tree.path = 'package://ros_bt_py/test/testdata/trees/' \
                     'migrations_nodewithworkingmigrations2.yaml'
         migrate_request = MigrateTreeRequest(tree=tree)
 

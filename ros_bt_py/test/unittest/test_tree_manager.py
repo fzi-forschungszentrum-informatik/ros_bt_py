@@ -2800,7 +2800,9 @@ class TestWiringServices(unittest.TestCase):
             node_class='Log',
             options=[NodeData(key='logger_level',
                               serialized_value=json_encode(
-                                  LoggerLevel(logger_level='info')))])
+                                  LoggerLevel(logger_level='info'))),
+                     NodeData(key='log_type',
+                              serialized_value=json_encode(str))])
 
         add_response = manager.add_node(AddNodeRequest(node=sequence_msg))
         self.assertTrue(get_success(add_response))

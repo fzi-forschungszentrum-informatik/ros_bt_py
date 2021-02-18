@@ -6,6 +6,7 @@ from ros_bt_py.testing_nodes.migrations_test_nodes import (
     NodeWithoutVersion, NodeWithVersionButWithoutMigration, NodeWithoutMigrationFunction,
     NodeWithoutMigrationToFirstVersion, NodeWithoutVersionAndWithFirstMigration,
     NodeWithBrokenMigrationPath, NodeWithIdenticalVersions, NodeWithWorkingMigrations,
+    NodeWithWorkingMigrationsChangeType,
     NodeWithWorkingMigrationsThatChangesTree, NodeWithGetOptionException,
     NodeWithAddOptionException, NodeWithAddInputException, NodeWithAddOutputException,
     NodeWithOptionrefException
@@ -46,3 +47,19 @@ class TestMigrationsTestNodes(unittest.TestCase):
 
             node.shutdown()
             self.assertEqual(node.state, NodeMsg.SHUTDOWN)
+
+    def testTestNodeWithInput(self):
+        node = NodeWithWorkingMigrationsChangeType({'change_type': 'hi'})
+        node.setup()
+        node.inputs['change_type'] = 'hi'
+        node.tick()
+        self.assertEqual(node.state, NodeMsg.SUCCEEDED)
+
+        node.reset()
+        self.assertEqual(node.state, NodeMsg.IDLE)
+
+        node.untick()
+        self.assertEqual(node.state, NodeMsg.IDLE)
+
+        node.shutdown()
+        self.assertEqual(node.state, NodeMsg.SHUTDOWN)

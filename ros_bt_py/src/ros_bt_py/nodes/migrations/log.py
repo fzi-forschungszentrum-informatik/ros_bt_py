@@ -1,4 +1,5 @@
 from ros_bt_py.migration import Migration, migration
+from ros_bt_py.node_config import OptionRef
 from ros_bt_py.ros_helpers import LoggerLevel
 
 
@@ -28,3 +29,15 @@ class Log(Migration):
             key='logger_level',
             data_type=LoggerLevel,
             initial_value=LoggerLevel(logger_level=logger_level))
+
+    @migration(
+        from_version='1.0.0', to_version='2.0.0',
+        changelog='add log_type option to allow logging of arbitrary types')
+    def add_log_type_option(self):
+        self.add_option(
+            key='log_type',
+            data_type=type,
+            initial_value=str)
+        self.change_input_type(
+            key='in',
+            data_type=OptionRef('log_type'))

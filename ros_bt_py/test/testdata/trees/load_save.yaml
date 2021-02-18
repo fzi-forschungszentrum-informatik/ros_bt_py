@@ -84,7 +84,7 @@ nodes:
   - 
     module: "ros_bt_py.nodes.log"
     node_class: "Log"
-    version: "1.0.0"
+    version: "2.0.0"
     max_children: 0
     name: "Log"
     child_names: []
@@ -94,6 +94,10 @@ nodes:
         serialized_value: "{\"py/object\": \"ros_bt_py.ros_helpers.LoggerLevel\", \"logger_level\": \"warning\"\
   }"
         serialized_type: "{\"py/type\": \"ros_bt_py.ros_helpers.LoggerLevel\"}"
+      -
+        key: "log_type"
+        serialized_value: "{\"py/type\": \"__builtin__.str\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: 
       - 
         key: "in"

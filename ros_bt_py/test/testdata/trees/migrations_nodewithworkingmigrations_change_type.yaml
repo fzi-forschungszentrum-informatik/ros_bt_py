@@ -1,0 +1,40 @@
+name: "migrations_nodewithworkingmigrations_change_type.yaml"
+path: ''
+root_name: ''
+nodes: 
+  - 
+    module: "ros_bt_py.testing_nodes.migrations_test_nodes"
+    node_class: "NodeWithWorkingMigrationsChangeType"
+    version: ''
+    max_children: 0
+    name: "NodeWithWorkingMigrationsChangeType"
+    child_names: []
+    options: 
+      - 
+        key: "change_type"
+        serialized_value: "0"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    inputs: 
+      - 
+        key: "change_type"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    outputs: 
+      - 
+        key: "change_type"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    option_wirings: []
+    state: "SHUTDOWN"
+data_wirings: []
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: 
+  - 
+    node_name: "NodeWithWorkingMigrationsChangeType"
+    data_kind: "inputs"
+    data_key: "change_type"
+  - 
+    node_name: "NodeWithWorkingMigrationsChangeType"
+    data_kind: "outputs"
+    data_key: "change_type"
