@@ -5592,7 +5592,7 @@ class EditableNode extends Component
         return (
           <div className="list-group-item search-result"
                onClick={ () => {
-                 if (this.props.nodeClass === 'Action' && this.props.module === 'ros_bt_py.nodes.action')
+                 if ((this.props.nodeClass === 'Action' || this.props.nodeClass === 'ActionWithDebug') && this.props.module === 'ros_bt_py.nodes.action')
                  {
                    var action_types = {action_type: 'Action', feedback_type: 'Feedback', goal_type: 'Goal', result_type: 'Result'};
                    var type_name = x.msg.split('.').pop();

@@ -1,0 +1,379 @@
+public_node_data:
+  - data_kind: outputs
+    data_key: response
+    node_name: Service
+name: ''
+data_wirings:
+  - source:
+      data_kind: outputs
+      data_key: formatted_string
+      node_name: StringConcatenation
+    target:
+      data_kind: inputs
+      data_key: in
+      node_name: Log
+  - source:
+      data_kind: outputs
+      data_key: constant
+      node_name: Constant World
+    target:
+      data_kind: inputs
+      data_key: b
+      node_name: StringConcatenation
+  - source:
+      data_kind: outputs
+      data_key: constant
+      node_name: Constant Universe
+    target:
+      data_kind: inputs
+      data_key: b
+      node_name: StringConcatenation
+  - source:
+      data_kind: outputs
+      data_key: constant
+      node_name: Constant Moon
+    target:
+      data_kind: inputs
+      data_key: b
+      node_name: StringConcatenation
+  - source:
+      data_kind: outputs
+      data_key: constant
+      node_name: Constant Hello
+    target:
+      data_kind: inputs
+      data_key: a
+      node_name: StringConcatenation
+  - source:
+      data_kind: outputs
+      data_key: formatted_string
+      node_name: StringConcatenation
+    target:
+      data_kind: inputs
+      data_key: data
+      node_name: FieldsToMessage
+  - source:
+      data_kind: outputs
+      data_key: out
+      node_name: FieldsToMessage
+    target:
+      data_kind: inputs
+      data_key: message
+      node_name: TopicPublisher
+  - source:
+      data_kind: outputs
+      data_key: random_number
+      node_name: RandomInt
+    target:
+      data_kind: inputs
+      data_key: run_child_index
+      node_name: ChildSelector
+  - source:
+      data_kind: outputs
+      data_key: constant
+      node_name: Constant
+    target:
+      data_kind: inputs
+      data_key: request
+      node_name: Service
+root_name: HelloSequence
+state: EDITABLE
+path: ''
+nodes:
+  - inputs: []
+    name: HelloSequence
+    max_children: -1
+    outputs: []
+    node_class: Sequence
+    module: ros_bt_py.nodes.sequence
+    state: UNINITIALIZED
+    version: 0.9.0
+    child_names:
+      - Constant Hello
+      - RandomInt
+      - ChildSelector
+      - StringConcatenation
+      - FieldsToMessage
+      - TopicPublisher
+      - Log
+    options: []
+    option_wirings: []
+  - inputs: []
+    name: Constant Hello
+    max_children: 0
+    outputs:
+      - serialized_value: 'null'
+        serialized_type: '{"py/type": "__builtin__.basestring"}'
+        key: constant
+    node_class: Constant
+    module: ros_bt_py.nodes.constant
+    state: UNINITIALIZED
+    version: 0.9.0
+    child_names: []
+    options:
+      - serialized_value: '"Hello"'
+        serialized_type: '{"py/type": "__builtin__.basestring"}'
+        key: constant_value
+      - serialized_value: '{"py/type": "__builtin__.str"}'
+        serialized_type: '{"py/type": "__builtin__.type"}'
+        key: constant_type
+    option_wirings:
+      - source: constant_type
+        target: constant_value
+  - inputs: []
+    name: RandomInt
+    max_children: 0
+    outputs:
+      - serialized_value: 'null'
+        serialized_type: '{"py/type": "__builtin__.int"}'
+        key: random_number
+    node_class: RandomInt
+    module: ros_bt_py.nodes.random_number
+    state: UNINITIALIZED
+    version: 0.9.0
+    child_names: []
+    options:
+      - serialized_value: '4'
+        serialized_type: '{"py/type": "__builtin__.int"}'
+        key: max
+      - serialized_value: '0'
+        serialized_type: '{"py/type": "__builtin__.int"}'
+        key: min
+    option_wirings: []
+  - inputs:
+      - serialized_value: 'null'
+        serialized_type: '{"py/type": "__builtin__.int"}'
+        key: run_child_index
+    name: ChildSelector
+    max_children: 4
+    outputs: []
+    node_class: ChildSelector
+    module: tutorial_behaviors.nodes.ChildSelector
+    state: UNINITIALIZED
+    version: ''
+    child_names:
+      - Constant World
+      - Constant Universe
+      - Constant Moon
+      - Sequence
+    options: []
+    option_wirings: []
+  - inputs: []
+    name: Constant World
+    max_children: 0
+    outputs:
+      - serialized_value: 'null'
+        serialized_type: '{"py/type": "__builtin__.basestring"}'
+        key: constant
+    node_class: Constant
+    module: ros_bt_py.nodes.constant
+    state: UNINITIALIZED
+    version: 0.9.0
+    child_names: []
+    options:
+      - serialized_value: '"World"'
+        serialized_type: '{"py/type": "__builtin__.basestring"}'
+        key: constant_value
+      - serialized_value: '{"py/type": "__builtin__.str"}'
+        serialized_type: '{"py/type": "__builtin__.type"}'
+        key: constant_type
+    option_wirings:
+      - source: constant_type
+        target: constant_value
+  - inputs: []
+    name: Constant Universe
+    max_children: 0
+    outputs:
+      - serialized_value: 'null'
+        serialized_type: '{"py/type": "__builtin__.basestring"}'
+        key: constant
+    node_class: Constant
+    module: ros_bt_py.nodes.constant
+    state: UNINITIALIZED
+    version: 0.9.0
+    child_names: []
+    options:
+      - serialized_value: '"Universe"'
+        serialized_type: '{"py/type": "__builtin__.basestring"}'
+        key: constant_value
+      - serialized_value: '{"py/type": "__builtin__.str"}'
+        serialized_type: '{"py/type": "__builtin__.type"}'
+        key: constant_type
+    option_wirings:
+      - source: constant_type
+        target: constant_value
+  - inputs: []
+    name: Constant Moon
+    max_children: 0
+    outputs:
+      - serialized_value: 'null'
+        serialized_type: '{"py/type": "__builtin__.basestring"}'
+        key: constant
+    node_class: Constant
+    module: ros_bt_py.nodes.constant
+    state: UNINITIALIZED
+    version: 0.9.0
+    child_names: []
+    options:
+      - serialized_value: '"Moon"'
+        serialized_type: '{"py/type": "__builtin__.basestring"}'
+        key: constant_value
+      - serialized_value: '{"py/type": "__builtin__.str"}'
+        serialized_type: '{"py/type": "__builtin__.type"}'
+        key: constant_type
+    option_wirings:
+      - source: constant_type
+        target: constant_value
+  - inputs: []
+    name: Sequence
+    max_children: -1
+    outputs: []
+    node_class: Sequence
+    module: ros_bt_py.nodes.sequence
+    state: UNINITIALIZED
+    version: 0.9.0
+    child_names:
+      - Constant
+      - Service
+    options: []
+    option_wirings: []
+  - inputs: []
+    name: Constant
+    max_children: 0
+    outputs:
+      - serialized_value: 'null'
+        serialized_type: '{"py/type": "std_srvs.srv._Empty.EmptyRequest"}'
+        key: constant
+    node_class: Constant
+    module: ros_bt_py.nodes.constant
+    state: UNINITIALIZED
+    version: 0.9.0
+    child_names: []
+    options:
+      - serialized_value: '{"py/object": "std_srvs.srv._Empty.EmptyRequest", "py/state": []}'
+        serialized_type: '{"py/type": "std_srvs.srv._Empty.EmptyRequest"}'
+        key: constant_value
+      - serialized_value: '{"py/type": "std_srvs.srv._Empty.EmptyRequest"}'
+        serialized_type: '{"py/type": "__builtin__.type"}'
+        key: constant_type
+    option_wirings:
+      - source: constant_type
+        target: constant_value
+  - inputs:
+      - serialized_value: 'null'
+        serialized_type: '{"py/type": "std_srvs.srv._Empty.EmptyRequest"}'
+        key: request
+    name: Service
+    max_children: 0
+    outputs:
+      - serialized_value: 'null'
+        serialized_type: '{"py/type": "std_srvs.srv._Empty.EmptyResponse"}'
+        key: response
+    node_class: Service
+    module: ros_bt_py.nodes.service
+    state: UNINITIALIZED
+    version: 0.9.0
+    child_names: []
+    options:
+      - serialized_value: '1.2'
+        serialized_type: '{"py/type": "__builtin__.float"}'
+        key: wait_for_service_seconds
+      - serialized_value: '"helloService"'
+        serialized_type: '{"py/type": "__builtin__.basestring"}'
+        key: service_name
+      - serialized_value: '1.2'
+        serialized_type: '{"py/type": "__builtin__.float"}'
+        key: wait_for_response_seconds
+      - serialized_value: '{"py/type": "std_srvs.srv._Empty.EmptyRequest"}'
+        serialized_type: '{"py/type": "__builtin__.type"}'
+        key: request_type
+      - serialized_value: '{"py/type": "std_srvs.srv._Empty.EmptyResponse"}'
+        serialized_type: '{"py/type": "__builtin__.type"}'
+        key: response_type
+      - serialized_value: '{"py/type": "std_srvs.srv._Empty.Empty"}'
+        serialized_type: '{"py/type": "__builtin__.type"}'
+        key: service_type
+      - serialized_value: 'true'
+        serialized_type: '{"py/type": "__builtin__.bool"}'
+        key: fail_if_not_available
+    option_wirings: []
+  - inputs:
+      - serialized_value: 'null'
+        serialized_type: '{"py/type": "__builtin__.basestring"}'
+        key: a
+      - serialized_value: 'null'
+        serialized_type: '{"py/type": "__builtin__.basestring"}'
+        key: b
+    name: StringConcatenation
+    max_children: 0
+    outputs:
+      - serialized_value: 'null'
+        serialized_type: '{"py/type": "__builtin__.basestring"}'
+        key: formatted_string
+    node_class: StringConcatenation
+    module: ros_bt_py.nodes.format
+    state: UNINITIALIZED
+    version: ''
+    child_names: []
+    options: []
+    option_wirings: []
+  - inputs:
+      - serialized_value: 'null'
+        serialized_type: '{"py/type": "__builtin__.basestring"}'
+        key: data
+    name: FieldsToMessage
+    max_children: 0
+    outputs:
+      - serialized_value: 'null'
+        serialized_type: '{"py/type": "std_msgs.msg._String.String"}'
+        key: out
+    node_class: FieldsToMessage
+    module: ros_bt_py.ros_nodes.message_converters
+    state: UNINITIALIZED
+    version: 0.9.0
+    child_names: []
+    options:
+      - serialized_value: '{"py/type": "std_msgs.msg._String.String"}'
+        serialized_type: '{"py/type": "__builtin__.type"}'
+        key: output_type
+    option_wirings: []
+  - inputs:
+      - serialized_value: 'null'
+        serialized_type: '{"py/type": "std_msgs.msg._String.String"}'
+        key: message
+    name: TopicPublisher
+    max_children: 0
+    outputs: []
+    node_class: TopicPublisher
+    module: ros_bt_py.nodes.topic
+    state: UNINITIALIZED
+    version: 0.9.0
+    child_names: []
+    options:
+      - serialized_value: '{"py/type": "std_msgs.msg._String.String"}'
+        serialized_type: '{"py/type": "__builtin__.type"}'
+        key: topic_type
+      - serialized_value: '"HelloTopic"'
+        serialized_type: '{"py/type": "__builtin__.basestring"}'
+        key: topic_name
+    option_wirings: []
+  - inputs:
+      - serialized_value: 'null'
+        serialized_type: '{"py/type": "__builtin__.basestring"}'
+        key: in
+    name: Log
+    max_children: 0
+    outputs: []
+    node_class: Log
+    module: ros_bt_py.nodes.log
+    state: UNINITIALIZED
+    version: 1.0.0
+    child_names: []
+    options:
+      - serialized_value: >-
+          {"logger_level": "info", "py/object":
+          "ros_bt_py.ros_helpers.LoggerLevel"}
+        serialized_type: '{"py/type": "ros_bt_py.ros_helpers.LoggerLevel"}'
+        key: logger_level
+    option_wirings: []
+tick_frequency_hz: 10

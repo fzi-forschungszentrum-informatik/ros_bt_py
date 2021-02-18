@@ -1,0 +1,148 @@
+public_node_data:
+  - data_kind: outputs
+    data_key: result
+    node_name: ActionWithDebug
+  - data_kind: outputs
+    data_key: goal_status
+    node_name: ActionWithDebug
+  - data_kind: outputs
+    data_key: feedback
+    node_name: ActionWithDebug
+name: ''
+data_wirings:
+  - source:
+      data_kind: outputs
+      data_key: constant
+      node_name: Constant
+    target:
+      data_kind: inputs
+      data_key: goal
+      node_name: ActionWithDebug
+  - source:
+      data_kind: outputs
+      data_key: debugOutput
+      node_name: ActionWithDebug
+    target:
+      data_kind: inputs
+      data_key: in
+      node_name: Log
+root_name: Sequence
+state: EDITABLE
+path: ''
+nodes:
+  - inputs: []
+    name: Sequence
+    max_children: -1
+    outputs: []
+    node_class: Sequence
+    module: ros_bt_py.nodes.sequence
+    state: SHUTDOWN
+    version: 0.9.0
+    child_names:
+      - Constant
+      - ActionWithDebug
+      - Log
+    options: []
+    option_wirings: []
+  - inputs: []
+    name: Constant
+    max_children: 0
+    outputs:
+      - serialized_value: 'null'
+        serialized_type: '{"py/type": "actionlib_tutorials.msg._FibonacciGoal.FibonacciGoal"}'
+        key: constant
+    node_class: Constant
+    module: ros_bt_py.nodes.constant
+    state: SHUTDOWN
+    version: 0.9.0
+    child_names: []
+    options:
+      - serialized_value: >-
+          {"py/object": "actionlib_tutorials.msg._FibonacciGoal.FibonacciGoal",
+          "py/state": [1]}
+        serialized_type: '{"py/type": "actionlib_tutorials.msg._FibonacciGoal.FibonacciGoal"}'
+        key: constant_value
+      - serialized_value: '{"py/type": "actionlib_tutorials.msg._FibonacciGoal.FibonacciGoal"}'
+        serialized_type: '{"py/type": "__builtin__.type"}'
+        key: constant_type
+    option_wirings:
+      - source: constant_type
+        target: constant_value
+  - inputs:
+      - serialized_value: 'null'
+        serialized_type: '{"py/type": "actionlib_tutorials.msg._FibonacciGoal.FibonacciGoal"}'
+        key: goal
+    name: ActionWithDebug
+    max_children: 0
+    outputs:
+      - serialized_value: 'null'
+        serialized_type: >-
+          {"py/type":
+          "actionlib_tutorials.msg._FibonacciResult.FibonacciResult"}
+        key: result
+      - serialized_value: 'null'
+        serialized_type: '{"py/type": "__builtin__.int"}'
+        key: goal_status
+      - serialized_value: 'null'
+        serialized_type: '{"py/type": "__builtin__.basestring"}'
+        key: debugOutput
+      - serialized_value: 'null'
+        serialized_type: >-
+          {"py/type":
+          "actionlib_tutorials.msg._FibonacciFeedback.FibonacciFeedback"}
+        key: feedback
+    node_class: ActionWithDebug
+    module: ros_bt_py.nodes.action
+    state: SHUTDOWN
+    version: 0.9.0
+    child_names: []
+    options:
+      - serialized_value: >-
+          {"py/type":
+          "actionlib_tutorials.msg._FibonacciResult.FibonacciResult"}
+        serialized_type: '{"py/type": "__builtin__.type"}'
+        key: result_type
+      - serialized_value: '1.2'
+        serialized_type: '{"py/type": "__builtin__.float"}'
+        key: timeout_seconds
+      - serialized_value: >-
+          {"py/type":
+          "actionlib_tutorials.msg._FibonacciFeedback.FibonacciFeedback"}
+        serialized_type: '{"py/type": "__builtin__.type"}'
+        key: feedback_type
+      - serialized_value: '"fibonacci"'
+        serialized_type: '{"py/type": "__builtin__.basestring"}'
+        key: action_name
+      - serialized_value: 'true'
+        serialized_type: '{"py/type": "__builtin__.bool"}'
+        key: fail_if_not_available
+      - serialized_value: >-
+          {"py/type":
+          "actionlib_tutorials.msg._FibonacciAction.FibonacciAction"}
+        serialized_type: '{"py/type": "__builtin__.type"}'
+        key: action_type
+      - serialized_value: '1.2'
+        serialized_type: '{"py/type": "__builtin__.float"}'
+        key: wait_for_action_server_seconds
+      - serialized_value: '{"py/type": "actionlib_tutorials.msg._FibonacciGoal.FibonacciGoal"}'
+        serialized_type: '{"py/type": "__builtin__.type"}'
+        key: goal_type
+    option_wirings: []
+  - inputs:
+      - serialized_value: 'null'
+        serialized_type: '{"py/type": "__builtin__.basestring"}'
+        key: in
+    name: Log
+    max_children: 0
+    outputs: []
+    node_class: Log
+    module: ros_bt_py.nodes.log
+    state: SHUTDOWN
+    version: 1.0.0
+    child_names: []
+    options:
+      - serialized_value: '{"logger_level": 1, "py/object": "ros_bt_py.ros_helpers.LoggerLevel"}'
+        serialized_type: '{"py/type": "ros_bt_py.ros_helpers.LoggerLevel"}'
+        key: logger_level
+    option_wirings: []
+tick_frequency_hz: 10
