@@ -358,6 +358,10 @@ class TreeManager(object):
                 continue
             if not read_data:
                 tree = Tree()
+                # remove option wirings
+                if 'nodes' in datum:
+                    for node in datum['nodes']:
+                        node.pop('option_wirings', None)
                 genpy.message.fill_message_args(tree, datum, keys={})
                 read_data = True
             else:

@@ -3630,7 +3630,6 @@ class NewNode extends Component
                       options={this.state.options}
                       inputs={this.state.inputs}
                       outputs={this.state.outputs}
-                      option_wirings={this.props.node.option_wirings}
         />
       </div>
     );
@@ -5433,7 +5432,6 @@ class SelectedNode extends Component
                       options={this.state.options}
                       inputs={this.state.inputs}
                       outputs={this.state.outputs}
-                      option_wirings={this.props.node.option_wirings}
         />
       </div>
     );
