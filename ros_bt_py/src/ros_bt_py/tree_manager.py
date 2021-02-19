@@ -30,7 +30,7 @@ from ros_bt_py_msgs.srv import ChangeTreeNameResponse
 from ros_bt_py_msgs.msg import Tree
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import DocumentedNode
-from ros_bt_py_msgs.msg import NodeData, NodeDataLocation, NodeOptionWiring
+from ros_bt_py_msgs.msg import NodeData, NodeDataLocation
 
 from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, TreeTopologyError
 from ros_bt_py.helpers import fix_yaml, remove_input_output_values, json_encode, json_decode
@@ -1772,10 +1772,6 @@ class TreeManager(object):
                     options=to_node_data(node_class._node_config.options),
                     inputs=to_node_data(node_class._node_config.inputs),
                     outputs=to_node_data(node_class._node_config.outputs),
-                    option_wirings=[NodeOptionWiring(
-                        source=data['source'],
-                        target=data['target'])
-                        for data in node_class._node_config.option_wirings],
                     doc=str(doc),
                     tags=node_class._node_config.tags
                 ))

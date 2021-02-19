@@ -9,8 +9,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
     options={},
     inputs={},
     outputs={},
-    max_children=0,
-    option_wirings=[]))
+    max_children=0))
 class NodeWithoutVersion(Leaf):
     def _do_setup(self):
         pass
@@ -33,8 +32,7 @@ class NodeWithoutVersion(Leaf):
     options={},
     inputs={},
     outputs={},
-    max_children=0,
-    option_wirings=[]))
+    max_children=0))
 class NodeWithVersionButWithoutMigration(Leaf):
     def _do_setup(self):
         pass
@@ -57,8 +55,7 @@ class NodeWithVersionButWithoutMigration(Leaf):
     options={},
     inputs={},
     outputs={},
-    max_children=0,
-    option_wirings=[]))
+    max_children=0))
 class NodeWithoutMigrationFunction(Leaf):
     def _do_setup(self):
         pass
@@ -81,8 +78,7 @@ class NodeWithoutMigrationFunction(Leaf):
     options={},
     inputs={},
     outputs={},
-    max_children=0,
-    option_wirings=[]))
+    max_children=0))
 class NodeWithoutMigrationToFirstVersion(Leaf):
     def _do_setup(self):
         pass
@@ -105,8 +101,7 @@ class NodeWithoutMigrationToFirstVersion(Leaf):
     options={},
     inputs={},
     outputs={},
-    max_children=0,
-    option_wirings=[]))
+    max_children=0))
 class NodeWithoutVersionAndWithFirstMigration(Leaf):
     def _do_setup(self):
         pass
@@ -129,8 +124,7 @@ class NodeWithoutVersionAndWithFirstMigration(Leaf):
     options={},
     inputs={},
     outputs={},
-    max_children=0,
-    option_wirings=[]))
+    max_children=0))
 class NodeWithBrokenMigrationPath(Leaf):
     def _do_setup(self):
         pass
@@ -153,8 +147,7 @@ class NodeWithBrokenMigrationPath(Leaf):
     options={},
     inputs={},
     outputs={},
-    max_children=0,
-    option_wirings=[]))
+    max_children=0))
 class NodeWithIdenticalVersions(Leaf):
     def _do_setup(self):
         pass
@@ -178,8 +171,7 @@ class NodeWithIdenticalVersions(Leaf):
              'type_option': type},
     inputs={},
     outputs={'valid_output': int},
-    max_children=0,
-    option_wirings=[]))
+    max_children=0))
 class NodeWithWorkingMigrations(Leaf):
     def _do_setup(self):
         pass
@@ -202,8 +194,7 @@ class NodeWithWorkingMigrations(Leaf):
     options={'change_type': str},
     inputs={'change_type': str},
     outputs={'change_type': str},
-    max_children=0,
-    option_wirings=[]))
+    max_children=0))
 class NodeWithWorkingMigrationsChangeType(Leaf):
     def _do_setup(self):
         pass
@@ -226,8 +217,7 @@ class NodeWithWorkingMigrationsChangeType(Leaf):
     options={},
     inputs={},
     outputs={},
-    max_children=0,
-    option_wirings=[]))
+    max_children=0))
 class NodeWithWorkingMigrationsThatChangesTree(Leaf):
     def _do_setup(self):
         pass
@@ -250,8 +240,7 @@ class NodeWithWorkingMigrationsThatChangesTree(Leaf):
     options={},
     inputs={},
     outputs={},
-    max_children=0,
-    option_wirings=[]))
+    max_children=0))
 class NodeWithGetOptionException(Leaf):
     def _do_setup(self):
         pass
@@ -274,8 +263,7 @@ class NodeWithGetOptionException(Leaf):
     options={'valid_option': int},
     inputs={},
     outputs={},
-    max_children=0,
-    option_wirings=[]))
+    max_children=0))
 class NodeWithAddOptionException(Leaf):
     def _do_setup(self):
         pass
@@ -298,8 +286,7 @@ class NodeWithAddOptionException(Leaf):
     options={},
     inputs={},
     outputs={},
-    max_children=0,
-    option_wirings=[]))
+    max_children=0))
 class NodeWithAddInputException(Leaf):
     def _do_setup(self):
         pass
@@ -322,8 +309,7 @@ class NodeWithAddInputException(Leaf):
     options={},
     inputs={},
     outputs={'valid_output': int},
-    max_children=0,
-    option_wirings=[]))
+    max_children=0))
 class NodeWithAddOutputException(Leaf):
     def _do_setup(self):
         pass
@@ -346,8 +332,7 @@ class NodeWithAddOutputException(Leaf):
     options={},
     inputs={},
     outputs={},
-    max_children=0,
-    option_wirings=[]))
+    max_children=0))
 class NodeWithOptionrefException(Leaf):
     def _do_setup(self):
         pass

@@ -14,8 +14,7 @@ from rosbridge_library.internal.message_conversion import InvalidMessageExceptio
              'default': OptionRef('io_type')},
     inputs={'in': OptionRef('io_type')},
     outputs={'out': OptionRef('io_type')},
-    max_children=0,
-    option_wirings=[]))
+    max_children=0))
 class IOInputOption(IO):
     """Explicitly marks the input of a subtree.
     If no input is connected to `in`, the value provided via the `default` option is used.
@@ -112,8 +111,7 @@ class IOInput(IO):
              'default': OptionRef('io_type')},
     inputs={'in': OptionRef('io_type')},
     outputs={'out': OptionRef('io_type')},
-    max_children=0,
-    option_wirings=[]))
+    max_children=0))
 class IOOutputOption(IO):
     """Explicitly marks the output of a subtree.
     If no input is connected to `in`, the value provided via the `default` option is used.

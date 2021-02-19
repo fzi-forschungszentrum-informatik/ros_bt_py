@@ -8,7 +8,7 @@ import rospy
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import NodeData as NodeDataMsg
-from ros_bt_py_msgs.msg import NodeDataLocation, NodeDataWiring, NodeOptionWiring
+from ros_bt_py_msgs.msg import NodeDataLocation, NodeDataWiring
 from ros_bt_py_msgs.msg import Tree
 from ros_bt_py_msgs.msg import UtilityBounds
 
@@ -254,8 +254,6 @@ class Node(object):
             if extra_option_keys:
                 raise ValueError('Extra options: %s'
                                  % str(extra_option_keys))
-
-        self.option_wirings = self.node_config.option_wirings
 
         self.inputs = NodeDataMap(name='inputs')
         self._register_node_data(source_map=self.node_config.inputs,
@@ -762,7 +760,7 @@ class Node(object):
     def __repr__(self):
         return \
             '%s(options=%r, name=%r), parent_name:%r, state:%r, inputs:%r, outputs:%r,' \
-            ' children:%r, option_wirings:%r' \
+            ' children:%r' \
             % (type(self).__name__,
                {key: self.options[key] for key in self.options},
                self.name,
@@ -770,8 +768,7 @@ class Node(object):
                self.state,
                self.inputs,
                self.outputs,
-               self.children,
-               self.option_wirings)
+               self.children)
 
     def __eq__(self, other):
         return (self.name == other.name
@@ -782,8 +779,7 @@ class Node(object):
                 and self.options == other.options
                 and self.inputs == other.inputs
                 and self.outputs == other.outputs
-                and self.children == other.children
-                and self.option_wirings == other.option_wirings)
+                and self.children == other.children)
 
     def __ne__(self, other):
         return not self == other
@@ -1315,10 +1311,6 @@ class Node(object):
                            serialized_value=self.options.get_serialized(key),
                            serialized_type=self.options.get_serialized_type(key))
                            for key in self.options],
-                       option_wirings=[NodeOptionWiring(
-                           source=data['source'],
-                           target=data['target'])
-                           for data in self.option_wirings],
                        inputs=[NodeDataMsg(
                            key=key,
                            serialized_value=self.inputs.get_serialized(key),
