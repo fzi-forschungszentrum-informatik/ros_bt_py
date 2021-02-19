@@ -1232,6 +1232,18 @@ class LoadSaveControls extends Component
       serviceType: 'ros_bt_py_msgs/LoadTree'
     });
 
+    this.check_node_versions_service = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'check_node_versions',
+      serviceType: 'ros_bt_py_msgs/MigrateTree'
+    });
+
+    this.migrate_tree_service = new ROSLIB.Service({
+      ros: this.props.ros,
+      name: this.props.bt_namespace + 'migrate_tree',
+      serviceType: 'ros_bt_py_msgs/MigrateTree'
+    });
+
     this.fix_yaml_service = new ROSLIB.Service({
       ros: this.props.ros,
       name: this.props.bt_namespace + 'fix_yaml',
@@ -1264,42 +1276,128 @@ class LoadSaveControls extends Component
 
   loadTreeMsg(msg)
   {
-    this.load_service.callService(
-      new ROSLIB.ServiceRequest({
-        tree: msg,
-        permissive: false
-      }),
-      function(response) {
-        if (response.success) {
-          console.log('called LoadTree service successfully');
-        } else {
-          if (response.error_message.startsWith('Expected data to be of type type, got dict instead. Looks like failed jsonpickle decode,') ||
-              response.error_message.startsWith('AttributeError, maybe a ROS Message definition changed.')) {
-            if (window.confirm("The tree you want to load seems to have nodes with invalid options, do you want to load it in permissive mode? WARNING: this will probably change some option values!")) {
-              this.load_service.callService(
-                new ROSLIB.ServiceRequest({
-                  tree: msg,
-                  permissive: true
-                }),
-                function(response) {
-                  if (response.success) {
-                    console.log('called LoadTree service successfully');
-                  }
-                  else {
-                    this.props.onError(response.error_message);
-                  }
-                }.bind(this),
-                function(failed) {
-                  this.props.onError('Error loading tree, is your yaml file correct? ' + failed)
-                }.bind(this));
-            }
+  // do a version check before loading
+  this.check_node_versions_service.callService(
+    new ROSLIB.ServiceRequest({
+      tree: msg
+    }),
+    function(response) {
+      if (response.success) {
+        console.log('called check version service successfully');
+        if (response.migrated)
+        {
+          console.log("migration needed");
+          if (window.confirm("The tree you want to load needs to be migrated, should this be tried?"))
+          {
+            this.migrate_tree_service.callService(
+              new ROSLIB.ServiceRequest({
+                tree: msg
+              }),
+              function(response) {
+                if (response.success) {
+                  console.log('called MigrateTree service successfully');
+                  this.load_service.callService(
+                    new ROSLIB.ServiceRequest({
+                      tree: response.tree,
+                      permissive: false
+                    }),
+                    function(response) {
+                      if (response.success) {
+                        console.log('called LoadTree service successfully');
+                        this.props.onChangeFileModal(null);
+                      } else {
+                        if (response.error_message.startsWith('Expected data to be of type type, got dict instead. Looks like failed jsonpickle decode,') ||
+                            response.error_message.startsWith('AttributeError, maybe a ROS Message definition changed.')) {
+                          this.props.onError(response.error_message);
+                          if (window.confirm("The tree you want to load seems to have nodes with invalid options, do you want to load it in permissive mode? WARNING: this will probably change some option values!")) {
+                            this.load_service.callService(
+                              new ROSLIB.ServiceRequest({
+                                tree: msg,
+                                permissive: true
+                              }),
+                              function(response) {
+                                if (response.success) {
+                                  console.log('called LoadTree service successfully');
+                                  this.props.onChangeFileModal(null);
+                                }
+                                else {
+                                  this.setState({error_message: response.error_message});
+                                }
+                              }.bind(this),
+                              function(failed) {
+                                this.setState({error_message: 'Error loading tree, is your yaml file correct? '});
+                              }.bind(this));
+                          }
+                        }
+                        this.setState({error_message: response.error_message});
+                      }
+                    }.bind(this),
+                    function(failed) {
+                      this.setState({error_message: 'Error loading tree, is your yaml file correct? '});
+                    }.bind(this));
+                }
+                else {
+                  this.setState({error_message: response.error_message});
+                }
+              }.bind(this),
+              function(failed) {
+                this.setState({error_message: 'Error loading tree, is your yaml file correct? '});
+              }.bind(this));
+          } else {
+            this.setState({error_message: response.error_message});
           }
-          this.props.onError(response.error_message);
+
+        } else {
+          this.load_service.callService(
+            new ROSLIB.ServiceRequest({
+              tree: msg,
+              permissive: false
+            }),
+            function(response) {
+              if (response.success) {
+                console.log('called LoadTree service successfully');
+                this.props.onChangeFileModal(null);
+              } else {
+                console.log("err:", response.error_message);
+
+                if (response.error_message.startsWith('Expected data to be of type type, got dict instead. Looks like failed jsonpickle decode,') ||
+                    response.error_message.startsWith('AttributeError, maybe a ROS Message definition changed.')) {
+                  this.props.onError(response.error_message);
+                  if (window.confirm("The tree you want to load seems to have nodes with invalid options, do you want to load it in permissive mode? WARNING: this will probably change some option values!")) {
+                    this.load_service.callService(
+                      new ROSLIB.ServiceRequest({
+                        tree: msg,
+                        permissive: true
+                      }),
+                      function(response) {
+                        if (response.success) {
+                          console.log('called LoadTree service successfully');
+                          this.props.onChangeFileModal(null);
+                        }
+                        else {
+                          this.setState({error_message: response.error_message});
+                        }
+                      }.bind(this),
+                      function(failed) {
+                        this.setState({error_message: 'Error loading tree, is your yaml file correct? '});
+                      }.bind(this));
+                  }
+                }
+                this.setState({error_message: response.error_message});
+              }
+            }.bind(this),
+            function(failed) {
+              this.setState({error_message: 'Error loading tree, is your yaml file correct? '});
+            }.bind(this));
         }
-      }.bind(this),
-      function(failed) {
-        this.props.onError('Error loading tree, is your yaml file correct? ' + failed)
-      }.bind(this));
+      }
+      else {
+        this.setState({error_message: response.error_message});
+      }
+    }.bind(this),
+    function(failed) {
+      this.setState({error_message: 'Error loading tree, is your yaml file correct? '});
+    }.bind(this));
   }
 
   handleFileRead(event)
