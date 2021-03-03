@@ -9,8 +9,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
     options={},
     inputs={},
     outputs={},
-    max_children=0,
-    option_wirings=[]))
+    max_children=0))
 class NodeWithoutVersionAndWithoutMigrationsModule(Leaf):
     def _do_setup(self):
         pass
@@ -33,8 +32,7 @@ class NodeWithoutVersionAndWithoutMigrationsModule(Leaf):
     options={},
     inputs={},
     outputs={},
-    max_children=0,
-    option_wirings=[]))
+    max_children=0))
 class NodeWithVersionAndWithoutMigrationsModule(Leaf):
     def _do_setup(self):
         pass

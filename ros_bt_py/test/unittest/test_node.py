@@ -406,12 +406,12 @@ class TestNodeConfig(unittest.TestCase):
             expected = "NodeConfig(inputs={'int_input': <type 'int'>}," \
                        " outputs={'str_output': <type 'str'>}," \
                        " options={'float_option': <type 'float'>}," \
-                       " max_children=42, option_wirings=[], optional_options=[], version=)"
+                       " max_children=42, optional_options=[], version=)"
         else:
             expected = "NodeConfig(inputs={'int_input': <class 'int'>}," \
                        " outputs={'str_output': <class 'str'>}," \
                        " options={'float_option': <class 'float'>}," \
-                       " max_children=42, option_wirings=[], optional_options=[], version=)"
+                       " max_children=42, optional_options=[], version=)"
         self.assertEqual(expected, repr(self.conf))
 
 

@@ -19,8 +19,6 @@ NodeData[] options
 NodeData[] inputs
 NodeData[] outputs
 
-NodeOptionWiring[] option_wirings
-
 # Documentation
 string doc
 

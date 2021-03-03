@@ -103,8 +103,7 @@ updated this tick.
         'in': OptionRef('compare_type')
     },
     outputs={},
-    max_children=0,
-    option_wirings=[{'source': 'compare_type', 'target': 'expected'}]))
+    max_children=0))
 class CompareConstant(Leaf):
     """Compares `expected` and `in`
 

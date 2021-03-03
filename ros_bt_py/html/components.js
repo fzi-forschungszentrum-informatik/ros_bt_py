@@ -3716,6 +3716,7 @@ class NewNode extends Component
                       name={this.state.name}
                       nodeClass={this.props.node.node_class}
                       module={this.props.node.module}
+                      availableNodes={this.props.availableNodes}
                       doc={this.props.node.doc}
                       changeCopyMode={this.props.changeCopyMode}
                       messagesFuse={this.props.messagesFuse}
@@ -3727,7 +3728,6 @@ class NewNode extends Component
                       options={this.state.options}
                       inputs={this.state.inputs}
                       outputs={this.state.outputs}
-                      option_wirings={this.props.node.option_wirings}
         />
       </div>
     );
@@ -5530,7 +5530,6 @@ class SelectedNode extends Component
                       options={this.state.options}
                       inputs={this.state.inputs}
                       outputs={this.state.outputs}
-                      option_wirings={this.props.node.option_wirings}
         />
       </div>
     );
@@ -5820,49 +5819,46 @@ class EditableNode extends Component
 
   handleOptionWirings(paramType, key, new_value)
   {
-    if (this.props.option_wirings)
+    if (this.props.module === 'ros_bt_py.ros_nodes.enum' && this.props.nodeClass === 'Enum')
     {
-      // special case for ros_bt_py.ros_nodes.enum.Enum
-      if (this.props.module === 'ros_bt_py.ros_nodes.enum' && this.props.nodeClass === 'Enum')
+      if (key == 'ros_message_type')
       {
-        this.props.option_wirings.forEach(function(option_wiring) {
-          if (option_wiring.source === key)
-          {
-            var referenced_option = this.props.options.filter(function(item){
-              return item.key == option_wiring.source;
-            });
+        var message = getMessageType(new_value);
+        this.get_message_constant_fields_service.callService(
+          new ROSLIB.ServiceRequest({
+            message_type: message.message_type,
+            service: message.service
+          }),
+          function(response) {
+            var obj = getDefaultValue('ros_bt_py.ros_helpers.EnumValue', null);
 
-            if (referenced_option && referenced_option.length > 0)
-            {
-              var message = getMessageType(new_value);
-              this.get_message_constant_fields_service.callService(
-                new ROSLIB.ServiceRequest({
-                  message_type: message.message_type,
-                  service: message.service
-                }),
-                function(response) {
-                  var obj = getDefaultValue('ros_bt_py.ros_helpers.EnumValue', null);
-
-                  if (response.success) {
-                    obj.value['field_names'] = response.field_names;
-                    obj.value['enum_value'] = response.field_names[0];
-                  }
-                  this.props.updateValue('options', option_wiring.target, obj.value);
-
-                }.bind(this));
+            if (response.success) {
+              obj.value['field_names'] = response.field_names;
+              obj.value['enum_value'] = response.field_names[0];
             }
-          }
-        }.bind(this));
-      } else {
-        this.props.option_wirings.forEach(function(option_wiring) {
-          if (option_wiring.source === key)
-          {
-            var referenced_option = this.props.options.filter(function(item){
-              return item.key == option_wiring.source;
-            });
+            this.props.updateValue('options', 'constant_name', obj.value);
 
-            if (referenced_option && referenced_option.length > 0)
-            {
+          }.bind(this));
+      }
+    } else {
+      var referenced_node = this.props.availableNodes.filter(function(item){
+        return item.node_class == this.props.nodeClass && item.module == this.props.module;
+      }.bind(this))[0];
+
+      referenced_node.options.forEach(function(option) {
+        var typeName = prettyprint_type(option.serialized_value);
+
+        if (typeName.startsWith('OptionRef('))
+        {
+          var optionTypeName = typeName.substring(
+              'OptionRef('.length, typeName.length - 1);
+          var optionType = this.props.options.find(x => {
+            return x.key === optionTypeName;
+          });
+          if (optionType)
+          {
+
+            if (optionType.key == key) {
               var message = getMessageType(new_value);
               this.get_message_fields_service.callService(
                 new ROSLIB.ServiceRequest({
@@ -5872,13 +5868,13 @@ class EditableNode extends Component
                 function(response) {
                   if (response.success) {
                     var obj = JSON.parse(response.fields);
-                    this.props.updateValue('options', option_wiring.target, obj);
+                    this.props.updateValue('options', option.key, obj);
                   }
                 }.bind(this));
             }
           }
-        }.bind(this));
-      }
+        }
+      }.bind(this));
     }
   }
 

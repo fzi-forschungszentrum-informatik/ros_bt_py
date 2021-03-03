@@ -48,8 +48,7 @@ class MessageFromDict(Leaf):
              'dict': dict},
     inputs={},
     outputs={'message': OptionRef('message_type')},
-    max_children=0,
-    option_wirings=[{'source': 'message_type', 'target': 'dict'}]))
+    max_children=0))
 class MessageFromConstDict(Leaf):
     """Fill a ROS message with the values from `dict`"""
     def _do_setup(self):
