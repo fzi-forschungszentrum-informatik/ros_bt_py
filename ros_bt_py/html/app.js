@@ -325,6 +325,7 @@ class App extends Component
         capability: msg.capabilities[i].capability,
         implementation: msg.capabilities[i].implementation,
         description: msg.capabilities[i].description,
+        target: msg.capabilities[i].target,
         capability_object: msg.capabilities[i]
       };
       this.capabilities.push(capability);

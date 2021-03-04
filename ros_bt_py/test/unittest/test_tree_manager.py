@@ -807,11 +807,13 @@ class TestTreeManager(unittest.TestCase):
 
     def testRemoveNode(self):
         instance = self.manager.instantiate_node_from_msg(self.node_msg, allow_rename=True)
+        self.assertEqual(len(self.manager.nodes), 1)
 
         remove_request = RemoveNodeRequest(node_name=instance.name)
 
         response = self.manager.remove_node(remove_request)
         self.assertTrue(get_success(response))
+        self.assertEqual(len(self.manager.nodes), 0)
 
         # Second remove will fail, there's nothing left to remove.
         response = self.manager.remove_node(remove_request)

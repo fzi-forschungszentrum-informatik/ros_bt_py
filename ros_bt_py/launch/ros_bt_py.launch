@@ -5,6 +5,9 @@
     <node name="rqt_console" pkg="rqt_console" type="rqt_console" />
   </group>
 
+  <!-- start web interface by default -->
+  <arg name="web_interface" default="true" />
+
   <!-- port of the editor web interface -->
   <arg name="port" value="8085" />
 
@@ -31,22 +34,24 @@
   <!-- -->
   <arg name="show_traceback_on_exception" default="false" />
   
-  <!-- rosbridge that provides the websocket connection for the web interface -->
-  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch">
-    <arg name="services_glob" default="[*/rosapi/*, */tree_node/*, */capability_manager/*]" />
-  </include>
+  <group if="$(arg web_interface)">
+    <!-- rosbridge that provides the websocket connection for the web interface -->
+    <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch">
+      <arg name="services_glob" default="[*/rosapi/*, */tree_node/*, */capability_manager/*]" />
+    </include>
 
-  <!-- webserver -->
-  <include file="$(find web_server)/launch/web_server.launch">
-    <arg name="port" value="$(arg port)" />
-    <arg name="cache_static_files" value="false" />
-    <arg name="packages" value="[
-        {
-            package: ros_bt_py,
-            directory: html
-        }
-      ]" />
-  </include>
+    <!-- webserver -->
+    <include file="$(find web_server)/launch/web_server.launch">
+      <arg name="port" value="$(arg port)" />
+      <arg name="cache_static_files" value="false" />
+      <arg name="packages" value="[
+          {
+              package: ros_bt_py,
+              directory: html
+          }
+        ]" />
+    </include>
+  </group>
 
   <!-- behavior tree backend, responsible for executing the tree -->
   <node name="tree_node" pkg="ros_bt_py" type="tree_node.py" output="log"
@@ -95,8 +100,10 @@
     <param name="default_tree_control_command" value="$(arg default_tree_control_command)" />
   </node>
 
-  <!-- helper node that prints the url of the editor web interface for convenience -->
-  <node name="print_editor_url" pkg="ros_bt_py" type="print_editor_url.py" output="screen">
-    <param name="port" value="$(arg port)" />
-  </node>
+  <group if="$(arg web_interface)">
+    <!-- helper node that prints the url of the editor web interface for convenience -->
+    <node name="print_editor_url" pkg="ros_bt_py" type="print_editor_url.py" output="screen">
+      <param name="port" value="$(arg port)" />
+    </node>
+  </group>
 </launch>

@@ -1893,6 +1893,8 @@ class TreeManager(object):
                 subtree = root.get_subtree_msg()[0]
                 self.tree_msg.nodes = subtree.nodes
                 self.tree_msg.public_node_data = subtree.public_node_data
+            else:
+                self.tree_msg.nodes = []
         except TreeTopologyError as exc:
             rospy.logwarn("Strange topology %s" % exc)
             # build a tree_msg out of this strange topology, so the user can fix it in the editor
