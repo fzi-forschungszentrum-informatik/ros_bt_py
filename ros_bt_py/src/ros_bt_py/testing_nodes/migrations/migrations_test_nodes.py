@@ -71,6 +71,14 @@ class NodeWithWorkingMigrations(Migration):
         self.add_option('option_object', object)
 
 
+class NodeWithWorkingMigrationsChangeType(Migration):
+    @migration(from_version='', to_version='1.0.0')
+    def first_migration(self):
+        self.change_option_type('change_type', str, 'hi')
+        self.change_input_type('change_type', str)
+        self.change_output_type('change_type', str)
+
+
 class NodeWithWorkingMigrationsThatChangesTree(Migration):
     @migration(from_version='', to_version='0.8.0')
     def first_migration(self):

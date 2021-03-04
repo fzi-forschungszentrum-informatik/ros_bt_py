@@ -48,3 +48,10 @@ class TestHelpers(unittest.TestCase):
             self.assertEqual(json_decode('{"py/type": "__builtin__.int"}'), int)
         else:
             self.assertEqual(json_decode('{"py/type": "builtins.int"}'), int)
+
+    def testJsonDecode23(self):
+        with mock.patch.object(sys, 'version_info') as version_info:
+            version_info.major = 2
+            self.assertEqual(json_decode('{}'), {})
+            version_info.major = 3
+            self.assertEqual(json_decode('{}'), {})

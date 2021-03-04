@@ -403,6 +403,35 @@ class Migration(object):
                 option.key = new_key
                 break
 
+    def change_input_type(self, key, data_type):
+        # TODO: exception on something really wrong
+        for index, node_input in enumerate(self.msg.inputs):
+            if node_input.key == key:
+                node_data = self._create_node_data(
+                    key=key,
+                    data_type=data_type)
+                node_data.serialized_value = "null"
+                self.msg.inputs[index] = node_data
+
+    def change_output_type(self, key, data_type):
+        # TODO: exception on something really wrong
+        for index, node_output in enumerate(self.msg.outputs):
+            if node_output.key == key:
+                node_data = self._create_node_data(
+                    key=key,
+                    data_type=data_type)
+                node_data.serialized_value = "null"
+                self.msg.outputs[index] = node_data
+
+    def change_option_type(self, key, data_type, initial_value=None,):
+        # TODO: exception on something really wrong
+        for index, node_option in enumerate(self.msg.options):
+            if node_option.key == key:
+                self.msg.options[index] = self._create_node_data(
+                    key=key,
+                    data_type=data_type,
+                    initial_value=initial_value)
+
     def make_name_unique(self, name):
         node_names = []
         for node in self.tree.nodes:

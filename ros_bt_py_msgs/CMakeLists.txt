@@ -20,7 +20,6 @@ add_message_files(
      NodeDataLocation.msg
      NodeDataWiring.msg
      NodeDiagnostics.msg
-     NodeOptionWiring.msg
      Package.msg
      Packages.msg
      RemoteSlotState.msg

@@ -14,8 +14,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
              'max': int},
     inputs={},
     outputs={'random_number': int},
-    max_children=0,
-    option_wirings=[]))
+    max_children=0))
 class RandomInt(Leaf):
     """Provides a pseudo-random integer in range min <= random_number < max
     """
@@ -48,8 +47,7 @@ class RandomInt(Leaf):
     inputs={'min': int,
             'max': int},
     outputs={'random_number': int},
-    max_children=0,
-    option_wirings=[]))
+    max_children=0))
 class RandomIntInputs(Leaf):
     """Provides a pseudo-random integer in range min <= random_number < max
     """
