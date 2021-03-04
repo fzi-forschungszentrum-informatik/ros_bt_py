@@ -258,6 +258,7 @@ class TreeManager(object):
 
             if self._stop_after_result:
                 if root.state != NodeMsg.RUNNING:
+                    self.publish_info(self.debug_manager.get_debug_info_msg(), ticked=False)
                     break
 
             if self._once:
@@ -277,7 +278,6 @@ class TreeManager(object):
         root.untick()
         with self._state_lock:
             self.tree_msg.state = Tree.IDLE
-        self.publish_info(self.debug_manager.get_debug_info_msg(), ticked=False)
 
     def find_nodes_in_cycles(self):
         """Return a list of all nodes in the tree that are part of cycles."""
