@@ -2399,10 +2399,6 @@ class D3BehaviorTreeEditor extends Component
     });
     className = className.enter().append("h5").attr("class", "class_name").merge(className);
     className.html(function(d) {
-      // FIXME: hacky
-      // if (d.data.node_class == 'Capability') {
-      //   console.log("data: ", d);
-      // }
       return d.data.node_class;
     });
   }
@@ -4808,14 +4804,14 @@ class MultipleSelection extends Component
   buildNodeMessage()
   {
     // FIXME: this could be WRONG!!!
-    var cap_name = this.state.capability; // + "_" + this.state.implementation;
-    if (this.state.capability == this.state.implementation) {
-      cap_name = this.state.capability;
-    }
+    // var cap_name = this.state.capability; // + "_" + this.state.implementation;
+    // if (this.state.capability == this.state.implementation) {
+    //   cap_name = this.state.capability;
+    // }
     return {
       module: 'bt_capabilities.nodes.capability',
       node_class: 'Capability',
-      name: cap_name,
+      name: this.state.capability + "_" + this.state.implementation,
       options: [{
                   key: 'capability',
                   serialized_value: JSON.stringify({"py/object": "bt_capabilities.nodes.capability.CapabilityType", "capability": this.state.capability})
