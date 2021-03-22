@@ -42,6 +42,7 @@ myformatter = ExtendedFormatter()
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={},
     inputs={'a': str, 'b': str},
     outputs={'formatted_string': str},
@@ -150,6 +151,7 @@ class FormatInputNode(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={'format_strings': list},
     inputs={'dict': dict},
     outputs={'formatted_strings': list},
@@ -191,6 +193,7 @@ class FormatOptionListNode(Leaf):
 
 
 @define_bt_node(NodeConfig(
+    version='0.9.0',
     options={},
     inputs={'dict': dict,
             'format_strings': list},
