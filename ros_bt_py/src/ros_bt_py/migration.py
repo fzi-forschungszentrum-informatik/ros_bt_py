@@ -173,9 +173,10 @@ class MigrationManager(object):
                                 valid = False
                         m.migration_info[migrations_module_name].valid = valid
                 except TypeError as e:
-                    rospy.logerr(traceback.format_exc())
-                    rospy.logwarn('%s: no migration available' % (
-                        module_name))
+                    rospy.logwarn('%s: no migration available, the exception was: %s' % (
+                        module_name,
+                        traceback.format_exc()
+                    ))
 
     def check_node_versions(self, request):
         load_response = self.tree_manager.load_tree_from_file(request)

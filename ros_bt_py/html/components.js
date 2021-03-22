@@ -1483,6 +1483,13 @@ class LoadSaveControls extends Component
         }
       }
 
+      if(msg.hasOwnProperty('nodes')) {
+        console.log(msg);
+        for (var i = 0; i < msg.nodes.length; i++) {
+          delete msg.nodes[i].option_wirings;
+        }
+      }
+
       this.loadTreeMsg(msg);
     } catch (e) {
       // try fixing the YAML error
