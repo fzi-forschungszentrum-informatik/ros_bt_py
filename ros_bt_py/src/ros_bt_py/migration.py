@@ -176,7 +176,7 @@ class MigrationManager(object):
                     rospy.logwarn('%s: no migration available, the exception was: %s' % (
                         module_name,
                         traceback.format_exc()
-                        ))
+                    ))
 
     def check_node_versions(self, request):
         load_response = self.tree_manager.load_tree_from_file(request)
