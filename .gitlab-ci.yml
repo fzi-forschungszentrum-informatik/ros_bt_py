@@ -9,9 +9,6 @@ build_bionic:
 build_focal:
   needs: ["catkin_lint_focal"]
 
-build_xenial:
-  needs: ["catkin_lint_xenial"]
-
 run_tests_bionic:
   needs: ["build_bionic"]
   retry:
@@ -25,17 +22,6 @@ run_tests_bionic:
 
 run_tests_focal:
   needs: ["build_focal"]
-  retry:
-    max: 1
-    when:
-      - script_failure
-  artifacts:
-    when: always
-    reports:
-      junit: test_results/ros_bt_py/*.xml
-
-run_tests_xenial:
-  needs: ["build_xenial"]
   retry:
     max: 1
     when:
