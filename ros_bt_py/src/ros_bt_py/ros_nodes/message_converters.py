@@ -75,7 +75,10 @@ class MessageToFields(Leaf):
                     duration_value.data.nsecs = value.nsecs
                     self.outputs[field] = duration_value
                 else:
-                    self.outputs[field] = value
+                    if type(value) == tuple and self.outputs.get_type(field) == list:
+                        self.outputs[field] = list(value)
+                    else:
+                        self.outputs[field] = value
         return NodeMsg.SUCCEEDED
 
     def _do_untick(self):
