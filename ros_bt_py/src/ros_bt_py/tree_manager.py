@@ -822,6 +822,7 @@ class TreeManager(object):
                     with self._state_lock:
                         self.tree_msg.state = Tree.TICKING
                     self._once = False
+                    self._stop_after_result = False
                     if request.command == ControlTreeExecutionRequest.TICK_UNTIL_RESULT:
                         self._stop_after_result = True
                     # Use provided tick frequency, if any

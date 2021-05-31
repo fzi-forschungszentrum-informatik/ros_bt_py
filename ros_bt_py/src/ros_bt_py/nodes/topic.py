@@ -10,7 +10,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
 @define_bt_node(NodeConfig(
-    version='0.9.0',
+    version='1.0.0',
     options={'topic_type': type,
              'topic_name': str},
     inputs={},
@@ -46,7 +46,10 @@ class TopicSubscriber(Leaf):
 
     def _do_shutdown(self):
         # Unsubscribe from the topic so we don't receive further updates
-        self._subscriber.unregister()
+        try:
+            self._subscriber.unregister()
+        except AttributeError:
+            self.logwarn("Can not unregister as no subscriber is available.")
 
     def _do_reset(self):
         # discard the last received message
@@ -75,7 +78,7 @@ class TopicSubscriber(Leaf):
 
 
 @define_bt_node(NodeConfig(
-    version='0.9.0',
+    version='1.0.0',
     options={'topic_type': type,
              'topic_name': str,
              'memory_delay': float},
@@ -119,7 +122,10 @@ class TopicMemorySubscriber(Leaf):
         self._msg = None
         self._last_time = None
         # Unsubscribe from the topic so we don't receive further updates
-        self._subscriber.unregister()
+        try:
+            self._subscriber.unregister()
+        except AttributeError:
+            self.logwarn("Can not unregister as no subscriber is available.")
 
     def _do_reset(self):
         # discard the last received message and re-subscribe to the
@@ -148,7 +154,7 @@ class TopicMemorySubscriber(Leaf):
 
 
 @define_bt_node(NodeConfig(
-    version='0.9.0',
+    version='1.0.0',
     options={'topic_type': type,
              'topic_name': str},
     inputs={'message': OptionRef('topic_type')},
@@ -171,8 +177,11 @@ class TopicPublisher(Leaf):
 
     def _do_shutdown(self):
         # Unregister the publisher
-        if self._publisher is not None:
-            self._publisher.unregister()
+        try:
+            if self._publisher is not None:
+                self._publisher.unregister()
+        except AttributeError:
+            self.logwarn("Can not unregister as no publisher is available.")
         self._publisher = None
 
     def _do_reset(self):
