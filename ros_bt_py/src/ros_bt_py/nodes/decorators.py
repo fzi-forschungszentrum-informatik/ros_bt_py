@@ -347,6 +347,66 @@ class Repeat(Decorator):
     # def _do_calculate_utility(self):
     #     pass
 
+@define_bt_node(NodeConfig(
+    version='0.9.0',
+    options={},
+    inputs={'reset': bool},
+    outputs={},
+    optional_options={'reset'},
+    max_children=1))
+class RepeatNoAutoReset(Repeat):
+    """Repeat the child `num_repeat` times but does not reset
+
+    Repeat, here, means counting the number of times the child SUCCEEDED,
+    if the number of repeats is not yet reached, the child will be resetted.
+    Returns RUNNING while the number of repeats is not yet reached,
+    returns FAILED when the child fails.
+
+    This Repeat will NOT reset its count when _do_reset() is called which means
+    it will not reset once the tree is running, other than by deliberate decission within 
+    the tree. This can be used to "reset" the execution of parts of the tree if certain conditions
+    have been met.
+    """
+    def _do_setup(self):
+        self._received_in = False
+        super(RepeatNoAutoReset,self)._do_setup()
+
+
+    def _do_tick(self):
+        #TODO GH : Figure out why the is_update functionality does not really work         
+        if (self.inputs['reset'] is not None and self.inputs['reset']):
+            self.logwarn('Ressetting!')
+            self._repeat_count = 0
+            self.inputs['reset'] = False
+
+        # Only TICK the children 
+        if self._repeat_count < self.options['num_repeats']:
+            for child in self.children:
+                result = child.tick()
+                if result == NodeMsg.FAILED:
+                    return NodeMsg.FAILED
+                elif result == NodeMsg.SUCCEEDED:
+                    if self._repeat_count < self.options['num_repeats']:
+                        self._repeat_count += 1
+                        child.reset()
+                        return NodeMsg.RUNNING
+                    else:
+                        return NodeMsg.SUCCEEDED
+                return result
+
+        # Succeed if we have no children
+        return NodeMsg.SUCCEEDED
+    
+    def _do_reset(self):
+        self._received_in = False
+        # Only reset childs if we havent reached our goal
+        if self._repeat_count < self.options['num_repeats']:
+            for child in self.children:
+                return child.reset()
+        return NodeMsg.IDLE
+
+
+
 
 @define_bt_node(NodeConfig(
     version='0.9.0',
