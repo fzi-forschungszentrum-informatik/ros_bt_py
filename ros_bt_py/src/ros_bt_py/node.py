@@ -322,7 +322,10 @@ class Node(object):
             if not self.inputs.is_updated(input_name):
                 self.loginfo('Running tick() with stale data!')
             if self.inputs[input_name] is None:
-                raise ValueError('Trying to tick a node (%s) with an unset input (%s)!' %
+                # Omit the Error if we declared it to be "okay"
+                # This might still not be the best solution but enables some flexibility
+                if (input_name not in self.node_config.optional_options):                             
+                    raise ValueError('Trying to tick a node (%s) with an unset input (%s)!' %
                                  (self.name, input_name))
         self.inputs.handle_subscriptions()
 
