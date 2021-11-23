@@ -74,6 +74,8 @@ exit
 sudo apt install ros-kinetic-rosbridge-suite
 ```
 
+## Running
+
 After installing the dependencies, simply run `catkin_make` and you're
 good to go! The command
 
@@ -84,3 +86,11 @@ $ roslaunch ros_bt_py ros_bt_py.launch
 will start a BT server and the rosbridge and webserver needed for the
 GUI. Afterwards, you can open
 http://localhost:8085/ros_bt_py/editor.html to use the editor.
+
+### Multiple editor windows
+If you want to run two editors (which is sometimes useful) run:
+```bash
+$ roslaunch ros_bt_py ros_bt_py_dual.launch
+```
+The BT GUI will be available in the same address, but you'll have two namespaces -- tree_node and tree_node_dual.
+Just open two tabs, and select a different namespace on each one.
