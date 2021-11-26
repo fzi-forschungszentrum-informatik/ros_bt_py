@@ -3,14 +3,7 @@ include:
     ref: master
     file: '/gitlab-ci-yml/catkin_pipeline.yml'
 
-build_bionic:
-  needs: ["catkin_lint_bionic"]
-
-build_focal:
-  needs: ["catkin_lint_focal"]
-
-run_tests_bionic:
-  needs: ["build_bionic"]
+industrial_ci_melodic:
   retry:
     max: 1
     when:
@@ -20,8 +13,7 @@ run_tests_bionic:
     reports:
       junit: test_results/ros_bt_py/*.xml
 
-run_tests_focal:
-  needs: ["build_focal"]
+industrial_ci_noetic:
   retry:
     max: 1
     when:
