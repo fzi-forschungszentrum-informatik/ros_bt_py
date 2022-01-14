@@ -272,11 +272,13 @@ class TreeManager(object):
                               self.tree_msg.tick_frequency_hz)
             self.rate.sleep()
 
+        with self._state_lock:
+            self.tree_msg.state = Tree.IDLE
+        self.publish_info(self.debug_manager.get_debug_info_msg(), ticked=True)
+
         # Ensure all nodes are stopped and not doing anything in
         # the background.
         root.untick()
-        with self._state_lock:
-            self.tree_msg.state = Tree.IDLE
 
     def find_nodes_in_cycles(self):
         """Return a list of all nodes in the tree that are part of cycles."""
