@@ -1,6 +1,40 @@
 <launch>
   <!-- start rqt_console by default -->
   <arg name="rqt_console" default="false" />
+  <arg name="dual" default="false" />
+  <arg name="default_node_modules" default="
+      ros_bt_py.nodes.sequence,
+      ros_bt_py.nodes.fallback,
+      ros_bt_py.nodes.decorators,
+      ros_bt_py.nodes.mock_nodes,
+      ros_bt_py.nodes.action,
+      ros_bt_py.nodes.service,
+      ros_bt_py.nodes.topic,
+      ros_bt_py.nodes.compare,
+      ros_bt_py.nodes.getters,
+      ros_bt_py.nodes.setters,
+      ros_bt_py.nodes.passthrough_node,
+      ros_bt_py.nodes.shovable,
+      ros_bt_py.nodes.subtree,
+      ros_bt_py.nodes.io,
+      ros_bt_py.nodes.wait,
+      ros_bt_py.nodes.format,
+      ros_bt_py.nodes.list,
+      ros_bt_py.nodes.log,
+      ros_bt_py.nodes.constant,
+      ros_bt_py.nodes.file,
+      ros_bt_py.nodes.random_number,
+      ros_bt_py.nodes.parallel,
+      ros_bt_py.nodes.ros_param,
+      ros_bt_py.nodes.ros_header,
+      ros_bt_py.nodes.maths,
+      ros_bt_py.ros_nodes.message_converters,
+      ros_bt_py.ros_nodes.message_from_dict,
+      ros_bt_py.ros_nodes.pose_distance,
+      ros_bt_py.ros_nodes.lookup_tf,
+      ros_bt_py.ros_nodes.enum,
+  " />
+
   <group if="$(arg rqt_console)">
     <node name="rqt_console" pkg="rqt_console" type="rqt_console" />
   </group>
@@ -37,7 +71,9 @@
   <group if="$(arg web_interface)">
     <!-- rosbridge that provides the websocket connection for the web interface -->
     <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch">
-      <arg name="services_glob" default="[*/rosapi/*, */tree_node/*, */capability_manager/*]" />
+      <arg name="services_glob" default="[*/rosapi/*, */tree_node/*, */tree_node_dual/* ,  */capability_manager/*]" />
+      <!--arg unless="$(arg dual)" name="services_glob" default="[*/rosapi/*, */tree_node/*, */capability_manager/*]" /-->
+      <!--arg name="services_glob" default="[*/rosapi/*, */tree_node/*, */capability_manager/*]" /-->
     </include>
 
     <!-- webserver -->
@@ -59,36 +95,26 @@
     <!-- a list of modules that are availble in the editor web interface -->
     <rosparam param="node_modules" subst_value="True">
       [
-      ros_bt_py.nodes.sequence,
-      ros_bt_py.nodes.fallback,
-      ros_bt_py.nodes.decorators,
-      ros_bt_py.nodes.mock_nodes,
-      ros_bt_py.nodes.action,
-      ros_bt_py.nodes.service,
-      ros_bt_py.nodes.topic,
-      ros_bt_py.nodes.compare,
-      ros_bt_py.nodes.getters,
-      ros_bt_py.nodes.setters,
-      ros_bt_py.nodes.passthrough_node,
-      ros_bt_py.nodes.shovable,
-      ros_bt_py.nodes.subtree,
-      ros_bt_py.nodes.io,
-      ros_bt_py.nodes.wait,
-      ros_bt_py.nodes.format,
-      ros_bt_py.nodes.list,
-      ros_bt_py.nodes.log,
-      ros_bt_py.nodes.constant,
-      ros_bt_py.nodes.file,
-      ros_bt_py.nodes.random_number,
-      ros_bt_py.nodes.parallel,
-      ros_bt_py.nodes.ros_param,
-      ros_bt_py.nodes.ros_header,
-      ros_bt_py.nodes.maths,
-      ros_bt_py.ros_nodes.message_converters,
-      ros_bt_py.ros_nodes.message_from_dict,
-      ros_bt_py.ros_nodes.pose_distance,
-      ros_bt_py.ros_nodes.lookup_tf,
-      ros_bt_py.ros_nodes.enum,
+      $(arg default_node_modules)
+      $(arg additional_node_modules)
+      ]
+    </rosparam>
+    <param name="show_traceback_on_exception" value="$(arg show_traceback_on_exception)" />
+    <param name="load_default_tree" value="$(arg load_default_tree)" />
+    <param name="load_default_tree_permissive" value="$(arg load_default_tree_permissive)" />
+    <param name="default_tree_path" value="$(arg default_tree_path)" />
+    <param name="default_tree_tick_frequency_hz" value="$(arg default_tree_tick_frequency_hz)" />
+    <param name="default_tree_control_command" value="$(arg default_tree_control_command)" />
+  </node>
+
+
+    <!-- behavior tree backend, responsible for executing the tree -->
+  <node if="$(arg dual)" name="tree_node_dual" pkg="ros_bt_py" type="tree_node.py" output="log"
+        respawn="true">
+    <!-- a list of modules that are availble in the editor web interface -->
+    <rosparam param="node_modules" subst_value="True">
+      [
+      $(arg default_node_modules)
       $(arg additional_node_modules)
       ]
     </rosparam>
