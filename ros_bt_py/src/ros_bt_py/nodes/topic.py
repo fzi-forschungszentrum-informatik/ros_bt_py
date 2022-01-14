@@ -98,7 +98,7 @@ class TopicMemorySubscriber(Leaf):
     def _do_setup(self):
         self._lock = Lock()
         self._msg = None
-        self._last_time = None
+        self._last_time = rospy.Time(0)
         self._subscriber = rospy.Subscriber(self.options['topic_name'],
                                             self.options['topic_type'],
                                             self._callback)
@@ -120,7 +120,7 @@ class TopicMemorySubscriber(Leaf):
 
     def _do_shutdown(self):
         self._msg = None
-        self._last_time = None
+        self._last_time = rospy.Time(0)
         # Unsubscribe from the topic so we don't receive further updates
         try:
             self._subscriber.unregister()
