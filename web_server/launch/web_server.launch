@@ -1,0 +1,19 @@
+<launch>
+  <arg name="port" default="8085" />
+  <arg name="cache_static_files" default="true" />
+  <arg name="packages" default="[]" />
+  <arg name="serve_single_package_from_root" default="false" />
+
+  <!-- web server node -->
+  <node name="web_server_node" pkg="web_server" type="web_server_node.py" output="screen"
+        respawn="false">
+    <!-- a list of packages and the per-package directory that should be provided by the web server -->
+    <rosparam param="packages" subst_value="True">
+        $(arg packages)
+    </rosparam>
+
+    <param name="port" value="$(arg port)" />
+    <param name="cache_static_files" value="$(arg cache_static_files)" />
+    <param name="serve_single_package_from_root" value="$(arg serve_single_package_from_root)" />
+  </node>
+</launch>
