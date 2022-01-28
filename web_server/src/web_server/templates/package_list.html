@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>web_server serving {{ len(packages) }} package{% if len(packages) != 1 %}s{% end %}</title>
+    {% include "favicon.html" %}
+  </head>
+  <body>
+    <h1>web_server</h1>
+    <h2>Packages:</h2>
+    {% for package in packages %}
+      <a href="/{{ package.name }}"title="File &quot;{{ package.default_filename }}&quot; served from {%
+        if package.subdirectory %}subdirectory &quot;{{ package.subdirectory }}&quot;{%
+        else %}root directory{%
+        end %}">{{ package.name }}</a><br>
+    {% end %}
+  </body>
+</html>

@@ -52,6 +52,8 @@ You probably need to add the [web_server](https://ids-git.fzi.de/ros/web_server)
 git clone https://ids-git.fzi.de/ros/web_server
 ```
 
+The Webserver is now part of the package, you will likely not need a seperate instance, but are of course free to use one
+
 **Warning**
 rosapi <=0.11.9 has issues with service calls with non empty requests on python3 (ROS >= noetic).
 The following error in the terminal window where your started ros_bt_py is a indication of this issue:
