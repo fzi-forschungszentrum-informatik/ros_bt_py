@@ -15,15 +15,14 @@ class TestNameSwitch(unittest.TestCase):
                                       'output_values': [1]})
 
         self.foo = MockLeaf(name='foo',
-                             options={'output_type': int,
-                                      'state_values': [Node.FAILED],
-                                      'output_values': [1]})
-
+                            options={'output_type': int,
+                                     'state_values': [Node.FAILED],
+                                     'output_values': [1]})
 
         self.bar = MockLeaf(name='bar',
-                             options={'output_type': int,
-                                      'state_values': [Node.RUNNING,Node.SUCCEEDED],
-                                      'output_values': [1,2]})
+                            options={'output_type': int,
+                                     'state_values': [Node.RUNNING, Node.SUCCEEDED],
+                                     'output_values': [1, 2]})
         self.name_switch = NameSwitch()
         self.name_switch.add_child(self.toto)
         self.name_switch.add_child(self.foo)
