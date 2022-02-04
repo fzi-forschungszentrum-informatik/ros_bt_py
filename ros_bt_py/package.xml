@@ -39,7 +39,7 @@
   <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-requests</exec_depend>
   <exec_depend condition="$ROS_PYTHON_VERSION == 2">python-simplejson</exec_depend>
   <exec_depend condition="$ROS_PYTHON_VERSION == 3">python3-simplejson</exec_depend>
-  <exec_depend>web_server</exec_depend>
+  <exec_depend>ros_bt_py_web_server</exec_depend>
   <exec_depend>rosbridge_suite</exec_depend>
   <exec_depend>rosbridge_server</exec_depend>
   <exec_depend>rqt_console</exec_depend>
