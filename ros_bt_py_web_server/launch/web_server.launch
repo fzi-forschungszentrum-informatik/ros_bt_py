@@ -5,7 +5,7 @@
   <arg name="serve_single_package_from_root" default="false" />
 
   <!-- web server node -->
-  <node name="web_server_node" pkg="web_server" type="web_server_node.py" output="screen"
+  <node name="web_server_node" pkg="ros_bt_py_web_server" type="ros_bt_py_web_server_node.py" output="screen"
         respawn="false">
     <!-- a list of packages and the per-package directory that should be provided by the web server -->
     <rosparam param="packages" subst_value="True">

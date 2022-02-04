@@ -1,19 +1,19 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>web_server</name>
+  <name>ros_bt_py_web_server</name>
   <version>0.0.0</version>
-  <description>A python-tornado based web server for individual ros packages</description>
+  <description>A python-tornado based web server wrapper for individual ros packages. Can be used for arbitrary ros packages but is mainly intended for delivery of the ros_bt_py frontend.</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="khermann@fzi.de">Kai-Uwe Hermann</maintainer>
+  <maintainer email="heppner@fzi.de">Georg Heppner</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
   <!-- Commonly used license strings: -->
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
-  <license>TODO</license>
+  <license>BSD</license>
 
 
   <!-- Url tags are optional, but multiple are allowed, one per tag -->

@@ -9,7 +9,7 @@ from tornado.testing import AsyncTestCase, gen_test, bind_unused_port
 from tornado.httpclient import AsyncHTTPClient
 from tornado.httpserver import HTTPServer
 
-from web_server.web_server import WebServer, Package, CustomStaticFileHandler
+from ros_bt_py_web_server.web_server import WebServer, Package, CustomStaticFileHandler
 
 try:
     import unittest.mock as mock
@@ -27,14 +27,14 @@ class TestWebServer(unittest.TestCase):
     def testWebServerPackagesProvided(self):
         web_server = WebServer(packages=[
             {
-                "package": "web_server",
+                "package": "ros_bt_py_web_server",
                 "directory": "html"
             },
             {
-                "package": "web_server",
+                "package": "ros_bt_py_web_server",
             },
             {
-                "package": "web_server",
+                "package": "ros_bt_py_web_server",
                 "directory": "html",
                 "default_filename": "editor.html"
             },
@@ -45,18 +45,18 @@ class TestWebServer(unittest.TestCase):
             },
         ])
 
-        expected_package = Package('web_server', '')
+        expected_package = Package('ros_bt_py_web_server', '')
 
         repr_str = str(expected_package)
 
         self.assertEqual(len(web_server.packages), 3)
         self.assertEqual(expected_package.name, web_server.packages[0].name)
 
-    @mock.patch('web_server.web_server.IOLoop')
+    @mock.patch('ros_bt_py_web_server.web_server.IOLoop')
     def testWebServerPackagesProvidedStartExceptions(self, mock_ioloop):
         web_server = WebServer(packages=[
             {
-                "package": "web_server",
+                "package": "ros_bt_py_web_server",
                 "directory": "html"
             }
         ])
@@ -100,7 +100,7 @@ class TestRequests(AsyncTestCase):
 
         self.web_server = WebServer(packages=[
             {
-                "package": "web_server",
+                "package": "ros_bt_py_web_server",
                 "directory": "test",
             }
         ], cache_static_files=False)
@@ -116,7 +116,7 @@ class TestRequests(AsyncTestCase):
     def test_http_fetch(self):
         client = AsyncHTTPClient()
         response = yield client.fetch(
-            "http://127.0.0.1:" + str(self.port) + "/web_server/testdata/",
+            "http://127.0.0.1:" + str(self.port) + "/ros_bt_py_web_server/testdata/",
             raise_error=False)
 
         self.assertEqual(response.code, 200)
@@ -124,7 +124,7 @@ class TestRequests(AsyncTestCase):
         self.assertIn(b"hello there", response.body)
 
         response = yield client.fetch(
-            "http://127.0.0.1:" + str(self.port) + "/web_server/testdata/missing",
+            "http://127.0.0.1:" + str(self.port) + "/ros_bt_py_web_server/testdata/missing",
             raise_error=False)
 
         self.assertEqual(response.code, 404)
@@ -141,7 +141,7 @@ class TestSinglePackageRequests(AsyncTestCase):
 
         self.web_server = WebServer(packages=[
             {
-                "package": "web_server",
+                "package": "ros_bt_py_web_server",
                 "directory": "test",
             }
         ], cache_static_files=False, serve_single_package_from_root=True)
@@ -183,7 +183,7 @@ class TestRewriteRequests(AsyncTestCase):
 
         self.web_server = WebServer(packages=[
             {
-                "package": "web_server",
+                "package": "ros_bt_py_web_server",
                 "directory": "test",
                 "default_filename": "testdata/index.html",
                 "rewrite_requests_to_default_filename": True
@@ -201,7 +201,7 @@ class TestRewriteRequests(AsyncTestCase):
     def test_http_fetch(self):
         client = AsyncHTTPClient()
         response = yield client.fetch(
-            "http://127.0.0.1:" + str(self.port) + "/web_server/testdata/index.html",
+            "http://127.0.0.1:" + str(self.port) + "/ros_bt_py_web_server/testdata/index.html",
             raise_error=False)
 
         self.assertEqual(response.code, 200)
@@ -209,7 +209,7 @@ class TestRewriteRequests(AsyncTestCase):
         self.assertIn(b"hello there", response.body)
 
         response = yield client.fetch(
-            "http://127.0.0.1:" + str(self.port) + "/web_server/testdata/missing",
+            "http://127.0.0.1:" + str(self.port) + "/ros_bt_py_web_server/testdata/missing",
             raise_error=False)
 
         self.assertEqual(response.code, 404)
@@ -217,7 +217,7 @@ class TestRewriteRequests(AsyncTestCase):
         self.assertIn(b"hello there", response.body)
 
         response = yield client.fetch(
-            "http://127.0.0.1:" + str(self.port) + "/web_server/testdata/second.html",
+            "http://127.0.0.1:" + str(self.port) + "/ros_bt_py_web_server/testdata/second.html",
             raise_error=False)
 
         self.assertEqual(response.code, 200)
@@ -231,7 +231,7 @@ class TestSinglePackageRewriteRequests(AsyncTestCase):
 
         self.web_server = WebServer(packages=[
             {
-                "package": "web_server",
+                "package": "ros_bt_py_web_server",
                 "directory": "test",
                 "default_filename": "testdata/index.html",
                 "rewrite_requests_to_default_filename": True

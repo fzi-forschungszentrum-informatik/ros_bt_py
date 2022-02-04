@@ -4,7 +4,7 @@ You can serve a specific package, in this case *ros_bt_py* by including the foll
 
 ```xml
   <!-- webserver -->
-  <include file="$(find web_server)/launch/web_server.launch">
+  <include file="$(find ros_bt_py_web_server)/launch/web_server.launch">
     <arg name="port" value="$(arg port)" />
     <arg name="cache_static_files" value="false" />
     <arg name="packages" value="[
@@ -21,7 +21,7 @@ If you are running a single page webapp with a "Front Controller Pattern" design
 
 ```xml
   <!-- webserver -->
-  <include file="$(find web_server)/launch/web_server.launch">
+  <include file="$(find ros_bt_py_web_server)/launch/web_server.launch">
     <arg name="port" value="$(arg port)" />
     <arg name="cache_static_files" value="false" />
     <arg name="packages" value="[
@@ -39,7 +39,7 @@ If you only want to serve one package on the root url, you may be interested in 
 
 ```xml
   <!-- webserver -->
-  <include file="$(find web_server)/launch/web_server.launch">
+  <include file="$(find ros_bt_py_web_server)/launch/web_server.launch">
     <arg name="port" value="$(arg port)" />
     <arg name="cache_static_files" value="false" />
     <arg name="packages" value="[

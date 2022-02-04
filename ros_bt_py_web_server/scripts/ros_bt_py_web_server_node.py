@@ -2,12 +2,12 @@
 
 import rospy
 
-from web_server.web_server import WebServer
+from ros_bt_py_web_server.web_server import WebServer
 
 
 class WebServerNode(object):
     def __init__(self):
-        rospy.loginfo('initializing web server node...')
+        rospy.loginfo('initializing ros_bt_py web server node...')
         port = rospy.get_param('~port', default=8085)
         packages = rospy.get_param('~packages', default=[])
         cache_static_files = rospy.get_param('~cache_static_files', default=True)
@@ -25,7 +25,7 @@ class WebServerNode(object):
             serve_single_package_from_root=serve_single_package_from_root)
 
         rospy.loginfo(
-            'initialized web server node, listening on port: "%d"' % self.web_server.port)
+            'initialized ros_bt_py web server node, listening on port: "%d"' % self.web_server.port)
 
     def start(self):
         self.web_server.start()
@@ -35,7 +35,7 @@ class WebServerNode(object):
 
 
 if __name__ == '__main__':
-    rospy.init_node('web_server_node')
+    rospy.init_node('ros_bt_py_web_server_node')
 
     node = WebServerNode()
 

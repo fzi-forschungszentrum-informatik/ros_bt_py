@@ -77,7 +77,7 @@
     </include>
 
     <!-- webserver -->
-    <include file="$(find web_server)/launch/web_server.launch">
+    <include file="$(find ros_bt_py_web_server)/launch/web_server.launch">
       <arg name="port" value="$(arg port)" />
       <arg name="cache_static_files" value="false" />
       <arg name="packages" value="[
