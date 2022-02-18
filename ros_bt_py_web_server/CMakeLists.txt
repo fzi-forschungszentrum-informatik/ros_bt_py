@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(web_server)
+project(ros_bt_py_web_server)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
