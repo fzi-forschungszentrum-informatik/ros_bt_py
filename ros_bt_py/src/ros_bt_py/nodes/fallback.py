@@ -13,7 +13,7 @@ from ros_bt_py.node_config import NodeConfig
     max_children=None))
 class NameSwitch(FlowControl):
     def _do_setup(self):
-        self.child_map = { child.name.split('.')[-1] : child for child in self.children }
+        self.child_map = {child.name.split('.')[-1]: child for child in self.children}
         for child in self.children:
             child.setup()
 
