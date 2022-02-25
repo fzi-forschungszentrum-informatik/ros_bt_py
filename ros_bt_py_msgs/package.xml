@@ -1,20 +1,25 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>ros_bt_py_msgs</name>
-  <version>0.0.0</version>
+  <version>1.0.0</version>
   <description>Messages for ros_bt_py</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="berg@fzi.de">Nils Berg</maintainer>
+  <maintainer email="heppner@fzi.de">Georg Heppner</maintainer>
+  
+  <author>Nils Berg</author>
+  <author>Kai-Uwe Hermann</author>
+  <author email="heppner@fzi.de">Georg Heppner</author>
+  
 
   <!-- One license tag required, multiple allowed, one license per tag -->
   <!-- Commonly used license strings: -->
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
-  <license>Proprietary</license>
+  <license>BDS-3-Clause</license>
 
-  <url type="website">https://ids-git.fzi.de/berg/ros_bt_py</url>
+  <url type="website">https://github.com/fzi-forschungszentrum-informatik/ros_bt_py</url>
 
   <buildtool_depend>catkin</buildtool_depend>
 

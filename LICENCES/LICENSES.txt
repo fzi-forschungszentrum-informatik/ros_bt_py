@@ -1,0 +1,24 @@
+This is the package contains the ROS_BT_PY Behavior Tree Library
+It was developed on at the FZI Research Center for Information Technology in Karlsruhe, Germany.
+
+The Library Itself is distributed under the BDS-3-Clause License.
+
+The Package contains third party code which is distributed under its own license:
+- Package/Library (Version if applicable) - Licence
+- Selectr (2.4.0)       - MIT Licence
+- Font Awesome (5.13)   - MIT Licence
+- bable	(7.9.4)         - MIT Licence
+- Bootstrap (4.4.1)     - MIT Licence
+- react	(16.13.1)       - MIT Licence
+- react-dom (16.13.1)   - MIT Licence
+- react-modal (3.11.2)  - MIT Licence	
+- js-yaml (3)           - MIT Licence
+
+- jsoneditor.js	(8.6.4) - Apache 2.0
+- fuse (3.6.1)          - Apache 2.0
+
+- roslibjs              - BSD-3-Clause
+- d3 (5.15)             - ISC License
+- d3-flextree (2.0.0)   - WTFPL
+
+You can find the license texts in this folder.
