@@ -17,7 +17,7 @@ remote-execute, parts of a Behavior Tree.
 
 The main documentation effort nowadays is found in the repositories wiki.
 
-All of this (and more) is explained in the Master Thesis "Distributed
+In depth background documentation can be found in the Master Thesis "Distributed
 Execution of Behavior Trees using Heterogeneous Robot Teams" by Nils Berg (link
 coming soon).
 
