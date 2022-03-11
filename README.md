@@ -15,11 +15,11 @@ remote-execute, parts of a Behavior Tree.
 
 ## Documentation
 
-The [main documentation effort nowadays is found in the repositories wiki](https://ids-git.fzi.de/ros/ros_bt_py/-/wikis/home).
+The main documentation effort nowadays is found in the repositories wiki.
 
 All of this (and more) is explained in the Master Thesis "Distributed
 Execution of Behavior Trees using Heterogeneous Robot Teams" by Nils Berg (link
-coming as soon as I'm certain where I can post the PDF).
+coming soon).
 
 There is also a growing amount of Sphinx documentation in the `doc`
 folder - simply execute the following commands in your shell to get
@@ -41,18 +41,8 @@ $ cd catkin_workspace
 $ rosdep install --from-paths src --ignore-src -r -y
 ```
 
-**Warning**
-If you get the following error:
-```bash
-ERROR: the following packages/stacks could not have their rosdep keys resolved to system dependencies:
-ros_bt_py: Cannot locate rosdep definition for [web_server]
-```
-You probably need to add the [web_server](https://ids-git.fzi.de/ros/web_server) package to your workspace as well:
-```bash
-git clone https://ids-git.fzi.de/ros/web_server
-```
-
-The Webserver is now part of the package, you will likely not need a seperate instance, but are of course free to use one
+In earlier installations a separate packge was used named ros_webserver.
+The Webserver is now part of the package as ros_bt_py_webserver and you do not need a standalone version anymore.
 
 **Warning**
 rosapi <=0.11.9 has issues with service calls with non empty requests on python3 (ROS >= noetic).
@@ -75,6 +65,9 @@ pip uninstall tornado
 exit
 sudo apt install ros-kinetic-rosbridge-suite
 ```
+
+Then you can just build the package with your prefered method i.e. catkin_make
+
 ## Running
 
 ## Running
