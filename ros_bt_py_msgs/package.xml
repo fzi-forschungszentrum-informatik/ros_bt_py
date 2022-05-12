@@ -17,7 +17,7 @@
   <!-- One license tag required, multiple allowed, one license per tag -->
   <!-- Commonly used license strings: -->
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
-  <license>BDS-3-Clause</license>
+  <license>BSD-3-Clause</license>
 
   <url type="website">https://github.com/fzi-forschungszentrum-informatik/ros_bt_py</url>
 
