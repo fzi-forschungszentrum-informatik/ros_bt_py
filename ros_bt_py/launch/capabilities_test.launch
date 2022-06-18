@@ -1,0 +1,4 @@
+<launch>
+    <node name="capability_repository" pkg="ros_bt_py" type="capability_repository_node.py" output="screen">
+    </node>
+</launch>

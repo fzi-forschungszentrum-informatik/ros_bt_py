@@ -1,0 +1,3 @@
+# Returns the loaded capability definitions
+---
+CapabilityInterface[] capabilities

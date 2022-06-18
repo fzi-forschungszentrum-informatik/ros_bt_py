@@ -1,0 +1,5 @@
+# Receives capability interfaces from a remote host and adds them to the local collection.
+CapabilityInterface[] capabilities
+---
+bool success
+string error_message

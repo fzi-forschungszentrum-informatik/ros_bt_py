@@ -3,3 +3,4 @@
 ros_bt_py/doc/build/
 ros_bt_py/test/testdata/save_data/generated_files/
 .vscode/
+ros_bt_py/capability_interfaces

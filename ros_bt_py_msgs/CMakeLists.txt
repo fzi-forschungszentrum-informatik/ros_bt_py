@@ -26,6 +26,8 @@ add_message_files(
      Tree.msg
      TreeDataUpdate.msg
      UtilityBounds.msg
+     CapabilityInterface.msg
+     CapabilityImplementation.msg
      )
 
 ## Generate services in the 'srv' folder
@@ -60,6 +62,11 @@ add_service_files(
   SetOptions.srv
   TestService.srv
   WireNodeData.srv
+  capability_interface/GetCapabilityInterfaces.srv
+  capability_interface/LoadCapabilityInterfaces.srv
+  capability_interface/SaveCapabilityInterfaces.srv
+  capability_interface/SubmitCapabilityInterfaces.srv
+  capability_interface/DeleteCapabilityInterfaces.srv
   )
 
 ## Generate actions in the 'action' folder

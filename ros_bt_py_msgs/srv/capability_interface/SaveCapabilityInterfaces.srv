@@ -1,0 +1,5 @@
+# Saves capability interfaces to a specific path. All other files in the folder are removed.
+string package
+---
+bool success
+string error_message

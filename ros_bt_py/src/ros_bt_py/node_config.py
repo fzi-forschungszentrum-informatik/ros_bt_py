@@ -27,6 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
+from typing import Dict
 
 
 class OptionRef(object):
@@ -65,17 +66,20 @@ class NodeConfig(object):
     ):
         """Describes the interface of a :class:ros_bt_py.node.Node
 
-        :param dict(str, type) options
+        :type options Dict[str, type]
+        :param options
 
         Map from option names to their types. Note that unlike `inputs`
         and `outputs`, option types can **not** use :class:OptionRef !
 
-        :param dict(str, type) inputs:
+        :type inputs Dict[str, type]
+        :param inputs:
 
         Map from input names to their types, or an :class:OptionRef
         object that points to the option key to take the type from.
 
-        :param dict(str, type) outputs:
+        :type outputs Dict[str, type]
+        :param outputs:
 
         Map from output names to their types, or an :class:OptionRef
         object that points to the option key to take the type from.
