@@ -1,0 +1,5 @@
+string capability_uuid
+string implementation_uuid
+---
+bool success
+string error_message

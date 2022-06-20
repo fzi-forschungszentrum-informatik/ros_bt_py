@@ -1,0 +1,5 @@
+string capability_uuid
+---
+CapabilityImplementation[] implementations
+bool success
+string error_message
