@@ -14,36 +14,36 @@ class CapabilityRepositoryNode(object):
 
         self.capability_repository = CapabilityRepository()
 
-        self.load_capability_interfaces_service = rospy.Service('~load_capability_interfaces',
+        self.load_capability_interfaces_service = rospy.Service('~/capabilities/interfaces/load',
                                                                 LoadCapabilityInterfaces,
                                                                 self.capability_repository.load_capability_interfaces)
 
-        self.save_capability_interfaces_service = rospy.Service('~save_capability_interfaces',
+        self.save_capability_interfaces_service = rospy.Service('~/capabilities/interfaces/save',
                                                                 SaveCapabilityInterfaces,
                                                                 self.capability_repository.save_capability_interfaces)
-        self.submit_capability_interfaces_service = rospy.Service('~submit_capability_interfaces',
+        self.submit_capability_interfaces_service = rospy.Service('~/capabilities/interfaces/submit',
                                                                   SubmitCapabilityInterfaces,
                                                                   self.capability_repository.submit_capability_interfaces)
-        self.get_capability_interfaces_service = rospy.Service('~get_capability_interfaces',
+        self.get_capability_interfaces_service = rospy.Service('~/capabilities/interfaces/get',
                                                                GetCapabilityInterfaces,
                                                                self.capability_repository.get_capability_interfaces)
-        self.get_capability_interfaces_service = rospy.Service('~delete_capability_interfaces',
+        self.get_capability_interfaces_service = rospy.Service('~/capabilities/interfaces/delete',
                                                                DeleteCapabilityInterfaces,
                                                                self.capability_repository.delete_capability_interfaces)
 
-        self.get_capability_implementation_service = rospy.Service('~get_capability_implementations',
+        self.get_capability_implementation_service = rospy.Service('~/capabilities/implementations/get',
                                                                    GetCapabilityImplementations,
                                                                    self.capability_repository.get_capability_implementations)
 
-        self.delete_capability_implementation_service = rospy.Service('~delete_capability_implementation',
+        self.delete_capability_implementation_service = rospy.Service('~/capabilities/implementations/delete',
                                                                    DeleteCapabilityImplementation,
                                                                    self.capability_repository.delete_capability_implementation)
 
-        self.submit_capability_implementation_service = rospy.Service('~submit_capability_implementation',
+        self.submit_capability_implementation_service = rospy.Service('~/capabilities/implementations/submit',
                                                                    SubmitCapabilityImplementation,
                                                                    self.capability_repository.submit_capability_implementation)
 
-        self.update_capability_implementation_service = rospy.Service('~update_capability_implementation',
+        self.update_capability_implementation_service = rospy.Service('~/capabilities/implementations/update',
                                                                    UpdateCapabilityImplementation,
                                                                    self.capability_repository.update_capability_implementation)
 

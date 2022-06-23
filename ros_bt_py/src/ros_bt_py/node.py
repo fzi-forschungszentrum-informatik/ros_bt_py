@@ -436,10 +436,11 @@ class Node(object):
             # cycle!
             self.inputs.reset_updated()
 
-            self.raise_if_in_invalid_state(
-                allowed_states=[NodeMsg.RUNNING, NodeMsg.SUCCEEDED, NodeMsg.FAILED],
-                action_name="tick()",
-            )
+            self.raise_if_in_invalid_state(allowed_states=[NodeMsg.RUNNING,
+                                                           NodeMsg.SUCCEEDED,
+                                                           NodeMsg.FAILED,
+                                                           NodeMsg.UNASSIGNED],
+                                           action_name='tick()')
             self._handle_outputs()
 
             return self.state
@@ -501,9 +502,10 @@ class Node(object):
             if self.state is NodeMsg.UNINITIALIZED:
                 raise BehaviorTreeException("Trying to untick uninitialized node!")
             self.state = self._do_untick()
-            self.raise_if_in_invalid_state(
-                allowed_states=[NodeMsg.IDLE, NodeMsg.PAUSED], action_name="untick()"
-            )
+            self.raise_if_in_invalid_state(allowed_states=[NodeMsg.IDLE,
+                                                           NodeMsg.PAUSED,
+                                                           NodeMsg.UNASSIGNED],
+                                           action_name='untick()')
 
             self.outputs.reset_updated()
             return self.state

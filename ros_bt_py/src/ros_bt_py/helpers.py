@@ -35,7 +35,7 @@ import functools
 from collections import OrderedDict
 from ros_bt_py.ros_helpers import EnumValue, LoggerLevel
 
-from ros_bt_py_msgs.srv import FixYamlResponse
+from ros_bt_py_msgs.srv import FixYamlResponse, FixYamlRequest
 
 try:  # pragma: no cover
     basestring
@@ -85,7 +85,12 @@ def rospy_log_level_to_logging_log_level(rospy_level):
         return logging.FATAL
 
 
-def fix_yaml(request):
+def fix_yaml(request: FixYamlRequest) -> FixYamlResponse:
+    """
+    Fixes a yaml file and ensures it conforms to the expected format for ros msg de-/serializing.
+    :param request: The ros service request containing the yaml file.
+    :return: Always returns successfully.
+    """
     response = FixYamlResponse()
 
     tree_yaml = request.broken_yaml

@@ -26,6 +26,14 @@ import catkin.workspace
 from rospkg import ResourceNotFound
 
 
+def is_invalid_uuid(uuid_string: str) -> bool:
+    try:
+        uuid.UUID(uuid_string)
+        return False
+    except ValueError:
+        return True
+
+
 class CapabilityRepository(object):
 
     def __init__(self):
@@ -237,34 +245,23 @@ class CapabilityRepository(object):
     def get_capability_implementations(self,
                                        request: GetCapabilityImplementationsRequest) -> GetCapabilityImplementationsResponse:
         response = GetCapabilityImplementationsResponse()
-
-        if len(request.capability_uuid) != 32:
-            rospy.logwarn(f'Specified capability uuid {request.capability_uuid} invalid!')
-            response.success = False
-            response.error_message = f'Specified capability uuid {request.capability_uuid} invalid!'
-            return response
-
-        try:
-            response.implementations = self.capability_implementations[request.capability_uuid].values()
-        except KeyError:
-            rospy.logwarn(f'Capability {request.capability_uuid} not known!')
-            response.success = False
-            response.error_message = "Capability not known!"
-            return response
-        response.success = True
+        response.implementations = [implementation
+                                    for capabilities in self.capability_implementations.values()
+                                    for implementation in capabilities.values()]
+        rospy.loginfo(f"f{response}")
         return response
 
     def delete_capability_implementation(self,
                                          request: DeleteCapabilityImplementationRequest) -> DeleteCapabilityImplementationResponse:
         response = DeleteCapabilityImplementationResponse()
 
-        if len(request.capability_uuid) != 32:
+        if is_invalid_uuid(request.capability_uuid):
             rospy.logwarn(f'Specified capability uuid {request.capability_uuid} invalid!')
             response.success = False
             response.error_message = f'Specified capability uuid {request.capability_uuid} invalid!'
             return response
 
-        if len(request.implementation_uuid) != 32:
+        if is_invalid_uuid(request.implementation_uuid):
             rospy.logwarn(f'Specified implementation uuid {request.implementation_uuid} invalid!')
             response.success = False
             response.error_message = f'Specified implementation uuid {request.implementation_uuid} invalid!'
@@ -311,13 +308,13 @@ class CapabilityRepository(object):
         """
         response = SubmitCapabilityImplementationResponse()
 
-        if len(request.implementation.capability_uuid) != 32:
+        if is_invalid_uuid(request.implementation.capability_uuid):
             rospy.logwarn(f'Specified capability uuid {request.implementation.capability_uuid} invalid!')
             response.success = False
             response.error_message = f'Specified capability uuid {request.implementation.capability_uuid} invalid!'
             return response
 
-        if len(request.implementation.implementation_uuid) != 32:
+        if is_invalid_uuid(request.implementation.implementation_uuid):
             rospy.logwarn(f'Specified implementation uuid {request.implementation.implementation_uuid} invalid!')
             response.success = False
             response.error_message = f'Specified implementation uuid {request.implementation.implementation_uuid} invalid!'
@@ -346,13 +343,13 @@ class CapabilityRepository(object):
         """
         response = UpdateCapabilityImplementationResponse()
 
-        if len(request.implementation.capability_uuid) != 32:
+        if is_invalid_uuid(request.implementation.capability_uuid):
             rospy.logwarn(f'Specified capability uuid {request.implementation.capability_uuid} invalid!')
             response.success = False
             response.error_message = f'Specified capability uuid {request.implementation.capability_uuid} invalid!'
             return response
 
-        if len(request.implementation.implementation_uuid) != 32:
+        if is_invalid_uuid(request.implementation.implementation_uuid):
             rospy.logwarn(f'Specified implementation uuid {request.implementation.implementation_uuid} invalid!')
             response.success = False
             response.error_message = f'Specified implementation uuid {request.implementation.implementation_uuid} invalid!'

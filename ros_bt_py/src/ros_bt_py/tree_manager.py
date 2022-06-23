@@ -30,6 +30,8 @@
 from copy import deepcopy
 from functools import wraps
 from threading import Thread, Lock, RLock
+from typing import Optional
+
 import yaml
 import inspect
 import traceback
@@ -40,7 +42,7 @@ import rospy
 import rospkg
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 
-from ros_bt_py_msgs.srv import LoadTreeRequest, LoadTreeResponse
+from ros_bt_py_msgs.srv import LoadTreeRequest, LoadTreeResponse, GetAvailableNodesRequest
 from ros_bt_py_msgs.srv import LoadTreeFromPathResponse, MigrateTreeResponse
 from ros_bt_py_msgs.srv import FixYamlRequest
 from ros_bt_py_msgs.srv import ClearTreeResponse
@@ -125,6 +127,153 @@ def is_edit_service(func):
             return func(self, request, **kwds)
 
     return service_handler
+
+
+def parse_tree_yaml(tree_yaml):
+    response = MigrateTreeResponse()
+
+    data = yaml.safe_load_all(tree_yaml)
+    read_data = False
+    for datum in data:
+        if datum is None:
+            continue
+        if not read_data:
+            tree = Tree()
+            # remove option wirings
+            if 'nodes' in datum:
+                for node in datum['nodes']:
+                    node.pop('option_wirings', None)
+            genpy.message.fill_message_args(tree, datum, keys={})
+            read_data = True
+        else:
+            response.success = False
+            response.error_message = ('Tree YAML file must contain '
+                                      'exactly one YAML object!')
+            return response
+
+    if not read_data:
+        response.success = False
+        response.error_message = ('No data in YAML file!')
+
+        return response
+
+    response.success = True
+    response.tree = tree
+    return response
+
+
+def load_tree_from_file(request: LoadTreeRequest):
+    """Loads a tree file from disk
+    """
+    response = MigrateTreeResponse()
+    tree = request.tree
+    rospack = rospkg.RosPack()
+    file_name = ''
+    while not tree.nodes:
+        # TODO(nberg): Save visited file names to find loops
+
+        # as long as we don't have any nodes, the tree message is
+        # just a pointer to a file containing the actual tree, so
+        # load that file.
+        file_path = ''
+        if not tree.path:
+            response.success = False
+            response.error_message = ('Trying to load tree, but found no nodes and no path '
+                                      'to read from: %s') % str(tree)
+            return response
+        if tree.path.startswith('file://'):
+            file_path = tree.path[len('file://'):]
+        elif tree.path.startswith('package://'):
+            package_name = tree.path[len('package://'):].split('/', 1)[0]
+            package_path = rospack.get_path(package_name)
+            file_path = package_path + tree.path[len('package://') + len(package_name):]
+        else:
+            response.success = False
+            response.error_message = ('Tree path "%s" is malformed. It needs to start with '
+                                      'either "file://" or "package://"') % tree.path
+            return response
+
+        # load tree file and parse yaml, then convert to Tree message
+        try:
+            tree_file = open(file_path, 'r')
+        except IOError as ex:
+            response.success = False
+            response.error_message = ('Error opening file %s: %s' % (file_path, str(ex)))
+            return response
+        with tree_file:
+            file_name = os.path.basename(tree_file.name)
+            tree_yaml = tree_file.read()
+            try:
+                response = parse_tree_yaml(tree_yaml=tree_yaml)
+            except yaml.scanner.ScannerError as ex:
+                rospy.logwarn("Encountered a ScannerError while parsing the tree yaml: %s\n"
+                              "This is most likely caused by a tree that was created with "
+                              "PyYAML 5 and genpy < 0.6.10.\n"
+                              "Attempting to fix this automatically..." % str(ex))
+                # ScannerError most likely means that the tree was created
+                # with PyYAML 5 and genpy <0.6.10
+                # fix this by correctly indenting the broken lists
+                fix_yaml_response = fix_yaml(request=FixYamlRequest(broken_yaml=tree_yaml))
+
+                # try parsing again with fixed tree_yaml:
+                response = parse_tree_yaml(tree_yaml=fix_yaml_response.fixed_yaml)
+            # remove input and output values from nodes
+            tree = remove_input_output_values(tree=response.tree)
+
+    tree.name = file_name
+
+    response.success = True
+    response.tree = tree
+    return response
+
+
+def get_available_nodes(request: GetAvailableNodesRequest) -> Optional[GetAvailableNodesResponse]:
+    """List the types of nodes that are currently known
+
+    This includes all nodes from modules that were passed to our
+    constructor in `module_list`, ones from modules that nodes have
+    been successfully loaded from since launch, and ones from
+    modules explicitly asked for in `request.node_modules`
+
+    :param ros_bt_py_msgs.srv.GetAvailableNodesRequest request:
+
+    If `request.node_modules` is not empty, try to load those
+    modules before responding.
+
+    :returns: :class:`ros_bt_py_msgs.src.GetAvailableNodesResponse` or `None`
+    """
+    response = GetAvailableNodesResponse()
+    for module_name in request.node_modules:
+        if module_name and load_node_module(module_name) is None:
+            response.success = False
+            response.error_message = 'Failed to import module %s' % module_name
+            return response
+
+    def to_node_data(data_map):
+        return [NodeData(key=name,
+                         serialized_value=json_encode(type_or_ref))
+                for (name, type_or_ref) in data_map.items()]
+
+    for (module, nodes) in Node.node_classes.items():
+        for (class_name, node_class) in nodes.items():
+            max_children = node_class._node_config.max_children
+            max_children = -1 if max_children is None else max_children
+            doc = inspect.getdoc(node_class) or ''
+            response.available_nodes.append(DocumentedNode(
+                module=module,
+                node_class=class_name,
+                version=node_class._node_config.version,
+                max_children=max_children,
+                name=class_name,
+                options=to_node_data(node_class._node_config.options),
+                inputs=to_node_data(node_class._node_config.inputs),
+                outputs=to_node_data(node_class._node_config.outputs),
+                doc=str(doc),
+                tags=node_class._node_config.tags
+            ))
+
+    response.success = True
+    return response
 
 
 class TreeManager(object):
@@ -462,117 +611,6 @@ class TreeManager(object):
 
         return response
 
-    def parse_tree_yaml(self, tree_yaml):
-        response = MigrateTreeResponse()
-
-        data = yaml.safe_load_all(tree_yaml)
-        read_data = False
-        for datum in data:
-            if datum is None:
-                continue
-            if not read_data:
-                tree = Tree()
-                # remove option wirings
-                if "nodes" in datum:
-                    for node in datum["nodes"]:
-                        node.pop("option_wirings", None)
-                genpy.message.fill_message_args(tree, datum, keys={})
-                read_data = True
-            else:
-                response.success = False
-                response.error_message = (
-                    "Tree YAML file must contain " "exactly one YAML object!"
-                )
-                return response
-
-        if not read_data:
-            response.success = False
-            response.error_message = "No data in YAML file!"
-
-            return response
-
-        response.success = True
-        response.tree = tree
-        return response
-
-    def load_tree_from_file(self, request):
-        """Loads a tree file from disk"""
-        response = MigrateTreeResponse()
-        tree = request.tree
-        rospack = rospkg.RosPack()
-        file_name = ""
-        while not tree.nodes:
-            # TODO(nberg): Save visited file names to find loops
-
-            # as long as we don't have any nodes, the tree message is
-            # just a pointer to a file containing the actual tree, so
-            # load that file.
-            file_path = ""
-            if not tree.path:
-                response.success = False
-                response.error_message = (
-                    "Trying to load tree, but found no nodes and no path "
-                    "to read from: %s"
-                ) % str(tree)
-                return response
-            if tree.path.startswith("file://"):
-                file_path = tree.path[len("file://") :]
-            elif tree.path.startswith("package://"):
-                package_name = tree.path[len("package://") :].split("/", 1)[0]
-                package_path = rospack.get_path(package_name)
-                file_path = (
-                    package_path + tree.path[len("package://") + len(package_name) :]
-                )
-            else:
-                response.success = False
-                response.error_message = (
-                    'Tree path "%s" is malformed. It needs to start with '
-                    'either "file://" or "package://"'
-                ) % tree.path
-                return response
-
-            # load tree file and parse yaml, then convert to Tree message
-            try:
-                tree_file = open(file_path, "r")
-            except IOError as ex:
-                response.success = False
-                response.error_message = "Error opening file %s: %s" % (
-                    file_path,
-                    str(ex),
-                )
-                return response
-            with tree_file:
-                file_name = os.path.basename(tree_file.name)
-
-                tree_yaml = tree_file.read()
-                try:
-                    response = self.parse_tree_yaml(tree_yaml=tree_yaml)
-                except yaml.scanner.ScannerError as ex:
-                    rospy.logwarn(
-                        "Encountered a ScannerError while parsing the tree yaml: %s\n"
-                        "This is most likely caused by a tree that was created with "
-                        "PyYAML 5 and genpy < 0.6.10.\n"
-                        "Attempting to fix this automatically..." % str(ex)
-                    )
-                    # ScannerError most likely means that the tree was created
-                    # with PyYAML 5 and genpy <0.6.10
-                    # fix this by correctly indenting the broken lists
-                    fix_yaml_response = fix_yaml(
-                        request=FixYamlRequest(broken_yaml=tree_yaml)
-                    )
-
-                    # try parsing again with fixed tree_yaml:
-                    response = self.parse_tree_yaml(
-                        tree_yaml=fix_yaml_response.fixed_yaml
-                    )
-                # remove input and output values from nodes
-                tree = remove_input_output_values(tree=response.tree)
-        tree.name = file_name
-        response.success = True
-        response.tree = tree
-
-        return response
-
     @is_edit_service
     def load_tree(self, request, prefix=None):
         """Load a tree from the given message (which may point to a file)
@@ -599,8 +637,7 @@ class TreeManager(object):
             prefix = ""
         response = LoadTreeResponse()
 
-        load_response = self.load_tree_from_file(request)
-        
+        load_response = load_tree_from_file(request)
         if not load_response.success:
             response.error_message = load_response.error_message
             return response
@@ -2045,57 +2082,6 @@ class TreeManager(object):
                     self.tree_msg.data_wirings.remove(wiring)
 
             self.publish_info(self.debug_manager.get_debug_info_msg())
-        return response
-
-    def get_available_nodes(self, request):
-        """List the types of nodes that are currently known
-
-        This includes all nodes from modules that were passed to our
-        constructor in `module_list`, ones from modules that nodes have
-        been successfully loaded from since launch, and ones from
-        modules explicitly asked for in `request.node_modules`
-
-        :param ros_bt_py_msgs.srv.GetAvailableNodesRequest request:
-
-        If `request.node_modules` is not empty, try to load those
-        modules before responding.
-
-        :returns: :class:`ros_bt_py_msgs.src.GetAvailableNodesResponse` or `None`
-        """
-        response = GetAvailableNodesResponse()
-        for module_name in request.node_modules:
-            if module_name and load_node_module(module_name) is None:
-                response.success = False
-                response.error_message = "Failed to import module %s" % module_name
-                return response
-
-        def to_node_data(data_map):
-            return [
-                NodeData(key=name, serialized_value=json_encode(type_or_ref))
-                for (name, type_or_ref) in data_map.items()
-            ]
-
-        for (module, nodes) in Node.node_classes.items():
-            for (class_name, node_class) in nodes.items():
-                max_children = node_class._node_config.max_children
-                max_children = -1 if max_children is None else max_children
-                doc = inspect.getdoc(node_class) or ""
-                response.available_nodes.append(
-                    DocumentedNode(
-                        module=module,
-                        node_class=class_name,
-                        version=node_class._node_config.version,
-                        max_children=max_children,
-                        name=class_name,
-                        options=to_node_data(node_class._node_config.options),
-                        inputs=to_node_data(node_class._node_config.inputs),
-                        outputs=to_node_data(node_class._node_config.outputs),
-                        doc=str(doc),
-                        tags=node_class._node_config.tags,
-                    )
-                )
-
-        response.success = True
         return response
 
     def get_subtree(self, request):

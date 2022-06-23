@@ -61,7 +61,7 @@ class TestMigrationManager(unittest.TestCase):
             ]
         )
 
-        response = tree_manager.get_available_nodes(request)
+        response = get_available_nodes(request)
         self.assertTrue(response.success)
 
         migration_manager = MigrationManager(tree_manager=tree_manager)
@@ -203,7 +203,7 @@ class TestMigrationManager(unittest.TestCase):
             ]
         )
 
-        response = tree_manager.get_available_nodes(request)
+        response = get_available_nodes(request)
         self.assertTrue(response.success)
 
         migration_manager = MigrationManager(tree_manager=tree_manager)
@@ -620,7 +620,7 @@ class TestMigrationManager(unittest.TestCase):
         tree_manager = TreeManager()
         request = GetAvailableNodesRequest(node_modules=["ros_bt_py.nodes.constant"])
 
-        response = tree_manager.get_available_nodes(request)
+        response = get_available_nodes(request)
         self.assertTrue(response.success)
 
         migration_manager = MigrationManager(tree_manager=tree_manager)
@@ -650,7 +650,7 @@ class TestMigrationManager(unittest.TestCase):
             ]
         )
 
-        response = tree_manager.get_available_nodes(request)
+        response = get_available_nodes(request)
         self.assertTrue(response.success)
 
         migration_manager = MigrationManager(tree_manager=tree_manager)
@@ -688,7 +688,7 @@ class TestMigrationManager(unittest.TestCase):
         tree_manager = TreeManager()
         request = GetAvailableNodesRequest(node_modules=["ros_bt_py.nodes.constant"])
 
-        response = tree_manager.get_available_nodes(request)
+        response = get_available_nodes(request)
         self.assertTrue(response.success)
 
         migration_manager = MigrationManager(tree_manager=tree_manager)
@@ -710,7 +710,7 @@ class TestMigrationManager(unittest.TestCase):
         tree_manager = TreeManager()
         request = GetAvailableNodesRequest(node_modules=["ros_bt_py.nodes.constant"])
 
-        response = tree_manager.get_available_nodes(request)
+        response = get_available_nodes(request)
         self.assertTrue(response.success)
 
         mock_izip.side_effect = TypeError()

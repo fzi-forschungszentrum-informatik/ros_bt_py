@@ -31,6 +31,8 @@ from copy import deepcopy
 import importlib
 import inspect
 
+from ros_bt_py.tree_manager import get_available_nodes
+
 try:  # pragma: no cover
     from itertools import izip
 except ImportError:  # pragma: no cover
@@ -75,9 +77,7 @@ class MigrationManager(object):
         self.rospack = rospkg.RosPack()
         self.migrations_classes = {}
         self.tree_manager = tree_manager
-        response = self.tree_manager.get_available_nodes(
-            request=GetAvailableNodesRequest()
-        )
+        response = get_available_nodes(request=GetAvailableNodesRequest())
         available_nodes = response.available_nodes
         # sort the list by module then name:
         available_nodes.sort(key=lambda node: (node.module, node.node_class))

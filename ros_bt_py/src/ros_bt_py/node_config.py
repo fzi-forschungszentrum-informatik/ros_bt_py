@@ -27,7 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
-from typing import Dict
+from typing import Dict, Optional, List
 
 
 class OptionRef(object):
@@ -54,16 +54,9 @@ class OptionRef(object):
 
 
 class NodeConfig(object):
-    def __init__(
-        self,
-        options,
-        inputs,
-        outputs,
-        max_children,
-        optional_options=[],
-        version="",
-        tags=[],
-    ):
+    def __init__(self, options: Dict[str, type], inputs: Dict[str, type], outputs: Dict[str, type],
+                 max_children: Optional[int],
+                 optional_options: Optional[List[str]] = None, version: str = '', tags: Optional[List[str]] = None):
         """Describes the interface of a :class:ros_bt_py.node.Node
 
         :type options Dict[str, type]
@@ -95,8 +88,14 @@ class NodeConfig(object):
         self.outputs = outputs
         self.options = options
         self.max_children = max_children
+
+        if optional_options is None:
+            optional_options = []
         self.optional_options = optional_options
         self.version = version
+
+        if tags is None:
+            tags = []
         self.tags = tags
 
     def __repr__(self):

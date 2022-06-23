@@ -2396,7 +2396,7 @@ class TestTreeManager(unittest.TestCase):
             node_modules=["ros_bt_py.nodes.passthrough_node"]
         )
 
-        response = self.manager.get_available_nodes(request)
+        response = get_available_nodes(request)
         self.assertTrue(get_success(response), get_error_message(response))
         self.assertGreaterEqual(len(response.available_nodes), 1)
 
@@ -2408,7 +2408,7 @@ class TestTreeManager(unittest.TestCase):
             node_modules=["ros_bt_py.tests.node_does_not_exist"]
         )
 
-        response = self.manager.get_available_nodes(request)
+        response = get_available_nodes(request)
         self.assertFalse(get_success(response))
 
     def testSetOptions(self):
