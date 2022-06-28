@@ -1,0 +1,4 @@
+# Update capability interfaces from a specific path.
+---
+bool success
+string error_message

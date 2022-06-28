@@ -1,6 +1,5 @@
 # Load capability interfaces from a specific path.
 string package
 ---
-CapabilityInterface[] capabilities
 bool success
 string error_message

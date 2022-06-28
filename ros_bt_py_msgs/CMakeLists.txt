@@ -65,8 +65,8 @@ add_service_files(
   capability_interface/GetCapabilityInterfaces.srv
   capability_interface/LoadCapabilityInterfaces.srv
   capability_interface/SaveCapabilityInterfaces.srv
-  capability_interface/SubmitCapabilityInterfaces.srv
-  capability_interface/DeleteCapabilityInterfaces.srv
+  capability_interface/PutCapabilityInterfaces.srv
+  capability_interface/UpdateCapabilityInterfaces.srv
   capability_implementation/DeleteCapabilityImplementation.srv
   capability_implementation/SubmitCapabilityImplementation.srv
   capability_implementation/GetCapabilityImplementations.srv

@@ -2,24 +2,27 @@ import os
 import shutil
 import tempfile
 import uuid
+from threading import RLock
 from typing import Dict, Tuple
 
 import genpy
 import rospy
 import rosservice
+from std_msgs.msg import Time
 import yaml
 
 from ros_bt_py_msgs.msg import CapabilityInterface, CapabilityImplementation
 
 from ros_bt_py_msgs.srv import SaveCapabilityInterfacesRequest, SaveCapabilityInterfacesResponse, \
     LoadCapabilityInterfacesRequest, LoadCapabilityInterfacesResponse, \
-    SubmitCapabilityInterfacesRequest, SubmitCapabilityInterfacesResponse, \
+    PutCapabilityInterfacesRequest, PutCapabilityInterfacesResponse, \
     GetCapabilityInterfacesRequest, GetCapabilityInterfacesResponse, \
-    DeleteCapabilityInterfacesRequest, DeleteCapabilityInterfacesResponse, \
     GetCapabilityImplementationsRequest, GetCapabilityImplementationsResponse, DeleteCapabilityImplementationResponse, \
     DeleteCapabilityImplementationRequest, SubmitCapabilityImplementationRequest, \
     SubmitCapabilityImplementationResponse, DeleteCapabilityImplementation, \
-    UpdateCapabilityImplementation, UpdateCapabilityImplementationRequest, UpdateCapabilityImplementationResponse
+    UpdateCapabilityImplementation, UpdateCapabilityImplementationRequest, UpdateCapabilityImplementationResponse, \
+    UpdateCapabilityInterfacesRequest, UpdateCapabilityInterfacesResponse, LoadCapabilityInterfaces, \
+    SaveCapabilityInterfaces, GetCapabilityInterfaces, PutCapabilityInterfaces
 
 import rospkg
 import catkin.workspace
@@ -36,13 +39,95 @@ def is_invalid_uuid(uuid_string: str) -> bool:
 
 class CapabilityRepository(object):
 
-    def __init__(self):
+    def __init__(self, name: str, capability_topic_prefix: str):
         # List containing all known capability interfaces.
         self.capability_interfaces: Dict[str, CapabilityInterface] = dict()
         self.capability_implementations: Dict[str, Dict[str, CapabilityImplementation]] = dict()
 
         self._rp = rospkg.RosPack()
         self._interfaces_tmp_dir = tempfile.mkdtemp(prefix="capability_interface_backup_")
+
+        self.__capability_interfaces_lock = RLock()
+        self.__capability_implementations_lock = RLock()
+
+        self.__node_capability_topic_publisher = rospy.Publisher(
+            f'{name}/capabilities/interfaces',
+            CapabilityInterface
+        )
+
+        self.__announcement_topic_publisher = rospy.Publisher(
+            f'{capability_topic_prefix}/interfaces/announce',
+            CapabilityInterface
+        )
+
+        self.__announcement_topic_subscriber = rospy.Subscriber(
+            f'{capability_topic_prefix}/interfaces/announce',
+            CapabilityInterface,
+            self.__on_announce_callback
+        )
+
+        self.__request_topic_subscriber = rospy.Subscriber(
+            f'{capability_topic_prefix}/interfaces/request',
+            Time,
+            self.__on_request_callback
+        )
+
+        self.__request_topic_publisher = rospy.Publisher(
+            f'{capability_topic_prefix}/interfaces/request',
+            Time
+        )
+
+        self.__load_capability_interfaces_service = rospy.Service(f'{name}/capabilities/interfaces/load',
+                                                                  LoadCapabilityInterfaces,
+                                                                  self.load_capability_interfaces)
+
+        self.__save_capability_interfaces_service = rospy.Service(f'{name}/capabilities/interfaces/save',
+                                                                  SaveCapabilityInterfaces,
+                                                                  self.save_capability_interfaces)
+        self.__submit_capability_interfaces_service = rospy.Service(f'{name}/capabilities/interfaces/put',
+                                                                    PutCapabilityInterfaces,
+                                                                    self.put_capability_interfaces)
+        self.__get_capability_interfaces_service = rospy.Service(f'{name}/capabilities/interfaces/get',
+                                                                 GetCapabilityInterfaces,
+                                                                 self.get_capability_interfaces)
+
+    # -- Inter-Nodes callback --
+    def __on_announce_callback(self, msg: CapabilityInterface) -> None:
+        """
+        Subscriber callback for the capability announcement topic.
+
+        :param msg: The capability interfaces that has been announced.
+        :return: None
+        """
+        rospy.loginfo("Received announcement received!")
+        if msg.uuid in self.capability_interfaces.keys():
+            rospy.loginfo("Capability interface already exists, ignoring!")
+            return
+        with self.__capability_interfaces_lock:
+            self.capability_interfaces[msg.uuid] = msg
+        self.__announce_interface_own_node(msg)
+
+    def __announce_current_interfaces_other_nodes(self) -> None:
+        """
+        Announces all currently loaded capabilities to the capability topic.
+
+        Fails if the publisher is not initialized.
+        :return: None
+        """
+        for interface in self.capability_interfaces.values():
+            try:
+                with self.__capability_interfaces_lock:
+                    self.__announcement_topic_publisher.publish(interface)
+            except rospy.ROSSerializationException as exc:
+                rospy.logerr(f'Could not serialize msg, node not initialized: {exc}!')
+            except rospy.ROSException as exc:
+                rospy.logerr(f'Could not send msg, node not initialized: {exc}!')
+
+    def __on_request_callback(self, msg: Time):
+        rospy.loginfo("Received announcement request!")
+
+        self.__announce_current_interfaces_other_nodes()
+        rospy.loginfo("Send all known interface definitions!")
 
     def shutdown(self):
         rospy.loginfo("Cleaning /tmp files!")
@@ -51,6 +136,8 @@ class CapabilityRepository(object):
         except OSError as exc:
             rospy.logerr(
                 f'Could not remove tmp files at: "{self._interfaces_tmp_dir}", "{exc}"! Please remove manually!')
+
+    # -- Interface operations --
 
     def __get_capability_interfaces_folder_from_package(self, package: str) -> str:
         """
@@ -80,6 +167,16 @@ class CapabilityRepository(object):
             raise ValueError(f'Could not create capability interface folder: "{capability_interfaces_folder_path}"!')
 
         return capability_interfaces_folder_path
+
+    def __announce_interface_own_node(self, interface: CapabilityInterface) -> None:
+        try:
+            self.__node_capability_topic_publisher.publish(interface)
+        except rospy.ROSSerializationException as exc:
+            rospy.logerr(f'Could not serialize msg, node not initialized: {exc}!')
+            raise rospy.ROSException(f'Could not serialize msg, node not initialized: {exc}!')
+        except rospy.ROSException as exc:
+            rospy.logerr(f'Could not send msg, node not initialized: {exc}!')
+            raise rospy.ROSException(f'Could not send msg, node not initialized: {exc}!')
 
     def save_capability_interfaces(self, request: SaveCapabilityInterfacesRequest) -> SaveCapabilityInterfacesResponse:
         """
@@ -116,7 +213,10 @@ class CapabilityRepository(object):
                 )
             rospy.loginfo(f'Successfully moved {len(existing_files)} interface files.')
 
-        for capability_uuid, capability in self.capability_interfaces.items():
+        with self.__capability_interfaces_lock:
+            capability_interfaces = self.capability_interfaces.items()
+
+        for capability_uuid, capability in capability_interfaces:
             capability_interface_file_path \
                 = os.path.join(capability_interfaces_folder_path, f'{capability_uuid.upper()}.yaml')
 
@@ -167,7 +267,7 @@ class CapabilityRepository(object):
                     rospy.logwarn(f'"{capability_interface_file_path}" is malformed')
                     continue
 
-                if len(capability.uuid) != 36:
+                if is_invalid_uuid(capability.uuid):
                     rospy.logwarn(f'Interface: "{capability}" does not contain a valid uuid.')
                     continue
 
@@ -177,35 +277,57 @@ class CapabilityRepository(object):
                     rospy.logdebug(f"Updating interface {capability.uuid}!")
                 else:
                     rospy.logdebug(f"Adding interface {capability.uuid}!")
-                    self.capability_implementations[capability.uuid] = dict()
+                    with self.__capability_implementations_lock:
+                        self.capability_implementations[capability.uuid] = dict()
 
-                self.capability_interfaces[capability.uuid] = capability
+                with self.__capability_interfaces_lock:
+                    self.capability_interfaces[capability.uuid] = capability
+
+        self.__announce_current_interfaces_other_nodes()
+
+        for interface in loaded_capability_interfaces:
+            result, error_message = self.__announce_interface_own_node(interface)
+            if not result:
+                response.success = result,
+                response.error_message = error_message
+                return response
 
         response.success = True
-        response.capabilities = loaded_capability_interfaces
         return response
 
-    def submit_capability_interfaces(self,
-                                     request: SubmitCapabilityInterfacesRequest) -> SubmitCapabilityInterfacesResponse:
+    def put_capability_interfaces(self,
+                                  request: PutCapabilityInterfacesRequest) -> PutCapabilityInterfacesResponse:
         """
         Adds the submitted capability interfaces to the repository.
 
         :param request: The submit request from the service call.
         :return:
         """
-        response = SubmitCapabilityInterfacesResponse()
+        response = PutCapabilityInterfacesResponse()
         for interface in request.capabilities:
 
-            if len(interface.uuid) != 36:
+            if is_invalid_uuid(interface.uuid):
                 rospy.logwarn(f"Interface {interface} does not contain a valid uuid.")
-                continue
+                response.success = False
+                response.error_message = f"Interface {interface} does not contain a valid uuid."
+                return response
 
             if interface.uuid in self.capability_interfaces:
                 rospy.logdebug(f"Updating interface {interface.uuid}!")
             else:
                 rospy.logdebug(f"Adding interface {interface.uuid}!")
-                self.capability_implementations[interface.uuid] = dict()
-            self.capability_interfaces[interface.uuid] = interface
+                with self.__capability_implementations_lock:
+                    self.capability_implementations[interface.uuid] = dict()
+
+            with self.__capability_interfaces_lock:
+                self.capability_interfaces[interface.uuid] = interface
+
+            try:
+                self.__announce_interface_own_node(interface)
+            except rospy.ROSException as exc:
+                response.success = False
+                response.error_message = f"Error announcing change to local node topic: {exc}!"
+                return response
 
         response.success = True
         return response
@@ -218,37 +340,30 @@ class CapabilityRepository(object):
         """
 
         response = GetCapabilityInterfacesResponse()
-        response.capabilities = list(self.capability_interfaces.values())
-        return response
+        with self.__capability_interfaces_lock:
+            capability_interfaces = self.capability_interfaces.values()
 
-    def delete_capability_interfaces(self,
-                                     request: DeleteCapabilityInterfacesRequest) -> DeleteCapabilityInterfacesResponse:
-        """
-        Removes the capabilities with the specified uuids from the local repository.
-        :param request: The service request.
-        :return: Successful response if all capabilities were removed, false on the first failure.
-        """
-
-        response = DeleteCapabilityInterfacesResponse()
-        for capability_uuid in request.uuid:
+        for interface in capability_interfaces:
             try:
-                self.capability_interfaces.pop(capability_uuid)
-                self.capability_implementations.pop(capability_uuid)
-            except KeyError as exc:
+                self.__announce_interface_own_node(interface)
+            except rospy.ROSException as exc:
                 response.success = False
-                response.error_message = f"Capability interface with uuid {capability_uuid} does not exist!"
+                response.error_message = f"Error announcing change to local node topic: {exc}!"
                 return response
 
         response.success = True
         return response
 
+    # -- Implementation operations --
     def get_capability_implementations(self,
                                        request: GetCapabilityImplementationsRequest) -> GetCapabilityImplementationsResponse:
         response = GetCapabilityImplementationsResponse()
+        with self.__capability_implementations_lock:
+            capability_implementations = self.capability_implementations.values()
+
         response.implementations = [implementation
-                                    for capabilities in self.capability_implementations.values()
+                                    for capabilities in capability_implementations
                                     for implementation in capabilities.values()]
-        rospy.loginfo(f"f{response}")
         return response
 
     def delete_capability_implementation(self,
@@ -334,7 +449,8 @@ class CapabilityRepository(object):
         response.success = True
         return response
 
-    def update_capability_implementation(self, request: UpdateCapabilityImplementationRequest) -> UpdateCapabilityImplementationResponse:
+    def update_capability_implementation(self,
+                                         request: UpdateCapabilityImplementationRequest) -> UpdateCapabilityImplementationResponse:
         """
         Updates a known implementation in the repository and on the robot that provides the implementation.
 
@@ -385,4 +501,3 @@ class CapabilityRepository(object):
 
         response.success = True
         return response
-

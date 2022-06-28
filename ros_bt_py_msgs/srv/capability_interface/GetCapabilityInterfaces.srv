@@ -1,3 +1,4 @@
 # Returns the loaded capability definitions
 ---
-CapabilityInterface[] capabilities
+bool success
+string error_message
