@@ -1,0 +1,9 @@
+# goal
+string capability_uuid
+string implementation_uuid
+float64 tick_frequency_hz
+---
+# result
+
+---
+# feedback

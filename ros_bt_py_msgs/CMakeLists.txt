@@ -68,9 +68,8 @@ add_service_files(
   capability_interface/PutCapabilityInterfaces.srv
   capability_interface/UpdateCapabilityInterfaces.srv
   capability_implementation/DeleteCapabilityImplementation.srv
-  capability_implementation/SubmitCapabilityImplementation.srv
+  capability_implementation/PutCapabilityImplementation.srv
   capability_implementation/GetCapabilityImplementations.srv
-  capability_implementation/UpdateCapabilityImplementation.srv
   )
 
 ## Generate actions in the 'action' folder
