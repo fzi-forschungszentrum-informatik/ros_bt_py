@@ -1,9 +1,10 @@
 # goal
 string capability_uuid
 string implementation_uuid
-float64 tick_frequency_hz
 ---
 # result
-
+bool success
+string error_message
 ---
 # feedback
+float32 completion_percentage

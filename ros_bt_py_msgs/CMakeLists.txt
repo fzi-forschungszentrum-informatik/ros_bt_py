@@ -77,6 +77,8 @@ add_action_files(
   FILES
   FindBestExecutor.action
   RunTree.action
+  FindBestCapabilityImplementation.action
+  ExecuteImplementation.action
   )
 
 ## Generate added messages and services with any dependencies listed here

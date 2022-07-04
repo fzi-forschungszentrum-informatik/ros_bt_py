@@ -27,69 +27,33 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
+import inspect
+import os
+import traceback
 from copy import deepcopy
 from functools import wraps
 from threading import Thread, Lock, RLock
 from typing import Optional
 
-import yaml
-import inspect
-import traceback
-import os
-
 import genpy
-import rospy
 import rospkg
-from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
+import rospy
+import yaml
+from ros_bt_py_msgs.msg import Tree, Node as NodeMsg, DocumentedNode, NodeData, NodeDataLocation
+from ros_bt_py_msgs.srv import (
+    LoadTreeRequest, LoadTreeResponse, GetAvailableNodesRequest, LoadTreeFromPathResponse,
+    MigrateTreeResponse, FixYamlRequest, ClearTreeResponse, MorphNodeResponse, MoveNodeRequest, RemoveNodeRequest,
+    WireNodeDataRequest, MoveNodeResponse, ReplaceNodeResponse, WireNodeDataResponse, AddNodeResponse,
+    AddNodeAtIndexResponse, RemoveNodeResponse, ContinueResponse, AddNodeAtIndexRequest, ControlTreeExecutionRequest,
+    ControlTreeExecutionResponse, GetAvailableNodesResponse, ReloadTreeResponse, GenerateSubtreeResponse,
+    GetSubtreeResponse, SetExecutionModeResponse, SetOptionsResponse, ModifyBreakpointsResponse, ChangeTreeNameResponse,
+)
 
-from ros_bt_py_msgs.srv import LoadTreeRequest, LoadTreeResponse, GetAvailableNodesRequest
-from ros_bt_py_msgs.srv import LoadTreeFromPathResponse, MigrateTreeResponse
-from ros_bt_py_msgs.srv import FixYamlRequest
-from ros_bt_py_msgs.srv import ClearTreeResponse
-from ros_bt_py_msgs.srv import MorphNodeResponse
-from ros_bt_py_msgs.srv import MoveNodeRequest, RemoveNodeRequest, ReplaceNodeRequest
-from ros_bt_py_msgs.srv import (
-    WireNodeDataRequest,
-    MoveNodeResponse,
-    ReplaceNodeResponse,
-)
-from ros_bt_py_msgs.srv import (
-    WireNodeDataResponse,
-    AddNodeResponse,
-    AddNodeAtIndexResponse,
-)
-from ros_bt_py_msgs.srv import (
-    RemoveNodeResponse,
-    ContinueResponse,
-    AddNodeAtIndexRequest,
-)
-from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, ControlTreeExecutionResponse
-from ros_bt_py_msgs.srv import GetAvailableNodesResponse, ReloadTreeResponse
-from ros_bt_py_msgs.srv import GenerateSubtreeResponse
-from ros_bt_py_msgs.srv import GetSubtreeResponse
-from ros_bt_py_msgs.srv import SetExecutionModeResponse
-from ros_bt_py_msgs.srv import SetOptionsRequest, SetOptionsResponse
-from ros_bt_py_msgs.srv import ModifyBreakpointsResponse
-from ros_bt_py_msgs.srv import ChangeTreeNameResponse
-from ros_bt_py_msgs.msg import Tree
-from ros_bt_py_msgs.msg import Node as NodeMsg
-from ros_bt_py_msgs.msg import DocumentedNode
-from ros_bt_py_msgs.msg import NodeData, NodeDataLocation
-
-from ros_bt_py.exceptions import (
-    BehaviorTreeException,
-    MissingParentError,
-    TreeTopologyError,
-)
-from ros_bt_py.helpers import (
-    fix_yaml,
-    remove_input_output_values,
-    json_encode,
-    json_decode,
-)
+from ros_bt_py.debug_manager import DebugManager
+from ros_bt_py.exceptions import BehaviorTreeException, MissingParentError, TreeTopologyError
+from ros_bt_py.helpers import fix_yaml, remove_input_output_values, json_encode, json_decode
 from ros_bt_py.node import Node, load_node_module, increment_name
 from ros_bt_py.node_config import OptionRef
-from ros_bt_py.debug_manager import DebugManager
 
 try:  # pragma: no cover
     unicode
@@ -282,20 +246,17 @@ class TreeManager(object):
     These methods are suited (intended, even) for use as ROS service handlers.
     """
 
-    def __init__(
-        self,
-        name=None,
-        module_list=None,
-        debug_manager=None,
-        tick_frequency_hz=10.0,
-        publish_tree_callback=None,
-        publish_debug_info_callback=None,
-        publish_debug_settings_callback=None,
-        publish_node_diagnostics_callback=None,
-        publish_diagnostic_callback=None,
-        diagnostics_frequency=1.0,
-        show_traceback_on_exception=False,
-    ):
+    def __init__(self,
+                 name=None,
+                 module_list=None,
+                 debug_manager=None,
+                 tick_frequency_hz=10.0,
+                 publish_tree_callback=None,
+                 publish_debug_info_callback=None,
+                 publish_debug_settings_callback=None,
+                 publish_node_diagnostics_callback=None,
+                 show_traceback_on_exception=False,
+                 capability_interfaces_callback=None):
         self.name = name
         self.publish_tree = publish_tree_callback
         if self.publish_tree is None:
@@ -326,6 +287,10 @@ class TreeManager(object):
             self.debug_manager = DebugManager()
 
         self.show_traceback_on_exception = show_traceback_on_exception
+
+        self.capability_interfaces_callback = capability_interfaces_callback
+        if not self.capability_interfaces_callback is None:
+            rospy.loginfo('No callback for local capability interface announcements provided.')
 
         if name is None:
             name = ""

@@ -1479,43 +1479,31 @@ class Node(object):
         A ROS message that describes the node.
         """
         node_type = type(self)
-        return NodeMsg(
-            module=node_type.__module__,
-            node_class=node_type.__name__,
-            version=self.node_config.version,
-            name=self.name,
-            child_names=[child.name for child in self.children],
-            options=[
-                NodeDataMsg(
-                    key=key,
-                    serialized_value=self.options.get_serialized(key),
-                    serialized_type=self.options.get_serialized_type(key),
-                )
-                for key in self.options
-            ],
-            inputs=[
-                NodeDataMsg(
-                    key=key,
-                    serialized_value=self.inputs.get_serialized(key),
-                    serialized_type=self.inputs.get_serialized_type(key),
-                )
-                for key in self.inputs
-            ],
-            outputs=[
-                NodeDataMsg(
-                    key=key,
-                    serialized_value=self.outputs.get_serialized(key),
-                    serialized_type=self.outputs.get_serialized_type(key),
-                )
-                for key in self.outputs
-            ],
-            max_children=(
-                self.node_config.max_children
-                if self.node_config.max_children is not None
-                else -1
-            ),
-            state=self.state,
-        )
+
+        return NodeMsg(module=node_type.__module__,
+                       node_class=node_type.__name__,
+                       version=self.node_config.version,
+                       name=self.name,
+                       child_names=[child.name for child in self.children],
+                       options=[NodeDataMsg(
+                           key=key,
+                           serialized_value=self.options.get_serialized(key),
+                           serialized_type=self.options.get_serialized_type(key))
+                           for key in self.options],
+                       inputs=[NodeDataMsg(
+                           key=key,
+                           serialized_value=self.inputs.get_serialized(key),
+                           serialized_type=self.inputs.get_serialized_type(key))
+                           for key in self.inputs],
+                       outputs=[NodeDataMsg(
+                           key=key,
+                           serialized_value=self.outputs.get_serialized(key),
+                           serialized_type=self.outputs.get_serialized_type(key))
+                           for key in self.outputs],
+                       max_children=(self.node_config.max_children
+                                     if self.node_config.max_children is not None
+                                     else -1),
+                       state=self.state)
 
 
 def load_node_module(package_name):

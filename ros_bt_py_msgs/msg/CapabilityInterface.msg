@@ -3,5 +3,6 @@ string uuid
 string name
 string description
 
+NodeData[] options
 NodeData[] inputs
 NodeData[] outputs

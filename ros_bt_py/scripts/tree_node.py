@@ -30,40 +30,20 @@
 #  -------- END LICENSE BLOCK --------
 
 import rospy
-from diagnostic_msgs.msg import DiagnosticArray
-from ros_bt_py_msgs.msg import Tree, DebugInfo, DebugSettings, NodeDiagnostics, Messages, Packages
-from ros_bt_py_msgs.srv import (
-    AddNode,
-    AddNodeAtIndex,
-    ControlTreeExecution,
-    ModifyBreakpoints,
-    RemoveNode,
-    WireNodeData,
-    GetAvailableNodes,
-    SetExecutionMode,
-    SetOptions,
-    Continue,
-    LoadTree,
-    LoadTreeFromPath,
-    MoveNode,
-    ReplaceNode,
-    GetSubtree,
-    ClearTree,
-    MorphNode,
-    SaveTree,
-    FixYaml,
-)
-from ros_bt_py_msgs.srv import (
-    LoadTreeRequest,
-    ControlTreeExecutionRequest,
-    GetMessageFields,
-    GetPackageStructure,
-    MigrateTree,
-    GenerateSubtree,
-    ReloadTree,
-    ChangeTreeName,
-)
-from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message
+
+from ros_bt_py_msgs.msg import Messages, Packages, CapabilityInterface
+
+from ros_bt_py_msgs.msg import Tree, DebugInfo, DebugSettings, NodeDiagnostics
+from ros_bt_py_msgs.srv import (AddNode, AddNodeAtIndex, ControlTreeExecution, ModifyBreakpoints,
+                                RemoveNode, WireNodeData, GetAvailableNodes, SetExecutionMode,
+                                SetOptions, Continue, LoadTree, LoadTreeFromPath, MoveNode,
+                                ReplaceNode, GetSubtree, ClearTree, MorphNode, SaveTree, FixYaml)
+from ros_bt_py_msgs.srv import (LoadTreeRequest, ControlTreeExecutionRequest, GetMessageFields,
+                                GetPackageStructure, MigrateTree, GenerateSubtree, ReloadTree,
+                                ChangeTreeName)
+
+from ros_bt_py.capability import capability_node_class_from_capability_interface_callback
+from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message, get_available_nodes
 from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.migration import MigrationManager
 from ros_bt_py.package_manager import PackageManager
@@ -89,33 +69,31 @@ class TreeNode(object):
                 # try to parse whitespace-separated list of modules
                 node_module_names = node_module_names.split()
         if not isinstance(node_module_names, list):
-            raise TypeError(
-                "node_modules must be a list, but is a %s"
-                % type(node_module_names.__name__)
-            )
+            raise TypeError(f'node_modules must be a list, but is a {type(node_module_names.__name__)}')
 
-        show_traceback_on_exception = rospy.get_param(
-            "~show_traceback_on_exception", default=False
-        )
-        load_default_tree = rospy.get_param("~load_default_tree", default=False)
+        show_traceback_on_exception = rospy.get_param('~show_traceback_on_exception', default=False)
+        load_default_tree = rospy.get_param('~load_default_tree', default=False)
         load_default_tree_permissive = rospy.get_param(
-            "~load_default_tree_permissive", default=False
-        )
-        default_tree_path = rospy.get_param("~default_tree_path", default="")
-        default_tree_tick_frequency_hz = rospy.get_param(
-            "~default_tree_tick_frequency_hz", default=1
-        )
-        default_tree_diagnostics_frequency_hz = rospy.get_param(
-            "~default_tree_diagnostics_frequency_hz", default=1
-        )
-        default_tree_control_command = rospy.get_param(
-            "~default_tree_control_command", default=2
+            '~load_default_tree_permissive', default=False)
+        default_tree_path = rospy.get_param('~default_tree_path', default="")
+        default_tree_tick_frequency_hz = rospy.get_param('~default_tree_tick_frequency_hz',
+                                                         default=1)
+        default_tree_control_command = rospy.get_param('~default_tree_control_command',
+                                                       default=2)
+
+        local_mission_control_topic = rospy.get_param("~mission_control_topic",
+                                                      default="/mission_control")
+
+        self.capability_interface_subscription = rospy.Subscriber(
+            name=f"{local_mission_control_topic}/capabilities/interfaces",
+            data_class=CapabilityInterface,
+            callback=capability_node_class_from_capability_interface_callback,
+            callback_args=(local_mission_control_topic, ),
         )
 
-        self.tree_pub = rospy.Publisher("~tree", Tree, latch=True, queue_size=1)
-        self.debug_info_pub = rospy.Publisher(
-            "~debug/debug_info", DebugInfo, latch=True, queue_size=1
-        )
+        self.tree_pub = rospy.Publisher('~tree', Tree, latch=True, queue_size=1)
+        self.debug_info_pub = rospy.Publisher('~debug/debug_info', DebugInfo, latch=True,
+                                              queue_size=1)
         self.debug_settings_pub = rospy.Publisher(
             "~debug/debug_settings", DebugSettings, latch=True, queue_size=1
         )
@@ -232,16 +210,14 @@ class TreeNode(object):
         rospy.loginfo("initialized tree manager")
 
         if load_default_tree:
-            rospy.logwarn("loading default tree: %s" % default_tree_path)
+            rospy.logwarn(f"loading default tree: {default_tree_path}")
             tree = Tree(path=default_tree_path)
             load_tree_request = LoadTreeRequest(
                 tree=tree, permissive=load_default_tree_permissive
             )
             load_tree_response = self.tree_manager.load_tree(load_tree_request)
             if not load_tree_response.success:
-                rospy.logerr(
-                    "could not load default tree: %s" % load_tree_response.error_message
-                )
+                rospy.logerr(f"could not load default tree: {load_tree_response.error_message}")
             else:
                 control_tree_execution_request = ControlTreeExecutionRequest(
                     command=default_tree_control_command,
@@ -251,10 +227,7 @@ class TreeNode(object):
                     control_tree_execution_request
                 )
                 if not control_tree_execution_response.success:
-                    rospy.logerr(
-                        "could not execute default tree: %s"
-                        % control_tree_execution_response.error_message
-                    )
+                    rospy.logerr(f"could not execute default tree: {control_tree_execution_response.error_message}")
 
         rospy.loginfo("initializing migration manger ...")
         self.migration_manager = MigrationManager(tree_manager=self.tree_manager)
@@ -311,6 +284,7 @@ class TreeNode(object):
         rospy.loginfo("initialized tree node")
 
     def shutdown(self):
+        """Shut down tree node in a safe way"""
         if self.tree_manager.get_state() not in [Tree.IDLE, Tree.EDITABLE, Tree.ERROR]:
             rospy.loginfo("Shutting down Behavior Tree")
             response = self.tree_manager.control_execution(
