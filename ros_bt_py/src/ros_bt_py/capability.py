@@ -414,40 +414,6 @@ class Capability(ABC, Leaf):
         self.__execute_implementation_mc_connection_attempts = 0
 
 
-def __create_capability_node_class_name(
-        capability_name: str,
-        inputs: dict[str, str],
-        outputs: dict[str, str],
-        options: dict[str, str]
-):
-    """
-    Creates a unique identification for capability node subclasses with respect to their inputs, outputs and options.
-
-    :param capability_name: The name of the capability interface.
-    :param inputs: The inputs defined in the capability interface.
-    :param outputs: The outputs in the capability interface.
-    :param options: THe options in the capability interface.
-    :return: A unique identifier with respect to all aspects of the interface.
-    """
-
-    def __dict_to_str_list(dict: dict):
-        return [f"{node_input[0].replace('_', '-').strip().replace(' ', '')}_" \
-                f"{str(node_input[1].__name__).replace('_', '-').strip().replace(' ', '')}"
-                for node_input in sorted(dict.items())]
-
-    input_string = "__".join(
-        __dict_to_str_list(inputs)
-    )
-    output_string = "__".join(
-        __dict_to_str_list(outputs)
-    )
-    option_string = "__".join(
-        __dict_to_str_list(options)
-    )
-
-    return f"{capability_name}_I_{input_string}_O_{output_string}_F_{option_string}"
-
-
 def capability_node_class_from_capability_interface(
         capability_interface: CapabilityInterface,
         mission_control_topic: str
@@ -470,22 +436,18 @@ def capability_node_class_from_capability_interface(
     """
     inputs_dict = {}
     for input_node_data in capability_interface.inputs:
-        inputs_dict[input_node_data.key] = input_node_data.serialized_type
+        inputs_dict[input_node_data.key] = json_decode(input_node_data.serialized_type)
 
     outputs_dict = {}
     for output_node_data in capability_interface.outputs:
-        outputs_dict[output_node_data.key] = output_node_data.serialized_type
+        outputs_dict[output_node_data.key] = json_decode(output_node_data.serialized_type)
 
     options_dict = {}
     for options_node_data in capability_interface.options:
-        options_dict[options_node_data.key] = options_node_data.serialized_type
-
-    capability_node_class_name = __create_capability_node_class_name(
-        capability_interface.name, inputs_dict, outputs_dict, options_dict
-        )
+        options_dict[options_node_data.key] = json_decode(options_node_data.serialized_type)
 
     capability_node_class = type(
-        capability_node_class_name,
+        capability_interface.name,
         (Capability,),
         {
             '__capability_interface': capability_interface,

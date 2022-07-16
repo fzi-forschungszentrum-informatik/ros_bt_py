@@ -219,22 +219,23 @@ def get_available_nodes(request: GetAvailableNodesRequest) -> Optional[GetAvaila
                 for (name, type_or_ref) in data_map.items()]
 
     for (module, nodes) in Node.node_classes.items():
-        for (class_name, node_class) in nodes.items():
-            max_children = node_class._node_config.max_children
-            max_children = -1 if max_children is None else max_children
-            doc = inspect.getdoc(node_class) or ''
-            response.available_nodes.append(DocumentedNode(
-                module=module,
-                node_class=class_name,
-                version=node_class._node_config.version,
-                max_children=max_children,
-                name=class_name,
-                options=to_node_data(node_class._node_config.options),
-                inputs=to_node_data(node_class._node_config.inputs),
-                outputs=to_node_data(node_class._node_config.outputs),
-                doc=str(doc),
-                tags=node_class._node_config.tags
-            ))
+        for (class_name, node_classes) in nodes.items():
+            for node_class in node_classes:
+                max_children = node_class._node_config.max_children
+                max_children = -1 if max_children is None else max_children
+                doc = inspect.getdoc(node_class) or ''
+                response.available_nodes.append(DocumentedNode(
+                    module=module,
+                    node_class=class_name,
+                    version=node_class._node_config.version,
+                    max_children=max_children,
+                    name=class_name,
+                    options=to_node_data(node_class._node_config.options),
+                    inputs=to_node_data(node_class._node_config.inputs),
+                    outputs=to_node_data(node_class._node_config.outputs),
+                    doc=str(doc),
+                    tags=node_class._node_config.tags
+                ))
 
     response.success = True
     return response

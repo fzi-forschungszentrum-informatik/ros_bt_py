@@ -32,6 +32,7 @@ from copy import deepcopy
 
 import importlib
 import re
+from typing import Type, List, Dict
 
 import rospy
 
@@ -79,8 +80,8 @@ def define_bt_node(node_config):
     def inner_dec(node_class):
         if not issubclass(node_class, Node):
             rospy.logerr(
-                "Class %s is not a subclass of Node, cannot apply define_bt_node decorator!",
-                node_class.__name__,
+                'Class %s is not a subclass of Node, cannot apply define_bt_node decorator!',
+                node_class.__name__
             )
             raise TypeError()
 
@@ -100,18 +101,22 @@ def define_bt_node(node_config):
             # Don't register the class if it doesn't implement all required
             # methods
             rospy.logdebug(
-                "Assigned NodeData to class %s, but did not register "
-                "the class because it does not implement all required methods. "
-                "Missing methods: %s",
-                node_class.__name__,
-                str(missing_methods),
-            )
+                'Assigned NodeData to class %s, but did not register '
+                'the class because it does not implement all required methods. '
+                'Missing methods: %s',
+                node_class.__name__, str(missing_methods)
+                )
             return node_class
 
         if node_class.__module__ not in Node.node_classes:
-            Node.node_classes[node_class.__module__] = {node_class.__name__: node_class}
+            Node.node_classes[node_class.__module__] = {
+                node_class.__name__: [node_class]
+            }
         else:
-            Node.node_classes[node_class.__module__][node_class.__name__] = node_class
+            if node_class.__name__ not in Node.node_classes[node_class.__module__]:
+                Node.node_classes[node_class.__module__][node_class.__name__] = [node_class]
+            else:
+                Node.node_classes[node_class.__module__][node_class.__name__].append(node_class)
         return node_class
 
     return inner_dec
@@ -129,15 +134,8 @@ class NodeMeta(type):
 
     @property
     def __doc__(self):
-        if (
-            hasattr(self, "_node_config")
-            and self._node_config is not None
-            and (
-                self._node_config.inputs
-                or self._node_config.outputs
-                or self._node_config.options
-            )
-        ):
+        if hasattr(self, '_node_config') and self._node_config is not None and \
+                (self._node_config.inputs or self._node_config.outputs or self._node_config.options):
             # Build table of inputs, outputs and options
             # Start with two newlines to separate from the original docstring
             param_table = ["\n\n" "**Behavior Tree I/O keys**\n\n"]
@@ -145,43 +143,45 @@ class NodeMeta(type):
                 param_table.append("*Options*\n\n")
                 for option_key in self._node_config.options:
                     param_table.append(
-                        "* %s: :class:`%s`\n"
-                        % (option_key, self._node_config.options[option_key].__name__)
+                        '* %s: :class:`%s`\n' %
+                        (option_key,
+                         self._node_config.options[option_key].__name__)
                     )
-                param_table.append("\n")
+                param_table.append('\n')
             if self._node_config.inputs:
                 param_table.append("*Inputs*\n\n")
                 for input_key in self._node_config.inputs:
                     if isinstance(self._node_config.inputs[input_key], OptionRef):
                         param_table.append(
-                            "* %s: ``%s``\n"
-                            % (input_key, str(self._node_config.inputs[input_key]))
+                            '* %s: ``%s``\n' %
+                            (input_key,
+                             str(self._node_config.inputs[input_key]))
                         )
                     else:
                         param_table.append(
-                            "* %s: :class:`%s`\n"
-                            % (input_key, self._node_config.inputs[input_key].__name__)
+                            '* %s: :class:`%s`\n' %
+                            (input_key,
+                             self._node_config.inputs[input_key].__name__)
                         )
-                param_table.append("\n")
+                param_table.append('\n')
             if self._node_config.outputs:
                 param_table.append("*Outputs*\n\n")
                 for output_key in self._node_config.outputs:
                     if isinstance(self._node_config.outputs[output_key], OptionRef):
                         param_table.append(
-                            "* %s: ``%s``\n"
-                            % (output_key, str(self._node_config.outputs[output_key]))
+                            '* %s: ``%s``\n' %
+                            (output_key,
+                             str(self._node_config.outputs[output_key]))
                         )
                     else:
                         param_table.append(
-                            "* %s: :class:`%s`\n"
-                            % (
-                                output_key,
-                                self._node_config.outputs[output_key].__name__,
-                            )
+                            '* %s: :class:`%s`\n' %
+                            (output_key,
+                             self._node_config.outputs[output_key].__name__)
                         )
-                param_table.append("\n")
+                param_table.append('\n')
 
-            return self._doc + "".join(param_table)
+            return self._doc + ''.join(param_table)
         else:
             return self._doc
 
@@ -436,11 +436,13 @@ class Node(object):
             # cycle!
             self.inputs.reset_updated()
 
-            self.raise_if_in_invalid_state(allowed_states=[NodeMsg.RUNNING,
-                                                           NodeMsg.SUCCEEDED,
-                                                           NodeMsg.FAILED,
-                                                           NodeMsg.UNASSIGNED],
-                                           action_name='tick()')
+            self.raise_if_in_invalid_state(
+                allowed_states=[NodeMsg.RUNNING,
+                                NodeMsg.SUCCEEDED,
+                                NodeMsg.FAILED,
+                                NodeMsg.UNASSIGNED],
+                action_name='tick()'
+                )
             self._handle_outputs()
 
             return self.state
@@ -502,10 +504,12 @@ class Node(object):
             if self.state is NodeMsg.UNINITIALIZED:
                 raise BehaviorTreeException("Trying to untick uninitialized node!")
             self.state = self._do_untick()
-            self.raise_if_in_invalid_state(allowed_states=[NodeMsg.IDLE,
-                                                           NodeMsg.PAUSED,
-                                                           NodeMsg.UNASSIGNED],
-                                           action_name='untick()')
+            self.raise_if_in_invalid_state(
+                allowed_states=[NodeMsg.IDLE,
+                                NodeMsg.PAUSED,
+                                NodeMsg.UNASSIGNED],
+                action_name='untick()'
+                )
 
             self.outputs.reset_updated()
             return self.state
@@ -991,7 +995,48 @@ class Node(object):
                 "not available. Original message:\n%s" % str(msg)
             )
 
-        node_class = cls.node_classes[msg.module][msg.node_class]
+        node_classes: List[Type[Node]] = cls.node_classes[msg.module][msg.node_class]
+
+        def __check_node_data_match(node_config: Dict[str, Type], node_data: List[NodeDataMsg]) -> bool:
+            for data in node_data:
+                try:
+                    value = node_config.get(data.key)
+                except KeyError:
+                    return False
+                if value is not data.serialized_type:
+                    return False
+            return True
+
+        node_class = None
+        if len(node_classes) > 1:
+            rospy.logwarn(f'{msg} - {node_classes}')
+            candidates = list(
+                filter(
+                    lambda node_class_candidate: __check_node_data_match(
+                        node_class_candidate._node_config.inputs, msg.inputs
+                        )
+                                                 and __check_node_data_match(
+                        node_class_candidate._node_config.outputs, msg.outputs
+                        )
+                                                 and __check_node_data_match(
+                        node_class_candidate._node_config.options, msg.options
+                        ),
+                    node_classes
+                    )
+                )
+            if len(candidates) < 1:
+                raise BehaviorTreeException(
+                    'Failed to instantiate node from message - node class '
+                    'not available. Original message:\n%s' % str(msg)
+                )
+            if len(candidates) > 1:
+                raise BehaviorTreeException(
+                    'Failed to instantiate node from message - multiple versions of node class '
+                    'available. Original message:\n%s' % str(msg)
+                )
+            node_class = candidates[0]
+        else:
+            node_class = node_classes[0]
 
         # Populate options dict
         options_dict = {}
@@ -1480,30 +1525,35 @@ class Node(object):
         """
         node_type = type(self)
 
-        return NodeMsg(module=node_type.__module__,
-                       node_class=node_type.__name__,
-                       version=self.node_config.version,
-                       name=self.name,
-                       child_names=[child.name for child in self.children],
-                       options=[NodeDataMsg(
-                           key=key,
-                           serialized_value=self.options.get_serialized(key),
-                           serialized_type=self.options.get_serialized_type(key))
-                           for key in self.options],
-                       inputs=[NodeDataMsg(
-                           key=key,
-                           serialized_value=self.inputs.get_serialized(key),
-                           serialized_type=self.inputs.get_serialized_type(key))
-                           for key in self.inputs],
-                       outputs=[NodeDataMsg(
-                           key=key,
-                           serialized_value=self.outputs.get_serialized(key),
-                           serialized_type=self.outputs.get_serialized_type(key))
-                           for key in self.outputs],
-                       max_children=(self.node_config.max_children
-                                     if self.node_config.max_children is not None
-                                     else -1),
-                       state=self.state)
+        return NodeMsg(
+            module=node_type.__module__,
+            node_class=node_type.__name__,
+            version=self.node_config.version,
+            name=self.name,
+            child_names=[child.name for child in self.children],
+            options=[NodeDataMsg(
+                key=key,
+                serialized_value=self.options.get_serialized(key),
+                serialized_type=self.options.get_serialized_type(key)
+            )
+                for key in self.options],
+            inputs=[NodeDataMsg(
+                key=key,
+                serialized_value=self.inputs.get_serialized(key),
+                serialized_type=self.inputs.get_serialized_type(key)
+            )
+                for key in self.inputs],
+            outputs=[NodeDataMsg(
+                key=key,
+                serialized_value=self.outputs.get_serialized(key),
+                serialized_type=self.outputs.get_serialized_type(key)
+            )
+                for key in self.outputs],
+            max_children=(self.node_config.max_children
+                          if self.node_config.max_children is not None
+                          else -1),
+            state=self.state
+            )
 
 
 def load_node_module(package_name):
