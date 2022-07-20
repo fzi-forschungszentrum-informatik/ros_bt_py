@@ -8,7 +8,7 @@ from ros_bt_py.mission_control import CapabilityRepository
 if __name__ == '__main__':
     rospy.init_node('capability_repository_node')
 
-    LOCAL_CAPABILITY_TOPIC_PREFIX = rospy.get_param("robot_namespace", "/ros_bt_py_1")
+    LOCAL_CAPABILITY_TOPIC_PREFIX = rospy.get_param("robot_namespace", "/mission_control")
     GLOBAL_CAPABILITY_TOPIC_PREFIX = rospy.get_param("capabilities_topic", "/capabilities")
 
     CAPABILITY_REPOSITORY = CapabilityRepository(

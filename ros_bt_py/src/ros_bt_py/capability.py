@@ -32,6 +32,7 @@ Module for handling BT nodes related to capabilities.
 It defines the base ABC for Capability nodes and functions to create class definitions for capability interfaces
 at runtime.
 """
+# pylint: disable=no-name-in-module,import-error
 
 from typing import Optional, List, Type
 
@@ -137,7 +138,7 @@ class Capability(ABC, Leaf):
                 f' after waiting f{WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS} seconds!'
             )
 
-    def __tick_unassigned(self) -> NodeMsg:
+    def __tick_unassigned(self) -> str:
         """
         Function performing the tick operation while in the UNASSIGNED state.
         :return: The new state as a NodeMsg constant.
@@ -237,7 +238,8 @@ class Capability(ABC, Leaf):
         """
         Get local implementation from the mission controller and add it below the current node.
 
-        :return: None
+        :return: None if the implementation is not yet received from the remote server. A capability implementation, if
+        a value was received and is correct.
         """
         if self.__get_local_implementations_service.get_state() == AsyncServiceProxy.IDLE:
             self.__get_local_implementations_service.call_service(
@@ -269,75 +271,131 @@ class Capability(ABC, Leaf):
             raise BehaviorTreeException("Service call to the local Mission Control failed!")
         return None
 
-    def __tick_running(self) -> NodeMsg:
-        # pylint: disable=too-many-return-statements
-        if self.__internal_state == self.EXECUTE_LOCAL:
+    def __tick_executing_local(self) -> str:
+        """
+        Performs the ticking operation if the capability is executed locally.
+        It retrieves the local implementation and performs the ticking operations.
 
+        :raise BehaviorTreeException: If the implementation cannot be received or nodes cannot be instantiated.
+        :return: The statue of the node from NodeMsg.
+        """
+        # No current implementation is present, one needs to be received from the mission controller.
+        if self.__local_implementation is None:
+
+            try:
+                self.__local_implementation = self.__get_local_implementation()
+            except BehaviorTreeException as exc:
+                self.logerr("Cannot receive local implementation from mission control!")
+                raise exc
+
+            # We have not yet received the implementation, but the service is running.
             if self.__local_implementation is None:
-                try:
-                    self.__local_implementation = self.__get_local_implementation()
-                except BehaviorTreeException as exc:
-                    self.logerr("Cannot receive local implementation!")
-                    raise exc
+                return NodeMsg.RUNNING
 
-                if self.__local_implementation is None:
-                    return NodeMsg.RUNNING
+            # Implementation is present and we can add it below the capability.
+            children_names = {}
 
-                self.add_child()
+            while len(children_names) != len(self.__local_implementation.nodes):
+                added = 0
+                # find nodes whose children are all in the tree already, then add them
+                for node in (node for node in self.__local_implementation.nodes
+                             if (node.name not in children_names
+                                 and all((name in children_names for name in node.child_names)))):
+                    try:
+                        node_instance = self.from_msg(
+                            node, debug_manager=self.debug_manager, permissive=False
+                        )
+                        for child_name in node.child_names:
+                            node_instance.add_child(children_names[child_name])
+                        children_names[node_instance.name] = node_instance
 
-            pass
-
-        if self.__internal_state == self.EXECUTE_REMOTE:
-            self.__execute_implementation_action.send_goal(
-                ExecuteImplementationGoal(
-                    capability_uuid=self.capability_interface.uuid,
-                    implementation_uuid=self.__execute_implementation_uuid,
-                )
-            )
-            self.__execute_implementation_action_start_time = rospy.Time.now()
-
-            # Check if the action ran into a timeout.
-            if (rospy.Time.now() - self.__execute_implementation_action_start_time
-                    > rospy.Duration(WAIT_FOR_REMOTE_EXECUTION_TIMEOUT_SECONDS)):
-                self.logerr(
-                    f'ExecuteImplementation action timed out after'
-                    f' {WAIT_FOR_REMOTE_EXECUTION_TIMEOUT_SECONDS} seconds'
-                )
-                self.__internal_state = self.IDLE
-                return NodeMsg.FAILED
-
-            execute_implementation_state = self.__execute_implementation_action.get_state()
-
-            if execute_implementation_state in [GoalStatus.ABORTED, GoalStatus.REJECTED, GoalStatus.LOST]:
-                self.logerr(
-                    f'ExecuteImplementation action ended without succeeding'
-                    f' (state ID: {execute_implementation_state})'
-                )
-                self.cleanup()
-                return NodeMsg.FAILED
-
-            if execute_implementation_state in [GoalStatus.RECALLED, GoalStatus.PREEMPTED]:
-                self.logerr(
-                    f'ExecuteImplementation action was willingly canceled before succeeding'
-                    f' (state ID: {execute_implementation_state})'
-                )
-                self.cleanup()
-                return NodeMsg.FAILED
-
-            if execute_implementation_state == GoalStatus.SUCCEEDED:
-                execute_implementation_action_result: ExecuteImplementationResult \
-                    = self.__execute_implementation_action.get_result()
-
-                if not execute_implementation_action_result.success:
-                    self.logerr(
-                        f'ExecuteImplementation action did not finish successfully:'
-                        f' "{execute_implementation_action_result.error_message}"'
-                    )
-                    self.cleanup()
+                        added += 1
+                    except TypeError as exc:
+                        raise BehaviorTreeException(str(exc)) from exc
+                    except AttributeError as exc:
+                        raise BehaviorTreeException(str(exc)) from exc
+                if added == 0:
+                    rospy.logerr("Empty local implementation provided!")
                     return NodeMsg.FAILED
 
-                # TODO: Copy results and publish to the subscribers
-                return NodeMsg.SUCCEEDED
+                orphans = list(filter(lambda child: child.parent is None, children_names.values()))
+                if len(orphans) > 1:
+                    rospy.logwarn("More than one subnode for the capability detected.")
+                if len(orphans) < 1:
+                    rospy.logwarn("No root for capability subtree detected!")
+                    self.cleanup()
+                    return NodeMsg.UNASSIGNED
+
+                for orphan in orphans:
+                    self.add_child(orphan)
+
+        return self.children[0].tick()
+
+    def __tick_executing_remote(self) -> str:
+        """
+        Performs the ticking operation when operating on a remote node.
+
+        :return: The status of the node as a NodeMsg status.
+        """
+        self.__execute_implementation_action.send_goal(
+            ExecuteImplementationGoal(
+                capability_uuid=self.capability_interface.uuid,
+                implementation_uuid=self.__execute_implementation_uuid,
+            )
+        )
+        self.__execute_implementation_action_start_time = rospy.Time.now()
+
+        # Check if the action ran into a timeout.
+        if (rospy.Time.now() - self.__execute_implementation_action_start_time
+                > rospy.Duration(WAIT_FOR_REMOTE_EXECUTION_TIMEOUT_SECONDS)):
+            self.logerr(
+                f'ExecuteImplementation action timed out after'
+                f' {WAIT_FOR_REMOTE_EXECUTION_TIMEOUT_SECONDS} seconds'
+            )
+            self.__internal_state = self.IDLE
+            return NodeMsg.FAILED
+
+        execute_implementation_state = self.__execute_implementation_action.get_state()
+
+        if execute_implementation_state in [GoalStatus.ABORTED, GoalStatus.REJECTED, GoalStatus.LOST]:
+            self.logerr(
+                f'ExecuteImplementation action ended without succeeding'
+                f' (state ID: {execute_implementation_state})'
+            )
+            self.cleanup()
+            return NodeMsg.FAILED
+
+        if execute_implementation_state in [GoalStatus.RECALLED, GoalStatus.PREEMPTED]:
+            self.logerr(
+                f'ExecuteImplementation action was willingly canceled before succeeding'
+                f' (state ID: {execute_implementation_state})'
+            )
+            self.cleanup()
+            return NodeMsg.FAILED
+
+        if execute_implementation_state == GoalStatus.SUCCEEDED:
+            execute_implementation_action_result: ExecuteImplementationResult \
+                = self.__execute_implementation_action.get_result()
+
+            if not execute_implementation_action_result.success:
+                self.logerr(
+                    f'ExecuteImplementation action did not finish successfully:'
+                    f' "{execute_implementation_action_result.error_message}"'
+                )
+                self.cleanup()
+                return NodeMsg.FAILED
+
+            # TODO: Copy results and publish to the subscribers
+            return NodeMsg.SUCCEEDED
+        return NodeMsg.RUNNING
+
+    def __tick_running(self) -> NodeMsg:
+
+        if self.__internal_state == self.EXECUTE_LOCAL:
+            return self.__tick_executing_local()
+
+        if self.__internal_state == self.EXECUTE_REMOTE:
+            return self.__tick_executing_remote()
 
         return NodeMsg.RUNNING
 

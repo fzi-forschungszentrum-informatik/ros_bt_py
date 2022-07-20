@@ -32,20 +32,6 @@ from ros_bt_py_msgs.srv import (
 )
 
 
-def __is_invalid_uuid(uuid_string: str) -> bool:
-    """
-    Checks if a given sting is not a valid UUID.
-
-    :param uuid_string: The string to test against.
-    :return: True if not a valid UUID, false if the input is a valid UUID.
-    """
-    try:
-        uuid.UUID(uuid_string)
-        return False
-    except ValueError:
-        return True
-
-
 class CapabilityRepository:
     """
     Class to manage the capability implementations and interfaces on the local node.
@@ -158,6 +144,19 @@ class CapabilityRepository:
             Time,
             queue_size=1000
         )
+
+    def __is_invalid_uuid(self, uuid_string: str) -> bool:
+        """
+        Checks if a given sting is not a valid UUID.
+
+        :param uuid_string: The string to test against.
+        :return: True if not a valid UUID, false if the input is a valid UUID.
+        """
+        try:
+            uuid.UUID(uuid_string)
+            return False
+        except ValueError:
+            return True
 
     # -- Inter-Nodes callback --
     def __global_capability_interfaces_callback(
@@ -393,7 +392,7 @@ class CapabilityRepository:
                     rospy.logwarn(f'"{capability_interface_file_path}" is malformed')
                     continue
 
-                if __is_invalid_uuid(capability.uuid):
+                if self.__is_invalid_uuid(capability.uuid):
                     rospy.logwarn(f'Interface: "{capability}" does not contain a valid uuid.')
                     continue
 
@@ -435,7 +434,7 @@ class CapabilityRepository:
         response = PutCapabilityInterfacesResponse()
         for interface in request.capabilities:
 
-            if __is_invalid_uuid(interface.uuid):
+            if self.__is_invalid_uuid(interface.uuid):
                 rospy.logwarn(f"Interface {interface} does not contain a valid uuid.")
                 response.success = False
                 response.error_message = f"Interface {interface} does not contain a valid uuid."
@@ -498,7 +497,7 @@ class CapabilityRepository:
         :return: A
         """
         response = GetCapabilityImplementationsResponse()
-        if __is_invalid_uuid(request.capability_uuid):
+        if self.__is_invalid_uuid(request.capability_uuid):
             response.success = False
             response.error_message = f"Invalid uuid in request: {request.capability_uuid}!"
             rospy.logwarn(response.error_message)
@@ -529,13 +528,13 @@ class CapabilityRepository:
         """
         response = DeleteCapabilityImplementationResponse()
 
-        if __is_invalid_uuid(request.capability_uuid):
+        if self.__is_invalid_uuid(request.capability_uuid):
             response.success = False
             response.error_message = f'Specified capability uuid {request.capability_uuid} invalid!'
             rospy.logwarn(response.error_message)
             return response
 
-        if __is_invalid_uuid(request.implementation_uuid):
+        if self.__is_invalid_uuid(request.implementation_uuid):
             response.success = False
             response.error_message = \
                 f'Specified implementation uuid {request.implementation_uuid} invalid!'
@@ -575,13 +574,13 @@ class CapabilityRepository:
         """
         response = PutCapabilityImplementationResponse()
 
-        if __is_invalid_uuid(request.implementation.capability_uuid):
+        if self.__is_invalid_uuid(request.implementation.capability_uuid):
             response.success = False
             response.error_message = f'Specified capability uuid {request.implementation.capability_uuid} invalid!'
             rospy.logwarn(response.error_message)
             return response
 
-        if __is_invalid_uuid(request.implementation.implementation_uuid):
+        if self.__is_invalid_uuid(request.implementation.implementation_uuid):
             response.success = False
             response.error_message \
                 = f'Specified implementation uuid {request.implementation.implementation_uuid} invalid!'

@@ -1,7 +1,7 @@
 string capability_uuid
 string implementation_uuid
 
-string robot_name
+string implementation_name
 string version
 
 Node[] nodes
