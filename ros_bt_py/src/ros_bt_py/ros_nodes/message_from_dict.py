@@ -58,17 +58,12 @@ class MessageFromDict(Leaf):
         if self.inputs.is_updated("dict"):
             message = self.options["message_type"]()
             try:
-                populate_instance(self.inputs["dict"], message)
-                self.outputs["message"] = message
-            except (
-                InvalidMessageException,
-                NonexistentFieldException,
-                FieldTypeMismatchException,
-            ) as ex:
-                self.logerr(
-                    "Error populating message of type %s: %s"
-                    % (self.options["message_type"].__name__, str(ex))
-                )
+                populate_instance(self.inputs['dict'], message)
+                self.outputs['message'] = message
+            except (InvalidMessageException,
+                    NonexistentFieldException,
+                    FieldTypeMismatchException) as ex:
+                self.logerr(f"Error populating message of type {self.options['message_type'].__name__}: {str(ex)}")
                 return NodeMsg.FAILED
         return NodeMsg.SUCCEEDED
 
@@ -100,17 +95,12 @@ class MessageFromConstDict(Leaf):
     def _do_tick(self):
         message = self.options["message_type"]()
         try:
-            populate_instance(self.options["dict"], message)
-            self.outputs["message"] = message
-        except (
-            InvalidMessageException,
-            NonexistentFieldException,
-            FieldTypeMismatchException,
-        ) as ex:
-            self.logerr(
-                "Error populating message of type %s: %s"
-                % (self.options["message_type"].__name__, str(ex))
-            )
+            populate_instance(self.options['dict'], message)
+            self.outputs['message'] = message
+        except (InvalidMessageException,
+                NonexistentFieldException,
+                FieldTypeMismatchException) as ex:
+            self.logerr(f"Error populating message of type {self.options['message_type'].__name__}: {str(ex)}")
             return NodeMsg.FAILED
         return NodeMsg.SUCCEEDED
 

@@ -214,14 +214,9 @@ class Shovable(Decorator):
                         else:
                             self._remote_namespace = namespace
 
-                            self.logdebug(
-                                "Building ActionClient for action %s"
-                                % self._remote_namespace
-                                + "/run_tree"
-                            )
+                            self.logdebug(f"Building ActionClient for action {self._remote_namespace}/run_tree")
                             self._subtree_action_client = SimpleActionClient(
-                                self._remote_namespace + "/run_tree", RunTreeAction
-                            )
+                                f"{self._remote_namespace}/run_tree", RunTreeAction)
 
                             self._subtree_action_client_creation_time = rospy.Time.now()
                             self._state = Shovable.ACTION_CLIENT_INIT
@@ -246,20 +241,12 @@ class Shovable(Decorator):
                 self._state = Shovable.ACTION_CLIENT_INIT
 
             # After the set timeout, give up
-            if (
-                rospy.Time.now() - self._subtree_action_client_creation_time
-                > rospy.Duration(self.options["wait_for_run_tree_seconds"])
-            ):
-                self.logerr(
-                    (
-                        "Remote RunTree ActionClient for %s did not finish loading "
-                        "after %.2f seconds. giving up."
-                    )
-                    % (
-                        self._remote_namespace + "/run_tree",
-                        self.options["wait_for_run_tree_seconds"],
-                    )
-                )
+            if (rospy.Time.now() - self._subtree_action_client_creation_time
+                    > rospy.Duration(self.options['wait_for_run_tree_seconds'])):
+                self.logerr(('Remote RunTree ActionClient for %s did not finish loading '
+                             'after %.2f seconds. giving up.') %
+                            (f"{self._remote_namespace}/run_tree",
+                             self.options['wait_for_run_tree_seconds']))
 
                 self.cleanup()
                 return NodeMsg.FAILED
@@ -270,10 +257,7 @@ class Shovable(Decorator):
             for child_node in self._children_with_external_outputs.values():
                 child_node.outputs.reset_updated()
 
-            self.logdebug(
-                "Sending goal to action server at %s" % self._remote_namespace
-                + "/run_tree"
-            )
+            self.logdebug(f"Sending goal to action server at {self._remote_namespace}/run_tree")
             self._subtree_action_start_time = rospy.Time.now()
             self._subtree_action_client.send_goal(
                 RunTreeGoal(
@@ -391,8 +375,7 @@ class Shovable(Decorator):
         # case, the tree will just fail to run, which is preferable
         # because it does not hide errors
         resolved_topic = rospy.resolve_name(
-            self.options["find_best_executor_action"] + "/status"
-        )
+            f"{self.options['find_best_executor_action']}/status")
 
         for topic, topic_type_name in rospy.get_published_topics(rospy.get_namespace()):
             topic_type = get_message_class(topic_type_name)

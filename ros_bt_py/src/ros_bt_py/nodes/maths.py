@@ -190,8 +190,7 @@ class Operation(Leaf):
 
         if self.options["operator"].operator not in self.operators:
             raise BehaviorTreeException(
-                "Operator %s is not recognized." % self.options["operator"].operator
-            )
+                f"Operator {self.options['operator'].operator} is not recognized.")
 
         self.operand_type = None
 
@@ -317,8 +316,7 @@ class UnaryOperation(Leaf):
 
         if self.options["operator"].operator not in self.operators:
             raise BehaviorTreeException(
-                "Operator %s is not recognized." % self.options["operator"].operator
-            )
+                f"Operator {self.options['operator'].operator} is not recognized.")
 
         self.operand_type = None
 

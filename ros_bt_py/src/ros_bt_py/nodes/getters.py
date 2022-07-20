@@ -196,10 +196,7 @@ class GetDictItem(Decorator):
                 self.outputs["value"] = self.inputs["dict"][self.options["key"]]
                 return NodeMsg.SUCCEEDED
             except KeyError:
-                self.logerr(
-                    "Key %s is not in dict %s"
-                    % (self.options["key"], str(self.inputs["dict"]))
-                )
+                self.logerr(f"Key {self.options['key']} is not in dict {str(self.inputs['dict'])}")
                 return NodeMsg.FAILED
         else:
             if self.options["succeed_on_stale_data"]:
@@ -254,10 +251,7 @@ class GetMultipleDictItems(Decorator):
                 ]
                 return NodeMsg.SUCCEEDED
             except KeyError:
-                self.logerr(
-                    "One of the key (%s) is not in dict %s"
-                    % (self.options["keys"], str(self.inputs["dict"]))
-                )
+                self.logerr(f"One of the key ({self.options['keys']}) is not in dict {str(self.inputs['dict'])}")
                 return NodeMsg.FAILED
         else:
             if self.options["succeed_on_stale_data"]:
@@ -310,10 +304,7 @@ class GetDictItemFromKey(Decorator):
                 self.outputs["value"] = self.options["dict"][self.inputs["key"]]
                 return NodeMsg.SUCCEEDED
             except KeyError:
-                self.logerr(
-                    "Key %s is not in dict %s"
-                    % (self.inputs["key"], str(self.options["dict"]))
-                )
+                self.logerr(f"Key {self.inputs['key']} is not in dict {str(self.options['dict'])}")
                 return NodeMsg.FAILED
         else:
             if self.options["succeed_on_stale_data"]:
@@ -368,10 +359,7 @@ class GetAttr(Decorator):
                 )
                 return NodeMsg.SUCCEEDED
             except AttributeError:
-                self.logerr(
-                    "Object %s does not have attribute %s"
-                    % (self.inputs["object"], self.options["attr_name"])
-                )
+                self.logerr(f"Object {self.inputs['object']} does not have attribute {self.options['attr_name']}")
                 return NodeMsg.FAILED
         else:
             if self.options["succeed_on_stale_data"]:

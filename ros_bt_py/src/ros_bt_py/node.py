@@ -143,9 +143,7 @@ class NodeMeta(type):
                 param_table.append("*Options*\n\n")
                 for option_key in self._node_config.options:
                     param_table.append(
-                        '* %s: :class:`%s`\n' %
-                        (option_key,
-                         self._node_config.options[option_key].__name__)
+                        f'* {option_key}: :class:`{self._node_config.options[option_key].__name__}`\n'
                     )
                 param_table.append('\n')
             if self._node_config.inputs:
@@ -153,15 +151,11 @@ class NodeMeta(type):
                 for input_key in self._node_config.inputs:
                     if isinstance(self._node_config.inputs[input_key], OptionRef):
                         param_table.append(
-                            '* %s: ``%s``\n' %
-                            (input_key,
-                             str(self._node_config.inputs[input_key]))
+                            f'* {input_key}: ``{str(self._node_config.inputs[input_key])}``\n'
                         )
                     else:
                         param_table.append(
-                            '* %s: :class:`%s`\n' %
-                            (input_key,
-                             self._node_config.inputs[input_key].__name__)
+                            f'* {input_key}: :class:`{self._node_config.inputs[input_key].__name__}`\n'
                         )
                 param_table.append('\n')
             if self._node_config.outputs:
@@ -169,15 +163,11 @@ class NodeMeta(type):
                 for output_key in self._node_config.outputs:
                     if isinstance(self._node_config.outputs[output_key], OptionRef):
                         param_table.append(
-                            '* %s: ``%s``\n' %
-                            (output_key,
-                             str(self._node_config.outputs[output_key]))
+                            f'* {output_key}: ``{str(self._node_config.outputs[output_key])}``\n'
                         )
                     else:
                         param_table.append(
-                            '* %s: :class:`%s`\n' %
-                            (output_key,
-                             self._node_config.outputs[output_key].__name__)
+                            f'* {output_key}: :class:`{self._node_config.outputs[output_key].__name__}`\n'
                         )
                 param_table.append('\n')
 
@@ -291,13 +281,17 @@ class Node(object):
             if unset_option_keys == optional_keys:
                 rospy.logwarn("missing optional keys: %s", optional_keys)
             else:
-                raise ValueError("Missing options: %s" % str(unset_option_keys))
+                raise ValueError(
+                    f'Missing options: {str(unset_option_keys)}'
+                    )
 
         # Warn about extra options
         if options is not None:
             extra_option_keys = [key for key in options if key not in self.options]
             if extra_option_keys:
-                raise ValueError("Extra options: %s" % str(extra_option_keys))
+                raise ValueError(
+                    f'Extra options: {str(extra_option_keys)}'
+                    )
 
         self.inputs = NodeDataMap(name="inputs")
         self._register_node_data(
@@ -352,10 +346,7 @@ class Node(object):
           IDLE afterwards.
         """
 
-        msg = (
-            "Trying to setup a node of type %s without _do_setup function!"
-            % self.__class__.__name__
-        )
+        msg = f'Trying to setup a node of type {self.__class__.__name__} without _do_setup function!'
         self.logerr(msg)
         raise NotImplementedError(msg)
 
@@ -375,9 +366,8 @@ class Node(object):
                 # This might still not be the best solution but enables some flexibility
                 if input_name not in self.node_config.optional_options:
                     raise ValueError(
-                        "Trying to tick a node (%s) with an unset input (%s)!"
-                        % (self.name, input_name)
-                    )
+                        f'Trying to tick a node ({self.name}) with an unset input ({input_name})!'
+                        )
         self.inputs.handle_subscriptions()
 
     def _handle_outputs(self):
@@ -416,7 +406,7 @@ class Node(object):
                 ):
                     unset_options.append(option_name)
             if unset_options:
-                msg = "Trying to tick node with unset options: %s" % str(unset_options)
+                msg = f'Trying to tick node with unset options: {str(unset_options)}'
                 self.logerr(msg)
                 raise BehaviorTreeException(msg)
             self.options.handle_subscriptions()
@@ -473,10 +463,7 @@ class Node(object):
         :returns:
           One of the constants in :class:`ros_bt_py_msgs.msg.Node`
         """
-        msg = (
-            "Ticking a node of type %s without _do_tick function!"
-            % self.__class__.__name__
-        )
+        msg = f'Ticking a node of type {self.__class__.__name__} without _do_tick function!'
         self.logerr(msg)
         raise NotImplementedError(msg)
 
@@ -524,10 +511,7 @@ class Node(object):
         2. Not execute any of its behavior in the background
         3. Be ready to resume on the next call of :meth:`tick`
         """
-        msg = (
-            "Unticking a node of type %s without _do_untick function!"
-            % self.__class__.__name__
-        )
+        msg = f'Unticking a node of type {self.__class__.__name__} without _do_untick function!'
         self.logerr(msg)
         raise NotImplementedError(msg)
 
@@ -578,10 +562,7 @@ class Node(object):
         :returns:
           The new state of the node (should be IDLE unless an error happened)
         """
-        msg = (
-            "Resetting a node of type %s without _do_reset function!"
-            % self.__class__.__name__
-        )
+        msg = f'Resetting a node of type {self.__class__.__name__} without _do_reset function!'
         self.logerr(msg)
         raise NotImplementedError(msg)
 
@@ -616,11 +597,9 @@ class Node(object):
             else:
                 self.logwarn("Shutdown called twice")
 
-            unshutdown_children = [
-                "%s (%s), state: %s" % (child.name, type(child).__name__, child.state)
-                for child in self.children
-                if child.state != NodeMsg.SHUTDOWN
-            ]
+            unshutdown_children = [f'{child.name} ({type(child).__name__}), state: {child.state}'
+                                   for child in self.children
+                                   if child.state != NodeMsg.SHUTDOWN]
             if unshutdown_children:
                 self.logwarn(
                     "Not all children are shut down after calling shutdown(). "
@@ -636,10 +615,7 @@ class Node(object):
         Implement this in your node class and release any resources you
         might be holding (file pointers, ROS topic subscriptions etc.)
         """
-        msg = (
-            "Shutting down a node of type %s without _do_shutdown function!"
-            % self.__class__.__name__
-        )
+        msg = f'Shutting down a node of type {self.__class__.__name__} without _do_shutdown function!'
         self.logerr(msg)
         raise NotImplementedError(msg)
 
@@ -717,7 +693,7 @@ class Node(object):
             raise BehaviorTreeException(error_msg)
 
         if child.name in (child.name for child in self.children):
-            raise KeyError('Already have a child with name "%s"' % child.name)
+            raise KeyError(f'Already have a child with name "{child.name}"')
         if at_index is None:
             at_index = len(self.children)
 
@@ -743,7 +719,7 @@ class Node(object):
 
         child_index = self.get_child_index(child_name)
         if child_index is None:
-            raise KeyError('Node %s has no child named "%s"' % (self.name, child_name))
+            raise KeyError(f'Node {self.name} has no child named "{child_name}"')
 
         tmp = self.children[child_index]
         del self.children[child_index]
@@ -781,7 +757,7 @@ class Node(object):
             k: v for (k, v) in source_map.items() if not isinstance(v, OptionRef)
         }.items():
             if key in target_map:
-                raise NodeConfigError("Duplicate data name: %s" % key)
+                raise NodeConfigError(f'Duplicate data name: {key}')
             target_map.add(key, NodeData(data_type=data_type))
             if values is not None and key in values:
                 try:
@@ -808,9 +784,7 @@ class Node(object):
             k: v for (k, v) in source_map.items() if isinstance(v, OptionRef)
         }.items():
             if key in target_map:
-                raise NodeConfigError(
-                    "Duplicate %s data name: %s" % (target_map.name, key)
-                )
+                raise NodeConfigError(f'Duplicate {target_map.name} data name: {key}')
 
             if data_type.option_key not in self.options:
                 raise NodeConfigError(
@@ -857,13 +831,11 @@ class Node(object):
                             target_map[key] = fixed_new_value
                         else:
                             raise AttributeError(
-                                "AttributeError, maybe a ROS Message definition changed. "
-                                + str(e)
+                                f"AttributeError, maybe a ROS Message definition changed. {str(e)}"
                             )
                     else:
                         raise AttributeError(
-                            "AttributeError, maybe a ROS Message definition changed. "
-                            + str(e)
+                            f"AttributeError, maybe a ROS Message definition changed. {str(e)}"
                         )
 
     def __repr__(self):
@@ -913,9 +885,7 @@ class Node(object):
         if data_kind == NodeDataLocation.OPTION_DATA:
             return self.options
 
-        raise KeyError(
-            "%s is not a valid value to pass to Node.get_data_map()!" % data_kind
-        )
+        raise KeyError(f'{data_kind} is not a valid value to pass to Node.get_data_map()!')
 
     # Logging methods - these just use the ROS logging framework, but add the
     # name and type of the node so it's easier to trace errors.
@@ -991,8 +961,7 @@ class Node(object):
             or msg.node_class not in cls.node_classes[msg.module]
         ):
             raise BehaviorTreeException(
-                "Failed to instantiate node from message - node class "
-                "not available. Original message:\n%s" % str(msg)
+                f'Failed to instantiate node from message - node class not available. Original message:\n{str(msg)}'
             )
 
         node_classes: List[Type[Node]] = cls.node_classes[msg.module][msg.node_class]
@@ -1026,8 +995,7 @@ class Node(object):
                 )
             if len(candidates) < 1:
                 raise BehaviorTreeException(
-                    'Failed to instantiate node from message - node class '
-                    'not available. Original message:\n%s' % str(msg)
+                    f'Failed to instantiate node from message - node class not available. Original message:\n{str(msg)}'
                 )
             if len(candidates) > 1:
                 raise BehaviorTreeException(
@@ -1045,8 +1013,8 @@ class Node(object):
                 options_dict[option.key] = json_decode(option.serialized_value)
         except ValueError as e:
             raise BehaviorTreeException(
-                "Failed to instantiate node from message: %s" % str(e)
-            )
+                f'Failed to instantiate node from message: {str(e)}'
+                )
 
         # Instantiate node - this shouldn't do anything yet, since we don't
         # call setup()
@@ -1073,13 +1041,12 @@ class Node(object):
                         node_instance.inputs[input_msg.key] = None
                     else:
                         raise AttributeError(
-                            "AttributeError, maybe a ROS Message definition changed. "
-                            + str(e)
+                            f"AttributeError, maybe a ROS Message definition changed. {str(e)}"
                         )
         except ValueError as e:
             raise BehaviorTreeException(
-                "Failed to instantiate node from message: %s" % str(e)
-            )
+                f'Failed to instantiate node from message: {str(e)}'
+                )
 
         # Set outputs, ignore missing outputs (this can happen if a subtree changes between runs)
         try:
@@ -1095,13 +1062,12 @@ class Node(object):
                         node_instance.outputs[output_msg.key] = None
                     else:
                         raise AttributeError(
-                            "AttributeError, maybe a ROS Message definition changed. "
-                            + str(e)
+                            f"AttributeError, maybe a ROS Message definition changed. {str(e)}"
                         )
         except ValueError as e:
             raise BehaviorTreeException(
-                "Failed to instantiate node from message: %s" % str(e)
-            )
+                f'Failed to instantiate node from message: {str(e)}'
+                )
 
         return node_instance
 
@@ -1140,7 +1106,7 @@ class Node(object):
         sent to the remote executor.
 
         """
-        subtree_name = "%s_subtree" % self.name
+        subtree_name = f"{self.name}_subtree"
         subtree = Tree(
             name=subtree_name,
             root_name=self.name,
@@ -1306,9 +1272,8 @@ class Node(object):
         """
         if wiring.source.node_name != self.name:
             raise KeyError(
-                "%s: Trying to subscribe to another node (%s)"
-                % (self.name, wiring.source.node_name)
-            )
+                f'{self.name}: Trying to subscribe to another node ({wiring.source.node_name})'
+                )
 
         for sub, _, _ in self.subscribers:
             if sub.target == wiring.target:
@@ -1327,9 +1292,8 @@ class Node(object):
 
         if wiring.source.data_key not in source_map:
             raise KeyError(
-                "Source key %s.%s[%s] does not exist!"
-                % (self.name, wiring.source.data_kind, wiring.source.data_key)
-            )
+                f'Source key {self.name}.{wiring.source.data_kind}[{wiring.source.data_key}] does not exist!'
+                )
 
         if not issubclass(source_map.get_type(wiring.source.data_key), expected_type):
             raise BehaviorTreeException(
@@ -1389,9 +1353,8 @@ class Node(object):
         """
         if wiring.target.node_name != self.name:
             raise BehaviorTreeException(
-                "Target of wiring (%s) is not this node (%s)"
-                % (wiring.target.node_name, self.name)
-            )
+                f'Target of wiring ({wiring.target.node_name}) is not this node ({self.name})'
+                )
 
         for sub in self.subscriptions:
             if sub.target == wiring.target:
@@ -1402,8 +1365,7 @@ class Node(object):
         source_node = self.find_node(wiring.source.node_name)
         if not source_node:
             raise BehaviorTreeException(
-                "Source node %s does not exist or is not connected to target node %s"
-                % (wiring.source.node_name, self.name)
+                f'Source node {wiring.source.node_name} does not exist or is not connected to target node {self.name}'
             )
         try:
             source_map = source_node.get_data_map(wiring.source.data_kind)
@@ -1412,9 +1374,8 @@ class Node(object):
 
         if wiring.source.data_key not in source_map:
             raise KeyError(
-                "Source key %s.%s[%s] does not exist!"
-                % (source_node.name, wiring.source.data_kind, wiring.source.data_key)
-            )
+                f'Source key {source_node.name}.{wiring.source.data_kind}[{wiring.source.data_key}] does not exist!'
+                )
 
         try:
             target_map = self.get_data_map(wiring.target.data_kind)
@@ -1423,9 +1384,8 @@ class Node(object):
 
         if wiring.target.data_key not in target_map:
             raise KeyError(
-                "Target key %s.%s[%s] does not exist!"
-                % (self.name, wiring.target.data_kind, wiring.target.data_key)
-            )
+                f'Target key {self.name}.{wiring.target.data_kind}[{wiring.target.data_key}] does not exist!'
+                )
 
         source_node._subscribe(
             wiring,
@@ -1448,16 +1408,14 @@ class Node(object):
         """
         if wiring.source.node_name != self.name:
             raise KeyError(
-                "%s: Trying to unsubscribe from another node (%s)"
-                % (self.name, wiring.source.node_name)
-            )
+                f'{self.name}: Trying to unsubscribe from another node ({wiring.source.node_name})'
+                )
         source_map = self.get_data_map(wiring.source.data_kind)
 
         if wiring.source.data_key not in source_map:
             raise KeyError(
-                "Source key %s.%s[%s] does not exist!"
-                % (self.name, wiring.source.data_kind, wiring.source.data_key)
-            )
+                f'Source key {self.name}.{wiring.source.data_kind}[{wiring.source.data_key}] does not exist!'
+                )
 
         for sub_wiring, cb, _ in self.subscribers:
             if wiring.target == sub_wiring.target:
@@ -1481,9 +1439,8 @@ class Node(object):
         """
         if wiring.target.node_name != self.name:
             raise KeyError(
-                "Target of wiring (%s) is not this node (%s)"
-                % (wiring.target.node_name, self.name)
-            )
+                f'Target of wiring ({wiring.target.node_name}) is not this node ({self.name})'
+                )
         source_node = self.find_node(wiring.source.node_name)
 
         if wiring not in self.subscriptions:
@@ -1566,7 +1523,7 @@ def load_node_module(package_name):
     try:
         return importlib.import_module(package_name)
     except (ImportError, ValueError) as e:
-        rospy.logerr('Could not load node module "%s": %s' % (package_name, repr(e)))
+        rospy.logerr(f"Could not load node module \"{package_name}\": {repr(e)}")
         return None
 
 

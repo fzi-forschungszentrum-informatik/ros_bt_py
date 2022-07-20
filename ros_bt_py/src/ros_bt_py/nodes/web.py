@@ -88,11 +88,10 @@ class DownloadImage(Leaf):
             # download image
             r = requests.get(url=self.inputs["image_url"], stream=True)
             if r.status_code != 200:
-                self.outputs["download_success"] = False
-                self.outputs[
-                    "download_error_msg"
-                ] = "Could not download image, http error code: %s" % (r.status_code)
-                self.outputs["filepath"] = ""
+                self.outputs['download_success'] = False
+                self.outputs['download_error_msg'] = (
+                    f'Could not download image, http error code: {r.status_code}')
+                self.outputs['filepath'] = ''
                 return NodeMsg.FAILED
 
         with open(self.output_filepath, "wb") as f:

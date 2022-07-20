@@ -65,7 +65,7 @@ class Subtree(Leaf):
         super(Subtree, self).__init__(options, debug_manager, name)
 
         self.root = None
-        self.prefix = self.name + "."
+        self.prefix = f"{self.name}."
         # since the subtree gets a prefix, we can just have it use the
         # parent debug manager
         self.manager = TreeManager(name=name, debug_manager=debug_manager)
@@ -122,17 +122,11 @@ class Subtree(Leaf):
                 node_name = node_name[len(self.prefix) :]
 
             if node_data.data_kind == NodeDataLocation.INPUT_DATA:
-                subtree_inputs[
-                    "%s.%s" % (node_name, node_data.data_key)
-                ] = self.manager.nodes[node_data.node_name].inputs.get_type(
-                    node_data.data_key
-                )
+                subtree_inputs[f'{node_name}.{node_data.data_key}'] = \
+                    self.manager.nodes[node_data.node_name].inputs.get_type(node_data.data_key)
             elif node_data.data_kind == NodeDataLocation.OUTPUT_DATA:
-                subtree_outputs[
-                    "%s.%s" % (node_name, node_data.data_key)
-                ] = self.manager.nodes[node_data.node_name].outputs.get_type(
-                    node_data.data_key
-                )
+                subtree_outputs[f'{node_name}.{node_data.data_key}'] = \
+                    self.manager.nodes[node_data.node_name].outputs.get_type(node_data.data_key)
 
         # merge subtree input and option dicts, so we can receive
         # option updates between ticks
@@ -158,17 +152,13 @@ class Subtree(Leaf):
                 node_name = node_name[len(self.prefix) :]
 
             if node_data.data_kind == NodeDataLocation.INPUT_DATA:
-                if options.get("use_io_nodes") and node_data.node_name not in io_inputs:
-                    self.logwarn(
-                        "removed an unconnected input (%s) from the subtree" % node_name
-                    )
+                if options.get('use_io_nodes') and node_data.node_name not in io_inputs:
+                    self.logwarn(f"removed an unconnected input ({node_name}) from the subtree")
                 else:
                     self.inputs.subscribe(
-                        key="%s.%s" % (node_name, node_data.data_key),
-                        callback=self.manager.nodes[
-                            node_data.node_name
-                        ].inputs.get_callback(node_data.data_key),
-                    )
+                        key=f'{node_name}.{node_data.data_key}',
+                        callback=self.manager.nodes[node_data.node_name].inputs.get_callback(
+                            node_data.data_key))
             elif node_data.data_kind == NodeDataLocation.OUTPUT_DATA:
                 if (
                     options.get("use_io_nodes")
@@ -179,17 +169,13 @@ class Subtree(Leaf):
                     self.manager.nodes[node_data.node_name].outputs.subscribe(
                         key=node_data.data_key,
                         callback=self.outputs.get_callback(
-                            "%s.%s" % (node_name, node_data.data_key)
-                        ),
-                    )
+                            f'{node_name}.{node_data.data_key}'))
 
     def _do_setup(self):
         self.root = self.manager.find_root()
         if self.root is None:
             raise BehaviorTreeException(
-                "Cannot find root in subtree, does the subtree %s exist?"
-                % (self.options["subtree_path"])
-            )
+                f"Cannot find root in subtree, does the subtree {self.options['subtree_path']} exist?")
         self.root.setup()
         if self.debug_manager and self.debug_manager.get_publish_subtrees():
             self.manager.name = self.name

@@ -109,7 +109,7 @@ class RemoteTreeSlot(object):
         )
         self.tree_manager.clear(None)
 
-        rospy.loginfo("Loading tree: %s" % str(request.tree))
+        rospy.loginfo(f'Loading tree: {str(request.tree)}')
         res = self.tree_manager.load_tree(LoadTreeRequest(tree=request.tree))
         if not get_success(res):
             rospy.logerr(get_error_message(res))
@@ -143,12 +143,8 @@ class RemoteTreeSlot(object):
         )
         if not get_success(stop_res):
             rospy.loginfo(
-                "Rejected goal because shutting down the old tree failed with error %s"
-                % get_error_message(stop_res)
-            )
-            goal_handle.set_rejected(
-                text=("Failed to shutdown old tree: %s" % get_error_message(stop_res))
-            )
+                f'Rejected goal because shutting down the old tree failed with error {get_error_message(stop_res)}')
+            goal_handle.set_rejected(text=f'Failed to shutdown old tree: {get_error_message(stop_res)}')
             return
 
         res = self.tree_manager.load_tree(
@@ -156,12 +152,8 @@ class RemoteTreeSlot(object):
         )
         if not get_success(res):
             rospy.loginfo(
-                "Rejected goal because loading the tree failed with error %s"
-                % get_error_message(res)
-            )
-            goal_handle.set_rejected(
-                text=("Failed to load tree: %s" % get_error_message(res))
-            )
+                f'Rejected goal because loading the tree failed with error {get_error_message(res)}')
+            goal_handle.set_rejected(text=f'Failed to load tree: {get_error_message(res)}')
             return
 
         self.run_tree_gh = goal_handle
@@ -191,21 +183,16 @@ class RemoteTreeSlot(object):
         self.slot_state.tree_finished = False
 
         if request.command not in [
-            ControlTreeExecutionRequest.TICK_ONCE,
-            ControlTreeExecutionRequest.TICK_UNTIL_RESULT,
-            ControlTreeExecutionRequest.STOP,
-            ControlTreeExecutionRequest.RESET,
-            ControlTreeExecutionRequest.SHUTDOWN,
-        ]:
-            rospy.loginfo("Received invalid command: " + str(request.command))
+                ControlTreeExecutionRequest.TICK_ONCE,
+                ControlTreeExecutionRequest.TICK_UNTIL_RESULT,
+                ControlTreeExecutionRequest.STOP,
+                ControlTreeExecutionRequest.RESET,
+                ControlTreeExecutionRequest.SHUTDOWN]:
+            rospy.loginfo(f"Received invalid command: {str(request.command)}")
             return ControlTreeExecutionResponse(
                 success=False,
-                error_message=(
-                    'RemoteTreeSlot does not allow ControlTreeExecution command "%s"'
-                    % request.command
-                ),
-            )
-        rospy.loginfo("Sending command %d to tree", request.command)
+                error_message=f'RemoteTreeSlot does not allow ControlTreeExecution command "{request.command}"')
+        rospy.loginfo('Sending command %d to tree', request.command)
         res = self.tree_manager.control_execution(request)
         rospy.loginfo("ControlTreeExec result: %s", res)
         if not get_success(res):
@@ -254,9 +241,7 @@ class RemoteTreeSlot(object):
                 )
             )
             if not get_success(stop_res):
-                raise Exception(
-                    "Failed to stop tree in RemoteTreeSlot: %s" % get_success(stop_res)
-                )
+                raise Exception(f'Failed to stop tree in RemoteTreeSlot: {get_success(stop_res)}')
 
             self.tree_manager.clear(None)
 

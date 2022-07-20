@@ -438,4 +438,4 @@ def get_message_constant_fields(message_class):
         ]
         return constants
     else:
-        raise BehaviorTreeException("%s is not a ROS Message" % (message_class))
+        raise BehaviorTreeException(f'{message_class} is not a ROS Message')

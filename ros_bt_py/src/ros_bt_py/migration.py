@@ -86,18 +86,16 @@ class MigrationManager(object):
 
     def check_for_available_migration(self, node, old_node=False):
         # check if a migration for this node exists
-        index = node.module.rindex(".")
-        migrations_module = node.module[:index] + ".migrations" + node.module[index:]
-        migrations_module_name = migrations_module + "." + node.node_class
+        index = node.module.rindex('.')
+        migrations_module = f"{node.module[:index]}.migrations{node.module[index:]}"
+        migrations_module_name = f"{migrations_module}.{node.node_class}"
         node_module_migrations = load_migration_module(migrations_module)
-        module_name = node.module + "." + node.node_class
+        module_name = f"{node.module}.{node.node_class}"
 
         if node_module_migrations is None:
             if node.version == "":
                 rospy.logwarn(
-                    "%s has no version information, please add a version "
-                    "and a migration to that version!" % (module_name)
-                )
+                    f'{module_name} has no version information, please add a version and a migration to that version!')
                 Migration.migration_info.setdefault(
                     migrations_module_name, MigrationInfoCollection(valid=True)
                 )
@@ -219,11 +217,8 @@ class MigrationManager(object):
                                 )
                                 valid = False
                         m.migration_info[migrations_module_name].valid = valid
-                except TypeError:
-                    rospy.logwarn(
-                        "%s: no migration available, the exception was: %s"
-                        % (module_name, traceback.format_exc())
-                    )
+                except TypeError as e:
+                    rospy.logwarn(f'{module_name}: no migration available, the exception was: {traceback.format_exc()}')
 
     def check_node_versions(self, request):
         load_response = self.tree_manager.load_tree_from_file(request)
@@ -265,9 +260,9 @@ class MigrationManager(object):
         modified_tree = deepcopy(tree)
 
         for msg in tree.nodes:
-            index = msg.module.rindex(".")
-            migrations_module = msg.module[:index] + ".migrations" + msg.module[index:]
-            migrations_module_name = migrations_module + "." + msg.node_class
+            index = msg.module.rindex('.')
+            migrations_module = f"{msg.module[:index]}.migrations{msg.module[index:]}"
+            migrations_module_name = f"{migrations_module}.{msg.node_class}"
 
             node_module_migrations = load_node_module(migrations_module)
 
@@ -292,15 +287,11 @@ class MigrationManager(object):
                                 modified_tree.nodes.append(new_msg)
                             migration_performed = True
                     except MigrationException as e:
-                        msg = "Migration failed: %s" % e
+                        msg = f'Migration failed: {e}'
                         m.logwarn(msg)
                         return MigrateTreeResponse(error_message=msg)
                 except TypeError as e:
-                    msg = "%s.%s: no migration available: %s" % (
-                        msg.module,
-                        msg.node_class,
-                        e,
-                    )
+                    msg = f'{msg.module}.{msg.node_class}: no migration available: {e}'
                     rospy.logerr(msg)
                     return MigrateTreeResponse(error_message=msg)
 
@@ -391,7 +382,7 @@ class Migration(object):
         return (self.msg, self.tree)
 
     def _do_migrate(self):
-        module_name = self.__module__ + "." + self.__class__.__name__
+        module_name = f"{self.__module__}.{self.__class__.__name__}"
         if module_name not in Migration.migration_info:
             self.logwarn("please add a migration")
         elif not Migration.migration_info[module_name].valid:
@@ -433,12 +424,12 @@ class Migration(object):
         for option in self.msg.options:
             if option.key == key:
                 return json_decode(option.serialized_value)
-        raise MigrationException('option key "%s" does not exists!' % key)
+        raise MigrationException(f'option key "{key}" does not exists!')
 
     def add_option(self, key, data_type, initial_value=None, static=False):
         for option in self.msg.options:
             if option.key == key:
-                raise MigrationException('option key "%s" already exists!' % option.key)
+                raise MigrationException(f'option key "{option.key}" already exists!')
         self.msg.options.append(
             self._create_node_data(
                 key=key, data_type=data_type, initial_value=initial_value, static=static
@@ -448,18 +439,20 @@ class Migration(object):
     def add_input(self, key, data_type):
         for node_input in self.msg.inputs:
             if node_input.key == key:
-                raise MigrationException(
-                    'input key "%s" already exists!' % node_input.key
-                )
-        self.msg.inputs.append(self._create_node_data(key=key, data_type=data_type))
+                raise MigrationException(f'input key "{node_input.key}" already exists!')
+        self.msg.inputs.append(
+            self._create_node_data(
+                key=key,
+                data_type=data_type))
 
     def add_output(self, key, data_type):
         for node_output in self.msg.outputs:
             if node_output.key == key:
-                raise MigrationException(
-                    'output key "%s" already exists!' % node_output.key
-                )
-        self.msg.outputs.append(self._create_node_data(key=key, data_type=data_type))
+                raise MigrationException(f'output key "{node_output.key}" already exists!')
+        self.msg.outputs.append(
+            self._create_node_data(
+                key=key,
+                data_type=data_type))
 
     def remove_option(self, key):
         # TODO: exception on removal error?
@@ -550,9 +543,7 @@ class Migration(object):
                         break
                 if not available:
                     raise MigrationException(
-                        'Option key "%s" referenced by OptionRef does not exist!'
-                        % (data_type)
-                    )
+                        f'Option key "{data_type}" referenced by OptionRef does not exist!')
             initial_value = get_default_value(data_type)
         data = NodeData(data_type=data_type, initial_value=initial_value, static=static)
         return NodeDataMsg(

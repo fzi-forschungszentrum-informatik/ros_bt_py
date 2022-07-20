@@ -166,31 +166,22 @@ class Service(Leaf):
         except rosservice.ROSServiceIOException as exc:
             # Defaults to no bounds set, dragging down the utility
             # score
-            self.loginfo(
-                "Unable to check for service %s: %s" % (resolved_service, str(exc))
-            )
+            self.loginfo(f'Unable to check for service {resolved_service}: {str(exc)}')
             return UtilityBounds()
 
         if service_type_name:
             service_type = get_service_class(service_type_name)
 
-            if service_type == self.options["service_type"]:
-                self.loginfo(
-                    (
-                        "Found service %s with correct type, returning "
-                        "filled out UtilityBounds"
-                    )
-                    % resolved_service
-                )
-                return UtilityBounds(
-                    can_execute=True,
-                    has_lower_bound_success=True,
-                    has_upper_bound_success=True,
-                    has_lower_bound_failure=True,
-                    has_upper_bound_failure=True,
-                )
+            if service_type == self.options['service_type']:
+                self.loginfo(('Found service %s with correct type, returning '
+                              'filled out UtilityBounds') % resolved_service)
+                return UtilityBounds(can_execute=True,
+                                     has_lower_bound_success=True,
+                                     has_upper_bound_success=True,
+                                     has_lower_bound_failure=True,
+                                     has_upper_bound_failure=True)
 
-        self.loginfo("Service %s is unavailable or has wrong type." % resolved_service)
+        self.loginfo(f'Service {resolved_service} is unavailable or has wrong type.')
         return UtilityBounds()
 
 
@@ -312,31 +303,22 @@ class ServiceInput(Leaf):
         except rosservice.ROSServiceIOException as exc:
             # Defaults to no bounds set, dragging down the utility
             # score
-            self.loginfo(
-                "Unable to check for service %s: %s" % (resolved_service, str(exc))
-            )
+            self.loginfo(f'Unable to check for service {resolved_service}: {str(exc)}')
             return UtilityBounds()
 
         if service_type_name:
             service_type = get_service_class(service_type_name)
 
-            if service_type == self.options["service_type"]:
-                self.loginfo(
-                    (
-                        "Found service %s with correct type, returning "
-                        "filled out UtilityBounds"
-                    )
-                    % resolved_service
-                )
-                return UtilityBounds(
-                    can_execute=True,
-                    has_lower_bound_success=True,
-                    has_upper_bound_success=True,
-                    has_lower_bound_failure=True,
-                    has_upper_bound_failure=True,
-                )
+            if service_type == self.options['service_type']:
+                self.loginfo(('Found service %s with correct type, returning '
+                              'filled out UtilityBounds') % resolved_service)
+                return UtilityBounds(can_execute=True,
+                                     has_lower_bound_success=True,
+                                     has_upper_bound_success=True,
+                                     has_lower_bound_failure=True,
+                                     has_upper_bound_failure=True)
 
-        self.loginfo("Service %s is unavailable or has wrong type." % resolved_service)
+        self.loginfo(f'Service {resolved_service} is unavailable or has wrong type.')
         return UtilityBounds()
 
 

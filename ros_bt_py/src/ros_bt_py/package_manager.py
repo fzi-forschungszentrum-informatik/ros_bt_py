@@ -100,7 +100,7 @@ class PackageManager(object):
         actions = []
         for package in packages:
             for package_path in self._get_package_paths(package, rospack):
-                path = package_path + "/msg"
+                path = f"{package_path}/msg"
                 resources = []
                 if os.path.isdir(path):
                     resources = [
@@ -115,17 +115,12 @@ class PackageManager(object):
                         actions.append(msg_type)
                     append_msg = True
                     for action in actions:
-                        if (
-                            msg_type == action + "Feedback"
-                            or msg_type == action + "Goal"
-                            or msg_type == action + "Result"
-                        ):
+                        if (msg_type == f"{action}Feedback" or msg_type == f"{action}Goal"
+                                or msg_type == f"{action}Result"):
                             append_msg = False
                     if append_msg:
-                        messages.append(
-                            Message(msg=package + "/" + msg_type, service=False)
-                        )
-                path = package_path + "/srv"
+                        messages.append(Message(msg=f"{package}/{msg_type}", service=False))
+                path = f"{package_path}/srv"
                 resources = []
                 if os.path.isdir(path):
                     resources = [
@@ -136,7 +131,7 @@ class PackageManager(object):
                 result = [x[: -len(".srv")] for x in resources]
                 result.sort()
                 for srv_type in result:
-                    messages.append(Message(msg=package + "/" + srv_type, service=True))
+                    messages.append(Message(msg=f"{package}/{srv_type}", service=True))
 
         msg = Messages()
         msg.messages = messages
@@ -157,10 +152,7 @@ class PackageManager(object):
             response.success = True
         except Exception as e:
             response.success = False
-            response.error_message = "Could not get message fields for %s: %s" % (
-                request.message_type,
-                e,
-            )
+            response.error_message = f"Could not get message fields for {request.message_type}: {e}"
         return response
 
     def get_message_constant_fields_handler(self, request):
@@ -178,10 +170,7 @@ class PackageManager(object):
                 response.success = True
             except Exception as e:
                 response.success = False
-                response.error_message = "Could not get message fields for %s: %s" % (
-                    request.message_type,
-                    e,
-                )
+                response.error_message = f"Could not get message fields for {request.message_type}: {e}"
         return response
 
     def publish_packages_list(self):
@@ -260,7 +249,7 @@ class PackageManager(object):
             response.package_structure = json_encode(package_structure)
         except rospkg.common.ResourceNotFound:
             response.success = False
-            response.error_message = 'Package "%s" does not exist' % (request.package)
+            response.error_message = f'Package "{request.package}" does not exist'
 
         return response
 
@@ -342,9 +331,9 @@ class PackageManager(object):
 
         except rospkg.common.ResourceNotFound:
             response.success = False
-            response.error_message = 'Package "%s" does not exist' % (request.package)
+            response.error_message = f'Package "{request.package}" does not exist'
         except IOError:
             response.success = False
-            response.error_message = 'IOError on file: "%s"' % (request.filename)
+            response.error_message = f'IOError on file: "{request.filename}"'
 
         return response

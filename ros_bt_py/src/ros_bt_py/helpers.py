@@ -113,11 +113,7 @@ def fix_yaml(request: FixYamlRequest) -> FixYamlResponse:
         indent = index - linebreak_index - 1 + 2
 
         # now replace the search_string with the proper linebreak
-        tree_yaml = (
-            tree_yaml[: index + replace_len]
-            + "\n"
-            + tree_yaml[index + replace_len + 1 :]
-        )
+        tree_yaml = f"{tree_yaml[:index + replace_len]}\n{tree_yaml[index + replace_len + 1:]}"
 
         # now check all newlines until they are not "\n- " any more
         newline_index = index + replace_len

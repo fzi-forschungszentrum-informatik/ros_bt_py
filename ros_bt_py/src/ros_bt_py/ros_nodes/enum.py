@@ -56,9 +56,7 @@ class Enum(Leaf):
         constants = get_message_constant_fields(self.options["ros_message_type"])
 
         if not constants:
-            raise BehaviorTreeException(
-                "%s has no constant fields" % (self.options["ros_message_type"])
-            )
+            raise BehaviorTreeException(f"{self.options['ros_message_type']} has no constant fields")
 
         if self.options["constant_name"].enum_value not in constants:
             raise BehaviorTreeException(
@@ -123,9 +121,7 @@ class EnumFields(Leaf):
         constants = get_message_constant_fields(self.options["ros_message_type"])
 
         if not constants:
-            raise BehaviorTreeException(
-                "%s has no constant fields" % (self.options["ros_message_type"])
-            )
+            raise BehaviorTreeException(f"{self.options['ros_message_type']} has no constant fields")
 
         self.msg = self.options["ros_message_type"]()
 
