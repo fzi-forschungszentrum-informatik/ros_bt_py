@@ -4,14 +4,16 @@ This includes the management of capabilities and their implementations as well a
 other nodes by using an auction protocol.
 """
 # pylint: disable=no-name-in-module,import-error
-
+import abc
 import os
 import re
 import shutil
 import tempfile
+import uuid
 from threading import RLock
-from typing import Dict
+from typing import Dict, Type, Callable, Set, List
 
+import actionlib
 import genpy
 import rospkg
 import rospy
@@ -19,7 +21,10 @@ import yaml
 from rospkg import ResourceNotFound
 from std_msgs.msg import Time
 from ros_bt_py.helpers import json_decode
-from ros_bt_py_msgs.msg import CapabilityInterface, CapabilityImplementation
+from ros_bt_py_msgs.msg import (
+    CapabilityInterface, CapabilityImplementation, FindBestCapabilityImplementationAction,
+    FindBestCapabilityImplementationActionGoal, FindBestCapabilityImplementationActionResult,
+)
 from ros_bt_py_msgs.srv import (
     PutCapabilityInterfacesRequest, PutCapabilityInterfacesResponse,
     GetCapabilityInterfacesRequest, GetCapabilityInterfacesResponse,
@@ -30,7 +35,6 @@ from ros_bt_py_msgs.srv import (
     GetCapabilityImplementations, PutCapabilityImplementation, LoadCapabilities, LoadCapabilitiesRequest,
     LoadCapabilitiesResponse, SaveCapabilitiesRequest, SaveCapabilitiesResponse, SaveCapabilities,
 )
-
 
 class HashableCapabilityInterface:
     """
@@ -71,8 +75,46 @@ class HashableCapabilityInterface:
             )
         )
 
+class AuctionException(Exception):
+    pass
 
-class CapabilityRepository:
+class AuctionManager(abc.ABC):
+
+    def __init__(self, get_capability_implementations:
+        Callable[[HashableCapabilityInterface], List[CapabilityImplementation]]):
+        self.get_capability_implementations = get_capability_implementations
+
+    @abc.abstractmethod
+    def start(self, hashable_interface: HashableCapabilityInterface) -> str:
+        """
+        Function to start a new auction for the given capability interface.
+
+        :param hashable_interface: The interface a implementation should be received for by using auctions.
+        :return: The unique identifier of the auction that was started. This is used to track the auction.
+        """
+        pass
+
+    @abc.abstractmethod
+    def cancel(self, auction_id: str) -> bool:
+        """
+        Cancels the running auction with the given id.
+        This causes the get_result method to never produce a output and the id will become invalid.
+
+        :param auction_id: The unique id of the auction that should be cancelled.
+        :raise AuctionException: If not auction with this id is found this error will be raised.
+        :return: True on success, False if the auction cannot be cancelled.
+        """
+        pass
+
+    @abc.abstractmethod
+    def get_status(self, auction_id: str) -> float:
+        pass
+
+    @abc.abstractmethod
+    def get_result(self, auction_id: str) -> tuple[str, str]:
+        pass
+
+class MissionControlNode:
     """
     Class to manage the capability implementations and interfaces on the local node.
     Additionally, it allows to exchange interface definitions with remote nodes.
@@ -82,6 +124,7 @@ class CapabilityRepository:
 
     def __init__(
             self,
+            auction_manager: Type[AuctionManager],
             local_capability_topic_prefix: str,
             global_capability_topic_prefix: str
     ):
@@ -97,6 +140,11 @@ class CapabilityRepository:
         :param global_capability_topic_prefix: Prefix used for communication with other ros_bt_py nodes.
         This is used to sync available interfaces across all nodes.
         """
+
+        self.local_capability_topic_prefix = local_capability_topic_prefix
+        self.global_capability_topic_prefix = global_capability_topic_prefix
+
+        self.__auction_manager = auction_manager(self.get_capability_implementations)
 
         # List containing all known capability interfaces.
         self.__capabilities_lock = RLock()
@@ -136,6 +184,12 @@ class CapabilityRepository:
             self.get_capability_interfaces
         )
 
+        self.__get_best_implementation_action_server = actionlib.SimpleActionServer(
+            f'{local_capability_topic_prefix}/find_best_implementation',
+            FindBestCapabilityImplementationAction,
+            execute_cb=self.__find_best_implementation_callback,
+            auto_start=False
+        )
         # Local implementations services.
 
         self.__local_capability_implementation_publisher = rospy.Publisher(
@@ -186,6 +240,12 @@ class CapabilityRepository:
             Time,
             queue_size=1000
         )
+
+    def get_capability_implementations(self, interface: HashableCapabilityInterface) -> List[CapabilityImplementation]:
+        try:
+            return list(self.capabilities[interface].values())
+        except KeyError:
+            return []
 
     # -- Inter-Nodes callback --
     def __global_capability_interfaces_callback(
@@ -280,6 +340,33 @@ class CapabilityRepository:
             )
 
     # -- Interface operations --
+
+    def __find_best_implementation_callback(self, goal: FindBestCapabilityImplementationActionGoal):
+        result = FindBestCapabilityImplementationActionResult()
+        rate = rospy.Rate(500)
+        goal_capability_interface = HashableCapabilityInterface(goal.goal.capability)
+
+        with self.__capabilities_lock:
+            if goal_capability_interface not in self.capabilities:
+                rospy.logerr("Capability is not known, thus no implementation can be found!")
+                self.__get_best_implementation_action_server.set_aborted(text="Capability is not known!")
+
+        auction_id = self.__auction_manager.start(goal_capability_interface)
+
+        while self.__auction_manager.get_status(auction_id) < 1.0:
+            if self.__get_best_implementation_action_server.is_preempt_requested():
+                if not self.__auction_manager.cancel(auction_id):
+                    # TODO: Error handling!
+                    pass
+                self.__get_best_implementation_action_server.set_preempted()
+            rate.sleep()
+
+        mc_topic, impl_name = self.__auction_manager.get_result(auction_id)
+        result.result.success = True
+        result.result.implementation_name = impl_name
+        result.result.executor_mission_control_topic = mc_topic
+        self.__get_best_implementation_action_server.set_succeeded(result=result)
+
 
     def __get_capabilities_folder_from_package(
             self,

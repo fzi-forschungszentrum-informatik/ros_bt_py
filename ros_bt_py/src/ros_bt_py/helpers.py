@@ -33,6 +33,9 @@ import logging
 import rospy
 import functools
 from collections import OrderedDict
+
+from ros_bt_py_msgs.msg import CapabilityInterface
+
 from ros_bt_py.ros_helpers import EnumValue, LoggerLevel
 
 from ros_bt_py_msgs.srv import FixYamlResponse, FixYamlRequest
@@ -233,3 +236,43 @@ class MathOperandType(object):
 class MathUnaryOperandType(object):
     def __init__(self, operand_type):
         self.operand_type = operand_type
+
+
+class HashableCapabilityInterface:
+    """
+    Wrapper class to allow for the hashing of capability interfaces.
+    """
+
+    def __init__(self, interface: CapabilityInterface):
+        self.interface: CapabilityInterface = interface
+
+    def __eq__(self, other: object) -> bool:
+
+        def compare_node_data_lists(list1: list, list2: list) -> bool:
+            l1_node_data = {(x.key, json_decode(x.serialized_type)) for x in list1}
+            l2_node_data = {(x.key, json_decode(x.serialized_type)) for x in list2}
+
+            return l1_node_data.isdisjoint(l2_node_data)
+
+        if not isinstance(other, HashableCapabilityInterface):
+            return False
+
+        if not self.interface.name == other.interface.name:
+            return False
+
+        return (compare_node_data_lists(self.interface.inputs, other.interface.inputs) and
+                compare_node_data_lists(self.interface.outputs, other.interface.outputs) and
+                compare_node_data_lists(self.interface.options, other.interface.options))
+
+    def __ne__(self, other: object) -> bool:
+        return not self.__eq__(other)
+
+    def __hash__(self) -> int:
+        return hash(
+            (
+                self.interface.name,
+                frozenset({(x.key, json_decode(x.serialized_type)) for x in self.interface.inputs}),
+                frozenset({(x.key, json_decode(x.serialized_type)) for x in self.interface.outputs}),
+                frozenset({(x.key, json_decode(x.serialized_type)) for x in self.interface.options})
+            )
+        )

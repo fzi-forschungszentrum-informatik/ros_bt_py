@@ -62,6 +62,10 @@ add_service_files(
   SetOptions.srv
   TestService.srv
   WireNodeData.srv
+  AddAssignmentRequest.srv
+  GetAssignmentRequestResult.srv
+  GetAssignmentRequestStatus.srv
+  CancelAssignmentRequest.srv
   capabilities/GetCapabilityInterfaces.srv
   capabilities/LoadCapabilities.srv
   capabilities/SaveCapabilities.srv

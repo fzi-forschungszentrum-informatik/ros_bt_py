@@ -4,8 +4,9 @@ CapabilityInterface capability
 # result
 bool success
 string error_message
-string executor_mission_control_topic
-string implementation_name
+Tree implementation_tree
+string input_announcement_topic
+string output_announcement_topic
 ---
 # feedback
 string[] queried_mission_controllers

@@ -51,3 +51,7 @@ class MissingParentError(BehaviorTreeException):
 
 class MigrationException(BehaviorTreeException):
     pass
+
+
+class AssignmentException(Exception):
+    pass

@@ -111,14 +111,17 @@ class Capability(ABC, Leaf):
 
     def _do_setup(self):
 
-        if not rospy.wait_for_service(
+        try:
+            rospy.wait_for_service(
                 f'{self.local_mc_topic}/capabilities/implementations/get',
                 timeout=rospy.Duration(WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS)
-        ):
+            )
+        except rospy.ROSException as exc:
             raise BehaviorTreeException(
                 f'Service "{self.local_mc_topic}/capabilities/implementations/get" not available'
                 f' after waiting f{WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS} seconds!'
-            )
+            ) from exc
+
         self.__get_local_implementations_service = AsyncServiceProxy(
             f'{self.local_mc_topic}/capabilities/implementations/get',
             GetCapabilityImplementations
@@ -320,7 +323,7 @@ class Capability(ABC, Leaf):
 
                 orphans = list(filter(lambda child: child.parent is None, children_names.values()))
                 if len(orphans) > 1:
-                    rospy.logwarn("More than one subnode for the capability detected.")
+                    rospy.logwarn("More than one sub node for the capability detected.")
                 if len(orphans) < 1:
                     rospy.logwarn("No root for capability subtree detected!")
                     self.cleanup()
@@ -536,6 +539,8 @@ def capability_node_class_from_capability_interface_callback(
     :param args: The additional arguments passed to the callback.
     :return: Nothing
     """
+    rospy.logwarn("Capability callback")
+
     if len(args) < 1:
         rospy.logerr("Create capability node callback received less then one extra args.")
         return
