@@ -1,6 +1,3 @@
-string capability_uuid
-string implementation_uuid
-
 string implementation_name
 string version
 

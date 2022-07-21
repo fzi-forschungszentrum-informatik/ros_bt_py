@@ -3,11 +3,12 @@ Module used to implement mission control components.
 This includes the management of capabilities and their implementations as well as the forwarding to
 other nodes by using an auction protocol.
 """
+# pylint: disable=no-name-in-module,import-error
 
 import os
+import re
 import shutil
 import tempfile
-import uuid
 from threading import RLock
 from typing import Dict
 
@@ -17,19 +18,58 @@ import rospy
 import yaml
 from rospkg import ResourceNotFound
 from std_msgs.msg import Time
+from ros_bt_py.helpers import json_decode
 from ros_bt_py_msgs.msg import CapabilityInterface, CapabilityImplementation
 from ros_bt_py_msgs.srv import (
-    SaveCapabilityInterfacesRequest, SaveCapabilityInterfacesResponse,
-    LoadCapabilityInterfacesRequest, LoadCapabilityInterfacesResponse,
     PutCapabilityInterfacesRequest, PutCapabilityInterfacesResponse,
     GetCapabilityInterfacesRequest, GetCapabilityInterfacesResponse,
     GetCapabilityImplementationsRequest, GetCapabilityImplementationsResponse, DeleteCapabilityImplementationResponse,
     DeleteCapabilityImplementationRequest, PutCapabilityImplementationRequest,
     PutCapabilityImplementationResponse, DeleteCapabilityImplementation,
-    LoadCapabilityInterfaces,
-    SaveCapabilityInterfaces, GetCapabilityInterfaces, PutCapabilityInterfaces,
-    GetCapabilityImplementations, PutCapabilityImplementation,
+    GetCapabilityInterfaces, PutCapabilityInterfaces,
+    GetCapabilityImplementations, PutCapabilityImplementation, LoadCapabilities, LoadCapabilitiesRequest,
+    LoadCapabilitiesResponse, SaveCapabilitiesRequest, SaveCapabilitiesResponse, SaveCapabilities,
 )
+
+
+class HashableCapabilityInterface:
+    """
+    Wrapper class to allow for the hashing of capability interfaces.
+    """
+
+    def __init__(self, interface: CapabilityInterface):
+        self.interface: CapabilityInterface = interface
+
+    def __eq__(self, other: object) -> bool:
+
+        def compare_node_data_lists(list1: list, list2: list) -> bool:
+            l1_node_data = {(x.key, json_decode(x.serialized_type)) for x in list1}
+            l2_node_data = {(x.key, json_decode(x.serialized_type)) for x in list2}
+
+            return l1_node_data.isdisjoint(l2_node_data)
+
+        if not isinstance(other, HashableCapabilityInterface):
+            return False
+
+        if not self.interface.name == other.interface.name:
+            return False
+
+        return (compare_node_data_lists(self.interface.inputs, other.interface.inputs) and
+                compare_node_data_lists(self.interface.outputs, other.interface.outputs) and
+                compare_node_data_lists(self.interface.options, other.interface.options))
+
+    def __ne__(self, other: object) -> bool:
+        return not self.__eq__(other)
+
+    def __hash__(self) -> int:
+        return hash(
+            (
+                self.interface.name,
+                frozenset({(x.key, json_decode(x.serialized_type)) for x in self.interface.inputs}),
+                frozenset({(x.key, json_decode(x.serialized_type)) for x in self.interface.outputs}),
+                frozenset({(x.key, json_decode(x.serialized_type)) for x in self.interface.options})
+            )
+        )
 
 
 class CapabilityRepository:
@@ -59,15 +99,11 @@ class CapabilityRepository:
         """
 
         # List containing all known capability interfaces.
-        self.__capability_interfaces_lock = RLock()
-        self.capability_interfaces: Dict[str, CapabilityInterface] = dict()
-
-        # List containing all locally known implementations.
-        self.__capability_implementations_lock = RLock()
-        self.capability_implementations: Dict[str, Dict[str, CapabilityImplementation]] = dict()
+        self.__capabilities_lock = RLock()
+        self.capabilities: Dict[HashableCapabilityInterface, Dict[str, CapabilityImplementation]] = {}
 
         self.__rp = rospkg.RosPack()
-        self.__interfaces_tmp_dir = tempfile.mkdtemp(prefix="capability_interface_backup_")
+        self.__capabilities_tmp_dir = tempfile.mkdtemp(prefix="capability_backup_")
 
         # Local interfaces communication topics and services.
         self.__local_capability_interface_publisher = rospy.Publisher(
@@ -76,16 +112,16 @@ class CapabilityRepository:
             queue_size=1000
         )
 
-        self.__local_capability_interfaces_load_service = rospy.Service(
-            f'{local_capability_topic_prefix}/capabilities/interfaces/load',
-            LoadCapabilityInterfaces,
-            self.load_capability_interfaces
+        self.__local_capabilities_load_service = rospy.Service(
+            f'{local_capability_topic_prefix}/capabilities/load',
+            LoadCapabilities,
+            self.load_capabilities
         )
 
-        self.__local_capability_interfaces_save_service = rospy.Service(
-            f'{local_capability_topic_prefix}/capabilities/interfaces/save',
-            SaveCapabilityInterfaces,
-            self.save_capability_interfaces
+        self.__local_capabilities_save_service = rospy.Service(
+            f'{local_capability_topic_prefix}/capabilities/save',
+            SaveCapabilities,
+            self.save_capabilities
         )
 
         self.__local_capability_interfaces_put_service = rospy.Service(
@@ -101,6 +137,12 @@ class CapabilityRepository:
         )
 
         # Local implementations services.
+
+        self.__local_capability_implementation_publisher = rospy.Publisher(
+            f'{local_capability_topic_prefix}/capabilities/implementations',
+            CapabilityImplementation,
+            queue_size=1000
+        )
 
         self.__local_capability_implementations_get_service = rospy.Service(
             f'{local_capability_topic_prefix}/capabilities/implementations/get',
@@ -145,19 +187,6 @@ class CapabilityRepository:
             queue_size=1000
         )
 
-    def __is_invalid_uuid(self, uuid_string: str) -> bool:
-        """
-        Checks if a given sting is not a valid UUID.
-
-        :param uuid_string: The string to test against.
-        :return: True if not a valid UUID, false if the input is a valid UUID.
-        """
-        try:
-            uuid.UUID(uuid_string)
-            return False
-        except ValueError:
-            return True
-
     # -- Inter-Nodes callback --
     def __global_capability_interfaces_callback(
             self,
@@ -170,12 +199,13 @@ class CapabilityRepository:
         :return: None
         """
         rospy.loginfo("Received announcement received!")
-        if interface.uuid in self.capability_interfaces.keys():
+        hashable_interface = HashableCapabilityInterface(interface)
+        if hashable_interface in self.capabilities:
             rospy.loginfo("Capability interface already exists, ignoring!")
             return
-        with self.__capability_interfaces_lock:
-            self.capability_interfaces[interface.uuid] = interface
-        self.__publish_interface_local_topic(interface)
+        with self.__capabilities_lock:
+            self.capabilities[hashable_interface] = {}
+        self.__publish_interface_local_topic(hashable_interface.interface)
 
     def __publish_local_interfaces_global_topic(
             self
@@ -186,9 +216,9 @@ class CapabilityRepository:
         Fails if the publisher is not initialized.
         :return: None
         """
-        for interface in self.capability_interfaces.values():
+        for hashable_interface in self.capabilities:
             try:
-                self.__global_capability_interfaces_publisher.publish(interface)
+                self.__global_capability_interfaces_publisher.publish(hashable_interface.interface)
             except rospy.ROSSerializationException as exc:
                 rospy.logerr(f'Could not serialize msg, node not initialized: {exc}!')
                 continue
@@ -221,33 +251,42 @@ class CapabilityRepository:
         :return: None
         """
         rospy.loginfo("Shutting down local services and unregister publishers!")
+        self.__local_capabilities_save_service.shutdown()
+        self.__local_capabilities_load_service.shutdown()
+
+        self.__local_capability_implementation_publisher.unregister()
         self.__local_capability_interface_publisher.unregister()
+
         self.__local_capability_interfaces_get_service.shutdown()
         self.__local_capability_interfaces_put_service.shutdown()
-        self.__local_capability_interfaces_save_service.shutdown()
-        self.__local_capability_interfaces_load_service.shutdown()
+
+        self.__local_capability_implementations_put_service.shutdown()
+        self.__local_capability_implementations_get_service.shutdown()
+        self.__local_capability_implementations_delete_service.shutdown()
 
         rospy.loginfo("Unregister global publishers and subscribers!")
         self.__global_capability_interfaces_publisher.unregister()
         self.__global_capability_interfaces_subscriber.unregister()
+        self.__global_capability_interfaces_requests_publisher.unregister()
+        self.__global_capability_interfaces_requests_subscriber.unregister()
 
         rospy.loginfo("Cleaning /tmp files!")
         try:
-            shutil.rmtree(self.__interfaces_tmp_dir)
+            shutil.rmtree(self.__capabilities_tmp_dir)
         except OSError as exc:
             rospy.logerr(
-                f'Could not remove tmp files at: "{self.__interfaces_tmp_dir}"'
+                f'Could not remove tmp files at: "{self.__capabilities_tmp_dir}"'
                 f', "{exc}"! Please remove manually!'
             )
 
     # -- Interface operations --
 
-    def __get_capability_interfaces_folder_from_package(
+    def __get_capabilities_folder_from_package(
             self,
             package: str
     ) -> str:
         """
-        Validates the specified package name, ensures the "capabilities_interface" folder exists and returns the path.
+        Validates the specified package name, ensures the "capabilities" folder exists and returns the path.
 
         The method will create the required folder should it not exist.
         :param package: String containing the package name the folder should be stored in.
@@ -262,15 +301,15 @@ class CapabilityRepository:
         try:
             package = self.__rp.get_path(package)
         except ResourceNotFound as exc:
-            raise ValueError(f'Package could not be found: "{exc}"!')
+            raise ValueError(f'Package could not be found: "{exc}"!') from exc
 
         # Check if the capability interface folder exists at the
-        capability_interfaces_folder_path = os.path.join(package, "capability_interfaces")
+        capability_interfaces_folder_path = os.path.join(package, "capabilities")
         if not os.path.isdir(capability_interfaces_folder_path):
-            rospy.logwarn(f'Creating capability interface folder at: "{capability_interfaces_folder_path}"')
+            rospy.logwarn(f'Creating capabilities folder at: "{capability_interfaces_folder_path}"')
             os.mkdir(capability_interfaces_folder_path)
         if not os.path.isdir(capability_interfaces_folder_path):
-            raise ValueError(f'Could not create capability interface folder: "{capability_interfaces_folder_path}"!')
+            raise ValueError(f'Could not create capabilities folder: "{capability_interfaces_folder_path}"!')
 
         return capability_interfaces_folder_path
 
@@ -295,25 +334,63 @@ class CapabilityRepository:
             rospy.logerr(f'Could not send msg, node not initialized: {exc}!')
             raise rospy.ROSException(f'Could not send msg, node not initialized: {exc}!')
 
-    def save_capability_interfaces(
+    def __publish_implementation_local_topic(
             self,
-            request: SaveCapabilityInterfacesRequest
-    ) -> SaveCapabilityInterfacesResponse:
+            implementation: CapabilityImplementation
+    ) -> None:
+        """
+        Announces the implementation on the local implementation topic.
+
+        :raise rospy.ROSException: If the message could not be sent because the node
+        is not available or the message is malformed.
+        :param implementation: The implementation to publish.
+        :return: None
+        """
+        try:
+            self.__local_capability_implementation_publisher.publish(implementation)
+        except rospy.ROSSerializationException as exc:
+            rospy.logerr(f'Could not serialize msg, node not initialized: {exc}!')
+            raise rospy.ROSException(f'Could not serialize msg, node not initialized: {exc}!')
+        except rospy.ROSException as exc:
+            rospy.logerr(f'Could not send msg, node not initialized: {exc}!')
+            raise rospy.ROSException(f'Could not send msg, node not initialized: {exc}!')
+
+    @staticmethod
+    def __increment_name(name):
+        """If `name` does not already end in a number, add "_2" to it.
+
+        Otherwise, increase the number after the underscore.
+        """
+        match = re.search(r'_(\d+)$', name)
+        prev_number = 1
+        if match:
+            prev_number = int(match.group(1))
+            # remove the entire _$number part from the name
+            name = name[:len(name) - len(match.group(0))]
+
+        name += f'_{prev_number + 1}'
+        return name
+
+    def save_capabilities(
+            self,
+            request: SaveCapabilitiesRequest
+    ) -> SaveCapabilitiesResponse:
         """
         Saves the provided capabilities at the package specified in the request.
         Capabilities are saved as yaml files.
 
         The service will abort at the first failed save.
 
-        The folder used will be called "capability_interfaces" in the specified package.
+        The folder used will be called "capabilities" in the specified package.
 
         :param request: The save request from the service call.
         :return: Returns successfully if all capabilities could be saved. A failed response will occur if the specified
         package cannot be found, the folder cannot be created or a capability cannot be saved.
         """
-        response = SaveCapabilityInterfacesResponse()
+        # pylint: disable=too-many-locals
+        response = SaveCapabilitiesResponse()
         try:
-            capability_interfaces_folder_path = self.__get_capability_interfaces_folder_from_package(request.package)
+            capabilities_folder_path = self.__get_capabilities_folder_from_package(request.package)
         except ValueError as exc:
             response.success = False
             response.error_message = str(exc.args)
@@ -322,101 +399,141 @@ class CapabilityRepository:
         # Secure existing files, so they can be manually restored.
         # They will be deleted by the operating system, thus this will not be a big problem.
 
-        existing_files = [f for f in os.listdir(capability_interfaces_folder_path) if
-                          os.path.isfile(os.path.join(capability_interfaces_folder_path, f))]
+        existing_files = list(os.scandir(capabilities_folder_path))
 
         if len(existing_files) > 0:
-            rospy.logwarn(f'Existing capability interface files are moved to {self.__interfaces_tmp_dir}"')
+            rospy.logwarn(f'Existing capability interface files are moved to {self.__capabilities_tmp_dir}"')
+            shutil.copytree(capabilities_folder_path, self.__capabilities_tmp_dir, dirs_exist_ok=True)
+
             for existing_file in existing_files:
-                os.rename(
-                    os.path.join(capability_interfaces_folder_path, existing_file),
-                    os.path.join(self.__interfaces_tmp_dir, existing_file),
-                )
+                rospy.logwarn(f"Removing file {existing_file}")
+                shutil.rmtree(existing_file.path)
             rospy.loginfo(f'Successfully moved {len(existing_files)} interface files.')
 
-        with self.__capability_interfaces_lock:
-            capability_interfaces = self.capability_interfaces.items()
+        with self.__capabilities_lock:
+            capabilities = self.capabilities.items()
 
-        for capability_uuid, capability in capability_interfaces:
+        used_folder_names = []
+        for capability in capabilities:
+            name = capability[0].interface.name
+            while name in used_folder_names:
+                name = self.__increment_name(name)
+            used_folder_names.append(name)
+
+            capability_folder_path = os.path.join(capabilities_folder_path, name)
+
+            os.makedirs(capability_folder_path, exist_ok=True)
+            if not os.path.isdir(capability_folder_path):
+                response.error_message = f"Cannot create capability directory {capability_folder_path}"
+                response.success = False
+                rospy.logerr(response.error_message)
+                return response
+            capability_implementations_folder_path = os.path.join(capability_folder_path, "implementations")
+            os.makedirs(capability_implementations_folder_path, exist_ok=True)
+            if not os.path.isdir(capability_implementations_folder_path):
+                response.error_message = f"Cannot create capability implementations directory" \
+                                         f" {capability_implementations_folder_path}"
+                response.success = False
+                rospy.logerr(response.error_message)
+                return response
+
             capability_interface_file_path \
-                = os.path.join(capability_interfaces_folder_path, f'{capability_uuid.upper()}.yaml')
+                = os.path.join(capability_folder_path, 'interface.yaml')
 
-            rospy.logdebug(f'Saving capability interface: "{capability}" at "{capability_interface_file_path}".')
-
-            with open(capability_interface_file_path, 'w') as capability_interface_file:
-                msg = genpy.message.strify_message(capability)
+            with open(capability_interface_file_path, 'w', encoding='UTF-8') as capability_interface_file:
+                msg = genpy.message.strify_message(capability[0].interface)
                 capability_interface_file.write(msg)
+
+            for implementation_name, implementation in capability[1].items():
+                with open(
+                        os.path.join(
+                            capability_implementations_folder_path,
+                            f"{implementation_name}.yaml"
+                        ),
+                        'w', encoding='UTF-8'
+                ) as capability_implementation_file:
+                    msg = genpy.message.strify_message(implementation)
+                    capability_implementation_file.write(msg)
 
         response.success = True
         return response
 
-    def load_capability_interfaces(
-            self,
-            request: LoadCapabilityInterfacesRequest
-    ) -> LoadCapabilityInterfacesResponse:
+    def load_capabilities(self, request: LoadCapabilitiesRequest) -> LoadCapabilitiesResponse:
         """
-        Loads all capabilities from the provided package.
-        They should be saved as yaml files.
-
-        :param request: The load request from the service call.
-        :return: Returns the service response.
+        Loads all capabilities from a given package.
+        This includes interfaces and if available any implementations.
+        :param request: The request that contains the package.
+        :return: A ros service response informing about the status of the request.
         """
-        response = LoadCapabilityInterfacesResponse()
-        loaded_capability_interfaces = []
+        response = LoadCapabilitiesResponse()
 
         try:
-            capability_interfaces_folder_path = self.__get_capability_interfaces_folder_from_package(request.package)
+            capabilities_folder_path = self.__get_capabilities_folder_from_package(request.package)
         except ValueError as exc:
             response.success = False
             response.error_message = str(exc.args)
             return response
 
-        capability_interface_files = [f for f in os.listdir(capability_interfaces_folder_path) if
-                                      os.path.isfile(os.path.join(capability_interfaces_folder_path, f))]
+        for capability_folder_path in [f.path for f in os.scandir(capabilities_folder_path)
+                                       if f.is_dir() and os.path.isfile(os.path.join(f.path, 'interface.yaml'))]:
+            interface_file_path = os.path.join(capability_folder_path, "interface.yaml")
 
-        for capability_interface_file_name in capability_interface_files:
-            capability_interface_file_path \
-                = os.path.join(capability_interfaces_folder_path, capability_interface_file_name)
+            rospy.logwarn(f'Loading capability interface file: "{interface_file_path}".')
 
-            rospy.logdebug(f'Loading capability interface file: "{capability_interface_file_path}".')
-
-            with open(capability_interface_file_path, 'r') as capability_interface_file:
-                data = yaml.safe_load(capability_interface_file)
-                rospy.logdebug(f"Loaded yaml: {data}")
+            with open(interface_file_path, 'r', encoding='UTF-8') as interface_file:
                 capability = CapabilityInterface()
                 try:
                     genpy.message.fill_message_args(
-                        capability, data, keys={}
+                        capability,
+                        yaml.safe_load(interface_file),
+                        keys={}
                     )
                 except (genpy.MessageException, TypeError, KeyError):
-                    rospy.logwarn(f'"{capability_interface_file_path}" is malformed')
+                    rospy.logwarn(f'"{interface_file_path}" is malformed')
                     continue
 
-                if self.__is_invalid_uuid(capability.uuid):
-                    rospy.logwarn(f'Interface: "{capability}" does not contain a valid uuid.')
-                    continue
+                hashable_capability = HashableCapabilityInterface(capability)
+                with self.__capabilities_lock:
+                    self.capabilities[hashable_capability] = {}
+                try:
+                    self.__publish_interface_local_topic(capability)
+                except rospy.ROSException as exc:
+                    response.success = False
+                    response.error_message = f"Error announcing change to local node topic: {exc}!"
+                    return response
 
-                loaded_capability_interfaces.append(capability)
+            implementation_subfolder_path = os.path.join(capability_folder_path, "implementations")
+            if os.path.isdir(implementation_subfolder_path):
 
-                if capability.uuid in self.capability_interfaces.keys():
-                    rospy.logdebug(f"Updating interface {capability.uuid}!")
-                else:
-                    rospy.logdebug(f"Adding interface {capability.uuid}!")
-                    with self.__capability_implementations_lock:
-                        self.capability_implementations[capability.uuid] = dict()
-
-                with self.__capability_interfaces_lock:
-                    self.capability_interfaces[capability.uuid] = capability
-
-        self.__publish_local_interfaces_global_topic()
-
-        for interface in loaded_capability_interfaces:
-            try:
-                self.__publish_interface_local_topic(interface)
-            except rospy.ROSException as exc:
-                response.success = False
-                response.error_message = f"Error announcing change to local node topic: {exc}!"
-                return response
+                for implementation_file_path in [f.path for f in os.scandir(implementation_subfolder_path)
+                                                 if f.is_file() and (f.path.endswith(".yaml") or
+                                                                     f.path.endswith(".yml"))]:
+                    rospy.logdebug(f'Loading capability implementation file: "{implementation_file_path}".')
+                    with open(implementation_file_path, 'r', encoding='UTF-8') as implementation_file:
+                        implementation = CapabilityImplementation()
+                        try:
+                            genpy.message.fill_message_args(
+                                implementation,
+                                yaml.safe_load(implementation_file),
+                                keys={}
+                            )
+                        except (genpy.MessageException, TypeError, KeyError):
+                            rospy.logwarn(f'"{implementation_file_path}" is malformed')
+                            continue
+                        if self.capabilities[hashable_capability][implementation.implementation_name]:
+                            rospy.logwarn(
+                                f"Capability implementation with duplicate name detected:"
+                                f" {implementation.implementation_name}"
+                            )
+                            continue
+                        with self.__capabilities_lock:
+                            self.capabilities[hashable_capability][implementation.implementation_name] = implementation
+                        try:
+                            self.__publish_implementation_local_topic(implementation)
+                        except rospy.ROSException as exc:
+                            response.success = False
+                            response.error_message = f"Error announcing change to local node topic: {exc}!"
+                            return response
 
         response.success = True
         return response
@@ -433,22 +550,13 @@ class CapabilityRepository:
         """
         response = PutCapabilityInterfacesResponse()
         for interface in request.capabilities:
+            hashable_interface = HashableCapabilityInterface(interface)
 
-            if self.__is_invalid_uuid(interface.uuid):
-                rospy.logwarn(f"Interface {interface} does not contain a valid uuid.")
-                response.success = False
-                response.error_message = f"Interface {interface} does not contain a valid uuid."
-                return response
+            if hashable_interface in self.capabilities:
+                rospy.logwarn(f"Interface {interface} is already loaded!")
+                continue
 
-            if interface.uuid in self.capability_interfaces.keys():
-                rospy.logdebug(f"Updating interface {interface.uuid}!")
-            else:
-                rospy.logdebug(f"Adding interface {interface.uuid}!")
-                with self.__capability_implementations_lock:
-                    self.capability_implementations[interface.uuid] = dict()
-
-            with self.__capability_interfaces_lock:
-                self.capability_interfaces[interface.uuid] = interface
+            self.capabilities[hashable_interface] = {}
 
             try:
                 self.__publish_interface_local_topic(interface)
@@ -472,12 +580,12 @@ class CapabilityRepository:
         # pylint: disable=unused-argument
 
         response = GetCapabilityInterfacesResponse()
-        with self.__capability_interfaces_lock:
-            capability_interfaces = self.capability_interfaces.values()
+        with self.__capabilities_lock:
+            capability_interfaces = self.capabilities.keys()
 
-        for interface in capability_interfaces:
+        for hashable_interface in capability_interfaces:
             try:
-                self.__publish_interface_local_topic(interface)
+                self.__publish_interface_local_topic(hashable_interface.interface)
             except rospy.ROSException as exc:
                 response.success = False
                 response.error_message = f"Error announcing change to local node topic: {exc}!"
@@ -497,22 +605,18 @@ class CapabilityRepository:
         :return: A
         """
         response = GetCapabilityImplementationsResponse()
-        if self.__is_invalid_uuid(request.capability_uuid):
-            response.success = False
-            response.error_message = f"Invalid uuid in request: {request.capability_uuid}!"
-            rospy.logwarn(response.error_message)
-            return response
 
+        hashable_interface = HashableCapabilityInterface(request.interface)
         try:
-            with self.__capability_implementations_lock:
-                capability_implementations = self.capability_implementations[request.capability_uuid]
+            with self.__capabilities_lock:
+                capability_implementations = self.capabilities[hashable_interface]
         except KeyError:
             response.success = False
-            response.error_message = f"Uuid is not known: {request.capability_uuid}!"
+            response.error_message = f"Capability is not known: {request.interface}!"
             rospy.logwarn(response.error_message)
             return response
 
-        response.implementations = capability_implementations.values()
+        response.implementations = capability_implementations
         response.success = True
         return response
 
@@ -527,37 +631,28 @@ class CapabilityRepository:
         :return: The service response.
         """
         response = DeleteCapabilityImplementationResponse()
+        hashable_interface = HashableCapabilityInterface(request.interface)
 
-        if self.__is_invalid_uuid(request.capability_uuid):
+        try:
+            with self.__capabilities_lock:
+                capability_implementations = self.capabilities[hashable_interface]
+        except KeyError:
             response.success = False
-            response.error_message = f'Specified capability uuid {request.capability_uuid} invalid!'
-            rospy.logwarn(response.error_message)
-            return response
-
-        if self.__is_invalid_uuid(request.implementation_uuid):
-            response.success = False
-            response.error_message = \
-                f'Specified implementation uuid {request.implementation_uuid} invalid!'
+            response.error_message = f'Capability {request.interface} not known!'
             rospy.logwarn(response.error_message)
             return response
 
         try:
-            implementations = self.capability_implementations[request.capability_uuid]
-        except KeyError:
-            response.success = False
-            response.error_message = f'Capability {request.capability_uuid} not known!'
-            rospy.logwarn(response.error_message)
-            return response
+            capability_implementations.pop(request.implementation_name)
 
-        try:
-            implementations.pop(request.implementation_uuid)
         except KeyError:
             response.success = False
-            response.error_message = f'Implementation {request.implementation_uuid} not known!'
+            response.error_message = f'Implementation {request.implementation_name} not known!'
             rospy.logwarn(response.error_message)
             return response
 
         # TODO: Implement deletion of persistent implementations.
+
         response.success = True
         return response
 
@@ -573,31 +668,18 @@ class CapabilityRepository:
         Failure if the capability interface is unknown or the uuids are not valid.
         """
         response = PutCapabilityImplementationResponse()
-
-        if self.__is_invalid_uuid(request.implementation.capability_uuid):
-            response.success = False
-            response.error_message = f'Specified capability uuid {request.implementation.capability_uuid} invalid!'
-            rospy.logwarn(response.error_message)
-            return response
-
-        if self.__is_invalid_uuid(request.implementation.implementation_uuid):
-            response.success = False
-            response.error_message \
-                = f'Specified implementation uuid {request.implementation.implementation_uuid} invalid!'
-            rospy.logwarn(response.error_message)
-            return response
+        hashable_interface = HashableCapabilityInterface(request.interface)
 
         try:
-            self.capability_implementations[request.implementation.capability_uuid]
+            self.capabilities[hashable_interface]
         except KeyError:
             response.success = False
             response.error_message = f'Capability {request.implementation.capability_uuid} not known!'
             rospy.logwarn(response.error_message)
             return response
 
-        with self.__capability_implementations_lock:
-            self.capability_implementations[request.implementation.capability_uuid][
-                request.implementation.implementation_uuid] = request.implementation
+        with self.__capabilities_lock:
+            self.capabilities[hashable_interface][request.implementation.implementation_name] = request.implementation
 
         response.success = True
         return response

@@ -1,4 +1,4 @@
-string capability_uuid
+CapabilityInterface interface
 ---
 CapabilityImplementation[] implementations
 bool success

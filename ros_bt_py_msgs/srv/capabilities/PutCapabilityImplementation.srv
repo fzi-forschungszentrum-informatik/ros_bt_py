@@ -1,3 +1,4 @@
+CapabilityInterface interface
 CapabilityImplementation implementation
 ---
 bool success

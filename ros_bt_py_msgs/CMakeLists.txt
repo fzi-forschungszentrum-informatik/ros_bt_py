@@ -62,14 +62,14 @@ add_service_files(
   SetOptions.srv
   TestService.srv
   WireNodeData.srv
-  capability_interface/GetCapabilityInterfaces.srv
-  capability_interface/LoadCapabilityInterfaces.srv
-  capability_interface/SaveCapabilityInterfaces.srv
-  capability_interface/PutCapabilityInterfaces.srv
-  capability_interface/UpdateCapabilityInterfaces.srv
-  capability_implementation/DeleteCapabilityImplementation.srv
-  capability_implementation/PutCapabilityImplementation.srv
-  capability_implementation/GetCapabilityImplementations.srv
+  capabilities/GetCapabilityInterfaces.srv
+  capabilities/LoadCapabilities.srv
+  capabilities/SaveCapabilities.srv
+  capabilities/PutCapabilityInterfaces.srv
+  capabilities/UpdateCapabilityInterfaces.srv
+  capabilities/DeleteCapabilityImplementation.srv
+  capabilities/PutCapabilityImplementation.srv
+  capabilities/GetCapabilityImplementations.srv
   )
 
 ## Generate actions in the 'action' folder
