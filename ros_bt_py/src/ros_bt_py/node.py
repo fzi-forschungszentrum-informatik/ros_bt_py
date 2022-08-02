@@ -53,6 +53,17 @@ except NameError:  # pragma: no cover
     basestring = str
 
 
+def _check_node_data_match(node_config: Dict[str, Type], node_data: List[NodeDataMsg]) -> bool:
+    for data in node_data:
+        try:
+            value = node_config.get(data.key)
+        except KeyError:
+            return False
+        if value is not data.serialized_type:
+            return False
+    return True
+
+
 def _required(meth):
     """Mark a method as required.
 
@@ -105,7 +116,7 @@ def define_bt_node(node_config):
                 'the class because it does not implement all required methods. '
                 'Missing methods: %s',
                 node_class.__name__, str(missing_methods)
-                )
+            )
             return node_class
 
         if node_class.__module__ not in Node.node_classes:
@@ -116,7 +127,34 @@ def define_bt_node(node_config):
             if node_class.__name__ not in Node.node_classes[node_class.__module__]:
                 Node.node_classes[node_class.__module__][node_class.__name__] = [node_class]
             else:
-                Node.node_classes[node_class.__module__][node_class.__name__].append(node_class)
+                def __check_dict_equiv(dict1: Dict[str, Type], dict2: Dict[str, Type]) -> bool:
+                    if not len(dict1) == len(dict2):
+                        return False
+
+                    for key, value in dict1.items():
+                        if key not in dict2:
+                            return False
+                        else:
+                            if not dict2[key] == value:
+                                return False
+                    return True
+
+                already_available_node_classes = Node.node_classes[node_class.__module__][node_class.__name__]
+                candidates = list(
+                    filter(
+                        lambda node_class_candidate:
+                        __check_dict_equiv(node_class_candidate._node_config.inputs, node_config.inputs) and
+                        __check_dict_equiv(node_class_candidate._node_config.outputs, node_config.outputs) and
+                        __check_dict_equiv(node_class_candidate._node_config.options, node_config.options),
+                        already_available_node_classes
+                    )
+                )
+                rospy.logerr(already_available_node_classes)
+                rospy.logerr(candidates)
+                if len(candidates) < 1:
+                    Node.node_classes[node_class.__module__][node_class.__name__].append(node_class)
+                else:
+                    rospy.logdebug("Node class is already registered with this config!")
         return node_class
 
     return inner_dec
@@ -266,7 +304,7 @@ class Node(object):
             source_map=self.node_config.options,
             target_map=self.options,
             values=options,
-            permissive=self.permissive,
+            permissive=self.permissive
         )
 
         # Warn about unset options, ignore missing optional_options
@@ -283,7 +321,7 @@ class Node(object):
             else:
                 raise ValueError(
                     f'Missing options: {str(unset_option_keys)}'
-                    )
+                )
 
         # Warn about extra options
         if options is not None:
@@ -291,16 +329,18 @@ class Node(object):
             if extra_option_keys:
                 raise ValueError(
                     f'Extra options: {str(extra_option_keys)}'
-                    )
+                )
 
         self.inputs = NodeDataMap(name="inputs")
         self._register_node_data(
-            source_map=self.node_config.inputs, target_map=self.inputs
+            source_map=self.node_config.inputs,
+            target_map=self.inputs
         )
 
         self.outputs = NodeDataMap(name="outputs")
         self._register_node_data(
-            source_map=self.node_config.outputs, target_map=self.outputs
+            source_map=self.node_config.outputs,
+            target_map=self.outputs
         )
 
         # Don't setup automatically - nodes should be available as pure data
@@ -367,7 +407,7 @@ class Node(object):
                 if input_name not in self.node_config.optional_options:
                     raise ValueError(
                         f'Trying to tick a node ({self.name}) with an unset input ({input_name})!'
-                        )
+                    )
         self.inputs.handle_subscriptions()
 
     def _handle_outputs(self):
@@ -432,7 +472,7 @@ class Node(object):
                                 NodeMsg.FAILED,
                                 NodeMsg.UNASSIGNED],
                 action_name='tick()'
-                )
+            )
             self._handle_outputs()
 
             return self.state
@@ -448,8 +488,7 @@ class Node(object):
                     type(self).__name__,
                     self.state,
                     action_name,
-                    str(allowed_states),
-                )
+                    str(allowed_states))
             )
 
     @_required
@@ -496,7 +535,7 @@ class Node(object):
                                 NodeMsg.PAUSED,
                                 NodeMsg.UNASSIGNED],
                 action_name='untick()'
-                )
+            )
 
             self.outputs.reset_updated()
             return self.state
@@ -544,7 +583,8 @@ class Node(object):
 
             self.state = self._do_reset()
             self.raise_if_in_invalid_state(
-                allowed_states=[NodeMsg.IDLE], action_name="reset()"
+                allowed_states=[NodeMsg.IDLE],
+                action_name='reset()'
             )
             return self.state
 
@@ -602,9 +642,9 @@ class Node(object):
                                    if child.state != NodeMsg.SHUTDOWN]
             if unshutdown_children:
                 self.logwarn(
-                    "Not all children are shut down after calling shutdown(). "
-                    "List of not-shutdown children and states:\n"
-                    "\n".join(unshutdown_children)
+                    'Not all children are shut down after calling shutdown(). '
+                    'List of not-shutdown children and states:\n'
+                    '\n'.join(unshutdown_children)
                 )
             return self.state
 
@@ -652,7 +692,7 @@ class Node(object):
             has_lower_bound_success=True,
             has_upper_bound_success=True,
             has_lower_bound_failure=True,
-            has_upper_bound_failure=True,
+            has_upper_bound_failure=True
         )
 
     def get_child_index(self, child_name):
@@ -789,19 +829,21 @@ class Node(object):
             if data_type.option_key not in self.options:
                 raise NodeConfigError(
                     'OptionRef for %s key "%s" references invalid '
-                    'option key "%s"' % (target_map.name, key, data_type.option_key)
+                    'option key "%s"' %
+                    (target_map.name, key, data_type.option_key)
                 )
             if not self.options.is_updated(data_type.option_key):
                 self.loginfo(str(self.options))
                 raise NodeConfigError(
                     'OptionRef for %s key "%s" references unwritten '
-                    'option key "%s"' % (target_map.name, key, data_type.option_key)
+                    'option key "%s"' %
+                    (target_map.name, key, data_type.option_key)
                 )
             if not isinstance(self.options[data_type.option_key], type):
                 raise NodeConfigError(
                     'OptionRef for %s key "%s" references option key '
-                    '"%s" that does not contain a type!'
-                    % (target_map.name, key, data_type.option_key)
+                    '"%s" that does not contain a type!' %
+                    (target_map.name, key, data_type.option_key)
                 )
             target_map.add(key, NodeData(data_type=self.options[data_type.option_key]))
             if values is not None and key in values:
@@ -817,16 +859,11 @@ class Node(object):
 
                             for i, slot in enumerate(type(values[key]).__slots__):
                                 setattr(
-                                    fixed_new_value,
-                                    slot,
-                                    getattr(
-                                        values[key],
-                                        slot,
-                                        get_default_value(
-                                            type(getattr(fixed_new_value, slot, int)),
-                                            ros=True,
-                                        ),
-                                    ),
+                                    fixed_new_value, slot, getattr(
+                                        values[key], slot, get_default_value(
+                                            type(getattr(fixed_new_value, slot, int)), ros=True
+                                        )
+                                    )
                                 )
                             target_map[key] = fixed_new_value
                         else:
@@ -983,16 +1020,16 @@ class Node(object):
                 filter(
                     lambda node_class_candidate: __check_node_data_match(
                         node_class_candidate._node_config.inputs, msg.inputs
-                        )
+                    )
                                                  and __check_node_data_match(
                         node_class_candidate._node_config.outputs, msg.outputs
-                        )
+                    )
                                                  and __check_node_data_match(
                         node_class_candidate._node_config.options, msg.options
-                        ),
+                    ),
                     node_classes
-                    )
                 )
+            )
             if len(candidates) < 1:
                 raise BehaviorTreeException(
                     f'Failed to instantiate node from message - node class not available. Original message:\n{str(msg)}'
@@ -1014,7 +1051,7 @@ class Node(object):
         except ValueError as e:
             raise BehaviorTreeException(
                 f'Failed to instantiate node from message: {str(e)}'
-                )
+            )
 
         # Instantiate node - this shouldn't do anything yet, since we don't
         # call setup()
@@ -1046,7 +1083,7 @@ class Node(object):
         except ValueError as e:
             raise BehaviorTreeException(
                 f'Failed to instantiate node from message: {str(e)}'
-                )
+            )
 
         # Set outputs, ignore missing outputs (this can happen if a subtree changes between runs)
         try:
@@ -1067,7 +1104,7 @@ class Node(object):
         except ValueError as e:
             raise BehaviorTreeException(
                 f'Failed to instantiate node from message: {str(e)}'
-                )
+            )
 
         return node_instance
 
@@ -1111,7 +1148,7 @@ class Node(object):
             name=subtree_name,
             root_name=self.name,
             nodes=[node.to_msg() for node in self.get_children_recursive()],
-            state=Tree.IDLE,
+            state=Tree.IDLE
         )
 
         node_map = {node.name: node for node in subtree.nodes}
@@ -1273,7 +1310,7 @@ class Node(object):
         if wiring.source.node_name != self.name:
             raise KeyError(
                 f'{self.name}: Trying to subscribe to another node ({wiring.source.node_name})'
-                )
+            )
 
         for sub, _, _ in self.subscribers:
             if sub.target == wiring.target:
@@ -1293,9 +1330,12 @@ class Node(object):
         if wiring.source.data_key not in source_map:
             raise KeyError(
                 f'Source key {self.name}.{wiring.source.data_kind}[{wiring.source.data_key}] does not exist!'
-                )
+            )
 
-        if not issubclass(source_map.get_type(wiring.source.data_key), expected_type):
+        if not issubclass(
+                source_map.get_type(wiring.source.data_key),
+                expected_type
+        ):
             raise BehaviorTreeException(
                 (
                     "Type of %s.%s[%s] (%s) is not compatible with "
@@ -1314,14 +1354,10 @@ class Node(object):
             )
 
         source_map.subscribe(
-            wiring.source.data_key,
-            new_cb,
-            "%s.%s[%s]"
-            % (
-                wiring.target.node_name,
-                wiring.target.data_kind,
-                wiring.target.data_key,
-            ),
+            wiring.source.data_key, new_cb, '%s.%s[%s]' %
+                                            (wiring.target.node_name,
+                                             wiring.target.data_kind,
+                                             wiring.target.data_key)
         )
         self.subscribers.append((deepcopy(wiring), new_cb, expected_type))
 
@@ -1354,7 +1390,7 @@ class Node(object):
         if wiring.target.node_name != self.name:
             raise BehaviorTreeException(
                 f'Target of wiring ({wiring.target.node_name}) is not this node ({self.name})'
-                )
+            )
 
         for sub in self.subscriptions:
             if sub.target == wiring.target:
@@ -1375,7 +1411,7 @@ class Node(object):
         if wiring.source.data_key not in source_map:
             raise KeyError(
                 f'Source key {source_node.name}.{wiring.source.data_kind}[{wiring.source.data_key}] does not exist!'
-                )
+            )
 
         try:
             target_map = self.get_data_map(wiring.target.data_kind)
@@ -1385,12 +1421,12 @@ class Node(object):
         if wiring.target.data_key not in target_map:
             raise KeyError(
                 f'Target key {self.name}.{wiring.target.data_kind}[{wiring.target.data_key}] does not exist!'
-                )
+            )
 
         source_node._subscribe(
             wiring,
             target_map.get_callback(wiring.target.data_key),
-            target_map.get_type(wiring.target.data_key),
+            target_map.get_type(wiring.target.data_key)
         )
 
         self.subscriptions.append(deepcopy(wiring))
@@ -1409,13 +1445,13 @@ class Node(object):
         if wiring.source.node_name != self.name:
             raise KeyError(
                 f'{self.name}: Trying to unsubscribe from another node ({wiring.source.node_name})'
-                )
+            )
         source_map = self.get_data_map(wiring.source.data_kind)
 
         if wiring.source.data_key not in source_map:
             raise KeyError(
                 f'Source key {self.name}.{wiring.source.data_kind}[{wiring.source.data_key}] does not exist!'
-                )
+            )
 
         for sub_wiring, cb, _ in self.subscribers:
             if wiring.target == sub_wiring.target:
@@ -1440,7 +1476,7 @@ class Node(object):
         if wiring.target.node_name != self.name:
             raise KeyError(
                 f'Target of wiring ({wiring.target.node_name}) is not this node ({self.name})'
-                )
+            )
         source_node = self.find_node(wiring.source.node_name)
 
         if wiring not in self.subscriptions:
@@ -1510,7 +1546,7 @@ class Node(object):
                           if self.node_config.max_children is not None
                           else -1),
             state=self.state
-            )
+        )
 
 
 def load_node_module(package_name):
@@ -1564,7 +1600,7 @@ class Decorator(Node):
                 has_lower_bound_success=True,
                 has_upper_bound_success=True,
                 has_lower_bound_failure=True,
-                has_upper_bound_failure=True,
+                has_upper_bound_failure=True
             )
 
 
