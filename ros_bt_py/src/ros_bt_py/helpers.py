@@ -252,15 +252,13 @@ class HashableCapabilityInterface:
             l1_node_data = {(x.key, json_decode(x.serialized_type)) for x in list1}
             l2_node_data = {(x.key, json_decode(x.serialized_type)) for x in list2}
 
-            return l1_node_data.isdisjoint(l2_node_data)
+            return l1_node_data == l2_node_data
 
         if not isinstance(other, HashableCapabilityInterface):
             return False
 
-        if not self.interface.name == other.interface.name:
-            return False
-
-        return (compare_node_data_lists(self.interface.inputs, other.interface.inputs) and
+        return ((self.interface.name == other.interface.name) and
+                compare_node_data_lists(self.interface.inputs, other.interface.inputs) and
                 compare_node_data_lists(self.interface.outputs, other.interface.outputs) and
                 compare_node_data_lists(self.interface.options, other.interface.options))
 
