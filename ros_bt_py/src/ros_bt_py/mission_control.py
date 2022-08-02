@@ -4,14 +4,12 @@ This includes the management of capabilities and their implementations as well a
 other nodes by using an auction protocol.
 """
 # pylint: disable=no-name-in-module,import-error
-import abc
 import os
 import re
 import shutil
 import tempfile
-import uuid
 from threading import RLock
-from typing import Dict, Type, Callable, Set, List
+from typing import Dict, Type, List
 
 import actionlib
 import genpy
@@ -20,10 +18,12 @@ import rospy
 import yaml
 from rospkg import ResourceNotFound
 from std_msgs.msg import Time
-from ros_bt_py.helpers import json_decode
+
+from ros_bt_py.assignment_manager.assignment_manager import AssignmentManager
+from ros_bt_py.helpers import HashableCapabilityInterface
 from ros_bt_py_msgs.msg import (
     CapabilityInterface, CapabilityImplementation, FindBestCapabilityImplementationAction,
-    FindBestCapabilityImplementationActionGoal, FindBestCapabilityImplementationActionResult,
+    FindBestCapabilityImplementationGoal, FindBestCapabilityImplementationResult,
 )
 from ros_bt_py_msgs.srv import (
     PutCapabilityInterfacesRequest, PutCapabilityInterfacesResponse,
@@ -36,83 +36,6 @@ from ros_bt_py_msgs.srv import (
     LoadCapabilitiesResponse, SaveCapabilitiesRequest, SaveCapabilitiesResponse, SaveCapabilities,
 )
 
-class HashableCapabilityInterface:
-    """
-    Wrapper class to allow for the hashing of capability interfaces.
-    """
-
-    def __init__(self, interface: CapabilityInterface):
-        self.interface: CapabilityInterface = interface
-
-    def __eq__(self, other: object) -> bool:
-
-        def compare_node_data_lists(list1: list, list2: list) -> bool:
-            l1_node_data = {(x.key, json_decode(x.serialized_type)) for x in list1}
-            l2_node_data = {(x.key, json_decode(x.serialized_type)) for x in list2}
-
-            return l1_node_data.isdisjoint(l2_node_data)
-
-        if not isinstance(other, HashableCapabilityInterface):
-            return False
-
-        if not self.interface.name == other.interface.name:
-            return False
-
-        return (compare_node_data_lists(self.interface.inputs, other.interface.inputs) and
-                compare_node_data_lists(self.interface.outputs, other.interface.outputs) and
-                compare_node_data_lists(self.interface.options, other.interface.options))
-
-    def __ne__(self, other: object) -> bool:
-        return not self.__eq__(other)
-
-    def __hash__(self) -> int:
-        return hash(
-            (
-                self.interface.name,
-                frozenset({(x.key, json_decode(x.serialized_type)) for x in self.interface.inputs}),
-                frozenset({(x.key, json_decode(x.serialized_type)) for x in self.interface.outputs}),
-                frozenset({(x.key, json_decode(x.serialized_type)) for x in self.interface.options})
-            )
-        )
-
-class AuctionException(Exception):
-    pass
-
-class AuctionManager(abc.ABC):
-
-    def __init__(self, get_capability_implementations:
-        Callable[[HashableCapabilityInterface], List[CapabilityImplementation]]):
-        self.get_capability_implementations = get_capability_implementations
-
-    @abc.abstractmethod
-    def start(self, hashable_interface: HashableCapabilityInterface) -> str:
-        """
-        Function to start a new auction for the given capability interface.
-
-        :param hashable_interface: The interface a implementation should be received for by using auctions.
-        :return: The unique identifier of the auction that was started. This is used to track the auction.
-        """
-        pass
-
-    @abc.abstractmethod
-    def cancel(self, auction_id: str) -> bool:
-        """
-        Cancels the running auction with the given id.
-        This causes the get_result method to never produce a output and the id will become invalid.
-
-        :param auction_id: The unique id of the auction that should be cancelled.
-        :raise AuctionException: If not auction with this id is found this error will be raised.
-        :return: True on success, False if the auction cannot be cancelled.
-        """
-        pass
-
-    @abc.abstractmethod
-    def get_status(self, auction_id: str) -> float:
-        pass
-
-    @abc.abstractmethod
-    def get_result(self, auction_id: str) -> tuple[str, str]:
-        pass
 
 class MissionControlNode:
     """
@@ -124,7 +47,7 @@ class MissionControlNode:
 
     def __init__(
             self,
-            auction_manager: Type[AuctionManager],
+            auction_manager: Type[AssignmentManager],
             local_capability_topic_prefix: str,
             global_capability_topic_prefix: str
     ):
@@ -144,7 +67,8 @@ class MissionControlNode:
         self.local_capability_topic_prefix = local_capability_topic_prefix
         self.global_capability_topic_prefix = global_capability_topic_prefix
 
-        self.__auction_manager = auction_manager(self.get_capability_implementations)
+        self.__auction_manager = auction_manager(local_capability_topic_prefix,
+                                                 self.get_capability_implementations_local)
 
         # List containing all known capability interfaces.
         self.__capabilities_lock = RLock()
@@ -185,7 +109,7 @@ class MissionControlNode:
         )
 
         self.__get_best_implementation_action_server = actionlib.SimpleActionServer(
-            f'{local_capability_topic_prefix}/find_best_implementation',
+            f'{local_capability_topic_prefix}/find_capability_implementation',
             FindBestCapabilityImplementationAction,
             execute_cb=self.__find_best_implementation_callback,
             auto_start=False
@@ -241,7 +165,9 @@ class MissionControlNode:
             queue_size=1000
         )
 
-    def get_capability_implementations(self, interface: HashableCapabilityInterface) -> List[CapabilityImplementation]:
+        self.__get_best_implementation_action_server.start()
+
+    def get_capability_implementations_local(self, interface: HashableCapabilityInterface) -> List[CapabilityImplementation]:
         try:
             return list(self.capabilities[interface].values())
         except KeyError:
@@ -341,32 +267,35 @@ class MissionControlNode:
 
     # -- Interface operations --
 
-    def __find_best_implementation_callback(self, goal: FindBestCapabilityImplementationActionGoal):
-        result = FindBestCapabilityImplementationActionResult()
+    def __find_best_implementation_callback(self, goal: FindBestCapabilityImplementationGoal):
+        result = FindBestCapabilityImplementationResult()
         rate = rospy.Rate(500)
-        goal_capability_interface = HashableCapabilityInterface(goal.goal.capability)
+        rospy.logerr(f"Goal {goal}")
+
+        goal_capability_interface = HashableCapabilityInterface(goal.capability)
 
         with self.__capabilities_lock:
             if goal_capability_interface not in self.capabilities:
                 rospy.logerr("Capability is not known, thus no implementation can be found!")
                 self.__get_best_implementation_action_server.set_aborted(text="Capability is not known!")
 
-        auction_id = self.__auction_manager.start(goal_capability_interface)
+        auction_id = self.__auction_manager.request_assignment(goal_capability_interface)
 
-        while self.__auction_manager.get_status(auction_id) < 1.0:
+        while self.__auction_manager.get_assignment_request_status(auction_id) < 1.0:
             if self.__get_best_implementation_action_server.is_preempt_requested():
-                if not self.__auction_manager.cancel(auction_id):
-                    # TODO: Error handling!
-                    pass
-                self.__get_best_implementation_action_server.set_preempted()
+                if not self.__auction_manager.cancel_assignment_request(auction_id):
+                    result.success = False
+                    result.error_message = "Cannot cancel the execution, the auction for the id might be in " \
+                                                  "a error state."
+                    rospy.logerr(result.error_message)
+                self.__get_best_implementation_action_server.set_preempted(result=result)
             rate.sleep()
 
-        mc_topic, impl_name = self.__auction_manager.get_result(auction_id)
-        result.result.success = True
-        result.result.implementation_name = impl_name
-        result.result.executor_mission_control_topic = mc_topic
+        mc_topic, impl_name = self.__auction_manager.get_assignment_request_result(auction_id)
+        result.success = True
+        result.implementation_name = impl_name
+        result.executor_mission_control_topic = mc_topic
         self.__get_best_implementation_action_server.set_succeeded(result=result)
-
 
     def __get_capabilities_folder_from_package(
             self,
@@ -575,8 +504,8 @@ class MissionControlNode:
                         yaml.safe_load(interface_file),
                         keys={}
                     )
-                except (genpy.MessageException, TypeError, KeyError):
-                    rospy.logwarn(f'"{interface_file_path}" is malformed')
+                except (genpy.MessageException, TypeError, KeyError) as exc:
+                    rospy.logwarn(f'"{interface_file_path}" is malformed: {exc}')
                     continue
 
                 hashable_capability = HashableCapabilityInterface(capability)
@@ -604,15 +533,16 @@ class MissionControlNode:
                                 yaml.safe_load(implementation_file),
                                 keys={}
                             )
-                        except (genpy.MessageException, TypeError, KeyError):
-                            rospy.logwarn(f'"{implementation_file_path}" is malformed')
+                        except (genpy.MessageException, TypeError, KeyError) as exc:
+                            rospy.logwarn(f'"{implementation_file_path}" is malformed: {exc}')
                             continue
-                        if self.capabilities[hashable_capability][implementation.implementation_name]:
+                        if implementation.implementation_name in self.capabilities[hashable_capability]:
                             rospy.logwarn(
                                 f"Capability implementation with duplicate name detected:"
                                 f" {implementation.implementation_name}"
                             )
                             continue
+
                         with self.__capabilities_lock:
                             self.capabilities[hashable_capability][implementation.implementation_name] = implementation
                         try:
@@ -696,7 +626,7 @@ class MissionControlNode:
         hashable_interface = HashableCapabilityInterface(request.interface)
         try:
             with self.__capabilities_lock:
-                capability_implementations = self.capabilities[hashable_interface]
+                capability_implementations = list(self.capabilities[hashable_interface].values())
         except KeyError:
             response.success = False
             response.error_message = f"Capability is not known: {request.interface}!"
