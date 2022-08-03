@@ -53,15 +53,15 @@ class CapabilityRepositoryNode:
         """
         global_capability_topic_prefix = rospy.get_param('~global_capability_topic_prefix', default="/gc")
 
-        self.__local_capability_interface_publisher = rospy.Publisher(
+        self.__local_capability_interface_update_publisher = rospy.Publisher(
             f'~capabilities/interfaces',
-            CapabilityInterface,
+            Time,
             queue_size=1000
         )
 
-        self.__local_capability_implementation_publisher = rospy.Publisher(
+        self.__local_capability_implementation_update_publisher = rospy.Publisher(
             f'~capabilities/implementations',
-            CapabilityImplementation,
+            Time,
             queue_size=1000
         )
 
@@ -79,8 +79,8 @@ class CapabilityRepositoryNode:
         )
 
         self.capability_repository = CapabilityRepository(
-            publisher_interface_locally=self.__local_capability_interface_publisher,
-            publisher_implementation_locally=self.__local_capability_implementation_publisher,
+            publisher_interface_updates_locally=self.__local_capability_interface_update_publisher,
+            publisher_implementation_updates_locally=self.__local_capability_implementation_update_publisher,
             publisher_interface_globally=self.__global_capability_interfaces_publisher,
             publisher_interface_request_globally=self.__global_capability_interfaces_requests_publisher
         )

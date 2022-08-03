@@ -32,7 +32,7 @@ import re
 import shutil
 import tempfile
 from threading import RLock
-from typing import Dict
+from typing import Dict, Set
 
 import genpy
 import rospkg
@@ -58,8 +58,8 @@ class CapabilityRepository:
 
     def __init__(
             self,
-            publisher_interface_locally: rospy.Publisher,
-            publisher_implementation_locally: rospy.Publisher,
+            publisher_interface_updates_locally: rospy.Publisher,
+            publisher_implementation_updates_locally: rospy.Publisher,
             publisher_interface_globally: rospy.Publisher,
             publisher_interface_request_globally: rospy.Publisher
     ):
@@ -69,15 +69,16 @@ class CapabilityRepository:
         offers services geared towards its local subscribers.
         """
         # List containing all known capability interfaces.
-        self.__local_capability_interface_publisher = publisher_interface_locally
-        self.__local_capability_implementation_publisher = publisher_implementation_locally
+        self.__local_capability_interface_update_publisher = publisher_interface_updates_locally
+        self.__local_capability_implementation_update_publisher = publisher_implementation_updates_locally
 
         # Global interfaces communication topics and services.
         self.__global_capability_interfaces_publisher = publisher_interface_globally
         self.__global_capability_interfaces_requests_publisher = publisher_interface_request_globally
 
         self.__capabilities_lock = RLock()
-        self.capabilities: Dict[HashableCapabilityInterface, Dict[str, CapabilityImplementation]] = {}
+        self.capabilities: Set[HashableCapabilityInterface] = set()
+        self.local_capabilities: Dict[HashableCapabilityInterface, Dict[str, CapabilityImplementation]] = {}
 
         self.__rp = rospkg.RosPack()
         self.__capabilities_tmp_dir = tempfile.mkdtemp(prefix="capability_backup_")
@@ -132,8 +133,8 @@ class CapabilityRepository:
             rospy.loginfo("Capability interface already exists, ignoring!")
             return
         with self.__capabilities_lock:
-            self.capabilities[hashable_interface] = {}
-        self.__publish_interface_local_topic(hashable_interface.interface)
+            self.capabilities.add(hashable_interface)
+        self.__publish_interface_update_local()
 
     def publish_local_interfaces_global_topic(
             self
@@ -188,20 +189,18 @@ class CapabilityRepository:
                 f', "{exc}"! Please remove manually!'
             )
 
-    def __publish_interface_local_topic(
-            self,
-            interface: CapabilityInterface
+    def __publish_interface_update_local(
+            self
     ) -> None:
         """
-        Announces the interface on the local interface topic.
+         Announces a change in the loaded capability interfaces
 
         :raise rospy.ROSException: If the message could not be sent because the node
         is not available or the message is malformed.
-        :param interface: The interface to publish.
         :return: None
         """
         try:
-            self.__local_capability_interface_publisher.publish(interface)
+            self.__local_capability_interface_update_publisher.publish(rospy.Time())
         except rospy.ROSSerializationException as exc:
             rospy.logerr(f'Could not serialize msg, node not initialized: {exc}!')
             raise rospy.ROSException(f'Could not serialize msg, node not initialized: {exc}!')
@@ -209,20 +208,18 @@ class CapabilityRepository:
             rospy.logerr(f'Could not send msg, node not initialized: {exc}!')
             raise rospy.ROSException(f'Could not send msg, node not initialized: {exc}!')
 
-    def __publish_implementation_local_topic(
-            self,
-            implementation: CapabilityImplementation
+    def __publish_implementation_update_local(
+            self
     ) -> None:
         """
-        Announces the implementation on the local implementation topic.
+        Announces a change in the loaded capability implementations
 
         :raise rospy.ROSException: If the message could not be sent because the node
         is not available or the message is malformed.
-        :param implementation: The implementation to publish.
         :return: None
         """
         try:
-            self.__local_capability_implementation_publisher.publish(implementation)
+            self.__local_capability_implementation_update_publisher.publish(rospy.Time())
         except rospy.ROSSerializationException as exc:
             rospy.logerr(f'Could not serialize msg, node not initialized: {exc}!')
             raise rospy.ROSException(f'Could not serialize msg, node not initialized: {exc}!')
@@ -286,7 +283,7 @@ class CapabilityRepository:
             rospy.loginfo(f'Successfully moved {len(existing_files)} interface files.')
 
         with self.__capabilities_lock:
-            capabilities = self.capabilities.items()
+            capabilities = self.local_capabilities.items()
 
         used_folder_names = []
         for capability in capabilities:
@@ -369,13 +366,8 @@ class CapabilityRepository:
 
                 hashable_capability = HashableCapabilityInterface(capability)
                 with self.__capabilities_lock:
-                    self.capabilities[hashable_capability] = {}
-                try:
-                    self.__publish_interface_local_topic(capability)
-                except rospy.ROSException as exc:
-                    response.success = False
-                    response.error_message = f"Error announcing change to local node topic: {exc}!"
-                    return response
+                    self.capabilities.add(hashable_capability)
+                    self.local_capabilities[hashable_capability] = {}
 
             implementation_subfolder_path = os.path.join(capability_folder_path, "implementations")
             if os.path.isdir(implementation_subfolder_path):
@@ -395,7 +387,7 @@ class CapabilityRepository:
                         except (genpy.MessageException, TypeError, KeyError) as exc:
                             rospy.logwarn(f'"{implementation_file_path}" is malformed: {exc}')
                             continue
-                        if implementation.implementation_name in self.capabilities[hashable_capability]:
+                        if implementation.implementation_name in self.local_capabilities[hashable_capability]:
                             rospy.logwarn(
                                 f"Capability implementation with duplicate name detected:"
                                 f" {implementation.implementation_name}"
@@ -403,13 +395,14 @@ class CapabilityRepository:
                             continue
 
                         with self.__capabilities_lock:
-                            self.capabilities[hashable_capability][implementation.implementation_name] = implementation
-                        try:
-                            self.__publish_implementation_local_topic(implementation)
-                        except rospy.ROSException as exc:
-                            response.success = False
-                            response.error_message = f"Error announcing change to local node topic: {exc}!"
-                            return response
+                            self.local_capabilities[hashable_capability][implementation.implementation_name] = implementation
+        try:
+            self.__publish_interface_update_local()
+            self.__publish_implementation_update_local()
+        except rospy.ROSException as exc:
+            response.success = False
+            response.error_message = f"Error announcing change to local node topic: {exc}!"
+            return response
 
         response.success = True
         return response
@@ -432,10 +425,11 @@ class CapabilityRepository:
                 rospy.logwarn(f"Interface {interface} is already loaded!")
                 continue
 
-            self.capabilities[hashable_interface] = {}
+            self.capabilities.add(hashable_interface)
+            self.local_capabilities[hashable_interface] = {}
 
             try:
-                self.__publish_interface_local_topic(interface)
+                self.__publish_interface_update_local()
             except rospy.ROSException as exc:
                 response.success = False
                 response.error_message = f"Error announcing change to local node topic: {exc}!"
@@ -457,14 +451,7 @@ class CapabilityRepository:
 
         response = GetCapabilityInterfacesResponse()
         with self.__capabilities_lock:
-            capability_interfaces = self.capabilities.keys()
-        for hashable_interface in capability_interfaces:
-            try:
-                self.__publish_interface_local_topic(hashable_interface.interface)
-            except rospy.ROSException as exc:
-                response.success = False
-                response.error_message = f"Error announcing change to local node topic: {exc}!"
-                return response
+            response.interfaces = list(self.capabilities)
 
         response.success = True
         return response
@@ -484,14 +471,13 @@ class CapabilityRepository:
         hashable_interface = HashableCapabilityInterface(request.interface)
         try:
             with self.__capabilities_lock:
-                capability_implementations = list(self.capabilities[hashable_interface].values())
+                response.implementations = list(self.local_capabilities[hashable_interface].values())
         except KeyError:
             response.success = False
             response.error_message = f"Capability is not known: {request.interface}!"
             rospy.logwarn(response.error_message)
             return response
 
-        response.implementations = capability_implementations
         response.success = True
         return response
 
@@ -510,7 +496,7 @@ class CapabilityRepository:
 
         try:
             with self.__capabilities_lock:
-                capability_implementations = self.capabilities[hashable_interface]
+                capability_implementations = self.local_capabilities[hashable_interface]
         except KeyError:
             response.success = False
             response.error_message = f'Capability {request.interface} not known!'
@@ -525,8 +511,6 @@ class CapabilityRepository:
             response.error_message = f'Implementation {request.implementation_name} not known!'
             rospy.logwarn(response.error_message)
             return response
-
-        # TODO: Implement deletion of persistent implementations.
 
         response.success = True
         return response
@@ -546,7 +530,7 @@ class CapabilityRepository:
         hashable_interface = HashableCapabilityInterface(request.interface)
 
         try:
-            self.capabilities[hashable_interface]
+            self.local_capabilities[hashable_interface]
         except KeyError:
             response.success = False
             response.error_message = f'Capability {request.implementation.capability_uuid} not known!'
@@ -554,7 +538,14 @@ class CapabilityRepository:
             return response
 
         with self.__capabilities_lock:
-            self.capabilities[hashable_interface][request.implementation.implementation_name] = request.implementation
+            self.local_capabilities[hashable_interface][request.implementation.implementation_name] = request.implementation
+
+        try:
+            self.__publish_implementation_update_local()
+        except rospy.ROSException as exc:
+            response.success = False
+            response.error_message = f"Error announcing change to local node topic: {exc}!"
+            return response
 
         response.success = True
         return response
