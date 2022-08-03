@@ -33,7 +33,8 @@ It defines the base ABC for Capability nodes and functions to create class defin
 at runtime.
 """
 # pylint: disable=no-name-in-module,import-error
-
+import threading
+import uuid
 from typing import Optional, List, Type
 
 from abc import ABC
@@ -45,14 +46,23 @@ from ros_bt_py_msgs.msg import (
     CapabilityInterface, FindBestCapabilityImplementationAction,
     FindBestCapabilityImplementationGoal, FindBestCapabilityImplementationResult, ExecuteImplementationGoal,
     ExecuteImplementationAction, ExecuteImplementationResult, CapabilityImplementation, Node as NodeMsg,
+    ExecuteCapabilityAction, ExecuteCapabilityGoal, ExecuteCapabilityResult, Tree, ExecuteRemoteCapabilityAction,
+    ExecuteRemoteCapabilityGoal, ExecuteRemoteCapabilityResult,
 )
-from ros_bt_py_msgs.srv import GetCapabilityImplementations
+from ros_bt_py_msgs.srv import (
+    GetCapabilityImplementations, GetCapabilityImplementationsResponse,
+    PrepareLocalImplementation, PrepareLocalImplementationRequest, PrepareLocalImplementationResponse,
+    MigrateTreeRequest, LoadTreeRequest,
+)
 
 from ros_bt_py.helpers import json_decode
 from ros_bt_py.exceptions import BehaviorTreeException
-from ros_bt_py.node import define_bt_node, Leaf
+from ros_bt_py.node import define_bt_node, Leaf, Node
 from ros_bt_py.node_config import NodeConfig
 from ros_bt_py.ros_helpers import AsyncServiceProxy
+from ros_bt_py.tree_manager import TreeManager
+from ros_bt_py.debug_manager import DebugManager
+from ros_bt_py.migration import MigrationManager
 
 WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS = 5
 WAIT_FOR_IMPLEMENTATION_ASSIGNMENT_TIMEOUT_SECONDS = 5
@@ -71,10 +81,9 @@ class Capability(ABC, Leaf):
     # pylint: disable=too-many-instance-attributes, too-few-public-methods
     # States to structure the do_tick() method
     IDLE = 0
-    WAIT_FOR_ASSIGNMENT_RESPONSE = 1
-    WAIT_FOR_EXECUTION_SERVER = 2
-    EXECUTE_LOCAL = 5
-    EXECUTE_REMOTE = 6
+    WAITING_FOR_ASSIGNMENT = 1
+    EXECUTE_LOCAL = 2
+    EXECUTE_REMOTE = 3
 
     def __init__(
             self,
@@ -96,48 +105,70 @@ class Capability(ABC, Leaf):
             rospy.logwarn("Created Capability without interface! This is not intended!")
             raise BehaviorTreeException("Created Capability without interface! This is not intended!")
 
-        self.__execute_implementation_action: Optional[SimpleActionClient] = None
-        self.__execute_implementation_action_start_time: Optional[rospy.Duration] = None
-        self.__execute_implementation_mc_namespace: Optional[str] = None
-        self.__execute_implementation_uuid: Optional[str] = None
-        self.__execute_implementation_mc_connection_attempts: int = 0
+        self.tree_manager = TreeManager(
+            name=name,
+            publish_tree_callback=self.nop,
+            publish_debug_info_callback=self.nop,
+            publish_debug_settings_callback=self.nop,
+            publish_node_diagnostics_callback=self.nop,
+            debug_manager=DebugManager()
+        )
 
-        self.__find_implementation_action: Optional[SimpleActionClient] = None
-        self.__find_implementation_action_start_time: Optional[rospy.Duration] = None
+        self.migration_manager = MigrationManager(tree_manager=self.tree_manager)
+        self.capability_write_lock = threading.RLock()
+        self.__local_tree_setup_thread: Optional[threading.Thread] = None
 
-        self.__get_local_implementations_service: Optional[AsyncServiceProxy] = None
         self.__internal_state = self.IDLE
-        self.__local_implementation = None
+
+        self.__implementation_name: Optional[str] = None
+
+        # Variables for remote trees
+        self.__remote_mission_control_topic: Optional[str] = None
+        self.__execute_capability_remote_client: Optional[SimpleActionClient] = None
+        self.__execute_capability_remote_client_connection_tries: int = 0
+        self.__execute_capability_remote_client_start_time: Optional[rospy.Time] = None
+
+        # Variables for local trees
+        self.__prepared_local_implementation_tree: Optional[Tree] = None
+        self.__prepared_local_implementation_tree_root: Optional[Node] = None
+
+        self.__execute_capability_action_client: Optional[SimpleActionClient] = None
+        self.__prepare_local_implementation: Optional[AsyncServiceProxy] = None
+
+    def __nop(self, msg):
+        """no op "publisher" to stop tree_manager from spamming complaints for not-set publishers
+        """
+        pass
 
     def _do_setup(self):
 
         try:
             rospy.wait_for_service(
-                f'{self.local_mc_topic}/capabilities/implementations/get',
+                f'{self.local_mc_topic}/prepare_local_implementation',
                 timeout=rospy.Duration(WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS)
             )
         except rospy.ROSException as exc:
             raise BehaviorTreeException(
-                f'Service "{self.local_mc_topic}/capabilities/implementations/get" not available'
+                f'Service "{self.local_mc_topic}/prepare_local_implementation" not available'
                 f' after waiting f{WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS} seconds!'
             ) from exc
 
-        self.__get_local_implementations_service = AsyncServiceProxy(
-            f'{self.local_mc_topic}/capabilities/implementations/get',
-            GetCapabilityImplementations
+        self.__prepare_local_implementation = AsyncServiceProxy(
+            f'{self.local_mc_topic}/prepare_local_implementation',
+            PrepareLocalImplementation
         )
 
         # Create an action client for FindBestExecutor
-        self.__find_implementation_action = SimpleActionClient(
-            f'{self.local_mc_topic}/find_capability_implementation',
-            FindBestCapabilityImplementationAction
+        self.__execute_capability_action_client = SimpleActionClient(
+            f'{self.local_mc_topic}/execute_capability',
+            ExecuteCapabilityAction
         )
 
-        if not self.__find_implementation_action.wait_for_server(
+        if not self.__execute_capability_action_client.wait_for_server(
                 timeout=rospy.Duration(WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS)
         ):
             raise BehaviorTreeException(
-                f'Action server "{self.local_mc_topic}/find_capability_implementation" not available'
+                f'Action server "{self.local_mc_topic}/execute_capability" not available'
                 f' after waiting f{WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS} seconds!'
             )
 
@@ -149,130 +180,154 @@ class Capability(ABC, Leaf):
         # pylint: disable=too-many-return-statements
 
         if self.__internal_state == self.IDLE:
-            self.__find_implementation_action.send_goal(
-                FindBestCapabilityImplementationGoal(
+            rospy.loginfo("Starting implementation search!")
+            self.__execute_capability_action_client.send_goal(
+                ExecuteCapabilityGoal(
                     capability=self.capability_interface
                 )
             )
-            self.__find_implementation_action_start_time = rospy.Time.now()
-            self.__internal_state = self.WAIT_FOR_ASSIGNMENT_RESPONSE
+            self.__internal_state = self.WAITING_FOR_ASSIGNMENT
 
-        if self.__internal_state == self.WAIT_FOR_ASSIGNMENT_RESPONSE:
-            # Check if the action ran into a timeout.
-            if (rospy.Time.now() - self.__find_implementation_action_start_time
-                    > rospy.Duration(WAIT_FOR_IMPLEMENTATION_ASSIGNMENT_TIMEOUT_SECONDS)):
+        if self.__internal_state == self.WAITING_FOR_ASSIGNMENT:
+            execute_capability_state = self.__execute_capability_action_client.get_state()
+
+            if execute_capability_state in [GoalStatus.ABORTED, GoalStatus.REJECTED, GoalStatus.LOST]:
                 self.logerr(
-                    f'FindImplementation action timed out after'
-                    f' {WAIT_FOR_IMPLEMENTATION_ASSIGNMENT_TIMEOUT_SECONDS} seconds'
-                )
-                self.__internal_state = self.IDLE
-                return NodeMsg.FAILED
-
-            find_implementation_action_state = self.__find_implementation_action.get_state()
-
-            if find_implementation_action_state in [GoalStatus.ABORTED, GoalStatus.REJECTED, GoalStatus.LOST]:
-                self.logerr(
-                    f'FindImplementation action ended without succeeding'
-                    f' (state ID: {find_implementation_action_state})'
+                    f'ExecuteCapability action ended without succeeding'
+                    f' (state ID: {execute_capability_state})'
                 )
                 self.cleanup()
                 return NodeMsg.FAILED
 
-            if find_implementation_action_state in [GoalStatus.RECALLED, GoalStatus.PREEMPTED]:
+            if execute_capability_state in [GoalStatus.RECALLED, GoalStatus.PREEMPTED]:
                 self.logerr(
-                    f'FindImplementation action was willingly canceled before succeeding'
-                    f' (state ID: {find_implementation_action_state})'
+                    f'ExecuteCapability action was willingly canceled before succeeding'
+                    f' (state ID: {execute_capability_state})'
                 )
                 self.cleanup()
                 return NodeMsg.FAILED
 
-            if find_implementation_action_state == GoalStatus.SUCCEEDED:
-                find_implementation_action_result: FindBestCapabilityImplementationResult \
-                    = self.__find_implementation_action.get_result()
+            if execute_capability_state == GoalStatus.SUCCEEDED:
+                execute_capability_result: ExecuteCapabilityResult \
+                    = self.__execute_capability_action_client.get_result()
 
-                if not find_implementation_action_result.success:
+                if not execute_capability_result.success:
                     self.logerr(
-                        f'FindImplementation action did not find a valid implementation:'
-                        f' "{find_implementation_action_result.error_message}"'
+                        f'ExecuteCapability action returned a failed result. No implementation could be found!'
+                        f'{execute_capability_result.error_message}'
                     )
                     self.cleanup()
-                    return NodeMsg.UNASSIGNED
-
-                self.loginfo(
-                    f'Planning to execute capability {self.capability_interface.uuid} '
-                    f'using implementation {find_implementation_action_result.implementation_uuid} '
-                    f'on mission control "{find_implementation_action_result.executor_mission_control_topic}"'
-                )
-
-                self.__execute_implementation_mc_namespace = \
-                    find_implementation_action_result.executor_mission_control_topic
-                self.__execute_implementation_uuid = find_implementation_action_result.implementation_uuid
-
-                if self.__execute_implementation_mc_namespace == self.local_mc_topic:
+                    return NodeMsg.FAILED
+                self.__implementation_name = execute_capability_result.implementation_name
+                if execute_capability_result.execute_local:
+                    self.loginfo("Executing capability locally!")
                     self.__internal_state = self.EXECUTE_LOCAL
-                    return NodeMsg.RUNNING
 
-                self.__execute_implementation_action = SimpleActionClient(
-                    f'{self.__execute_implementation_mc_namespace}/execute_implementation',
-                    ExecuteImplementationAction
-                )
-                self.__internal_state = self.WAIT_FOR_EXECUTION_SERVER
-
-        if self.__internal_state == self.WAIT_FOR_EXECUTION_SERVER:
-            if self.__execute_implementation_action.wait_for_server(
-                    timeout=rospy.Duration.from_sec(0.0001)
-            ):
-                self.__internal_state = self.EXECUTE_REMOTE
-                return NodeMsg.RUNNING
-
-            self.__execute_implementation_mc_connection_attempts += 1
-            if self.__execute_implementation_mc_connection_attempts > WAIT_FOR_REMOTE_MISSION_CONTROL_TRIES:
-                self.logerr(
-                    f'Exeeded connection ties {WAIT_FOR_REMOTE_MISSION_CONTROL_TRIES}, '
-                    f'cannot connect to selected remote MC, reassigning!'
-                )
-                self.cleanup()
-            else:
-                self.__internal_state = self.WAIT_FOR_EXECUTION_SERVER
+                else:
+                    self.loginfo(
+                        f"Executing capability remotely on"
+                        f" {execute_capability_result.remote_mission_controller_topic}"
+                        )
+                    self.__internal_state = self.EXECUTE_REMOTE
+                    self.__remote_mission_control_topic = execute_capability_result.remote_mission_controller_topic
+                return NodeMsg.ASSIGNED
 
         return NodeMsg.UNASSIGNED
 
-    def __get_local_implementation(self) -> Optional[CapabilityImplementation]:
-        """
-        Get local implementation from the mission controller and add it below the current node.
+    def __tick_assigned(self) -> str:
+        if self.__internal_state == self.EXECUTE_LOCAL:
+            return self.__tick_get_local_implementation()
 
-        :return: None if the implementation is not yet received from the remote server. A capability implementation, if
-        a value was received and is correct.
-        """
-        if self.__get_local_implementations_service.get_state() == AsyncServiceProxy.IDLE:
-            self.__get_local_implementations_service.call_service(
-                self.capability_interface.uuid
-            )
-        if self.__get_local_implementations_service.get_state() == AsyncServiceProxy.RESPONSE_READY:
-            local_implementations: List[CapabilityImplementation] = \
-                self.__get_local_implementations_service.get_response()
+        if self.__internal_state == self.EXECUTE_REMOTE:
+            return self.__tick_start_remote_execution()
 
-            if len(local_implementations) < 1:
-                self.logerr('No local implementation returned for the capability!')
-                raise BehaviorTreeException('No local implementation returned for the capability!')
+        return NodeMsg.BROKEN
 
-            local_implementation: Optional[CapabilityImplementation] = first_true(
-                local_implementations,
-                None,
-                lambda impl: impl.implementation_uuid == self.__execute_implementation_uuid,
+    def __prepare_loaded_tree(self, tree):
+        migration_request = MigrateTreeRequest(tree=tree)
+        migration_response = self.migration_manager.check_node_versions(migration_request)
+
+        if migration_response.migrated:
+            migration_response = self.migration_manager.migrate_tree(migration_request)
+            if migration_response.success:
+                tree = migration_response.tree
+        with self.capability_write_lock:
+            load_tree_response = self.tree_manager.load_tree(
+                request=LoadTreeRequest(tree=tree),
+                prefix=self.name + "."
             )
 
-            if local_implementation is None:
-                self.logerr("Assigned local implementation not returned by Mission Control!")
-                raise BehaviorTreeException('Assigned local implementation not returned by Mission Control!')
+        if not load_tree_response.success:
+            self.logerr(f"Error loading capability tree: {load_tree_response}")
+            return NodeMsg.FAILED
 
-            return local_implementation
+        # TODO: Forward inputs and outputs to the tree running in the tree manager
 
-        if self.__get_local_implementations_service.get_state() in [AsyncServiceProxy.ABORTED, AsyncServiceProxy.ERROR,
-                                                                    AsyncServiceProxy.TIMEOUT]:
-            self.logerr("Service call to the local Mission Control failed!")
-            raise BehaviorTreeException("Service call to the local Mission Control failed!")
-        return None
+        with self.capability_write_lock:
+            self.__prepared_local_implementation_tree_root = self.tree_manager.find_root()
+            self.__prepared_local_implementation_tree_root.setup()
+        if self.debug_manager and self.debug_manager.get_publish_subtrees():
+            self.debug_manager.add_subtree_info(
+                self.name, self.manager.to_msg()
+            )
+
+    def __tick_get_local_implementation(self) -> str:
+        if self.__local_tree_setup_thread is not None:
+            if self.__local_tree_setup_thread.isAlive():
+                return NodeMsg.ASSIGNED
+            else:
+                self.__local_tree_setup_thread = None
+                return NodeMsg.RUNNING
+
+        if self.__prepare_local_implementation.get_state() == AsyncServiceProxy.IDLE:
+            self.__prepare_local_implementation.call_service(
+                req=PrepareLocalImplementationRequest(
+                    implementation_name=self.__implementation_name,
+                    interface=self.capability_interface
+                )
+            )
+        if self.__prepare_local_implementation.get_state() == AsyncServiceProxy.RESPONSE_READY:
+
+            prepare_local_implementation_response: PrepareLocalImplementationResponse = \
+                self.__prepare_local_implementation.get_response()
+
+            if not prepare_local_implementation_response.success:
+                error_msg = f'Prepare local implementation request failed: ' \
+                            f'{prepare_local_implementation_response.error_message}'
+                self.logerr(error_msg)
+                raise BehaviorTreeException(error_msg)
+
+            local_implementation_tree: Tree = \
+                prepare_local_implementation_response.implementation_subtree
+
+            self.__local_tree_setup_thread = threading.Thread(
+                self.__prepared_local_implementation_tree_root,
+                args=(local_implementation_tree,)
+            )
+
+        return NodeMsg.ASSIGNED
+
+    def __tick_start_remote_execution(self) -> str:
+        if self.__execute_capability_remote_client is None:
+            self.__execute_capability_remote_client = SimpleActionClient(
+                f'{self.__remote_mission_control_topic}/execute_remote_capability',
+                ExecuteRemoteCapabilityAction
+            )
+
+        if self.__execute_capability_remote_client_connection_tries > 10:
+            self.cleanup()
+            raise BehaviorTreeException(
+                f'Action server "{self.__remote_mission_control_topic}/execute_remote_capability" not available'
+                f' after trying 10 times.'
+            )
+
+        if not self.__execute_capability_remote_client.wait_for_server(
+                timeout=rospy.Duration(nsecs=10)
+        ):
+            self.__execute_capability_remote_client_connection_tries += 1
+            return NodeMsg.ASSIGNED
+
+        return NodeMsg.RUNNING
 
     def __tick_executing_local(self) -> str:
         """
@@ -283,56 +338,12 @@ class Capability(ABC, Leaf):
         :return: The statue of the node from NodeMsg.
         """
         # No current implementation is present, one needs to be received from the mission controller.
-        if self.__local_implementation is None:
-
-            try:
-                self.__local_implementation = self.__get_local_implementation()
-            except BehaviorTreeException as exc:
-                self.logerr("Cannot receive local implementation from mission control!")
-                raise exc
-
-            # We have not yet received the implementation, but the service is running.
-            if self.__local_implementation is None:
-                return NodeMsg.RUNNING
-
-            # Implementation is present and we can add it below the capability.
-            children_names = {}
-
-            while len(children_names) != len(self.__local_implementation.nodes):
-                added = 0
-                # find nodes whose children are all in the tree already, then add them
-                for node in (node for node in self.__local_implementation.nodes
-                             if (node.name not in children_names
-                                 and all((name in children_names for name in node.child_names)))):
-                    try:
-                        node_instance = self.from_msg(
-                            node, debug_manager=self.debug_manager, permissive=False
-                        )
-                        for child_name in node.child_names:
-                            node_instance.add_child(children_names[child_name])
-                        children_names[node_instance.name] = node_instance
-
-                        added += 1
-                    except TypeError as exc:
-                        raise BehaviorTreeException(str(exc)) from exc
-                    except AttributeError as exc:
-                        raise BehaviorTreeException(str(exc)) from exc
-                if added == 0:
-                    rospy.logerr("Empty local implementation provided!")
-                    return NodeMsg.FAILED
-
-                orphans = list(filter(lambda child: child.parent is None, children_names.values()))
-                if len(orphans) > 1:
-                    rospy.logwarn("More than one sub node for the capability detected.")
-                if len(orphans) < 1:
-                    rospy.logwarn("No root for capability subtree detected!")
-                    self.cleanup()
-                    return NodeMsg.UNASSIGNED
-
-                for orphan in orphans:
-                    self.add_child(orphan)
-
-        return self.children[0].tick()
+        new_state = self.__prepared_local_implementation_tree_root.tick()
+        if self.debug_manager and self.debug_manager.get_publish_subtrees():
+            self.debug_manager.add_subtree_info(
+                self.name, self.tree_manager.to_msg()
+            )
+        return new_state
 
     def __tick_executing_remote(self) -> str:
         """
@@ -340,50 +351,51 @@ class Capability(ABC, Leaf):
 
         :return: The status of the node as a NodeMsg status.
         """
-        self.__execute_implementation_action.send_goal(
-            ExecuteImplementationGoal(
-                capability_uuid=self.capability_interface.uuid,
-                implementation_uuid=self.__execute_implementation_uuid,
+
+        self.__execute_capability_remote_client.send_goal(
+            ExecuteRemoteCapabilityGoal(
+                interface=self.capability_interface,
+                implementation_name=self.__implementation_name,
             )
         )
-        self.__execute_implementation_action_start_time = rospy.Time.now()
+        self.__execute_capability_remote_client_start_time = rospy.Time.now()
 
         # Check if the action ran into a timeout.
-        if (rospy.Time.now() - self.__execute_implementation_action_start_time
+        if (rospy.Time.now() - self.__execute_capability_remote_client_start_time
                 > rospy.Duration(WAIT_FOR_REMOTE_EXECUTION_TIMEOUT_SECONDS)):
             self.logerr(
-                f'ExecuteImplementation action timed out after'
+                f'ExecuteRemoteCapability action timed out after'
                 f' {WAIT_FOR_REMOTE_EXECUTION_TIMEOUT_SECONDS} seconds'
             )
-            self.__internal_state = self.IDLE
+            self.cleanup()
             return NodeMsg.FAILED
 
-        execute_implementation_state = self.__execute_implementation_action.get_state()
+        execute_remote_implementation_state = self.__execute_capability_remote_client_start_time.get_state()
 
-        if execute_implementation_state in [GoalStatus.ABORTED, GoalStatus.REJECTED, GoalStatus.LOST]:
+        if execute_remote_implementation_state in [GoalStatus.ABORTED, GoalStatus.REJECTED, GoalStatus.LOST]:
             self.logerr(
-                f'ExecuteImplementation action ended without succeeding'
-                f' (state ID: {execute_implementation_state})'
+                f'ExecuteRemoteCapability action ended without succeeding'
+                f' (state ID: {execute_remote_implementation_state})'
             )
             self.cleanup()
             return NodeMsg.FAILED
 
-        if execute_implementation_state in [GoalStatus.RECALLED, GoalStatus.PREEMPTED]:
+        if execute_remote_implementation_state in [GoalStatus.RECALLED, GoalStatus.PREEMPTED]:
             self.logerr(
-                f'ExecuteImplementation action was willingly canceled before succeeding'
-                f' (state ID: {execute_implementation_state})'
+                f'ExecuteRemoteCapability action was willingly canceled before succeeding'
+                f' (state ID: {execute_remote_implementation_state})'
             )
             self.cleanup()
             return NodeMsg.FAILED
 
-        if execute_implementation_state == GoalStatus.SUCCEEDED:
-            execute_implementation_action_result: ExecuteImplementationResult \
+        if execute_remote_implementation_state == GoalStatus.SUCCEEDED:
+            execute_remote_implementation_result: ExecuteRemoteCapabilityResult \
                 = self.__execute_implementation_action.get_result()
 
-            if not execute_implementation_action_result.success:
+            if not execute_remote_implementation_result.success:
                 self.logerr(
-                    f'ExecuteImplementation action did not finish successfully:'
-                    f' "{execute_implementation_action_result.error_message}"'
+                    f'ExecuteRemoteCapability action did not finish successfully:'
+                    f' "{execute_remote_implementation_result.error_message}"'
                 )
                 self.cleanup()
                 return NodeMsg.FAILED
@@ -392,7 +404,7 @@ class Capability(ABC, Leaf):
             return NodeMsg.SUCCEEDED
         return NodeMsg.RUNNING
 
-    def __tick_running(self) -> NodeMsg:
+    def __tick_running(self) -> str:
 
         if self.__internal_state == self.EXECUTE_LOCAL:
             return self.__tick_executing_local()
@@ -403,14 +415,20 @@ class Capability(ABC, Leaf):
         return NodeMsg.RUNNING
 
     def _do_tick(self):
+        if self.state == NodeMsg.IDLE:
+            return NodeMsg.UNASSIGNED
 
         if self.state == NodeMsg.UNASSIGNED:
             return self.__tick_unassigned()
 
+        if self.state == NodeMsg.ASSIGNED:
+            return self.__tick_assigned()
+
         if self.state == NodeMsg.RUNNING:
             return self.__tick_running()
 
-        return NodeMsg.BROKEN
+        # TODO: Fix this issue!
+        return NodeMsg.FAILED
 
     def _do_untick(self):
         """Pause execution of the decorated subtree, but preserve the executor
@@ -427,6 +445,18 @@ class Capability(ABC, Leaf):
         """
         # If we're in an EXECUTE state, stop the execution. otherwise,
         # just clean up
+        if self.state == NodeMsg.IDLE:
+            return NodeMsg.PAUSED
+
+        if self.state == NodeMsg.UNASSIGNED:
+            return self.__tick_unassigned()
+
+        if self.state == NodeMsg.ASSIGNED:
+            return self.__tick_assigned()
+
+        if self.state == NodeMsg.RUNNING:
+            return
+
         new_state = NodeMsg.PAUSED
         if self.__internal_state == self.WAIT_FOR_ASSIGNMENT_RESPONSE:
             self.__find_implementation_action.cancel_goal()
@@ -470,7 +500,7 @@ class Capability(ABC, Leaf):
 
         self.__find_implementation_action_start_time = None
         self.__execute_implementation_mc_namespace = None
-        self.__execute_implementation_uuid = None
+        self.__execute_implementation_name = None
         self.__internal_state = self.IDLE
         self.__execute_implementation_mc_connection_attempts = 0
 
