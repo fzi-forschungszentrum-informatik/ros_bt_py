@@ -8,4 +8,5 @@ string executor_mission_control_topic
 string implementation_name
 ---
 # feedback
-string[] queried_mission_controllers
+float64 progress
+string message

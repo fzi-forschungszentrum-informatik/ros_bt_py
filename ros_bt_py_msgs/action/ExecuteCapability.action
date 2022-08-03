@@ -4,9 +4,11 @@ CapabilityInterface capability
 # result
 bool success
 string error_message
-Tree implementation_tree
-string input_announcement_topic
-string output_announcement_topic
+bool execute_local
+string implementation_name
+string remote_mission_controller_topic
 ---
 # feedback
-string[] queried_mission_controllers
+float64 progress
+string message
+

@@ -74,6 +74,7 @@ add_service_files(
   capabilities/DeleteCapabilityImplementation.srv
   capabilities/PutCapabilityImplementation.srv
   capabilities/GetCapabilityImplementations.srv
+  capabilities/PrepareLocalImplementation.srv
   )
 
 ## Generate actions in the 'action' folder
@@ -82,7 +83,9 @@ add_action_files(
   FindBestExecutor.action
   RunTree.action
   FindBestCapabilityImplementation.action
-  ExecuteImplementation.action
+  ExecuteCapability.action
+  GetLocalBid.action
+  ExecuteRemoteCapability.action
   )
 
 ## Generate added messages and services with any dependencies listed here

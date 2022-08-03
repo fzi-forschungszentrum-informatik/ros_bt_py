@@ -1,0 +1,6 @@
+CapabilityInterface interface
+---
+float64 bid
+bool executable
+---
+string progress_message
