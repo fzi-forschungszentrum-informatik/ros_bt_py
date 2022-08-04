@@ -43,9 +43,7 @@ from actionlib import SimpleActionClient
 from actionlib_msgs.msg import GoalStatus
 from more_itertools import first_true
 from ros_bt_py_msgs.msg import (
-    CapabilityInterface, FindBestCapabilityImplementationAction,
-    FindBestCapabilityImplementationGoal, FindBestCapabilityImplementationResult, ExecuteImplementationGoal,
-    ExecuteImplementationAction, ExecuteImplementationResult, CapabilityImplementation, Node as NodeMsg,
+    CapabilityInterface, Node as NodeMsg,
     ExecuteCapabilityAction, ExecuteCapabilityGoal, ExecuteCapabilityResult, Tree, ExecuteRemoteCapabilityAction,
     ExecuteRemoteCapabilityGoal, ExecuteRemoteCapabilityResult,
 )

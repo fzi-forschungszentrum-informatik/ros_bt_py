@@ -1,5 +1,6 @@
-string implementation_name
+string name
 string version
 
-Node[] nodes
-NodeDataWiring[] data_wirings
+Precondition[] preconditions
+
+Tree tree

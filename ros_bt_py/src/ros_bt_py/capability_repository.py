@@ -316,11 +316,11 @@ class CapabilityRepository:
                 msg = genpy.message.strify_message(capability[0].interface)
                 capability_interface_file.write(msg)
 
-            for implementation_name, implementation in capability[1].items():
+            for name, implementation in capability[1].items():
                 with open(
                         os.path.join(
                             capability_implementations_folder_path,
-                            f"{implementation_name}.yaml"
+                            f"{name}.yaml"
                         ),
                         'w', encoding='UTF-8'
                 ) as capability_implementation_file:
@@ -387,15 +387,15 @@ class CapabilityRepository:
                         except (genpy.MessageException, TypeError, KeyError) as exc:
                             rospy.logwarn(f'"{implementation_file_path}" is malformed: {exc}')
                             continue
-                        if implementation.implementation_name in self.local_capabilities[hashable_capability]:
+                        if implementation.name in self.local_capabilities[hashable_capability]:
                             rospy.logwarn(
                                 f"Capability implementation with duplicate name detected:"
-                                f" {implementation.implementation_name}"
+                                f" {implementation.name}"
                             )
                             continue
 
                         with self.__capabilities_lock:
-                            self.local_capabilities[hashable_capability][implementation.implementation_name] = implementation
+                            self.local_capabilities[hashable_capability][implementation.name] = implementation
         try:
             self.__publish_interface_update_local()
             self.__publish_implementation_update_local()
@@ -538,7 +538,7 @@ class CapabilityRepository:
             return response
 
         with self.__capabilities_lock:
-            self.local_capabilities[hashable_interface][request.implementation.implementation_name] = request.implementation
+            self.local_capabilities[hashable_interface][request.implementation.name] = request.implementation
 
         try:
             self.__publish_implementation_update_local()

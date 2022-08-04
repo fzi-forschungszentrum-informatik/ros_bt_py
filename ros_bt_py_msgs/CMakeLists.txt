@@ -28,6 +28,7 @@ add_message_files(
      UtilityBounds.msg
      CapabilityInterface.msg
      CapabilityImplementation.msg
+     Precondition.msg
      )
 
 ## Generate services in the 'srv' folder
@@ -62,10 +63,8 @@ add_service_files(
   SetOptions.srv
   TestService.srv
   WireNodeData.srv
-  AddAssignmentRequest.srv
-  GetAssignmentRequestResult.srv
-  GetAssignmentRequestStatus.srv
-  CancelAssignmentRequest.srv
+  capabilities/CheckPreconditionStatus.srv
+  capabilities/NotifyCapabilityExecutionStatus.srv
   capabilities/GetCapabilityInterfaces.srv
   capabilities/LoadCapabilities.srv
   capabilities/SaveCapabilities.srv
