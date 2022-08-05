@@ -49,6 +49,8 @@ from ros_bt_py_msgs.srv import (
     AddNodeAtIndexResponse, RemoveNodeResponse, ContinueResponse, AddNodeAtIndexRequest, ControlTreeExecutionRequest,
     ControlTreeExecutionResponse, GetAvailableNodesResponse, ReloadTreeResponse, GenerateSubtreeResponse,
     GetSubtreeResponse, SetExecutionModeResponse, SetOptionsResponse, ModifyBreakpointsResponse, ChangeTreeNameResponse,
+    ClearTreeRequest, LoadTreeFromPathRequest, SetExecutionModeRequest, AddNodeRequest, ReloadTreeRequest,
+    ChangeTreeNameRequest, MorphNodeRequest, ReplaceNodeRequest, GenerateSubtreeRequest, GetSubtreeRequest,
 )
 
 from ros_bt_py.debug_manager import DebugManager
@@ -533,7 +535,7 @@ class TreeManager:
     ####################
 
     @is_edit_service
-    def clear(self, request):
+    def clear(self, request: ClearTreeRequest):
         response = ClearTreeResponse()
         response.success = True
         try:
@@ -576,7 +578,7 @@ class TreeManager:
         return response
 
     @is_edit_service
-    def load_tree(self, request, prefix=None):
+    def load_tree(self, request: LoadTreeRequest, prefix=None) -> LoadTreeResponse:
         """Load a tree from the given message (which may point to a file)
 
         :param ros_bt_py_msgs.srv.LoadTree request:
@@ -701,7 +703,7 @@ class TreeManager:
             self.set_diagnostics_name()
         return response
 
-    def set_execution_mode(self, request):
+    def set_execution_mode(self, request: SetExecutionModeRequest) -> SetExecutionModeResponse:
         """Set the parameters of our :class:`DebugManager`
 
         :param  ros_bt_msgs.srv.SetExecutionModeRequest request:
@@ -745,7 +747,7 @@ class TreeManager:
             )
         )
 
-    def control_execution(self, request):  # noqa: C901 # TODO: Simplify the method.
+    def control_execution(self, request: ControlTreeExecutionRequest) -> ControlTreeExecutionResponse:
         """Control tree execution.
 
         :param ros_bt_py_msgs.srv.ControlTreeExecutionRequest request:
@@ -1050,7 +1052,7 @@ class TreeManager:
         return response
 
     @is_edit_service
-    def add_node(self, request):
+    def add_node(self, request: AddNodeRequest) -> AddNodeResponse:
         """Add the node in this request to the tree.
 
         :param ros_bt_py_msgs.srv.AddNodeRequest request:
@@ -1072,7 +1074,7 @@ class TreeManager:
         return response
 
     @is_edit_service
-    def add_node_at_index(self, request):
+    def add_node_at_index(self, request: AddNodeAtIndexRequest) -> AddNodeAtIndexResponse:
         """Add the node in this request to the tree.
 
         :param ros_bt_py_msgs.srv.AddNodeAtIndexRequest request:
@@ -1149,7 +1151,7 @@ class TreeManager:
         return response
 
     @is_edit_service
-    def reload_tree(self, request):
+    def reload_tree(self, request: ReloadTreeRequest) -> ReloadTreeResponse:
         """Reloads the currently loaded tree
         """
         load_response = self.load_tree(
@@ -1163,8 +1165,9 @@ class TreeManager:
         return response
 
     @is_edit_service
-    def change_tree_name(self, request):
-        """Changes the name of the currently loaded tree"""
+    def change_tree_name(self, request: ChangeTreeNameRequest) -> ChangeTreeNameResponse:
+        """Changes the name of the currently loaded tree
+        """
         self.tree_msg.name = request.name
 
         self.publish_info(self.debug_manager.get_debug_info_msg())
@@ -1175,7 +1178,7 @@ class TreeManager:
         return response
 
     @is_edit_service
-    def remove_node(self, request):
+    def remove_node(self, request: RemoveNodeRequest) -> RemoveNodeResponse:
         """Remove the node identified by `request.node_name` from the tree.
 
         If the parent of the node removed supports enough children to
@@ -1279,7 +1282,7 @@ class TreeManager:
         return response
 
     @is_edit_service
-    def morph_node(self, request):
+    def morph_node(self, request: MorphNodeRequest) -> MorphNodeResponse:
         """Morphs the flow control node identified by `request.node_name`
         into the new node provided in `request.new_node`.
         """
@@ -1374,7 +1377,7 @@ class TreeManager:
         return response
 
     @is_edit_service
-    def set_options(self, request):  # noqa: C901 # TODO: Simplify the method.
+    def set_options(self, request: SetOptionsRequest) -> SetOptionsResponse:
         """Set the option values of a given node.
 
         This is an "edit service", i.e. it can only be used when the
@@ -1626,8 +1629,10 @@ class TreeManager:
         return SetOptionsResponse(success=True)
 
     @is_edit_service
-    def move_node(self, request):
-        """Move the named node to a different parent and insert it at the given index."""
+    def move_node(self, request: MoveNodeRequest) -> MoveNodeResponse:
+        """Move the named node to a different parent and insert it at the given index.
+
+        """
         if request.node_name not in self.nodes:
             return MoveNodeResponse(
                 success=False,
@@ -1685,7 +1690,7 @@ class TreeManager:
         return MoveNodeResponse(success=True)
 
     @is_edit_service
-    def replace_node(self, request):
+    def replace_node(self, request: ReplaceNodeRequest) -> ReplaceNodeResponse:
         """Replace the named node with `new_node`.
 
         Will also move all children of the old node to the new one, but
@@ -1876,7 +1881,7 @@ class TreeManager:
         return response
 
     @is_edit_service
-    def unwire_data(self, request):
+    def unwire_data(self, request: WireNodeDataRequest) -> WireNodeDataResponse:
         """Disconnect the given pairs of node data.
 
         :param ros_bt_py_msgs.srv.WireNodeDataRequest request:
@@ -1940,7 +1945,7 @@ class TreeManager:
             self.publish_info(self.debug_manager.get_debug_info_msg())
         return response
 
-    def get_subtree(self, request):
+    def get_subtree(self, request: GetSubtreeRequest) -> GetSubtreeResponse:
         if request.subtree_root_name not in self.nodes:
             return GetSubtreeResponse(
                 success=False,
@@ -1957,7 +1962,7 @@ class TreeManager:
                 error_message=f'Error retrieving subtree rooted at {request.subtree_root_name}: {str(exc)}'
             )
 
-    def generate_subtree(self, request):
+    def generate_subtree(self, request: GenerateSubtreeRequest) -> GenerateSubtreeResponse:
         """Generates a subtree generated from the provided list of nodes and the loaded tree.
         This also adds all relevant parents to the tree message, resulting in a tree that is
         executable and does not contain any orpahned nodes.
