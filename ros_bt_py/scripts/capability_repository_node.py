@@ -27,40 +27,49 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #  POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
+
+"""
+Module containing the node definition for the CapabilityRepository.
+"""
+# pylint: disable=import-error, no-name-in-module
+
 import sys
 
 import rospy
-from ros_bt_py_msgs.msg import CapabilityInterface, CapabilityImplementation
+
+from std_msgs.msg import Time
+from ros_bt_py_msgs.msg import CapabilityInterface
 from ros_bt_py_msgs.srv import (
     LoadCapabilities, DeleteCapabilityImplementation, PutCapabilityImplementation,
     GetCapabilityImplementations, GetCapabilityInterfaces, PutCapabilityInterfaces, SaveCapabilities,
 )
-from std_msgs.msg import Time
 
 from ros_bt_py.capability_repository import CapabilityRepository
 
 
 class CapabilityRepositoryNode:
+    """
+    The ros node running the CapabilityRepository class.
+    """
+
+    # pylint: disable=too-few-public-methods, too-many-instance-attributes
 
     def __init__(self):
         """
         Creates a new capability repository node.
         The repository has to major interfaces, it communicates with other repositories and
         offers services geared towards its local subscribers.
-
-        :param global_capability_topic_prefix: Prefix used for communication with other ros_bt_py nodes.
-        This is used to sync available interfaces across all nodes.
         """
         global_capability_topic_prefix = rospy.get_param('~global_capability_topic_prefix', default="/gc")
 
         self.__local_capability_interface_update_publisher = rospy.Publisher(
-            f'~capabilities/interfaces',
+            '~capabilities/interfaces',
             Time,
             queue_size=1000
         )
 
         self.__local_capability_implementation_update_publisher = rospy.Publisher(
-            f'~capabilities/implementations',
+            '~capabilities/implementations',
             Time,
             queue_size=1000
         )
@@ -87,44 +96,44 @@ class CapabilityRepositoryNode:
 
         # Local interfaces communication topics and services.
         self.__local_capabilities_load_service = rospy.Service(
-            f'~capabilities/load',
+            '~capabilities/load',
             LoadCapabilities,
             self.capability_repository.load_capabilities
         )
 
         self.__local_capabilities_save_service = rospy.Service(
-            f'~capabilities/save',
+            '~capabilities/save',
             SaveCapabilities,
             self.capability_repository.save_capabilities
         )
 
         self.__local_capability_interfaces_put_service = rospy.Service(
-            f'~capabilities/interfaces/put',
+            '~capabilities/interfaces/put',
             PutCapabilityInterfaces,
             self.capability_repository.put_capability_interfaces
         )
 
         self.__local_capability_interfaces_get_service = rospy.Service(
-            f'~capabilities/interfaces/get',
+            '~capabilities/interfaces/get',
             GetCapabilityInterfaces,
             self.capability_repository.get_capability_interfaces
         )
 
         # Local implementations services.
         self.__local_capability_implementations_get_service = rospy.Service(
-            f'~capabilities/implementations/get',
+            '~capabilities/implementations/get',
             GetCapabilityImplementations,
             self.capability_repository.get_capability_implementations
         )
 
         self.__local_capability_implementations_put_service = rospy.Service(
-            f'~capabilities/implementations/put',
+            '~capabilities/implementations/put',
             PutCapabilityImplementation,
             self.capability_repository.put_capability_implementation
         )
 
         self.__local_capability_implementations_delete_service = rospy.Service(
-            f'~capabilities/implementations/delete',
+            '~capabilities/implementations/delete',
             DeleteCapabilityImplementation,
             self.capability_repository.delete_capability_implementation
         )
@@ -149,8 +158,6 @@ class CapabilityRepositoryNode:
         :return: None
         """
         rospy.loginfo("Unregister publishers and subscribers!")
-        self.__local_capability_implementation_publisher.unregister()
-        self.__local_capability_interface_publisher.unregister()
 
         self.__global_capability_interfaces_publisher.unregister()
         self.__global_capability_interfaces_subscriber.unregister()

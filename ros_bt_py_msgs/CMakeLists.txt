@@ -85,6 +85,7 @@ add_action_files(
   ExecuteCapability.action
   GetLocalBid.action
   ExecuteRemoteCapability.action
+  ExecuteCapabilityImplementation.action
   )
 
 ## Generate added messages and services with any dependencies listed here

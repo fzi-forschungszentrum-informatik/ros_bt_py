@@ -71,6 +71,9 @@ catkin_install_python(PROGRAMS
   scripts/print_editor_url.py
   scripts/remote_tree_slot_node.py
   scripts/tree_node.py
+  scripts/mission_control_node.py
+  scripts/capability_repository_node.py
+  scripts/assignment_manager_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   )
 
