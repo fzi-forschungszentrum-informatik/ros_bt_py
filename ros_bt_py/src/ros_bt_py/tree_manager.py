@@ -51,6 +51,7 @@ from ros_bt_py_msgs.srv import (
     GetSubtreeResponse, SetExecutionModeResponse, SetOptionsResponse, ModifyBreakpointsResponse, ChangeTreeNameResponse,
     ClearTreeRequest, LoadTreeFromPathRequest, SetExecutionModeRequest, AddNodeRequest, ReloadTreeRequest,
     ChangeTreeNameRequest, MorphNodeRequest, ReplaceNodeRequest, GenerateSubtreeRequest, GetSubtreeRequest,
+    SetOptionsRequest,
 )
 
 from ros_bt_py.debug_manager import DebugManager
@@ -482,7 +483,7 @@ class TreeManager:
             self.publish_info(self.debug_manager.get_debug_info_msg(), ticked=True)
 
             if self._stop_after_result:
-                if root.state != NodeMsg.RUNNING:
+                if root.state in [NodeMsg.FAILED, NodeMsg.SUCCEEDED]:
                     break
 
             if self._once:

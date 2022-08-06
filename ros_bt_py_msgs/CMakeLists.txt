@@ -10,6 +10,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
      FILES
+     CapabilityImplementation.msg
+     CapabilityInterface.msg
      DebugInfo.msg
      DebugSettings.msg
      DocumentedNode.msg
@@ -22,13 +24,12 @@ add_message_files(
      NodeDiagnostics.msg
      Package.msg
      Packages.msg
+     Precondition.msg
      RemoteSlotState.msg
      Tree.msg
      TreeDataUpdate.msg
      UtilityBounds.msg
-     CapabilityInterface.msg
-     CapabilityImplementation.msg
-     Precondition.msg
+
      )
 
 ## Generate services in the 'srv' folder
@@ -36,6 +37,17 @@ add_service_files(
   FILES
   AddNode.srv
   AddNodeAtIndex.srv
+  capabilities/CheckPreconditionStatus.srv
+  capabilities/DeleteCapabilityImplementation.srv
+  capabilities/GetCapabilityImplementations.srv
+  capabilities/GetCapabilityInterfaces.srv
+  capabilities/LoadCapabilities.srv
+  capabilities/NotifyCapabilityExecutionStatus.srv
+  capabilities/PrepareLocalImplementation.srv
+  capabilities/PutCapabilityImplementation.srv
+  capabilities/PutCapabilityInterfaces.srv
+  capabilities/SaveCapabilities.srv
+  capabilities/UpdateCapabilityInterfaces.srv
   ChangeTreeName.srv
   ClearTree.srv
   Continue.srv
@@ -63,29 +75,17 @@ add_service_files(
   SetOptions.srv
   TestService.srv
   WireNodeData.srv
-  capabilities/CheckPreconditionStatus.srv
-  capabilities/NotifyCapabilityExecutionStatus.srv
-  capabilities/GetCapabilityInterfaces.srv
-  capabilities/LoadCapabilities.srv
-  capabilities/SaveCapabilities.srv
-  capabilities/PutCapabilityInterfaces.srv
-  capabilities/UpdateCapabilityInterfaces.srv
-  capabilities/DeleteCapabilityImplementation.srv
-  capabilities/PutCapabilityImplementation.srv
-  capabilities/GetCapabilityImplementations.srv
-  capabilities/PrepareLocalImplementation.srv
   )
 
 ## Generate actions in the 'action' folder
 add_action_files(
   FILES
-  FindBestExecutor.action
-  RunTree.action
-  FindBestCapabilityImplementation.action
   ExecuteCapability.action
-  GetLocalBid.action
-  ExecuteRemoteCapability.action
   ExecuteCapabilityImplementation.action
+  ExecuteRemoteCapability.action
+  FindBestCapabilityExecutor.action
+  GetLocalBid.action
+  RunTree.action
   )
 
 ## Generate added messages and services with any dependencies listed here

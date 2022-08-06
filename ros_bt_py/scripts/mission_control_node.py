@@ -10,14 +10,13 @@ import rospy
 from ros_bt_py.mission_control import MissionControl
 
 if __name__ == '__main__':
-    rospy.init_node('capability_repository_node')
+    rospy.init_node('mission_control')
 
     LOCAL_CAPABILITY_TOPIC_PREFIX = rospy.get_param("robot_namespace", "/mission_control")
-    GLOBAL_CAPABILITY_TOPIC_PREFIX = rospy.get_param("capabilities_topic", "/capabilities")
+    GLOBAL_CAPABILITY_TOPIC_PREFIX = rospy.get_param("capabilities_topic", "/gc")
 
-    CAPABILITY_REPOSITORY = MissionControl(
+    MISSION_CONTROL = MissionControl(
         local_capability_topic_prefix=LOCAL_CAPABILITY_TOPIC_PREFIX,
         global_capability_topic_prefix=GLOBAL_CAPABILITY_TOPIC_PREFIX
     )
     rospy.spin()
-    CAPABILITY_REPOSITORY.shutdown()

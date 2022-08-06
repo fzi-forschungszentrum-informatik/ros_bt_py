@@ -405,6 +405,7 @@ class CapabilityRepository:
             return response
 
         response.success = True
+        response.interfaces = [v.interface for v in self.local_capabilities.keys()]
         return response
 
     def put_capability_interfaces(
@@ -451,7 +452,7 @@ class CapabilityRepository:
 
         response = GetCapabilityInterfacesResponse()
         with self.__capabilities_lock:
-            response.interfaces = list(self.capabilities)
+            response.interfaces = [v.interface for v in self.capabilities]
 
         response.success = True
         return response

@@ -2464,6 +2464,7 @@ class D3BehaviorTreeEditor extends Component {
                 // animate to actual position
                 return "translate(" + Math.round(d.x - d._size.width / 2.0) + "," + Math.round(d.y) + ") scale(1.0)";
             });
+
         node
             .selectAll(".btnode")
             .transition(t)
@@ -2476,6 +2477,12 @@ class D3BehaviorTreeEditor extends Component {
                     }
                     case "IDLE": {
                         return "#007bff";
+                    }
+                    case "UNASSIGNED": {
+                        return "#d613d3"
+                    }
+                    case "ASSIGNED": {
+                        return "#8513d6"
                     }
                     case "SUCCEEDED": {
                         return "#28a745";
@@ -2496,7 +2503,6 @@ class D3BehaviorTreeEditor extends Component {
                         return "#4E5666";
                     }
                 }
-                ;
             });
     }
 

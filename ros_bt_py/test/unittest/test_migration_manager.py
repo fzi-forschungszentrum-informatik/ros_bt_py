@@ -659,28 +659,28 @@ class TestMigrationManager(unittest.TestCase):
         # package, but file does not exist
         tree.path = "package://ros_bt_py/etc/trees/notareal.file"
         migrate_request = MigrateTreeRequest(tree=tree)
-        migrate_reply = migration_manager.check_node_versions(migrate_request)
+        migrate_reply = check_node_versions(migrate_request)
         self.assertFalse(migrate_reply.success)
         self.assertFalse(migrate_reply.migrated)
 
         # file does not exist
         tree.path = "/notareal.file"
         migrate_request = MigrateTreeRequest(tree=tree)
-        migrate_reply = migration_manager.check_node_versions(migrate_request)
+        migrate_reply = check_node_versions(migrate_request)
         self.assertFalse(migrate_reply.success)
         self.assertFalse(migrate_reply.migrated)
 
         # file does not exist
         tree.path = "file://"
         migrate_request = MigrateTreeRequest(tree=tree)
-        migrate_reply = migration_manager.check_node_versions(migrate_request)
+        migrate_reply = check_node_versions(migrate_request)
         self.assertFalse(migrate_reply.success)
         self.assertFalse(migrate_reply.migrated)
 
         tree.path = "package://ros_bt_py/test/testdata/trees/" "migrations_action.yaml"
         migrate_request = MigrateTreeRequest(tree=tree)
 
-        migrate_reply = migration_manager.check_node_versions(migrate_request)
+        migrate_reply = check_node_versions(migrate_request)
         self.assertTrue(migrate_reply.success)
         self.assertTrue(migrate_reply.migrated)
 
@@ -701,7 +701,7 @@ class TestMigrationManager(unittest.TestCase):
             MigrateTreeResponse(success=Tree, tree=tree)
         )
 
-        migrate_reply = migration_manager.check_node_versions(migrate_request)
+        migrate_reply = check_node_versions(migrate_request)
         self.assertTrue(migrate_reply.success)
         self.assertTrue(migrate_reply.migrated)
 

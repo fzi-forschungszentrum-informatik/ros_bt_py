@@ -3,7 +3,7 @@ string implementation_name
 string input_topic
 string output_topic
 ---
-string status_message
+string error_message
 bool success
 ---
 float64 completion_progress

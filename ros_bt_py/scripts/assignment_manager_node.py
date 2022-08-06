@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #  -------- BEGIN LICENSE BLOCK --------
 #  Copyright 2022 FZI Forschungszentrum Informatik
 #

@@ -27,11 +27,11 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
-from copy import deepcopy
 import importlib
 import inspect
+from copy import deepcopy
 
-from ros_bt_py.tree_manager import get_available_nodes
+from ros_bt_py.tree_manager import get_available_nodes, TreeManager, load_tree_from_file
 
 try:  # pragma: no cover
     from itertools import izip
@@ -57,8 +57,7 @@ from ros_bt_py.node_data import NodeData
 
 from ros_bt_py.exceptions import MigrationException
 
-from ros_bt_py.ros_helpers import LoggerLevel
-from ros_bt_py.helpers import get_default_value, json_encode, json_decode
+from ros_bt_py.helpers import get_default_value, json_decode
 
 
 def load_migration_module(package_name):
@@ -67,6 +66,32 @@ def load_migration_module(package_name):
         return importlib.import_module(package_name)
     except (ImportError, ValueError):
         return None
+
+
+def check_node_versions(request):
+    load_response = load_tree_from_file(request)
+
+    if not load_response.success:
+        return load_response
+
+    tree = load_response.tree
+
+    perform_migration = False
+
+    for msg in tree.nodes:
+        m = load_node_module(msg.module)
+        c = getattr(m, msg.node_class, None)
+
+        if c is None:
+            perform_migration = True
+        else:
+            rospy.loginfo(
+                'version in tree: "%s", loaded: "%s"', msg.version, c._node_config.version)
+
+            if msg.version != c._node_config.version:
+                perform_migration = True
+
+    return MigrateTreeResponse(migrated=perform_migration, success=True)
 
 
 class MigrationManager(object):
@@ -249,7 +274,7 @@ class MigrationManager(object):
         return MigrateTreeResponse(migrated=perform_migration, success=True)
 
     def migrate_tree(self, request):
-        load_response = self.tree_manager.load_tree_from_file(request)
+        load_response = load_tree_from_file(request)
 
         if not load_response.success:
             return load_response
