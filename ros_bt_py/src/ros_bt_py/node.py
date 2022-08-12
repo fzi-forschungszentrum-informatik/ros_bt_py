@@ -36,7 +36,7 @@ from copy import deepcopy
 
 import importlib
 import re
-from typing import Type, List, Dict
+from typing import Type, List, Dict, Optional
 
 import rospy
 
@@ -46,6 +46,7 @@ from ros_bt_py_msgs.msg import NodeDataLocation, NodeDataWiring
 from ros_bt_py_msgs.msg import Tree
 from ros_bt_py_msgs.msg import UtilityBounds
 
+from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.exceptions import BehaviorTreeException, NodeStateError, NodeConfigError
 from ros_bt_py.node_data import NodeData, NodeDataMap
 from ros_bt_py.node_config import NodeConfig, OptionRef
@@ -967,7 +968,7 @@ class Node(object):
         rospy.logfatal("%s (%s): %s", self.name, type(self).__name__, message)
 
     @classmethod
-    def from_msg(cls, msg, debug_manager=None, permissive=False):  # noqa: C901
+    def from_msg(cls, msg: NodeMsg, debug_manager: Optional[DebugManager] = None, permissive: bool = False):
         """Construct a Node from the given ROS message.
 
         This will try to import the requested node class, instantiate it
@@ -979,6 +980,14 @@ class Node(object):
         A ROS message describing a node class. The node class must be
         available in the current environment (but does not need to be
         imported before calling this).
+
+        :param debug_manager:
+
+        The debug manager to use for the newly instantiated node class.
+
+        :param permissive:
+
+        Enable permissive behavior.
 
         :returns:
 

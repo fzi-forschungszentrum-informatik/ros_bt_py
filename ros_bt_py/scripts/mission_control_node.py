@@ -6,14 +6,35 @@ ROS Node running the MissionControl class.
 # pylint: disable=import-error, no-name-in-module
 
 import rospy
+import std_msgs
+from ros_bt_py_msgs.srv import GetCapabilityInterfaces
 
+from ros_bt_py.capability import capability_node_class_from_capability_interface_callback
 from ros_bt_py.mission_control import MissionControl
 
 if __name__ == '__main__':
-    rospy.init_node('mission_control')
+    local_repository_prefix = rospy.get_param(
+        "~local_repository_prefix",
+        default="/capability_repository_node"
+    )
 
     LOCAL_CAPABILITY_TOPIC_PREFIX = rospy.get_param("robot_namespace", "/mission_control")
     GLOBAL_CAPABILITY_TOPIC_PREFIX = rospy.get_param("capabilities_topic", "/gc")
+
+    get_capability_interface_service = rospy.ServiceProxy(
+        name=f"{local_repository_prefix}/capabilities/interfaces/get",
+        service_class=GetCapabilityInterfaces,
+        persistent=True,
+    )
+
+    capability_interface_subscription = rospy.Subscriber(
+        name=f"{local_repository_prefix}/capabilities/interfaces",
+        data_class=std_msgs.msg.Time,
+        callback=capability_node_class_from_capability_interface_callback,
+        callback_args=(LOCAL_CAPABILITY_TOPIC_PREFIX, get_capability_interface_service,),
+    )
+
+    rospy.init_node('mission_control')
 
     MISSION_CONTROL = MissionControl(
         local_capability_topic_prefix=LOCAL_CAPABILITY_TOPIC_PREFIX,

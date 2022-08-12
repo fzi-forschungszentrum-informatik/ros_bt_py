@@ -12,6 +12,7 @@ add_message_files(
      FILES
      CapabilityImplementation.msg
      CapabilityInterface.msg
+     CapabilityIOBridgeData.msg
      DebugInfo.msg
      DebugSettings.msg
      DocumentedNode.msg
