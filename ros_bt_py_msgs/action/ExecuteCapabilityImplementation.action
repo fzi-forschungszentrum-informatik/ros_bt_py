@@ -1,4 +1,7 @@
-CapabilityImplementation implementation
+CapabilityInterface interface
+Tree implementation_tree
+string input_topic
+string output_topic
 ---
 bool success
 string error_message

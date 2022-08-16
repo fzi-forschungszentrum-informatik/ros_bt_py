@@ -2987,21 +2987,11 @@ class TestTreeManager(unittest.TestCase):
         # Neither by adding...
         self.assertFalse(get_success(self.manager.add_node(add_request)))
         # Nor deleting a node
-        self.assertFalse(
-            get_success(
-                self.manager.remove_node(
-                    RemoveNodeRequest(node_name="first", remove_children=False)
-                )
-            )
-        )
-        self.assertFalse(
-            get_success(
-                self.manager.set_options(
-                    SetOptionsRequest(node_name="first", options=[])
-                )
-            )
-        )
-        # TODO(nberg): test other editing services here as they're implemented
+        self.assertFalse(get_success(self.manager.remove_node(
+            RemoveNodeRequest(node_name='first',
+                              remove_children=False))))
+        self.assertFalse(get_success(self.manager.set_options(
+            SetOptionsRequest(node_name='first', options=[]))))
 
         # But after shutting it down, we can edit it again
         self.assertTrue(

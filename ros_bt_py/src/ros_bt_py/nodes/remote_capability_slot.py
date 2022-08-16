@@ -41,9 +41,12 @@ from actionlib import SimpleActionServer
 from ros_bt_py_msgs.msg import (
     ExecuteCapabilityImplementationGoal, ExecuteCapabilityImplementationAction,
     ExecuteCapabilityImplementationFeedback, ExecuteCapabilityImplementationResult, Node as NodeMsg,
+    CapabilityIOBridgeData,
 )
 from ros_bt_py_msgs.srv import ControlTreeExecutionRequest, LoadTreeRequest, LoadTreeResponse, ClearTreeRequest
+from rospy import Publisher, Subscriber
 
+from ros_bt_py.capability import CapabilityInputDataBridge, CapabilityOutputDataBridge
 from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.node import Node, define_bt_node
 from ros_bt_py.node_config import NodeConfig
@@ -82,7 +85,7 @@ class RemoteCapabilitySlot(Node):
         self._tree_loaded: bool = False
 
         self._remote_slot_executor_action_server = SimpleActionServer(
-            f"~/remote_tree_slot/{self.name}",
+            f"~/remote_capability_slot/{self.name}",
             ExecuteCapabilityImplementationAction,
             execute_cb=self._remote_slot_executor_cb
         )
@@ -98,15 +101,27 @@ class RemoteCapabilitySlot(Node):
                 self._tree_manager.clear(request=ClearTreeRequest())
                 self._tree_loaded = False
         with self._tree_manager_lock:
-            service_response: LoadTreeResponse = self._tree_manager.load_tree(LoadTreeRequest(tree=goal.implementation))
+            service_response: LoadTreeResponse = self._tree_manager.load_tree(
+                LoadTreeRequest(tree=goal.implementation_tree))
         if not service_response.success:
             self._remote_slot_executor_action_server \
                 .set_aborted(text=f"Could not load implementation tree: {service_response.error_message}")
+
+        for node in self._tree_manager.nodes.values():
+            if hasattr(node, "__capability_interface") and \
+                    getattr(node, "__capability_interface") == goal.interface:
+                if isinstance(node, CapabilityInputDataBridge):
+                    node.capability_bridge_topic = self._input_bridge_topic
+                    continue
+                if isinstance(node, CapabilityOutputDataBridge):
+                    node.capability_bridge_topic = self._output_bridge_topic
+
         with self._tree_manager_lock:
             self._tree_loaded = True
             self._tree_root = self._tree_manager.find_root()
 
     def _do_tick(self):
+
         if self.state is NodeMsg.IDLE:
             return NodeMsg.UNASSIGNED
 
@@ -148,14 +163,17 @@ class RemoteCapabilitySlot(Node):
                         command=ControlTreeExecutionRequest.STOP
                     )
                 )
+        return NodeMsg.PAUSED
 
     def _do_reset(self):
         self.cleanup()
-        self._remote_slot_executor_action_server.set_aborted(text="RemoteCapabilitySlot has been reset!")
+        if self._remote_slot_executor_action_server.is_active():
+            self._remote_slot_executor_action_server.set_aborted(text="RemoteCapabilitySlot has been reset!")
 
     def _do_shutdown(self):
         self.cleanup()
-        self._remote_slot_executor_action_server.set_aborted(text="RemoteCapabilitySlot has been reset!")
+        if self._remote_slot_executor_action_server.is_active():
+            self._remote_slot_executor_action_server.set_aborted(text="RemoteCapabilitySlot has been reset!")
 
     def nop(self) -> None:
         """

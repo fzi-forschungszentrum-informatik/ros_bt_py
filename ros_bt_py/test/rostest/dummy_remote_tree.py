@@ -118,7 +118,6 @@ class RunTreeActionServer(object):
         self._tree = None
 
     def update_tree_data(self, msg):
-        # TODO(nberg): Something
         pass
 
     def tree_update(self, msg):

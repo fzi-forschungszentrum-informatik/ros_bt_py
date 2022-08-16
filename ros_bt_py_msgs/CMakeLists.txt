@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.0)
 project(ros_bt_py_msgs)
 
 find_package(catkin REQUIRED COMPONENTS
@@ -26,11 +26,11 @@ add_message_files(
      Package.msg
      Packages.msg
      Precondition.msg
+     RemoteCapabilitySlotStatus.msg
      RemoteSlotState.msg
      Tree.msg
      TreeDataUpdate.msg
      UtilityBounds.msg
-
      )
 
 ## Generate services in the 'srv' folder
