@@ -3,5 +3,5 @@ CapabilityInterface interface
 string implementation_name
 float64 bid
 bool executable
----
-string progress_message
+bool success
+string error_message

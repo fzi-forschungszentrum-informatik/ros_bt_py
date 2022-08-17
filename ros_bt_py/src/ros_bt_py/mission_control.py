@@ -10,17 +10,16 @@ from typing import Dict, List, Tuple, Optional
 
 import actionlib
 import rospy
-from actionlib import SimpleActionServer, SimpleActionClient, ActionServer
+from actionlib import ActionServer
 from actionlib_msgs.msg import GoalStatus
-from rospy import ROSException
+from rospy import ROSException, Service, ServiceProxy
 from rosservice import rosservice_find
 from ros_bt_py_msgs.msg import (
-    CapabilityImplementation, GetLocalBidGoal, GetLocalBidAction, GetLocalBidResult,
-    ExecuteCapabilityGoal, ExecuteCapabilityResult, ExecuteCapabilityAction, FindBestCapabilityExecutorAction,
-    FindBestCapabilityExecutorGoal, FindBestCapabilityExecutorResult, Precondition, ExecuteRemoteCapabilityAction,
-    ExecuteRemoteCapabilityGoal, ExecuteRemoteCapabilityActionGoal, ExecuteCapabilityImplementationGoal,
-    RemoteCapabilitySlotStatus, ExecuteRemoteCapabilityActionResult, ExecuteRemoteCapabilityResult,
+    CapabilityImplementation, Precondition, ExecuteRemoteCapabilityAction,
+    ExecuteRemoteCapabilityActionGoal, ExecuteCapabilityImplementationGoal,
+    RemoteCapabilitySlotStatus, ExecuteRemoteCapabilityResult,
     ExecuteCapabilityImplementationAction, ExecuteCapabilityImplementationResult,
+    ExecuteCapabilityImplementationActionResult,
 )
 from ros_bt_py_msgs.srv import (
     GetCapabilityImplementationsRequest, GetCapabilityImplementationsResponse, GetCapabilityInterfaces,
@@ -29,7 +28,9 @@ from ros_bt_py_msgs.srv import (
     NotifyCapabilityExecutionStatusRequest, NotifyCapabilityExecutionStatusResponse, LoadTreeResponse, AddNodeRequest,
     AddNodeResponse, MoveNodeRequest, AddNodeAtIndexRequest,
     CheckPreconditionStatusRequest, CheckPreconditionStatusResponse, CheckPreconditionStatus, ClearTreeRequest,
-    MoveNodeResponse, AddNodeAtIndexResponse, PrepareLocalImplementation,
+    MoveNodeResponse, AddNodeAtIndexResponse, PrepareLocalImplementation, RequestCapabilityExecutionRequest,
+    RequestCapabilityExecutionResponse, GetLocalBidResponse, GetLocalBidRequest, GetLocalBid,
+    FindBestCapabilityExecutor, FindBestCapabilityExecutorRequest, MigrateTreeRequest, RequestCapabilityExecution,
 )
 
 import ros_bt_py.nodes.sequence
@@ -38,49 +39,9 @@ from ros_bt_py.capability import (
 )
 from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.helpers import HashableCapabilityInterface
-from ros_bt_py.migration import MigrationManager
+from ros_bt_py.migration import MigrationManager, check_node_versions
+from ros_bt_py.ros_helpers import AsyncServiceProxy
 from ros_bt_py.tree_manager import TreeManager
-
-
-class RemoteCapabilitySlotTask:
-
-    def __init__(
-            self, remote_capability_slot_name,
-            goal: ExecuteCapabilityImplementationGoal,
-            publish_feedback_cb,
-            done_cb,
-            aborted_cb
-            ):
-        self.remote_capability_slot_name = remote_capability_slot_name
-
-        self.remote_tree_slot_action_client = SimpleActionClient(
-            f"~/remote_tree_slot/{self.remote_capability_slot_name}",
-            ExecuteCapabilityAction
-        )
-
-        self.lock = RLock()
-        self.cancel_execution_flag = False
-
-        self.goal = goal
-        self.publish_feedback_cb = publish_feedback_cb
-        self.done_cb = done_cb
-        self.aborted_cb = aborted_cb
-
-    def exec(self):
-
-        start_time = rospy.Time.now()
-        while not self.remote_tree_slot_action_client.wait_for_server(timeout=rospy.Duration(nsecs=500)):
-            if rospy.Time.now() - start_time > rospy.Duration.from_sec(5) or self.cancel_execution_flag:
-                self.aborted_cb()
-
-        self.remote_tree_slot_action_client.send_goal(
-            goal=self.goal,
-            feedback_cb=self.publish_feedback_cb
-        )
-
-    def cancel_execution(self):
-        with self.lock:
-            self.cancel_execution_flag = True
 
 
 class MissionControl:
@@ -91,11 +52,6 @@ class MissionControl:
 
     # pylint: disable=too-many-instance-attributes
 
-    def nop(self, msg):
-        """
-        No operation method
-        :return: None
-        """
 
     def __init__(
             self,
@@ -121,53 +77,29 @@ class MissionControl:
 
         self.executing_capabilities: Dict[HashableCapabilityInterface, Dict[str, int]] = {}
 
-        self.staging_tree_manager = TreeManager(
-            name="StagingManager",
-            publish_tree_callback=self.nop,
-            publish_debug_info_callback=self.nop,
-            publish_debug_settings_callback=self.nop,
-            publish_node_diagnostics_callback=self.nop,
-            debug_manager=DebugManager()
-        )
-        """Tree manager used to stage trees for local deployment in a capability."""
+        self.capability_repository_topic = \
+            rospy.get_param("capability_repository_topic", "/capability_repository")
 
-
-
-        self.staging_migration_manager = MigrationManager(tree_manager=self.staging_tree_manager)
-        """Migration manager used for preparing the trees in the staging tree manager"""
-
-        self.__get_local_bid_action_server: SimpleActionServer = SimpleActionServer(
-            "~get_local_bid",
-            GetLocalBidAction,
-            execute_cb=self.get_local_bid_cb
-        )
-        self.__get_local_bid_action_server.start()
-
-        self.__get_local_bid_action_client = SimpleActionClient(
-            "~get_local_bid",
-            GetLocalBidAction
-        )
-
-        self.__find_best_capability_executor_action_client = SimpleActionClient(
-            "~assignment_system/find_best_capability_executor",
-            FindBestCapabilityExecutorAction
-        )
-
-        self.__execute_capability_action_server: SimpleActionServer = SimpleActionServer(
+        self.__request_capability_execution_service: Service = Service(
             "~execute_capability",
-            ExecuteCapabilityAction,
-            execute_cb=self.execute_capability_cb
+            RequestCapabilityExecution,
+            self.request_capability_execution
         )
-        self.__execute_capability_action_server.start()
+
+        self.__get_local_bid_service: Service = Service(
+            "~get_local_bid",
+            GetLocalBid,
+            self.get_local_bid
+        )
+
+        self.__get_local_bid_service_client = AsyncServiceProxy(
+            "~get_local_bid",
+            GetLocalBid,
+        )
 
         self.__get_capability_interfaces_proxy = rospy.ServiceProxy(
             "~capabilities/interface/get",
             GetCapabilityInterfaces
-        )
-
-        self.__get_capability_implementations_proxy = rospy.ServiceProxy(
-            "/capability_repository_node/capabilities/implementations/get",
-            GetCapabilityImplementations
         )
 
         self.__check_precondition_status_service = rospy.Service(
@@ -290,7 +222,7 @@ class MissionControl:
         This callback manages the arrival of a new goal to the action server.
 
         It will look for a new remote capability slot where the implementation in the goal can be executed.
-        If a executor is found, a new thread will be started that processes the goal.
+        If an executor is found, a new thread will be started that processes the goal.
 
         :param goal_handle: The goal handle that contains all the necessary information for the new request.
         :return: None
@@ -347,7 +279,8 @@ class MissionControl:
                 status=GoalStatus(
                     goal_id=goal_handle.goal_id,
                     status=GoalStatus.ABORTED,
-                )
+                ),
+                result=ExecuteCapabilityImplementationActionResult()
             )
             return
         current_status = self._remote_capability_slot_goals[goal_handle.goal_id]
@@ -373,67 +306,139 @@ class MissionControl:
         response.success = True
         return response
 
-    def get_local_bid_cb(self, goal: GetLocalBidGoal) -> None:
+    def request_capability_execution(self,
+                                     goal: RequestCapabilityExecutionRequest) -> RequestCapabilityExecutionResponse:
+        response = RequestCapabilityExecutionResponse()
+        rospy.loginfo("Received request to execute capability!")
+
+        find_best_executor_service = ServiceProxy(
+            "~assignment_system/find_best_capability_executor",
+            FindBestCapabilityExecutor
+        )
+
+        try:
+            find_best_executor_service.wait_for_service(
+                timeout=rospy.Duration(secs=5)
+            )
+            find_best_executor_response = find_best_executor_service.call(
+                FindBestCapabilityExecutorRequest(
+                    capability=goal.capability
+                )
+            )
+
+            if find_best_executor_response.success:
+                rospy.loginfo("Found a suitable implementation!")
+                response.success = True
+                response.implementation_name = find_best_executor_response.implementation_name
+                response.execute_local = find_best_executor_response.execute_local
+                response.remote_mission_controller_topic = find_best_executor_response.executor_mission_control_topic
+                return response
+
+        except ROSException:
+            rospy.logwarn("Assignment system could not be contacted before timeout!")
+
+        rospy.loginfo("Assignment  system is currently offline. We will use the local implementation!")
+
+        local_bid_response = self.get_local_bid(GetLocalBidRequest(
+            interface=goal.capability
+            ))
+
+        if local_bid_response.success:
+            response.implementation_name = local_bid_response.implementation_name
+            response.success = True
+            response.execute_local = True
+        else:
+            response.success = False
+            response.error_message = "Could not find a suitable implementation!"
+
+        return response
+
+    @staticmethod
+    def get_local_bid(request: GetLocalBidRequest) -> GetLocalBidResponse:
         """
-        ROS actionlib callback that calculates the bid for the local node to perform a certain action.
+        ROS service callback that calculates the bid for the local node to perform a certain action.
         This method receives all the local capability implementations, and loads them into the
         staging tree manager.
         Then the local bid is calculated for each of the implementations using the calculate_utility function.
 
-        :param goal: The actionlib goal containing the information about the required interface for which the bids
+        :param request: The actionlib goal containing the information about the required interface for which the bids
         should be calculated
         :return: None
         """
-        result = GetLocalBidResult()
+        service_response = GetLocalBidResponse()
+        capability_repository_topic = rospy.get_param("capability_repository_topic", "/capability_repository")
+
+        capability_repository_topic = rospy.resolve_name(
+            f"{capability_repository_topic}/capabilities/implementations/get"
+        )
+
+        get_capability_implementations_proxy = rospy.ServiceProxy(
+            capability_repository_topic,
+            GetCapabilityImplementations
+        )
 
         try:
-            self.__get_capability_implementations_proxy.wait_for_service(timeout=rospy.Duration.from_sec(1.0))
+            get_capability_implementations_proxy.wait_for_service(timeout=rospy.Duration.from_sec(1.0))
         except ROSException:
-            error_msg = f"Failed to find local implementation service"
-            rospy.logwarn(error_msg)
-            self.__get_local_bid_action_server.set_aborted(text=error_msg)
-            return
+            service_response.error_message = f"Failed to find local implementation service"
+            rospy.logwarn(service_response.error_message)
+            service_response.success = False
 
-        response: GetCapabilityImplementationsResponse = self.__get_capability_implementations_proxy.call(
+            return service_response
+
+        response: GetCapabilityImplementationsResponse = get_capability_implementations_proxy.call(
             GetCapabilityImplementationsRequest(
-                interface=goal.interface
+                interface=request.interface
             )
         )
 
         if not response.success:
-            error_msg = f"Failed to get local implementations: {response.error_message}"
-            rospy.logwarn(error_msg)
-            self.__get_local_bid_action_server.set_aborted(
-                text=error_msg
-            )
-            return
+            service_response.error_message = f"Failed to get local implementations: {response.error_message}"
+            rospy.logwarn(service_response.error_message)
+            service_response.success = response.success
+            return service_response
 
         if len(response.implementations) < 1:
-            result.executable = False
-            self.__get_local_bid_action_server.set_succeeded(result=result)
-            return
+            service_response.success = False
+            service_response.error_message = "No suitable implementation found!"
+            return service_response
+
+        get_local_bid_tree_manager = TreeManager(
+            name="LocalBidStagingManager",
+            publish_tree_callback=nop,
+            publish_debug_info_callback=nop,
+            publish_debug_settings_callback=nop,
+            publish_node_diagnostics_callback=nop,
+            debug_manager=DebugManager()
+        )
+        get_local_bid_migration_manager = MigrationManager(tree_manager=get_local_bid_tree_manager)
 
         implementation_utility: Dict[str, float] = {}
         for implementation in response.implementations:
-            if self.__get_local_bid_action_server.is_preempt_requested():
-                rospy.loginfo("GetLocalBid service is preempted")
-                self.__get_local_bid_action_server.set_preempted()
-                return
-
-            self.staging_tree_manager.control_execution(
+            get_local_bid_tree_manager.control_execution(
                 ControlTreeExecutionRequest(
                     command=ControlTreeExecutionRequest.SHUTDOWN
                 )
             )
-            self.staging_tree_manager.clear(ClearTreeRequest())
+            get_local_bid_tree_manager.clear(ClearTreeRequest())
 
-            res = self.staging_tree_manager.load_tree(LoadTreeRequest(tree=implementation.tree))
+            tree = implementation.tree
+
+            migration_request = MigrateTreeRequest(tree=tree)
+            migration_response = check_node_versions(migration_request)
+
+            if migration_response.migrated:
+                migration_response = get_local_bid_migration_manager.migrate_tree(migration_request)
+                if migration_response.success:
+                    tree = migration_response.tree
+
+            res = get_local_bid_tree_manager.load_tree(LoadTreeRequest(tree=tree))
             if not res.success:
                 rospy.logerr(res.error_message)
                 continue
 
             calculated_utility = \
-                self.staging_tree_manager.find_root().calculate_utility()
+                get_local_bid_tree_manager.find_root().calculate_utility()
 
             success_upper_lower_difference = 0
             failure_upper_lower_difference = 0
@@ -447,77 +452,20 @@ class MissionControl:
                 implementation.name] = success_upper_lower_difference - failure_upper_lower_difference
 
         if len(implementation_utility) < 1:
-            rospy.logwarn("No utilities could be calculated for any available implementation.")
-            self.__get_local_bid_action_server.set_aborted("Could not calculate the local bid.")
-            return
+            service_response.error_message = "No utilities could be calculated for any available implementation."
+            service_response.success = False
+            rospy.logwarn(service_response.error_message)
+            return service_response
 
         sorted_implementation_bids: List[Tuple[str, float]] = sorted(
             [(n, v) for n, v in implementation_utility.items()], key=lambda v: v[1]
         )
 
         (best_implementation_name, best_implementation_bid) = sorted_implementation_bids[0]
-        result.bid = best_implementation_bid
-        result.implementation_name = best_implementation_name
-
-        result.executable = True
-        self.__get_local_bid_action_server.set_succeeded(result=result)
-
-    def execute_capability_cb(self, goal: ExecuteCapabilityGoal) -> None:
-        result = ExecuteCapabilityResult()
-        rospy.loginfo("Received request to execute capability!")
-
-        if self.__find_best_capability_executor_action_client.wait_for_server(
-                timeout=rospy.Duration(secs=5)
-        ):
-            self.__find_best_capability_executor_action_client.send_goal(
-                goal=FindBestCapabilityExecutorGoal(capability=goal.capability)
-            )
-            while not self.__find_best_capability_executor_action_client.wait_for_result(
-                    timeout=rospy.Duration(secs=1)
-            ):
-                if self.__execute_capability_action_server.is_preempt_requested():
-                    self.__find_best_capability_executor_action_client.cancel_goal()
-                    self.__execute_capability_action_server.set_preempted()
-
-            find_best_executor_result: FindBestCapabilityExecutorResult = \
-                self.__find_best_capability_executor_action_client.get_result()
-
-            if find_best_executor_result.success:
-                rospy.loginfo("Found a suitable implementation!")
-                result.success = True
-                result.implementation_name = find_best_executor_result.implementation_name
-                result.execute_local = find_best_executor_result.execute_local
-                result.remote_mission_controller_topic = find_best_executor_result.executor_mission_control_topic
-                self.__execute_capability_action_server.set_succeeded(result=result)
-                return
-
-        rospy.loginfo("Assignment  system is currently offline. We will use the local implementation!")
-
-        self.__get_local_bid_action_client.send_goal(
-            goal=GetLocalBidGoal(
-                interface=goal.capability
-            )
-        )
-
-        while not self.__get_local_bid_action_client.wait_for_result(timeout=rospy.Duration(secs=1)):
-            if self.__execute_capability_action_server.is_preempt_requested():
-                self.__get_local_bid_action_client.cancel_goal()
-                self.__execute_capability_action_server.set_preempted()
-                return
-
-        local_bid_result: GetLocalBidResult = self.__get_local_bid_action_client.get_result()
-        rospy.logwarn("Got local bid result")
-
-        if local_bid_result.executable:
-            result.implementation_name = local_bid_result.implementation_name
-            result.success = True
-            result.execute_local = True
-        else:
-            result.success = False
-            result.error_message = "Could not find a suitable implementation!"
-
-        self.__execute_capability_action_server.set_succeeded(result=result)
-        return
+        service_response.bid = best_implementation_bid
+        service_response.implementation_name = best_implementation_name
+        service_response.success = True
+        return service_response
 
     def check_precondition_status(
             self,
@@ -554,7 +502,7 @@ class MissionControl:
         Service that prepares a local capability implementation for execution.
 
         This includes receiving it from the local capability storage, check and fulfill preconditions and then
-        prepare it to be send to the executor.
+        prepare it to be sent to the executor.
 
         The service will return unsuccessfully if the implementation cannot be found, the preconditions can not be
         fulfilled or the implementation is not a valid tree.
@@ -563,15 +511,25 @@ class MissionControl:
         """
         response = PrepareLocalImplementationResponse()
 
-        self.staging_tree_manager.control_execution(
-            ControlTreeExecutionRequest(
-                command=ControlTreeExecutionRequest.SHUTDOWN
-            )
+        prepare_local_implementation_tree_manager = TreeManager(
+            name="LocalBidStagingManager",
+            publish_tree_callback=nop,
+            publish_debug_info_callback=nop,
+            publish_debug_settings_callback=nop,
+            publish_node_diagnostics_callback=nop,
+            debug_manager=DebugManager()
         )
-        self.staging_tree_manager.clear(ClearTreeRequest())
+        prepare_local_implementation_migration_manager = MigrationManager(
+            tree_manager=prepare_local_implementation_tree_manager
+        )
+
+        get_capability_implementation_service_proxy = ServiceProxy(
+            "/capability_repository_node/capabilities/implementations/get",
+            GetCapabilityImplementations
+        )
 
         implementations_response: GetCapabilityImplementationsResponse = \
-            self.__get_capability_implementations_proxy.call(
+            get_capability_implementation_service_proxy.call(
                 GetCapabilityImplementationsRequest(
                     interface=request.interface
                 )
@@ -584,9 +542,20 @@ class MissionControl:
             response.success = False
             response.error_message = "Could not get local implementation!"
             return response
-        service_response: LoadTreeResponse = self.staging_tree_manager.load_tree(
+
+        tree = implementation.tree
+
+        migration_request = MigrateTreeRequest(tree=tree)
+        migration_response = check_node_versions(migration_request)
+
+        if migration_response.migrated:
+            migration_response = prepare_local_implementation_migration_manager.migrate_tree(migration_request)
+            if migration_response.success:
+                tree = migration_response.tree
+
+        service_response: LoadTreeResponse = prepare_local_implementation_tree_manager.load_tree(
             LoadTreeRequest(
-                tree=implementation.tree
+                tree=tree
             )
         )
         if not service_response.success:
@@ -595,9 +564,9 @@ class MissionControl:
             rospy.logerr(response.error_message)
             return response
 
-        root_node = self.staging_tree_manager.find_root()
+        root_node = prepare_local_implementation_tree_manager.find_root()
         root_sequence_node = ros_bt_py.nodes.sequence.Sequence(name="RootCapabilitySequence")
-        service_response: AddNodeResponse = self.staging_tree_manager.add_node(
+        service_response: AddNodeResponse = prepare_local_implementation_tree_manager.add_node(
             AddNodeRequest(
                 parent_name=None,
                 node=root_sequence_node.to_msg(),
@@ -611,7 +580,7 @@ class MissionControl:
             rospy.logerr(response.error_message)
             return response
 
-        service_response: MoveNodeResponse = self.staging_tree_manager.move_node(
+        service_response: MoveNodeResponse = prepare_local_implementation_tree_manager.move_node(
             MoveNodeRequest(
                 node_name=root_node.name,
                 new_parent_name=root_sequence_node.name,
@@ -652,7 +621,7 @@ class MissionControl:
                     capability_interface=precondition.capability,
                     mission_control_topic=rospy.resolve_name("~")
                 )
-                service_response: AddNodeAtIndexResponse = self.staging_tree_manager.add_node_at_index(
+                service_response: AddNodeAtIndexResponse = prepare_local_implementation_tree_manager.add_node_at_index(
                     AddNodeAtIndexRequest(
                         parent_name="RootCapabilitySequence",
                         node=node,
@@ -670,5 +639,12 @@ class MissionControl:
             rospy.loginfo(f"Precondition: {precondition} is fulfilled")
 
         response.success = True
-        response.implementation_subtree = self.staging_tree_manager.tree_msg
+        response.implementation_subtree = prepare_local_implementation_tree_manager.tree_msg
         return response
+
+
+def nop(msg):
+    """
+    No operation method
+    :return: None
+    """
