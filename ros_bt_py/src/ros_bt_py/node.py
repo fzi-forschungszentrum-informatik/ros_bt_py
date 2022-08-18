@@ -582,6 +582,9 @@ class Node(object):
             if self.state is NodeMsg.UNINITIALIZED:
                 raise BehaviorTreeException("Trying to reset uninitialized node!")
 
+            if self.state is NodeMsg.SHUTDOWN:
+                raise BehaviorTreeException('Trying to reset shutdown node!')
+
             # Reset input/output reset state and set outputs to None
             # before calling _do_reset() - the node can overwrite the None
             # with more appropriate values if need be.
