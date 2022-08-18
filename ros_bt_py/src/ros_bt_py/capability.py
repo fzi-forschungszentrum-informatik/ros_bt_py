@@ -33,12 +33,14 @@ It defines the base ABC for Capability nodes and functions to create class defin
 at runtime.
 """
 # pylint: disable=no-name-in-module,import-error,too-many-lines
+
+import secrets
 import threading
 from abc import ABC
 from typing import Optional, List, Type
 
 import rospy
-import std_msgs
+from std_msgs.msg import Time
 from actionlib import SimpleActionClient
 from actionlib_msgs.msg import GoalStatus
 from ros_bt_py_msgs.msg import (
@@ -48,16 +50,14 @@ from ros_bt_py_msgs.msg import (
 from ros_bt_py_msgs.msg import NodeData as NodeDataMsg
 from ros_bt_py_msgs.srv import (
     PrepareLocalImplementation, PrepareLocalImplementationRequest, PrepareLocalImplementationResponse,
-    MigrateTreeRequest, LoadTreeRequest, ClearTreeRequest, ControlTreeExecutionRequest, GetCapabilityInterfacesRequest,
+    LoadTreeRequest, ClearTreeRequest, ControlTreeExecutionRequest, GetCapabilityInterfacesRequest,
     GetCapabilityInterfacesResponse, ControlTreeExecutionResponse, RequestCapabilityExecution,
     RequestCapabilityExecutionRequest, RequestCapabilityExecutionResponse,
 )
 from rospy import ROSSerializationException, ROSException
 
-from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.exceptions import BehaviorTreeException, TreeTopologyError
 from ros_bt_py.helpers import json_decode
-from ros_bt_py.migration import MigrationManager, check_node_versions
 from ros_bt_py.node import define_bt_node, Leaf, Node
 from ros_bt_py.node_config import NodeConfig
 from ros_bt_py.ros_helpers import AsyncServiceProxy
@@ -75,6 +75,7 @@ class CapabilityDataBridge(ABC, Leaf):
     """
     Data bridge that allows the exchange of inputs and outputs between capability interfaces and nodes.
     """
+
     def __init__(
             self,
             debug_manager=None,
@@ -111,7 +112,7 @@ class CapabilityDataBridge(ABC, Leaf):
 
 class CapabilityInputDataBridge(CapabilityDataBridge):
     """
-    CapabilityDataBridge that transfers the inputs of the interface as a output to the implementation.
+    CapabilityDataBridge that transfers the inputs of the interface as an output to the implementation.
     """
 
     def __init__(
@@ -179,7 +180,7 @@ class CapabilityInputDataBridge(CapabilityDataBridge):
 
 class CapabilityOutputDataBridge(CapabilityDataBridge):
     """
-    CapabilityDataBridge that transfers the outputs of the implementation as a output to the interface.
+    CapabilityDataBridge that transfers the outputs of the implementation as an output to the interface.
     """
 
     def __init__(
@@ -253,7 +254,7 @@ class Capability(ABC, Leaf):
     WAITING_FOR_ASSIGNMENT = 1
     EXECUTE_LOCAL = 2
     EXECUTE_REMOTE = 3
-    WAITING_FOR_RESULTS = 4
+    WAITING_FOR_OUTPUT_VALUES = 4
 
     def __init__(
             self,
@@ -275,6 +276,9 @@ class Capability(ABC, Leaf):
             rospy.logwarn("Created Capability without interface! This is not intended!")
             raise BehaviorTreeException("Created Capability without interface! This is not intended!")
 
+        self._internal_state = self.IDLE
+        """Internal state used to track the execution progress of the capability."""
+
         self.tree_manager = TreeManager(
             name=name,
             publish_tree_callback=self.nop,
@@ -283,40 +287,44 @@ class Capability(ABC, Leaf):
             publish_node_diagnostics_callback=self.nop,
             debug_manager=self.debug_manager
         )
+        """Tree manager used to run the local capability implementations."""
 
-        self.old_state = self.state
+        self._old_state = self.state
+        """Backup of the node state before the node enters the PAUSED state"""
 
-        self.capability_write_lock = threading.RLock()
-        self.__local_tree_setup_thread: Optional[threading.Thread] = None
+        self._capability_lock = threading.RLock()
+        """Lock used to avoid race conditions when setting up local implementations in a tree."""
 
-        self.__internal_state = self.IDLE
+        self._implementation_name: Optional[str] = None
 
-        self.__implementation_name: Optional[str] = None
+        # Action and service clients
+        self._request_capability_execution_service_proxy: Optional[AsyncServiceProxy] = None
+        self._prepare_local_implementation_service_proxy: Optional[AsyncServiceProxy] = None
+        self._execute_capability_remote_client: Optional[SimpleActionClient] = None
 
+        # Input and output data bridge information
         self._input_bridge_topic: Optional[str] = None
         self._input_bridge_publisher: Optional[rospy.Publisher] = None
         self._output_bridge_topic: Optional[str] = None
         self._output_bridge_subscriber: Optional[rospy.Subscriber] = None
-
-        self.__result_status: Optional[str] = None
-        self.__result_timestamp: Optional[rospy.Time] = None
-
         self._last_received_outputs: Optional[CapabilityIOBridgeData] = None
 
+        # Result variables used to track if the implementation is finished
+        self._result_status: Optional[str] = None
+        self._result_timestamp: Optional[rospy.Time] = None
+
         # Variables for remote trees
-        self.__remote_mission_control_topic: Optional[str] = None
-        self.__execute_capability_remote_client: Optional[SimpleActionClient] = None
-        self.__execute_capability_remote_client_connection_tries: int = 0
-        self.__execute_capability_remote_client_start_time: Optional[rospy.Time] = None
+        self._remote_mission_control_topic: Optional[str] = None
+        self._execute_capability_remote_client_connection_tries: int = 0
+        self._execute_capability_remote_client_start_time: Optional[rospy.Time] = None
 
         # Variables for local trees
-        self.__prepare_local_implementation_start_time: Optional[rospy.Time] = None
-        self.__prepared_local_implementation_tree: Optional[Tree] = None
-        self.__prepared_local_implementation_tree_root: Optional[Node] = None
-        self.__prepared_local_implementation_tree_status: str = NodeMsg.IDLE
+        self._prepare_local_tree_thread: Optional[threading.Thread] = None
+        self._prepare_local_implementation_start_time: Optional[rospy.Time] = None
 
-        self.__request_capability_execution_service_proxy: Optional[AsyncServiceProxy] = None
-        self.__prepare_local_implementation: Optional[AsyncServiceProxy] = None
+        self._local_implementation_tree: Optional[Tree] = None
+        self._local_implementation_tree_root: Optional[Node] = None
+        self._local_implementation_tree_status: str = NodeMsg.IDLE
 
     @staticmethod
     def nop(msg):
@@ -325,6 +333,19 @@ class Capability(ABC, Leaf):
 
     @staticmethod
     def __handle_async_service_call(service_proxy: AsyncServiceProxy):
+        """
+        Helper method to manage a call to a service via the AsyncServiceProxy.
+        The call method needs to be called beforehand, this method just handles the possible states until the result
+        is received.
+        It checks the states the service_proxy can be in and returns results depending on the current execution state.
+        This method in nonblocking.
+
+        :param service_proxy: The service proxy the call has been placed for.
+
+        :raises BehaviorTreeException: Should the call to the AsyncServiceProxy be aborted or not placed before calling
+        this method a BehaviorTreeException will be raised.
+        :return: The response of the call if available, otherwise None.
+        """
         state = service_proxy.get_state()
 
         if state in [AsyncServiceProxy.IDLE, AsyncServiceProxy.SERVICE_AVAILABLE]:
@@ -392,7 +413,7 @@ class Capability(ABC, Leaf):
         :param msg: The received output values.
         :return:None
         """
-        with self.capability_write_lock:
+        with self._capability_lock:
             self._last_received_outputs = msg
 
     def _do_setup(self):
@@ -407,19 +428,19 @@ class Capability(ABC, Leaf):
                 f' after waiting f{WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS} seconds!'
             ) from exc
 
-        self.__prepare_local_implementation = AsyncServiceProxy(
+        self._prepare_local_implementation_service_proxy = AsyncServiceProxy(
             f'{self.local_mc_topic}/prepare_local_implementation',
             PrepareLocalImplementation
         )
 
         # Create an action client for FindBestExecutor
-        self.__request_capability_execution_service_proxy = AsyncServiceProxy(
+        self._request_capability_execution_service_proxy = AsyncServiceProxy(
             f'{self.local_mc_topic}/execute_capability',
             RequestCapabilityExecution
         )
 
         try:
-            self.__request_capability_execution_service_proxy.wait_for_service(
+            self._request_capability_execution_service_proxy.wait_for_service(
                 timeout=rospy.Duration(secs=WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS)
             )
         except rospy.ROSException as exc:
@@ -428,7 +449,7 @@ class Capability(ABC, Leaf):
                 f' after waiting f{WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS} seconds!'
             ) from exc
 
-        capability_topic_prefix = rospy.resolve_name(f"~/capabilities/{self.name}")
+        capability_topic_prefix = rospy.resolve_name(f"~/capabilities/{self.name}_{secrets.randbelow(100000)}")
 
         self._input_bridge_topic = f"{capability_topic_prefix}/inputs"
         self._output_bridge_topic = f"{capability_topic_prefix}/outputs"
@@ -451,19 +472,19 @@ class Capability(ABC, Leaf):
         :return: The new state as a NodeMsg constant.
         """
         # pylint: disable=too-many-return-statements
-        if self.__internal_state == self.IDLE:
+        if self._internal_state == self.IDLE:
             rospy.loginfo("Starting implementation search!")
-            self.__request_capability_execution_service_proxy.call_service(
+            self._request_capability_execution_service_proxy.call_service(
                 RequestCapabilityExecutionRequest(
                     capability=self.capability_interface
                 )
             )
-            self.__internal_state = self.WAITING_FOR_ASSIGNMENT
+            self._internal_state = self.WAITING_FOR_ASSIGNMENT
 
-        if self.__internal_state == self.WAITING_FOR_ASSIGNMENT:
+        if self._internal_state == self.WAITING_FOR_ASSIGNMENT:
             try:
-                request_capability_execution_response: Optional[RequestCapabilityExecutionResponse] =\
-                    self.__handle_async_service_call(self.__request_capability_execution_service_proxy)
+                request_capability_execution_response: Optional[RequestCapabilityExecutionResponse] = \
+                    self.__handle_async_service_call(self._request_capability_execution_service_proxy)
             except BehaviorTreeException as exc:
                 self.logerr(f"Failed to request execute capability service, no implementation will be selected: {exc}")
                 self._cleanup()
@@ -472,19 +493,19 @@ class Capability(ABC, Leaf):
             if request_capability_execution_response is None:
                 return NodeMsg.UNASSIGNED
 
-            self.__implementation_name = request_capability_execution_response.implementation_name
+            self._implementation_name = request_capability_execution_response.implementation_name
 
             if request_capability_execution_response.execute_local:
                 self.loginfo("Executing capability locally!")
-                self.__internal_state = self.EXECUTE_LOCAL
+                self._internal_state = self.EXECUTE_LOCAL
 
             else:
                 self.loginfo(
                     f"Executing capability remotely on"
                     f" {request_capability_execution_response.remote_mission_controller_topic}"
                 )
-                self.__internal_state = self.EXECUTE_REMOTE
-                self.__remote_mission_control_topic = \
+                self._internal_state = self.EXECUTE_REMOTE
+                self._remote_mission_control_topic = \
                     request_capability_execution_response.remote_mission_controller_topic
             return NodeMsg.ASSIGNED
         return NodeMsg.FAILED
@@ -494,22 +515,22 @@ class Capability(ABC, Leaf):
         Performs ticking operation while the node is in the assigned state.
         :return: The new node status.
         """
-        if self.__internal_state == self.EXECUTE_LOCAL:
+        if self._internal_state == self.EXECUTE_LOCAL:
             return self._tick_prepare_local_execution()
 
-        if self.__internal_state == self.EXECUTE_REMOTE:
+        if self._internal_state == self.EXECUTE_REMOTE:
             return self._tick_prepare_remote_execution()
 
         return NodeMsg.BROKEN
 
     def _setup_local_implementation_tree(self, tree: Tree):
         """
-        Function to run in a separate thread used to setup the local implementation tree.
-        :param tree: The tree to setup.
+        Function to run in a separate thread used to set up the local implementation tree.
+        :param tree: The tree to set up.
         :return: None
         """
-        with self.capability_write_lock:
-            self.__prepared_local_implementation_tree_status = NodeMsg.RUNNING
+        with self._capability_lock:
+            self._local_implementation_tree_status = NodeMsg.RUNNING
 
             load_tree_response = self.tree_manager.load_tree(
                 request=LoadTreeRequest(tree=tree),
@@ -518,7 +539,7 @@ class Capability(ABC, Leaf):
 
             if not load_tree_response.success:
                 self.logerr(f"Error loading capability tree: {load_tree_response}")
-                self.__prepared_local_implementation_tree_status = NodeMsg.FAILED
+                self._local_implementation_tree_status = NodeMsg.FAILED
                 return
 
             for node in self.tree_manager.nodes.values():
@@ -531,10 +552,10 @@ class Capability(ABC, Leaf):
                         node.capability_bridge_topic = self._output_bridge_topic
 
             try:
-                self.__prepared_local_implementation_tree_root = self.tree_manager.find_root()
+                self._local_implementation_tree_root = self.tree_manager.find_root()
             except TreeTopologyError:
                 self.logerr("Failed to get root of implementation tree!")
-                self.__prepared_local_implementation_tree_status = NodeMsg.FAILED
+                self._local_implementation_tree_status = NodeMsg.FAILED
                 return
 
             response: ControlTreeExecutionResponse = self.tree_manager.control_execution(
@@ -545,10 +566,10 @@ class Capability(ABC, Leaf):
 
             if not response.success:
                 self.logerr(f"Failed to setup tree: {response.error_message}")
-                self.__prepared_local_implementation_tree_status = NodeMsg.FAILED
+                self._local_implementation_tree_status = NodeMsg.FAILED
                 return
 
-            self.__prepared_local_implementation_tree_root.setup()
+            self._local_implementation_tree_root.setup()
 
             rospy.logerr("Successfully setup local implementation!")
 
@@ -557,7 +578,7 @@ class Capability(ABC, Leaf):
                     self.name, self.tree_manager.to_msg()
                 )
 
-            self.__prepared_local_implementation_tree_status = NodeMsg.SUCCESS
+            self._local_implementation_tree_status = NodeMsg.SUCCESS
             return
 
     def _tick_prepare_local_execution(self) -> str:
@@ -566,28 +587,28 @@ class Capability(ABC, Leaf):
         :return: The status of the node while the preparation is running.
         """
 
-        if self.__local_tree_setup_thread is not None:
-            if self.__prepared_local_implementation_tree_status is NodeMsg.RUNNING:
+        if self._prepare_local_tree_thread is not None:
+            if self._local_implementation_tree_status is NodeMsg.RUNNING:
                 return NodeMsg.ASSIGNED
 
-            if self.__prepared_local_implementation_tree_status in [NodeMsg.IDLE, NodeMsg.FAILED]:
+            if self._local_implementation_tree_status in [NodeMsg.IDLE, NodeMsg.FAILED]:
                 return NodeMsg.FAILED
 
             return NodeMsg.RUNNING
 
-        if self.__prepare_local_implementation.get_state() == AsyncServiceProxy.IDLE:
-            self.__prepare_local_implementation.call_service(
+        if self._prepare_local_implementation_service_proxy.get_state() == AsyncServiceProxy.IDLE:
+            self._prepare_local_implementation_service_proxy.call_service(
                 req=PrepareLocalImplementationRequest(
-                    implementation_name=self.__implementation_name,
+                    implementation_name=self._implementation_name,
                     interface=self.capability_interface
                 )
             )
-            self.__prepare_local_implementation_start_time = rospy.Time.now()
+            self._prepare_local_implementation_start_time = rospy.Time.now()
 
-        if self.__prepare_local_implementation.get_state() == AsyncServiceProxy.RESPONSE_READY:
+        if self._prepare_local_implementation_service_proxy.get_state() == AsyncServiceProxy.RESPONSE_READY:
 
             prepare_local_implementation_response: PrepareLocalImplementationResponse = \
-                self.__prepare_local_implementation.get_response()
+                self._prepare_local_implementation_service_proxy.get_response()
 
             if not prepare_local_implementation_response.success:
                 error_msg = f'Prepare local implementation request failed: ' \
@@ -595,13 +616,13 @@ class Capability(ABC, Leaf):
                 self.logerr(error_msg)
                 raise BehaviorTreeException(error_msg)
 
-            self.__local_tree_setup_thread = threading.Thread(
+            self._prepare_local_tree_thread = threading.Thread(
                 target=self._setup_local_implementation_tree,
                 args=(prepare_local_implementation_response.implementation_subtree,)
             )
-            self.__local_tree_setup_thread.start()
+            self._prepare_local_tree_thread.start()
 
-        if rospy.Time.now() - self.__prepare_local_implementation_start_time > rospy.Duration(secs=10):
+        if rospy.Time.now() - self._prepare_local_implementation_start_time > rospy.Duration(secs=10):
             self.logerr("Timeout when waiting for local implementation to be prepared!")
             return NodeMsg.FAILED
 
@@ -612,33 +633,33 @@ class Capability(ABC, Leaf):
         Ticks the node while remote execution is prepared.
         :return: the new status after the node was prepared.
         """
-        if self.__execute_capability_remote_client is None:
-            self.__execute_capability_remote_client = SimpleActionClient(
-                f'{self.__remote_mission_control_topic}/execute_remote_capability',
+        if self._execute_capability_remote_client is None:
+            self._execute_capability_remote_client = SimpleActionClient(
+                f'{self._remote_mission_control_topic}/execute_remote_capability',
                 ExecuteRemoteCapabilityAction
             )
 
-        if self.__execute_capability_remote_client_connection_tries > 10:
+        if self._execute_capability_remote_client_connection_tries > 10:
             self._cleanup()
 
             raise BehaviorTreeException(
-                f'Action server "{self.__remote_mission_control_topic}/execute_remote_capability" not available'
+                f'Action server "{self._remote_mission_control_topic}/execute_remote_capability" not available'
                 f' after trying 10 times.'
             )
 
-        if not self.__execute_capability_remote_client.wait_for_server(
+        if not self._execute_capability_remote_client.wait_for_server(
                 timeout=rospy.Duration(nsecs=10)
         ):
-            self.__execute_capability_remote_client_connection_tries += 1
+            self._execute_capability_remote_client_connection_tries += 1
             return NodeMsg.ASSIGNED
 
-        self.__execute_capability_remote_client.send_goal(
+        self._execute_capability_remote_client.send_goal(
             ExecuteRemoteCapabilityGoal(
                 interface=self.capability_interface,
-                implementation_name=self.__implementation_name,
+                implementation_name=self._implementation_name,
             )
         )
-        self.__execute_capability_remote_client_start_time = rospy.Time.now()
+        self._execute_capability_remote_client_start_time = rospy.Time.now()
 
         return NodeMsg.RUNNING
 
@@ -652,7 +673,7 @@ class Capability(ABC, Leaf):
         """
         # No current implementation is present, one needs to be received from the mission controller.
 
-        new_state = self.__prepared_local_implementation_tree_root.tick()
+        new_state = self._local_implementation_tree_root.tick()
         if self.debug_manager and self.debug_manager.get_publish_subtrees():
             self.debug_manager.add_subtree_info(
                 self.name, self.tree_manager.to_msg()
@@ -674,18 +695,18 @@ class Capability(ABC, Leaf):
         """
 
         # Check if the action ran into a timeout.
-        if (rospy.Time.now() - self.__execute_capability_remote_client_start_time
+        if (rospy.Time.now() - self._execute_capability_remote_client_start_time
                 > rospy.Duration(WAIT_FOR_REMOTE_EXECUTION_TIMEOUT_SECONDS)):
             self.logerr(
                 f'ExecuteRemoteCapability action timed out after'
                 f' {WAIT_FOR_REMOTE_EXECUTION_TIMEOUT_SECONDS} seconds'
             )
-            self.__execute_capability_remote_client.cancel_goal()
+            self._execute_capability_remote_client.cancel_goal()
             self._cleanup()
             return NodeMsg.FAILED
 
         try:
-            execute_remote_implementation_result = self._execute_action(self.__execute_capability_remote_client)
+            execute_remote_implementation_result = self._execute_action(self._execute_capability_remote_client)
         except BehaviorTreeException as exc:
             self.logerr(f"Failed to execute action: {exc}")
             self._cleanup()
@@ -702,7 +723,7 @@ class Capability(ABC, Leaf):
         """
         new_state = NodeMsg.RUNNING
 
-        if self.__internal_state == self.WAITING_FOR_RESULTS:
+        if self._internal_state == self.WAITING_FOR_OUTPUT_VALUES:
 
             if self._last_received_outputs is not None:
                 for bridge_data in self._last_received_outputs.bridge_data:
@@ -713,25 +734,25 @@ class Capability(ABC, Leaf):
                     except TypeError as exc:
                         self.logwarn(f"Could not set output {node_data.key}: {exc}")
                         continue
-                return self.__result_status
+                return self._result_status
 
-            if rospy.Time.now() - self.__result_timestamp > rospy.Duration(secs=WAIT_FOR_RESULTS_TIMEOUT_SECONDS):
+            if rospy.Time.now() - self._result_timestamp > rospy.Duration(secs=WAIT_FOR_RESULTS_TIMEOUT_SECONDS):
                 self.logwarn(
                     "Timed out while waiting for results! Check if the implementation contains a valid"
                     "OutputDataBridge!"
                 )
-                return self.__result_status
+                return self._result_status
 
-        if self.__internal_state == self.EXECUTE_LOCAL:
+        if self._internal_state == self.EXECUTE_LOCAL:
             new_state = self.__tick_executing_local()
 
-        if self.__internal_state == self.EXECUTE_REMOTE:
+        if self._internal_state == self.EXECUTE_REMOTE:
             new_state = self.__tick_executing_remote()
 
         if new_state in [NodeMsg.FAILED, NodeMsg.SUCCEEDED]:
-            self.__result_status = new_state
-            self.__internal_state = self.WAITING_FOR_RESULTS
-            self.__result_timestamp = rospy.Time.now()
+            self._result_status = new_state
+            self._internal_state = self.WAITING_FOR_OUTPUT_VALUES
+            self._result_timestamp = rospy.Time.now()
             new_state = NodeMsg.RUNNING
 
         return new_state
@@ -762,7 +783,7 @@ class Capability(ABC, Leaf):
                 raise BehaviorTreeException(error_msg) from exc
 
         if self.state == NodeMsg.PAUSED:
-            self.state = self.old_state
+            self.state = self._old_state
 
         if self.state == NodeMsg.IDLE:
             return NodeMsg.UNASSIGNED
@@ -783,23 +804,23 @@ class Capability(ABC, Leaf):
         if self.state == NodeMsg.PAUSED:
             return NodeMsg.PAUSED
 
-        self.old_state = self.state
+        self._old_state = self.state
 
         if self.state in [NodeMsg.IDLE, NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
             return NodeMsg.PAUSED
 
         if self.state == NodeMsg.UNASSIGNED:
-            self.__internal_state = self.IDLE
-            if self.__request_capability_execution_service_proxy is not None:
-                self.__request_capability_execution_service_proxy.stop_call()
+            self._internal_state = self.IDLE
+            if self._request_capability_execution_service_proxy is not None:
+                self._request_capability_execution_service_proxy.stop_call()
 
         if self.state == NodeMsg.ASSIGNED:
-            if self.__internal_state is self.EXECUTE_LOCAL:
-                self.__prepare_local_implementation.stop_call()
+            if self._internal_state is self.EXECUTE_LOCAL:
+                self._prepare_local_implementation_service_proxy.stop_call()
 
-            if self.__internal_state is self.EXECUTE_REMOTE:
-                if self.__execute_capability_remote_client is not None:
-                    self.__execute_capability_remote_client.cancel_goal()
+            if self._internal_state is self.EXECUTE_REMOTE:
+                if self._execute_capability_remote_client is not None:
+                    self._execute_capability_remote_client.cancel_goal()
 
         if not self._shutdown_local_implementation_tree():
             return NodeMsg.FAILED
@@ -807,52 +828,53 @@ class Capability(ABC, Leaf):
         return NodeMsg.PAUSED
 
     def _do_reset(self):
-        self._shutdown_action_clients()
+        self._shutdown_action_clients_async_service_clients()
         self._shutdown_local_implementation_tree()
         self._cleanup()
 
         return NodeMsg.IDLE
 
     def _do_shutdown(self):
-
         self._unregister_io_bridge_publishers_subscribers()
-        self._shutdown_action_clients()
+        self._shutdown_action_clients_async_service_clients()
         self._shutdown_local_implementation_tree()
         self._cleanup()
 
         self._input_bridge_publisher = None
         self._output_bridge_subscriber = None
-        self.__request_capability_execution_service_proxy: Optional[AsyncServiceProxy] = None
-        self.__prepare_local_implementation: Optional[AsyncServiceProxy] = None
-        self.__execute_capability_remote_client: Optional[SimpleActionClient] = None
+        self._request_capability_execution_service_proxy: Optional[AsyncServiceProxy] = None
+        self._prepare_local_implementation_service_proxy: Optional[AsyncServiceProxy] = None
+        self._execute_capability_remote_client: Optional[SimpleActionClient] = None
 
     # Cleanup operations
 
     def _unregister_io_bridge_publishers_subscribers(self):
+        """
+        Helper method that unregisters all the io bridge publishers if not none.
+        :return: None
+        """
         if self._output_bridge_subscriber is not None:
             self._output_bridge_subscriber.unregister()
 
         if self._input_bridge_publisher is not None:
             self._input_bridge_publisher.unregister()
 
-    def _shutdown_action_clients(self):
+    def _shutdown_action_clients_async_service_clients(self):
         """
         Shuts down the running goals of action clients and Async Service clients.
         :return: None
         """
-        if self.__request_capability_execution_service_proxy is not None:
-            self.__request_capability_execution_service_proxy.stop_call()
-            self.__request_capability_execution_service_proxy.shutdown()
+        if self._request_capability_execution_service_proxy is not None:
+            self._request_capability_execution_service_proxy.stop_call()
+            self._request_capability_execution_service_proxy.shutdown()
 
-        if self.__prepare_local_implementation is not None:
-            self.__prepare_local_implementation.stop_call()
-            self.__prepare_local_implementation.shutdown()
+        if self._prepare_local_implementation_service_proxy is not None:
+            self._prepare_local_implementation_service_proxy.stop_call()
+            self._prepare_local_implementation_service_proxy.shutdown()
 
-        if self.__execute_capability_remote_client is not None and \
-                self.__execute_capability_remote_client.get_state() in [GoalStatus.ACTIVE, GoalStatus.PREEMPTING]:
-            self.__execute_capability_remote_client.cancel_goal()
-
-
+        if self._execute_capability_remote_client is not None and \
+                self._execute_capability_remote_client.get_state() in [GoalStatus.ACTIVE, GoalStatus.PREEMPTING]:
+            self._execute_capability_remote_client.cancel_goal()
 
     def _shutdown_local_implementation_tree(self) -> bool:
         """
@@ -860,8 +882,8 @@ class Capability(ABC, Leaf):
 
         :return: True if the tree could be shutdown, False otherwise.
         """
-        if self.__prepared_local_implementation_tree is not None:
-            with self.capability_write_lock:
+        if self._local_implementation_tree is not None:
+            with self._capability_lock:
                 response = self.tree_manager.control_execution(
                     ControlTreeExecutionRequest(command=ControlTreeExecutionRequest.SHUTDOWN)
                 )
@@ -879,8 +901,12 @@ class Capability(ABC, Leaf):
         return True
 
     def _clear_local_implementation_tree(self) -> bool:
-        if self.__prepared_local_implementation_tree is not None:
-            with self.capability_write_lock:
+        """
+        Helper method that clears the local tree.
+        :return: True if successful, false otherwise.
+        """
+        if self._local_implementation_tree is not None:
+            with self._capability_lock:
                 response = self.tree_manager.clear(ClearTreeRequest())
                 if not response.success:
                     self.logwarn(f"Could not clear local capability tree: {response.error_message}")
@@ -892,27 +918,27 @@ class Capability(ABC, Leaf):
         Cleans up the internal states of the capability and resets them to the default values.
         :return: None
         """
-        if self.__local_tree_setup_thread is not None:
-            self.__local_tree_setup_thread.join()
-        self.__local_tree_setup_thread: Optional[threading.Thread] = None
+        if self._prepare_local_tree_thread is not None:
+            self._prepare_local_tree_thread.join()
+        self._prepare_local_tree_thread: Optional[threading.Thread] = None
 
-        self.__local_implementation = None
+        self._internal_state = self.IDLE
 
-        self.__implementation_name: Optional[str] = None
-        self.__result_status = None
-        self.__result_timestamp = None
+        self._implementation_name: Optional[str] = None
+        self._result_status = None
+        self._result_timestamp = None
 
         # Variables for remote trees
-        self.__remote_mission_control_topic: Optional[str] = None
-        self.__execute_capability_remote_client_connection_tries: int = 0
-        self.__execute_capability_remote_client_start_time: Optional[rospy.Time] = None
+        self._remote_mission_control_topic: Optional[str] = None
+        self._execute_capability_remote_client_connection_tries: int = 0
+        self._execute_capability_remote_client_start_time: Optional[rospy.Time] = None
 
         # Variables for local trees
         self._clear_local_implementation_tree()
 
-        self.__prepared_local_implementation_tree: Optional[Tree] = None
-        self.__prepared_local_implementation_tree_root: Optional[Node] = None
-        self.__prepared_local_implementation_tree_status = NodeMsg.IDLE
+        self._local_implementation_tree: Optional[Tree] = None
+        self._local_implementation_tree_root: Optional[Node] = None
+        self._local_implementation_tree_status = NodeMsg.IDLE
 
 
 def capability_node_class_from_capability_interface(
@@ -1029,7 +1055,7 @@ def capability_output_data_bridge_from_interface(
 
 
 def capability_node_class_from_capability_interface_callback(
-        msg: std_msgs.msg.Time,
+        msg: Time,
         args: List
 ):
     # pylint: disable=unused-argument
@@ -1051,6 +1077,9 @@ def capability_node_class_from_capability_interface_callback(
     if not isinstance(args[1], rospy.ServiceProxy):
         rospy.logerr("Second args is not a server proxy!")
         return
+
+    rospy.loginfo(f"Received new capability information at {msg}")
+
     service_proxy: rospy.ServiceProxy = args[1]
     response: GetCapabilityInterfacesResponse = service_proxy.call(GetCapabilityInterfacesRequest())
     if not response.success:
