@@ -27,6 +27,11 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #  POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
+
+"""
+Module implementing the classes needed to manage available capabilities and their representation on disk.
+"""
+
 import os
 import re
 import shutil
@@ -38,6 +43,10 @@ import genpy
 import rospkg
 import rospy
 import yaml
+
+from std_msgs.msg import Time
+from rospkg import ResourceNotFound
+
 from ros_bt_py_msgs.msg import CapabilityImplementation, CapabilityInterface
 from ros_bt_py_msgs.srv import (
     LoadCapabilitiesResponse, SaveCapabilitiesRequest, SaveCapabilitiesResponse, LoadCapabilitiesRequest,
@@ -46,13 +55,13 @@ from ros_bt_py_msgs.srv import (
     DeleteCapabilityImplementationRequest, DeleteCapabilityImplementationResponse, PutCapabilityImplementationRequest,
     PutCapabilityImplementationResponse,
 )
-from rospkg import ResourceNotFound
-from std_msgs.msg import Time
-
 from ros_bt_py.helpers import HashableCapabilityInterface
 
-
 class CapabilityRepository:
+    """
+    Repository responsible for managing the available capabilities and their representations on the disk.
+    It receives updates from other capability repositories in the network.
+    """
 
     # pylint: disable=too-many-instance-attributes
 
@@ -200,7 +209,7 @@ class CapabilityRepository:
         :return: None
         """
         try:
-            self.__local_capability_interface_update_publisher.publish(rospy.Time())
+            self.__local_capability_interface_update_publisher.publish(rospy.Time.now())
         except rospy.ROSSerializationException as exc:
             rospy.logerr(f'Could not serialize msg, node not initialized: {exc}!')
             raise rospy.ROSException(f'Could not serialize msg, node not initialized: {exc}!')
@@ -219,7 +228,7 @@ class CapabilityRepository:
         :return: None
         """
         try:
-            self.__local_capability_implementation_update_publisher.publish(rospy.Time())
+            self.__local_capability_implementation_update_publisher.publish(rospy.Time.now())
         except rospy.ROSSerializationException as exc:
             rospy.logerr(f'Could not serialize msg, node not initialized: {exc}!')
             raise rospy.ROSException(f'Could not serialize msg, node not initialized: {exc}!')
@@ -405,7 +414,7 @@ class CapabilityRepository:
             return response
 
         response.success = True
-        response.interfaces = [v.interface for v in self.local_capabilities.keys()]
+        response.interfaces = [v.interface for v in self.local_capabilities]
         return response
 
     def put_capability_interfaces(
