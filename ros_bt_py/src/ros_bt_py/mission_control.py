@@ -53,7 +53,6 @@ class MissionControl:
 
     # pylint: disable=too-many-instance-attributes
 
-
     def __init__(
             self,
             auction_manager: Type[AssignmentManager],
@@ -195,12 +194,14 @@ class MissionControl:
             )
             return
 
-        remote_slot_action_client.send_goal(ExecuteCapabilityImplementationGoal(
-            implementation=response.implementation_subtree,
-            interface=goal_handle.goal.interface,
-            input_topic=goal_handle.goal.input_topic,
-            output_topic=goal_handle.goal.output_topic
-        ))
+        remote_slot_action_client.send_goal(
+            ExecuteCapabilityImplementationGoal(
+                implementation=response.implementation_subtree,
+                interface=goal_handle.goal.interface,
+                input_topic=goal_handle.goal.input_topic,
+                output_topic=goal_handle.goal.output_topic
+            )
+        )
 
         while not remote_slot_action_client.wait_for_result(timeout=rospy.Duration(nsecs=10)):
             if self._remote_capability_slot_goals[goal_handle.goal_id][1]:
@@ -236,8 +237,10 @@ class MissionControl:
         """
         with self._remote_capability_slot_lock:
             idle_executors: List[Tuple[str, str]] = list(
-                filter(lambda x: x[1] == RemoteCapabilitySlotStatus.IDLE,
-                       self._remote_capability_slot_status.items())
+                filter(
+                    lambda x: x[1] == RemoteCapabilitySlotStatus.IDLE,
+                    self._remote_capability_slot_status.items()
+                    )
             )
 
         if len(idle_executors) < 1:
@@ -255,11 +258,13 @@ class MissionControl:
             return
 
         selected_executor = idle_executors.pop()
-        self.remote_capability_slot_status_callback(RemoteCapabilitySlotStatus(
-            name=selected_executor[0],
-            status=RemoteCapabilitySlotStatus.RUNNING,
-            timestamp=rospy.Time.now()
-        ))
+        self.remote_capability_slot_status_callback(
+            RemoteCapabilitySlotStatus(
+                name=selected_executor[0],
+                status=RemoteCapabilitySlotStatus.RUNNING,
+                timestamp=rospy.Time.now()
+            )
+        )
 
         self._remote_capability_slot_goals[goal_handle.goal_id] = (selected_executor[0], False)
 
@@ -318,8 +323,10 @@ class MissionControl:
         response.success = True
         return response
 
-    def request_capability_execution(self,
-                                     goal: RequestCapabilityExecutionRequest) -> RequestCapabilityExecutionResponse:
+    def request_capability_execution(
+            self,
+            goal: RequestCapabilityExecutionRequest
+            ) -> RequestCapabilityExecutionResponse:
         response = RequestCapabilityExecutionResponse()
         rospy.loginfo("Received request to execute capability!")
 
@@ -351,9 +358,11 @@ class MissionControl:
 
         rospy.loginfo("Assignment  system is currently offline. We will use the local implementation!")
 
-        local_bid_response = self.get_local_bid(GetLocalBidRequest(
-            interface=goal.capability
-            ))
+        local_bid_response = self.get_local_bid(
+            GetLocalBidRequest(
+                interface=goal.capability
+            )
+        )
 
         if local_bid_response.success:
             response.implementation_name = local_bid_response.implementation_name
@@ -392,7 +401,7 @@ class MissionControl:
         try:
             get_capability_implementations_proxy.wait_for_service(timeout=rospy.Duration.from_sec(1.0))
         except ROSException:
-            service_response.error_message =\
+            service_response.error_message = \
                 f"Failed to find local implementation service at {capability_repository_topic}"
             rospy.logwarn(service_response.error_message)
             service_response.success = False
@@ -494,17 +503,22 @@ class MissionControl:
         :param request: Request containing the precondition that should be checked.
         :return: True if fulfilled or False if not.
         """
-        # TODO: Include the remote capability nodes.
+
         response = CheckPreconditionStatusResponse()
         hashable_capability = HashableCapabilityInterface(request.interface)
 
-        response.available = hashable_capability in self.executing_capabilities and any(
-            s in [
-                NotifyCapabilityExecutionStatusRequest.IDLE,
-                NotifyCapabilityExecutionStatusRequest.EXECUTING,
-                NotifyCapabilityExecutionStatusRequest.SUCCEEDED
-            ] for n, s in self.executing_capabilities[hashable_capability].items()
-        )
+        capability_was_executed = hashable_capability in self.executing_capabilities
+        if not capability_was_executed:
+            response.available = False
+        else:
+            response.available = any(
+                s in [
+                    NotifyCapabilityExecutionStatusRequest.EXECUTING,
+                    NotifyCapabilityExecutionStatusRequest.SUCCEEDED
+                ] for n, s in self.executing_capabilities[hashable_capability].items()
+            )
+
+        rospy.logerr(f"{self.executing_capabilities} - RESULT {response.available}")
         return response
 
     def prepare_local_capability_implementation(
@@ -611,7 +625,7 @@ class MissionControl:
         for precondition in reversed(implementation.preconditions):
 
             if precondition.kind == Precondition.REMOTE:
-                available_services = rosservice_find('CheckRemotePrecondition')
+                available_services = rosservice_find('CheckPreconditionStatus')
 
                 for service_name in available_services:
                     service_client = rospy.ServiceProxy(
@@ -628,16 +642,24 @@ class MissionControl:
                         rospy.loginfo(f"Remote precondition: {precondition} is fulfilled")
                         continue
 
-            if not self.check_precondition_status(CheckPreconditionStatusRequest(interface=precondition.capability)):
+            local_precondition_fulfilled = self.check_precondition_status(
+                CheckPreconditionStatusRequest(interface=precondition.capability)
+            ).available
+
+            if not local_precondition_fulfilled:
+                rospy.loginfo("Adding local precondition to tree!")
                 # Add a hashable capability to the tree
-                node = capability_node_class_from_capability_interface(
+                node_type = capability_node_class_from_capability_interface(
                     capability_interface=precondition.capability,
                     mission_control_topic=rospy.resolve_name("~")
                 )
+
+                node = node_type()
+
                 service_response: AddNodeAtIndexResponse = prepare_local_implementation_tree_manager.add_node_at_index(
                     AddNodeAtIndexRequest(
-                        parent_name="RootCapabilitySequence",
-                        node=node,
+                        parent_name=root_sequence_node.name,
+                        node=node.to_msg(),
                         allow_rename=True,
                         new_child_index=0
                     )
@@ -648,6 +670,7 @@ class MissionControl:
                     response.error_message = f"Failed to add needed precondition: {service_response.error_message}"
                     rospy.logerr(response.error_message)
                     return response
+                rospy.loginfo(f"Added {node} to tree as {service_response.actual_node_name}")
 
             rospy.loginfo(f"Precondition: {precondition} is fulfilled")
 

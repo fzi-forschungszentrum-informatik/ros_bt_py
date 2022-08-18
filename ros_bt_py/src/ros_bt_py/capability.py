@@ -64,12 +64,12 @@ from ros_bt_py.node_config import NodeConfig
 from ros_bt_py.ros_helpers import AsyncServiceProxy
 from ros_bt_py.tree_manager import TreeManager
 
-WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS = 5
-WAIT_FOR_IMPLEMENTATION_ASSIGNMENT_TIMEOUT_SECONDS = 5
+WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS = 2
+WAIT_FOR_IMPLEMENTATION_ASSIGNMENT_TIMEOUT_SECONDS = 2
 
-WAIT_FOR_REMOTE_MISSION_CONTROL_TRIES = 10
+WAIT_FOR_REMOTE_MISSION_CONTROL_TRIES = 3
 WAIT_FOR_REMOTE_EXECUTION_TIMEOUT_SECONDS = 10
-WAIT_FOR_RESULTS_TIMEOUT_SECONDS = 10
+WAIT_FOR_OUTPUTS_TIMEOUT_SECONDS = 1
 
 
 class CapabilityDataBridge(ABC, Leaf):
@@ -194,7 +194,6 @@ class CapabilityOutputDataBridge(CapabilityDataBridge):
         self._source_capability_outputs_publisher: Optional[rospy.Publisher] = None
 
     def _do_setup(self):
-        rospy.logerr(f"Capability bridge topic: {self.capability_bridge_topic}")
         if self.capability_bridge_topic is None:
             raise BehaviorTreeException(f"{self.name}: No input topic set!")
 
@@ -476,7 +475,7 @@ class Capability(ABC, Leaf):
         self._notify_capability_execution_status_client = ServiceProxy(
             notify_capability_execution_status_topic,
             NotifyCapabilityExecutionStatus,
-            persistent=True
+            persistent=False
         )
         try:
             self._notify_capability_execution_status_client.wait_for_service(
@@ -495,7 +494,6 @@ class Capability(ABC, Leaf):
         """
         # pylint: disable=too-many-return-statements
         if self._internal_state == self.IDLE:
-            rospy.loginfo("Starting implementation search!")
             self._request_capability_execution_service_proxy.call_service(
                 RequestCapabilityExecutionRequest(
                     capability=self.capability_interface
@@ -580,6 +578,8 @@ class Capability(ABC, Leaf):
                 self._local_implementation_tree_status = NodeMsg.FAILED
                 return
 
+            self._local_implementation_tree_root.shutdown()
+
             response: ControlTreeExecutionResponse = self.tree_manager.control_execution(
                 ControlTreeExecutionRequest(
                     command=ControlTreeExecutionRequest.SHUTDOWN
@@ -592,8 +592,6 @@ class Capability(ABC, Leaf):
                 return
 
             self._local_implementation_tree_root.setup()
-
-            rospy.logerr("Successfully setup local implementation!")
 
             if self.debug_manager and self.debug_manager.get_publish_subtrees():
                 self.debug_manager.add_subtree_info(
@@ -731,6 +729,7 @@ class Capability(ABC, Leaf):
                     status=status
                 )
             )
+            self._local_implementation_tree_root.shutdown()
             self._shutdown_local_implementation_tree()
             # Not sure why this would be needed, as reset should be called which performs this action too.
             # self._cleanup()
@@ -785,7 +784,7 @@ class Capability(ABC, Leaf):
                         continue
                 return self._result_status
 
-            if rospy.Time.now() - self._result_timestamp > rospy.Duration(secs=WAIT_FOR_RESULTS_TIMEOUT_SECONDS):
+            if rospy.Time.now() - self._result_timestamp > rospy.Duration(secs=WAIT_FOR_OUTPUTS_TIMEOUT_SECONDS):
                 self.logwarn(
                     "Timed out while waiting for results! Check if the implementation contains a valid"
                     "OutputDataBridge!"
@@ -898,10 +897,10 @@ class Capability(ABC, Leaf):
                 status=NotifyCapabilityExecutionStatusRequest.SHUTDOWN
             )
         )
-
+        self._shutdown_local_implementation_tree()
         self._unregister_io_bridge_publishers_subscribers()
         self._shutdown_action_clients_async_service_clients()
-        self._shutdown_local_implementation_tree()
+
         self._cleanup()
 
         self._input_bridge_publisher = None
@@ -949,6 +948,8 @@ class Capability(ABC, Leaf):
         """
         if self._local_implementation_tree is not None:
             with self._capability_lock:
+                self._local_implementation_tree_root.shutdown()
+
                 response = self.tree_manager.control_execution(
                     ControlTreeExecutionRequest(command=ControlTreeExecutionRequest.SHUTDOWN)
                 )
