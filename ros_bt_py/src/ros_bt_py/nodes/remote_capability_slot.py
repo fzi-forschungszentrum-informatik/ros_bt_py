@@ -240,7 +240,8 @@ class RemoteCapabilitySlot(Node):
         self._remote_slot_executor_action_server = None
         self._notify_capability_execution_status_client.close()
 
-    def nop(self) -> None:
+    @staticmethod
+    def nop(msg) -> None:
         """
         No operation method.
 
