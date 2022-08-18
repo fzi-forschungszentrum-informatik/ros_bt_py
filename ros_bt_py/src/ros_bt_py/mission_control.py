@@ -31,6 +31,7 @@ from ros_bt_py_msgs.srv import (
     MoveNodeResponse, AddNodeAtIndexResponse, PrepareLocalImplementation, RequestCapabilityExecutionRequest,
     RequestCapabilityExecutionResponse, GetLocalBidResponse, GetLocalBidRequest, GetLocalBid,
     FindBestCapabilityExecutor, FindBestCapabilityExecutorRequest, MigrateTreeRequest, RequestCapabilityExecution,
+    NotifyCapabilityExecutionStatus,
 )
 
 import ros_bt_py.nodes.sequence
@@ -106,6 +107,12 @@ class MissionControl:
             "~check_precondition_status",
             CheckPreconditionStatus,
             handler=self.check_precondition_status
+        )
+
+        self._notify_capability_execution_status_service = rospy.Service(
+            "~notify_capability_execution_status",
+            NotifyCapabilityExecutionStatus,
+            self.notify_capability_execution_status
         )
 
         self.__execute_remote_capability_action_server = ActionServer(
@@ -287,7 +294,7 @@ class MissionControl:
         self._remote_capability_slot_goals[goal_handle.goal_id] = (current_status[0], True)
         return
 
-    def notify_capability_status_change(
+    def notify_capability_execution_status(
             self,
             request: NotifyCapabilityExecutionStatusRequest
     ) -> NotifyCapabilityExecutionStatusResponse:
@@ -298,11 +305,16 @@ class MissionControl:
         :return:
         """
         response = NotifyCapabilityExecutionStatusResponse()
+
         hashable_interface = HashableCapabilityInterface(request.interface)
-        if not self.executing_capabilities[hashable_interface]:
+
+        if hashable_interface not in self.executing_capabilities:
             self.executing_capabilities[hashable_interface] = {}
 
         self.executing_capabilities[hashable_interface][request.node_name] = request.status
+
+        rospy.loginfo(f"Set status of {request.node_name} to {request.status}")
+
         response.success = True
         return response
 
@@ -366,7 +378,7 @@ class MissionControl:
         :return: None
         """
         service_response = GetLocalBidResponse()
-        capability_repository_topic = rospy.get_param("capability_repository_topic", "/capability_repository")
+        capability_repository_topic = rospy.get_param("capability_repository_topic", "/capability_repository_node")
 
         capability_repository_topic = rospy.resolve_name(
             f"{capability_repository_topic}/capabilities/implementations/get"
@@ -380,7 +392,8 @@ class MissionControl:
         try:
             get_capability_implementations_proxy.wait_for_service(timeout=rospy.Duration.from_sec(1.0))
         except ROSException:
-            service_response.error_message = f"Failed to find local implementation service"
+            service_response.error_message =\
+                f"Failed to find local implementation service at {capability_repository_topic}"
             rospy.logwarn(service_response.error_message)
             service_response.success = False
 

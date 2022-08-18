@@ -52,9 +52,10 @@ from ros_bt_py_msgs.srv import (
     PrepareLocalImplementation, PrepareLocalImplementationRequest, PrepareLocalImplementationResponse,
     LoadTreeRequest, ClearTreeRequest, ControlTreeExecutionRequest, GetCapabilityInterfacesRequest,
     GetCapabilityInterfacesResponse, ControlTreeExecutionResponse, RequestCapabilityExecution,
-    RequestCapabilityExecutionRequest, RequestCapabilityExecutionResponse,
+    RequestCapabilityExecutionRequest, RequestCapabilityExecutionResponse, NotifyCapabilityExecutionStatus,
+    NotifyCapabilityExecutionStatusRequest,
 )
-from rospy import ROSSerializationException, ROSException
+from rospy import ROSSerializationException, ROSException, ServiceProxy
 
 from ros_bt_py.exceptions import BehaviorTreeException, TreeTopologyError
 from ros_bt_py.helpers import json_decode
@@ -249,6 +250,7 @@ class Capability(ABC, Leaf):
     capability to function.
     """
     # pylint: disable=too-many-instance-attributes, too-few-public-methods
+
     # States to structure the do_tick() method
     IDLE = 0
     WAITING_FOR_ASSIGNMENT = 1
@@ -301,6 +303,7 @@ class Capability(ABC, Leaf):
         self._request_capability_execution_service_proxy: Optional[AsyncServiceProxy] = None
         self._prepare_local_implementation_service_proxy: Optional[AsyncServiceProxy] = None
         self._execute_capability_remote_client: Optional[SimpleActionClient] = None
+        self._notify_capability_execution_status_client: Optional[ServiceProxy] = None
 
         # Input and output data bridge information
         self._input_bridge_topic: Optional[str] = None
@@ -466,6 +469,25 @@ class Capability(ABC, Leaf):
             callback=self._publish_outputs_cb
         )
 
+        notify_capability_execution_status_topic = rospy.resolve_name(
+            f"{self.local_mc_topic}/notify_capability_execution_status"
+        )
+
+        self._notify_capability_execution_status_client = ServiceProxy(
+            notify_capability_execution_status_topic,
+            NotifyCapabilityExecutionStatus,
+            persistent=True
+        )
+        try:
+            self._notify_capability_execution_status_client.wait_for_service(
+                timeout=rospy.Duration(secs=WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS)
+            )
+        except rospy.ROSException as exc:
+            raise BehaviorTreeException(
+                f'Service "{self.local_mc_topic}/notify_capability_execution_status" not available'
+                f' after waiting f{WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS} seconds!'
+            ) from exc
+
     def _tick_unassigned(self) -> str:
         """
         Function performing the tick operation while in the UNASSIGNED state.
@@ -594,6 +616,13 @@ class Capability(ABC, Leaf):
             if self._local_implementation_tree_status in [NodeMsg.IDLE, NodeMsg.FAILED]:
                 return NodeMsg.FAILED
 
+            self._notify_capability_execution_status_client.call(
+                NotifyCapabilityExecutionStatusRequest(
+                    interface=self.capability_interface,
+                    node_name=self.name,
+                    status=NotifyCapabilityExecutionStatusRequest.EXECUTING
+                )
+            )
             return NodeMsg.RUNNING
 
         if self._prepare_local_implementation_service_proxy.get_state() == AsyncServiceProxy.IDLE:
@@ -661,6 +690,14 @@ class Capability(ABC, Leaf):
         )
         self._execute_capability_remote_client_start_time = rospy.Time.now()
 
+        self._notify_capability_execution_status_client.call(
+            NotifyCapabilityExecutionStatusRequest(
+                interface=self.capability_interface,
+                node_name=self.name,
+                status=NotifyCapabilityExecutionStatusRequest.EXECUTING
+            )
+        )
+
         return NodeMsg.RUNNING
 
     def __tick_executing_local(self) -> str:
@@ -683,8 +720,20 @@ class Capability(ABC, Leaf):
             return NodeMsg.RUNNING
 
         if new_state in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
+            if new_state == NodeMsg.SUCCEEDED:
+                status = NotifyCapabilityExecutionStatusRequest.SUCCEEDED
+            else:
+                status = NotifyCapabilityExecutionStatusRequest.FAILED
+            self._notify_capability_execution_status_client.call(
+                NotifyCapabilityExecutionStatusRequest(
+                    interface=self.capability_interface,
+                    node_name=self.name,
+                    status=status
+                )
+            )
             self._shutdown_local_implementation_tree()
-            self._cleanup()
+            # Not sure why this would be needed, as reset should be called which performs this action too.
+            # self._cleanup()
         return new_state
 
     def __tick_executing_remote(self) -> str:
@@ -786,6 +835,13 @@ class Capability(ABC, Leaf):
             self.state = self._old_state
 
         if self.state == NodeMsg.IDLE:
+            self._notify_capability_execution_status_client.call(
+                NotifyCapabilityExecutionStatusRequest(
+                    interface=self.capability_interface,
+                    node_name=self.name,
+                    status=NotifyCapabilityExecutionStatusRequest.IDLE
+                )
+            )
             return NodeMsg.UNASSIGNED
 
         if self.state == NodeMsg.UNASSIGNED:
@@ -835,6 +891,14 @@ class Capability(ABC, Leaf):
         return NodeMsg.IDLE
 
     def _do_shutdown(self):
+        self._notify_capability_execution_status_client.call(
+            NotifyCapabilityExecutionStatusRequest(
+                interface=self.capability_interface,
+                node_name=self.name,
+                status=NotifyCapabilityExecutionStatusRequest.SHUTDOWN
+            )
+        )
+
         self._unregister_io_bridge_publishers_subscribers()
         self._shutdown_action_clients_async_service_clients()
         self._shutdown_local_implementation_tree()
@@ -842,9 +906,10 @@ class Capability(ABC, Leaf):
 
         self._input_bridge_publisher = None
         self._output_bridge_subscriber = None
-        self._request_capability_execution_service_proxy: Optional[AsyncServiceProxy] = None
-        self._prepare_local_implementation_service_proxy: Optional[AsyncServiceProxy] = None
-        self._execute_capability_remote_client: Optional[SimpleActionClient] = None
+        self._request_capability_execution_service_proxy = None
+        self._prepare_local_implementation_service_proxy = None
+        self._execute_capability_remote_client = None
+        self._notify_capability_execution_status_client = None
 
     # Cleanup operations
 
@@ -889,13 +954,6 @@ class Capability(ABC, Leaf):
                 )
                 if not response.success:
                     self.logwarn(f"Could not shutdown local capability: {response.error_message}")
-                    return False
-
-                response = self.tree_manager.control_execution(
-                    ControlTreeExecutionRequest(command=ControlTreeExecutionRequest.RESET)
-                )
-                if not response.success:
-                    self.logwarn(f"Could not reset local capability: {response.error_message}")
                     return False
 
         return True
