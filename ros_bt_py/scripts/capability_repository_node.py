@@ -85,7 +85,8 @@ class CapabilityRepositoryNode:
         self.__global_capability_interfaces_requests_publisher = rospy.Publisher(
             f'{global_capability_topic_prefix}/interfaces/request',
             Time,
-            queue_size=1000
+            latch=True,
+            queue_size=1
         )
 
         self.capability_repository = CapabilityRepository(
@@ -180,7 +181,7 @@ class CapabilityRepositoryNode:
 
 
 if __name__ == '__main__':
-    rospy.init_node('capability_repository_node', argv=sys.argv)
+    rospy.init_node('capability_repository', argv=sys.argv)
     rospy.loginfo("Starting CapabilityRepository node")
     node = CapabilityRepositoryNode()
     rospy.spin()

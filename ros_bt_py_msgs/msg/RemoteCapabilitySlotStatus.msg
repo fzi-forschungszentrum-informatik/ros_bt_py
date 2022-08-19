@@ -4,4 +4,4 @@ time timestamp
 
 string IDLE=IDLE
 string RUNNING=RUNNING
-string FINISHED=FINISHED
+string SHUTDOWN=SHUTDOWN

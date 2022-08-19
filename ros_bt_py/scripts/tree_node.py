@@ -91,24 +91,16 @@ class TreeNode(object):
             default=2
             )
 
-        local_repository_prefix = rospy.get_param(
-            "~local_repository_prefix",
-            default="/capability_repository_node"
-            )
-
-        local_mc_prefix = rospy.get_param(
-            "~local_mission_control_prefix",
-            default="/mission_control"
-        )
+        local_mc_prefix = f"{rospy.get_namespace()}/mission_control"
 
         self.get_capability_interface_service = rospy.ServiceProxy(
-            name=f"{local_repository_prefix}/capabilities/interfaces/get",
+            name=f"{rospy.get_namespace()}/capability_repository/capabilities/interfaces/get",
             service_class=GetCapabilityInterfaces,
             persistent=True,
         )
 
         self.capability_interface_subscription = rospy.Subscriber(
-            name=f"{local_repository_prefix}/capabilities/interfaces",
+            name=f"{rospy.get_namespace()}/capability_repository/capabilities/interfaces",
             data_class=std_msgs.msg.Time,
             callback=capability_node_class_from_capability_interface_callback,
             callback_args=(local_mc_prefix, self.get_capability_interface_service, ),

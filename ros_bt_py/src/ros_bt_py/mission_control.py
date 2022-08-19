@@ -10,7 +10,7 @@ from typing import Dict, List, Tuple, Optional
 
 import actionlib
 import rospy
-from actionlib import ActionServer
+from actionlib import ActionServer, ServerGoalHandle
 from actionlib_msgs.msg import GoalStatus
 from rospy import ROSException, Service, ServiceProxy
 from rosservice import rosservice_find
@@ -19,10 +19,10 @@ from ros_bt_py_msgs.msg import (
     ExecuteRemoteCapabilityActionGoal, ExecuteCapabilityImplementationGoal,
     RemoteCapabilitySlotStatus, ExecuteRemoteCapabilityResult,
     ExecuteCapabilityImplementationAction, ExecuteCapabilityImplementationResult,
-    ExecuteCapabilityImplementationActionResult,
+    ExecuteCapabilityImplementationActionResult, ExecuteRemoteCapabilityGoal, ExecuteRemoteCapabilityActionResult,
 )
 from ros_bt_py_msgs.srv import (
-    GetCapabilityImplementationsRequest, GetCapabilityImplementationsResponse, GetCapabilityInterfaces,
+    GetCapabilityImplementationsRequest, GetCapabilityImplementationsResponse,
     GetCapabilityImplementations, ControlTreeExecutionRequest, LoadTreeRequest, PrepareLocalImplementationRequest,
     PrepareLocalImplementationResponse,
     NotifyCapabilityExecutionStatusRequest, NotifyCapabilityExecutionStatusResponse, LoadTreeResponse, AddNodeRequest,
@@ -54,31 +54,15 @@ class MissionControl:
     # pylint: disable=too-many-instance-attributes
 
     def __init__(
-            self,
-            auction_manager: Type[AssignmentManager],
-            local_capability_topic_prefix: str,
-            global_capability_topic_prefix: str
+            self
     ):
         """
         Creates a new capability repository.
         The repository has to major interfaces, it communicates with other repositories and
         offers services geared towards its local subscribers.
-
-        :param local_capability_topic_prefix: Prefix used for local communication.
-        This topic only relays information relevant for the local robot, thus foreign implementations,
-        etc. are not used.
-
-        :param global_capability_topic_prefix: Prefix used for communication with other ros_bt_py nodes.
-        This is used to sync available interfaces across all nodes.
         """
-
-        self.local_capability_topic_prefix = local_capability_topic_prefix
-        self.global_capability_topic_prefix = global_capability_topic_prefix
-
         self.executing_capabilities: Dict[HashableCapabilityInterface, Dict[str, int]] = {}
-
-        self.capability_repository_topic = \
-            rospy.get_param("capability_repository_topic", "/capability_repository")
+        self.capability_repository_topic = f"{rospy.get_namespace()}/capability_repository"
 
         self.__request_capability_execution_service: Service = Service(
             "~execute_capability",
@@ -95,11 +79,6 @@ class MissionControl:
         self.__get_local_bid_service_client = AsyncServiceProxy(
             "~get_local_bid",
             GetLocalBid,
-        )
-
-        self.__get_capability_interfaces_proxy = rospy.ServiceProxy(
-            "~capabilities/interface/get",
-            GetCapabilityInterfaces
         )
 
         self.__check_precondition_status_service = rospy.Service(
@@ -152,21 +131,24 @@ class MissionControl:
         with self._remote_capability_slot_lock:
             self._remote_capability_slot_status[msg.name] = msg.status
 
-    def execute_remote_capability_exec(self, remote_slot_name: str, goal_handle: ExecuteRemoteCapabilityActionGoal):
-        rospy.loginfo(f"Starting execution of {goal_handle.goal_id} on {remote_slot_name}")
+    def execute_remote_capability_exec(self, remote_slot_name: str, goal_handle: ServerGoalHandle):
+        goal_id = goal_handle.get_goal_id().id
+
+        rospy.loginfo(f"Starting execution of {goal_id} on {remote_slot_name}")
+        goal: ExecuteRemoteCapabilityGoal = goal_handle.get_goal()
 
         response: PrepareLocalImplementationResponse = self.prepare_local_capability_implementation(
             PrepareLocalImplementationRequest(
-                interface=goal_handle.goal.interface,
-                implementation_name=goal_handle.goal.implementation_name
+                interface=goal.interface,
+                implementation_name=goal.implementation_name
             )
         )
 
         if not response.success:
-            rospy.logwarn(f"Could not prepare local implementation for {goal_handle.goal_id}: {response.error_message}")
+            rospy.logwarn(f"Could not prepare local implementation for {goal_id}: {response.error_message}")
             self.__execute_remote_capability_action_server.publish_result(
                 status=GoalStatus(
-                    goal_id=goal_handle.goal_id,
+                    goal_id=goal_handle.get_goal_id(),
                     status=GoalStatus.SUCCEEDED
                 ),
                 result=ExecuteRemoteCapabilityResult(
@@ -176,15 +158,19 @@ class MissionControl:
             )
             return
 
+        remote_tree_slot_executor_topic = rospy.resolve_name(
+            f"~remote_capability_slot/{remote_slot_name}"
+        )
+
         remote_slot_action_client = actionlib.SimpleActionClient(
-            f"~remote_capability_slots/{remote_slot_name}",
+            remote_tree_slot_executor_topic,
             ExecuteCapabilityImplementationAction
         )
         if not remote_slot_action_client.wait_for_server(timeout=rospy.Duration(secs=5)):
             rospy.logwarn("Could not contact remote_capability slot before timeout")
             self.__execute_remote_capability_action_server.publish_result(
                 status=GoalStatus(
-                    goal_id=goal_handle.goal_id,
+                    goal_id=goal_handle.get_goal_id(),
                     status=GoalStatus.SUCCEEDED
                 ),
                 result=ExecuteRemoteCapabilityResult(
@@ -192,20 +178,21 @@ class MissionControl:
                     error_message="Could not contact remote_capability slot before timeout"
                 )
             )
+
             return
 
         remote_slot_action_client.send_goal(
             ExecuteCapabilityImplementationGoal(
-                implementation=response.implementation_subtree,
-                interface=goal_handle.goal.interface,
-                input_topic=goal_handle.goal.input_topic,
-                output_topic=goal_handle.goal.output_topic
+                implementation_tree=response.implementation_subtree,
+                interface=goal.interface,
+                input_topic=goal.input_topic,
+                output_topic=goal.output_topic
             )
         )
 
         while not remote_slot_action_client.wait_for_result(timeout=rospy.Duration(nsecs=10)):
-            if self._remote_capability_slot_goals[goal_handle.goal_id][1]:
-                rospy.logerr(f"Cancellation of goal {goal_handle.goal_id} requested!")
+            if self._remote_capability_slot_goals[goal_id][1]:
+                rospy.logerr(f"Cancellation of goal {goal_id} requested!")
                 remote_slot_action_client.cancel_goal()
                 return
 
@@ -213,7 +200,7 @@ class MissionControl:
 
         self.__execute_remote_capability_action_server.publish_result(
             status=GoalStatus(
-                goal_id=goal_handle.goal_id,
+                goal_id=goal_handle.get_goal_id(),
                 status=GoalStatus.SUCCEEDED
             ),
             result=ExecuteRemoteCapabilityResult(
@@ -222,9 +209,7 @@ class MissionControl:
             )
         )
 
-        # TODO: Start action on remote slot!
-
-    def execute_remote_capability_goal_cb(self, goal_handle: ExecuteRemoteCapabilityActionGoal) -> None:
+    def execute_remote_capability_goal_cb(self, goal_handle: ServerGoalHandle) -> None:
         """
         Execute remote capability action goal callback.
         This callback manages the arrival of a new goal to the action server.
@@ -235,19 +220,22 @@ class MissionControl:
         :param goal_handle: The goal handle that contains all the necessary information for the new request.
         :return: None
         """
+        goal_id = goal_handle.get_goal_id().id
         with self._remote_capability_slot_lock:
-            idle_executors: List[Tuple[str, str]] = list(
+            idle_executor_ids: List[str] = list(
                 filter(
-                    lambda x: x[1] == RemoteCapabilitySlotStatus.IDLE,
-                    self._remote_capability_slot_status.items()
-                    )
+                    lambda x: self._remote_capability_slot_status[x] == RemoteCapabilitySlotStatus.IDLE,
+                    self._remote_capability_slot_status
+                )
             )
+        rospy.logfatal(f"Executors: {self._remote_capability_slot_status}")
+        rospy.logfatal(f"IdleExecutors: {idle_executor_ids}")
 
-        if len(idle_executors) < 1:
+        if len(idle_executor_ids) < 1:
             rospy.logerr(f"No idle remote_capability_slot found, cannot execute remote capability.")
             self.__execute_remote_capability_action_server.publish_result(
                 status=GoalStatus(
-                    goal_id=goal_handle.goal_id,
+                    goal_id=goal_handle.get_goal_id(),
                     status=GoalStatus.SUCCEEDED
                 ),
                 result=ExecuteRemoteCapabilityResult(
@@ -257,26 +245,26 @@ class MissionControl:
             )
             return
 
-        selected_executor = idle_executors.pop()
+        selected_executor_id = idle_executor_ids.pop()
         self.remote_capability_slot_status_callback(
             RemoteCapabilitySlotStatus(
-                name=selected_executor[0],
+                name=selected_executor_id,
                 status=RemoteCapabilitySlotStatus.RUNNING,
                 timestamp=rospy.Time.now()
             )
         )
 
-        self._remote_capability_slot_goals[goal_handle.goal_id] = (selected_executor[0], False)
+        self._remote_capability_slot_goals[goal_id] = (selected_executor_id, False)
 
         thread = threading.Thread(
-            name=f"Thread-RemoteCapabilitySlot-{selected_executor[0]}",
+            name=f"Thread-RemoteCapabilitySlot-{selected_executor_id}",
             target=self.execute_remote_capability_exec,
-            args=(selected_executor[0], goal_handle)
+            args=(selected_executor_id, goal_handle)
         )
         thread.start()
         rospy.loginfo("Started thread for execution of remote capability!")
 
-    def execute_remote_capability_cancel_cb(self, goal_handle: ExecuteRemoteCapabilityActionGoal) -> None:
+    def execute_remote_capability_cancel_cb(self, goal_handle: ServerGoalHandle) -> None:
         """
         ExecuteRemoteCapability cancel callback.
         This callback manages the request for the cancellation of a running goal.
@@ -285,18 +273,19 @@ class MissionControl:
         :param goal_handle: The goal handle containing all the information about the goal to cancel.
         :return: None
         """
-        if goal_handle.goal_id not in self._remote_capability_slot_goals:
+        goal_id = goal_handle.get_goal_id().id
+        if goal_id not in self._remote_capability_slot_goals:
             rospy.logwarn("Requested cancellation of unknown remote capability goal!")
             self.__execute_remote_capability_action_server.publish_result(
                 status=GoalStatus(
-                    goal_id=goal_handle.goal_id,
+                    goal_id=goal_handle.get_goal_id(),
                     status=GoalStatus.ABORTED,
                 ),
                 result=ExecuteCapabilityImplementationActionResult()
             )
             return
-        current_status = self._remote_capability_slot_goals[goal_handle.goal_id]
-        self._remote_capability_slot_goals[goal_handle.goal_id] = (current_status[0], True)
+        current_status = self._remote_capability_slot_goals[goal_id]
+        self._remote_capability_slot_goals[goal_id] = (current_status[0], True)
         return
 
     def notify_capability_execution_status(
@@ -326,12 +315,15 @@ class MissionControl:
     def request_capability_execution(
             self,
             goal: RequestCapabilityExecutionRequest
-            ) -> RequestCapabilityExecutionResponse:
+    ) -> RequestCapabilityExecutionResponse:
         response = RequestCapabilityExecutionResponse()
         rospy.loginfo("Received request to execute capability!")
 
+        assignment_system_topic = rospy.resolve_name(
+            f"{rospy.get_namespace()}/assignment_manager/find_best_executor"
+        )
         find_best_executor_service = ServiceProxy(
-            "~assignment_system/find_best_capability_executor",
+            assignment_system_topic,
             FindBestCapabilityExecutor
         )
 
@@ -387,10 +379,9 @@ class MissionControl:
         :return: None
         """
         service_response = GetLocalBidResponse()
-        capability_repository_topic = rospy.get_param("capability_repository_topic", "/capability_repository_node")
 
         capability_repository_topic = rospy.resolve_name(
-            f"{capability_repository_topic}/capabilities/implementations/get"
+            f"{rospy.get_namespace()}/capability_repository/capabilities/implementations/get"
         )
 
         get_capability_implementations_proxy = rospy.ServiceProxy(
@@ -550,8 +541,12 @@ class MissionControl:
             tree_manager=prepare_local_implementation_tree_manager
         )
 
+        capability_repository_topic = rospy.resolve_name(
+            f"{rospy.get_namespace()}/capability_repository/capabilities/implementations/get"
+        )
+
         get_capability_implementation_service_proxy = ServiceProxy(
-            "/capability_repository_node/capabilities/implementations/get",
+            capability_repository_topic,
             GetCapabilityImplementations
         )
 

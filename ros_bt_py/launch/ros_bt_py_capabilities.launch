@@ -112,9 +112,9 @@
         <param name="default_tree_control_command" value="$(arg default_tree_control_command)" />
       </node>
 
-      <node name="capability_repository_node" pkg="ros_bt_py" type="capability_repository_node.py" output="log" respawn="true" />
+      <node name="capability_repository" pkg="ros_bt_py" type="capability_repository_node.py" output="log" respawn="true" />
       <node name="mission_control" pkg="ros_bt_py" type="mission_control_node.py" output="log" respawn="true" />
-
+      <node name="assignment_manager" pkg="ros_bt_py" type="assignment_manager_node.py" output="log" respawn="true" />
 
         <!-- behavior tree backend, responsible for executing the tree -->
       <node if="$(arg dual)" name="tree_node_dual" pkg="ros_bt_py" type="tree_node.py" output="log"

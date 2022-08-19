@@ -31,12 +31,17 @@
 Module that provides the ABC for the AssignmentManagerNodes.
 """
 import abc
+from typing import Dict, Tuple
 
+import actionlib
+import rospy
+import rosservice
 from ros_bt_py_msgs.srv import (
-    AddAssignmentRequestRequest, AddAssignmentRequestResponse,
-    CancelAssignmentRequestRequest, CancelAssignmentRequestResponse, GetAssignmentRequestStatusRequest,
-    GetAssignmentRequestStatusResponse, GetAssignmentRequestResultRequest, GetAssignmentRequestResultResponse,
+    FindBestCapabilityExecutor, FindBestCapabilityExecutorRequest,
+    FindBestCapabilityExecutorResponse, GetLocalBid, GetLocalBidRequest, GetLocalBidResponse,
 )
+
+from rospy import Service, ServiceProxy
 
 
 class AssignmentManager(abc.ABC):
@@ -59,37 +64,16 @@ class AssignmentManager(abc.ABC):
         :param global_assignment_msg_topic_prefix: The topic used to communicate with other assignment manager nodes
         that might run on other robots.
         """
-        self.local_mission_control_topic: str = local_mission_control_topic
         self.global_assignment_msg_topic_prefix: str = global_assignment_msg_topic_prefix
 
-    @abc.abstractmethod
-    def request_assignment(self, request: AddAssignmentRequestRequest) -> AddAssignmentRequestResponse:
-        """
-        Function to request a new assignment of the given capability interface to an implementation.
-
-        :param request: The request containing the assignment request data.
-        :return: The response to the request containing the auction id or error messages.
-        """
+        self._find_best_capability_executor_service = Service(
+            f'~find_best_executor',
+            FindBestCapabilityExecutor,
+            handler=self.find_best_capability_executor
+        )
 
     @abc.abstractmethod
-    def cancel_assignment_request(self, request: CancelAssignmentRequestRequest) -> CancelAssignmentRequestResponse:
-        """
-        Cancels the running assignment request with the given id.
-        This causes the get_assignment_result method to never produce an output and the id will become invalid.
-
-        :param request: The request containing the unique assignment request id.
-        :return: The status of the cancel request.
-        """
-
-    @abc.abstractmethod
-    def get_assignment_request_status(
-            self,
-            request: GetAssignmentRequestStatusRequest
-            ) -> GetAssignmentRequestStatusResponse:
-        """
-        Returns the status of the assignment request.
-        :param request: Contains the information about the assignment request.
-        :return: The current status or an error message.
+    def find_best_capability_executor(self, goal: FindBestCapabilityExecutorRequest) -> FindBestCapabilityExecutorResponse:
         """
 
     @abc.abstractmethod
@@ -102,3 +86,46 @@ class AssignmentManager(abc.ABC):
          :param request: Contains the information about the assignment request.
         :return: The implementation name and the assigned mission controller.
         """
+
+class SimpleAssignmentManager(AssignmentManager):
+    def find_best_capability_executor(
+            self,
+            goal: FindBestCapabilityExecutorRequest
+            ) -> FindBestCapabilityExecutorResponse:
+
+        response = FindBestCapabilityExecutorResponse()
+        bids: Dict[str, GetLocalBidResponse] = {}
+
+        local_bid_services = rosservice.rosservice_find("ros_bt_py_msgs/GetLocalBid")
+        rospy.logerr(f"Available services: {local_bid_services}")
+        for service_name in local_bid_services:
+            service_proxy = ServiceProxy(
+                service_name,
+                GetLocalBid
+            )
+            service_proxy.wait_for_service(timeout=rospy.Duration.from_sec(2))
+            bid_response: GetLocalBidResponse = service_proxy.call(GetLocalBidRequest(
+                interface=goal.capability
+            ))
+            if not bid_response.success:
+                rospy.logwarn(f"Failed to get bid from: {service_name}, {bid_response.error_message}")
+                continue
+            bids[service_name] = bid_response
+
+        if len(bids) < 1:
+            response.error_message = "No bids were present for this capability!"
+            rospy.logerr(response.error_message)
+            response.success = False
+            return response
+
+        top_bid: Tuple[str, GetLocalBidResponse] = list(sorted(bids.items(), key=lambda item: item[1].bid))[0]
+
+        top_service_name: str = rosservice.get_service_node(top_bid[0])
+        top_service_response: GetLocalBidResponse = top_bid[1]
+
+        rospy.logerr(f"Executing  on {top_service_name} - {top_service_response}")
+
+        response.success = True
+        response.executor_mission_control_topic = top_service_name
+        response.execute_local = False
+        response.implementation_name = top_service_response.implementation_name

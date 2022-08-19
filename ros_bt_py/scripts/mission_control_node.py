@@ -18,26 +18,22 @@ if __name__ == '__main__':
         default="/capability_repository_node"
     )
 
-    LOCAL_CAPABILITY_TOPIC_PREFIX = rospy.get_param("robot_namespace", "/mission_control")
-    GLOBAL_CAPABILITY_TOPIC_PREFIX = rospy.get_param("capabilities_topic", "/gc")
+    local_mc_prefix = f"{rospy.get_namespace()}/mission_control"
 
     get_capability_interface_service = rospy.ServiceProxy(
-        name=f"{local_repository_prefix}/capabilities/interfaces/get",
+        name=f"{rospy.get_namespace()}/capability_repository/capabilities/interfaces/get",
         service_class=GetCapabilityInterfaces,
         persistent=True,
     )
 
     capability_interface_subscription = rospy.Subscriber(
-        name=f"{local_repository_prefix}/capabilities/interfaces",
+        name=f"{rospy.get_namespace()}/capability_repository/capabilities/interfaces",
         data_class=std_msgs.msg.Time,
         callback=capability_node_class_from_capability_interface_callback,
-        callback_args=(LOCAL_CAPABILITY_TOPIC_PREFIX, get_capability_interface_service,),
+        callback_args=(local_mc_prefix, get_capability_interface_service,),
     )
 
     rospy.init_node('mission_control')
 
-    MISSION_CONTROL = MissionControl(
-        local_capability_topic_prefix=LOCAL_CAPABILITY_TOPIC_PREFIX,
-        global_capability_topic_prefix=GLOBAL_CAPABILITY_TOPIC_PREFIX
-    )
+    MISSION_CONTROL = MissionControl()
     rospy.spin()

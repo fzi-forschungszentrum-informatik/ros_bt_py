@@ -42,7 +42,9 @@ from typing import Dict, Set
 import genpy
 import rospkg
 import rospy
+import std_msgs.msg
 import yaml
+from rospy import ROSException, ROSSerializationException
 
 from std_msgs.msg import Time
 from rospkg import ResourceNotFound
@@ -91,6 +93,14 @@ class CapabilityRepository:
 
         self.__rp = rospkg.RosPack()
         self.__capabilities_tmp_dir = tempfile.mkdtemp(prefix="capability_backup_")
+        try:
+            self.__global_capability_interfaces_requests_publisher.publish(
+                std_msgs.msg.Time(data=rospy.Time.now())
+            )
+        except ROSSerializationException as exc:
+            rospy.logerr(f"Cannot serialize request msg: {exc}")
+        except ROSException as exc:
+            rospy.logerr(f"Cannot send request for globally available interfaces: {exc}")
 
     def __get_capabilities_folder_from_package(
             self,
@@ -377,6 +387,7 @@ class CapabilityRepository:
                 with self.__capabilities_lock:
                     self.capabilities.add(hashable_capability)
                     self.local_capabilities[hashable_capability] = {}
+                self.__global_capability_interfaces_publisher.publish(capability)
 
             implementation_subfolder_path = os.path.join(capability_folder_path, "implementations")
             if os.path.isdir(implementation_subfolder_path):
@@ -437,6 +448,7 @@ class CapabilityRepository:
 
             self.capabilities.add(hashable_interface)
             self.local_capabilities[hashable_interface] = {}
+            self.__global_capability_interfaces_publisher.publish(interface)
 
             try:
                 self.__publish_interface_update_local()

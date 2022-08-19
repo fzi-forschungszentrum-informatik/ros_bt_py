@@ -34,12 +34,8 @@ Module containing a ros node for the AssignmentManager class.
 from typing import Type
 
 import rospy
-from ros_bt_py_msgs.srv import (
-    AddAssignmentRequest, CancelAssignmentRequest, GetAssignmentRequestStatus,
-    GetAssignmentRequestResult,
-)
 
-from ros_bt_py.assignment_manager.assignment_manager import AssignmentManager
+from ros_bt_py.assignment_manager.assignment_manager import AssignmentManager, SimpleAssignmentManager
 
 
 class AssignmentManagerNode:
@@ -103,6 +99,7 @@ class AssignmentManagerNode:
         self.__add_assignment_request_service.shutdown()
 
 if __name__ == "__main__":
+    rospy.init_node("assignment_manager")
     try:
         LOCAL_TOPIC_PREFIX: str = rospy.get_param("local_topic_prefix", default="/robot1")
         ASSIGNMENT_TOPIC_PREFIX: str =\
@@ -114,7 +111,7 @@ if __name__ == "__main__":
     ASSIGNMENT_MANAGER_NODE = AssignmentManagerNode(
         local_topic_prefix=LOCAL_TOPIC_PREFIX,
         global_assignment_msg_topic_prefix=ASSIGNMENT_TOPIC_PREFIX,
-        assignment_manager=
+        assignment_manager=SimpleAssignmentManager
     )
     rospy.spin()
     ASSIGNMENT_MANAGER_NODE.shutdown()

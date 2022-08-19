@@ -2,6 +2,5 @@ CapabilityInterface interface
 ---
 string implementation_name
 float64 bid
-bool executable
 bool success
 string error_message
