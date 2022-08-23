@@ -49,7 +49,7 @@ from ros_bt_py_msgs.msg import (
 )
 from ros_bt_py_msgs.msg import NodeData as NodeDataMsg
 from ros_bt_py_msgs.srv import (
-    PrepareLocalImplementation, PrepareLocalImplementationRequest, PrepareLocalImplementationResponse,
+    PrepareLocalImplementation, PrepareLocalImplementationRequest,
     LoadTreeRequest, ClearTreeRequest, ControlTreeExecutionRequest, GetCapabilityInterfacesRequest,
     GetCapabilityInterfacesResponse, ControlTreeExecutionResponse, RequestCapabilityExecution,
     RequestCapabilityExecutionRequest, RequestCapabilityExecutionResponse, NotifyCapabilityExecutionStatus,
@@ -68,7 +68,7 @@ WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS = 2
 WAIT_FOR_IMPLEMENTATION_ASSIGNMENT_TIMEOUT_SECONDS = 2
 
 WAIT_FOR_REMOTE_MISSION_CONTROL_TRIES = 3
-WAIT_FOR_REMOTE_EXECUTION_TIMEOUT_SECONDS = 10
+WAIT_FOR_REMOTE_EXECUTION_TIMEOUT_SECONDS = 30
 WAIT_FOR_OUTPUTS_TIMEOUT_SECONDS = 1
 
 
@@ -381,10 +381,12 @@ class Capability(ABC, Leaf):
             response = service_proxy.get_response()
             if response.success:
                 return response
-            else:
-                raise BehaviorTreeException(
-                    f'Service call failed {response.error_message})'
-                )
+            raise BehaviorTreeException(
+                f'Service call failed {response.error_message})'
+            )
+        raise RuntimeError(
+            f'Async proxy in invalid state {state})'
+        )
 
     @staticmethod
     def _execute_action(action_client: SimpleActionClient):
@@ -644,7 +646,7 @@ class Capability(ABC, Leaf):
             )
             return NodeMsg.RUNNING
         try:
-            prepare_local_implementation_response =\
+            prepare_local_implementation_response = \
                 self.__handle_async_service_call(self._prepare_local_implementation_service_proxy)
         except BehaviorTreeException as exc:
             self.logerr(f"Failed to receive prepared tree from mission control: {exc}")

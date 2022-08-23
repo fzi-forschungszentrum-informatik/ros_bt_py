@@ -209,7 +209,7 @@ class MissionControl:
             )
         )
 
-    def execute_remote_capability_goal_cb(self, goal_handle: ServerGoalHandle) -> None:
+    def execute_remote_capability_goal_cb(self, goal_handle: ExecuteRemoteCapabilityActionGoal) -> None:
         """
         Execute remote capability action goal callback.
         This callback manages the arrival of a new goal to the action server.
@@ -246,6 +246,7 @@ class MissionControl:
             return
 
         selected_executor_id = idle_executor_ids.pop()
+
         self.remote_capability_slot_status_callback(
             RemoteCapabilitySlotStatus(
                 name=selected_executor_id,
@@ -254,7 +255,7 @@ class MissionControl:
             )
         )
 
-        self._remote_capability_slot_goals[goal_id] = (selected_executor_id, False)
+        self._remote_capability_slot_goals[goal_handle.goal_id] = (selected_executor_id, False)
 
         thread = threading.Thread(
             name=f"Thread-RemoteCapabilitySlot-{selected_executor_id}",
@@ -338,7 +339,7 @@ class MissionControl:
             )
 
             if find_best_executor_response.success:
-                rospy.loginfo("Found a suitable implementation!")
+                rospy.logfatal("Found a suitable implementation!")
                 response.success = True
                 response.implementation_name = find_best_executor_response.implementation_name
                 response.execute_local = find_best_executor_response.execute_local

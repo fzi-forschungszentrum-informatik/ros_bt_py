@@ -129,3 +129,4 @@ class SimpleAssignmentManager(AssignmentManager):
         response.executor_mission_control_topic = top_service_name
         response.execute_local = False
         response.implementation_name = top_service_response.implementation_name
+        return response
