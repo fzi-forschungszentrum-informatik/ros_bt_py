@@ -585,14 +585,7 @@ class Capability(ABC, Leaf):
                 self._local_implementation_tree_status = NodeMsg.FAILED
                 return
 
-            for node in self.tree_manager.nodes.values():
-                if hasattr(node, "__capability_interface") and \
-                        getattr(node, "__capability_interface") == self.capability_interface:
-                    if isinstance(node, CapabilityInputDataBridge):
-                        node.capability_bridge_topic = self._input_bridge_topic
-                        continue
-                    if isinstance(node, CapabilityOutputDataBridge):
-                        node.capability_bridge_topic = self._output_bridge_topic
+            set_capability_io_bridge_topics(self.tree_manager, self.capability_interface, self._input_bridge_topic, self._output_bridge_topic)
 
             try:
                 self._local_implementation_tree_root = self.tree_manager.find_root()
@@ -602,18 +595,6 @@ class Capability(ABC, Leaf):
                 return
 
             self._local_implementation_tree_root.shutdown()
-
-            response: ControlTreeExecutionResponse = self.tree_manager.control_execution(
-                ControlTreeExecutionRequest(
-                    command=ControlTreeExecutionRequest.SHUTDOWN
-                )
-            )
-
-            if not response.success:
-                self.logerr(f"Failed to setup tree: {response.error_message}")
-                self._local_implementation_tree_status = NodeMsg.FAILED
-                return
-
             self._local_implementation_tree_root.setup()
 
             if self.debug_manager and self.debug_manager.get_publish_subtrees():
@@ -1168,3 +1149,19 @@ def capability_node_class_from_capability_interface_callback(
         capability_node_class_from_capability_interface(interface, args[0])
         capability_input_data_bridge_from_interface(interface)
         capability_output_data_bridge_from_interface(interface)
+
+
+def set_capability_io_bridge_topics(
+        tree_manager: TreeManager,
+        interface: CapabilityInterface,
+        input_topic: str,
+        output_topic: str
+) -> None:
+    for node in tree_manager.nodes.values():
+        if hasattr(node, "__capability_interface") and \
+                getattr(node, "__capability_interface") == interface:
+            if isinstance(node, CapabilityInputDataBridge):
+                node.capability_bridge_topic = input_topic
+                continue
+            if isinstance(node, CapabilityOutputDataBridge):
+                node.capability_bridge_topic = output_topic
