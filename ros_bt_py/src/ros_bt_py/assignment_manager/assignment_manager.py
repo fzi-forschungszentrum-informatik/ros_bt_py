@@ -73,7 +73,10 @@ class AssignmentManager(abc.ABC):
         )
 
     @abc.abstractmethod
-    def find_best_capability_executor(self, goal: FindBestCapabilityExecutorRequest) -> FindBestCapabilityExecutorResponse:
+    def find_best_capability_executor(
+            self,
+            goal: FindBestCapabilityExecutorRequest
+            ) -> FindBestCapabilityExecutorResponse:
         """
 
     @abc.abstractmethod
@@ -87,26 +90,29 @@ class AssignmentManager(abc.ABC):
         :return: The implementation name and the assigned mission controller.
         """
 
+
 class SimpleAssignmentManager(AssignmentManager):
     def find_best_capability_executor(
             self,
             goal: FindBestCapabilityExecutorRequest
-            ) -> FindBestCapabilityExecutorResponse:
+    ) -> FindBestCapabilityExecutorResponse:
 
         response = FindBestCapabilityExecutorResponse()
         bids: Dict[str, GetLocalBidResponse] = {}
 
         local_bid_services = rosservice.rosservice_find("ros_bt_py_msgs/GetLocalBid")
-        rospy.logerr(f"Available services: {local_bid_services}")
+        rospy.logfatal(f"Available services: {local_bid_services}")
         for service_name in local_bid_services:
             service_proxy = ServiceProxy(
                 service_name,
                 GetLocalBid
             )
             service_proxy.wait_for_service(timeout=rospy.Duration.from_sec(2))
-            bid_response: GetLocalBidResponse = service_proxy.call(GetLocalBidRequest(
-                interface=goal.capability
-            ))
+            bid_response: GetLocalBidResponse = service_proxy.call(
+                GetLocalBidRequest(
+                    interface=goal.capability
+                )
+            )
             if not bid_response.success:
                 rospy.logwarn(f"Failed to get bid from: {service_name}, {bid_response.error_message}")
                 continue
@@ -123,10 +129,10 @@ class SimpleAssignmentManager(AssignmentManager):
         top_service_name: str = rosservice.get_service_node(top_bid[0])
         top_service_response: GetLocalBidResponse = top_bid[1]
 
-        rospy.logerr(f"Executing  on {top_service_name} - {top_service_response}")
+        rospy.logfatal(f"Executing  on {top_service_name} - {top_service_response}")
 
         response.success = True
         response.executor_mission_control_topic = top_service_name
-        response.execute_local = False
+        response.execute_local = (top_service_name == goal.mission_control_name)
         response.implementation_name = top_service_response.implementation_name
         return response

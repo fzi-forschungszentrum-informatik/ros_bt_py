@@ -134,18 +134,24 @@ class MissionControl:
     def execute_remote_capability_exec(self, remote_slot_name: str, goal_handle: ServerGoalHandle):
         goal_id = goal_handle.get_goal_id().id
 
-        rospy.loginfo(f"Starting execution of {goal_id} on {remote_slot_name}")
+        rospy.logfatal(f"Starting execution of {goal_id} on {remote_slot_name}" , logger_name="mission_control_remote_exec")
         goal: ExecuteRemoteCapabilityGoal = goal_handle.get_goal()
 
-        response: PrepareLocalImplementationResponse = self.prepare_local_capability_implementation(
+        prepare_local_capability_implementation_service_proxy = ServiceProxy(
+            "~prepare_local_implementation",
+            PrepareLocalImplementation
+        )
+
+        response: PrepareLocalImplementationResponse = prepare_local_capability_implementation_service_proxy.call(
             PrepareLocalImplementationRequest(
                 interface=goal.interface,
                 implementation_name=goal.implementation_name
             )
         )
+        rospy.logfatal("service call finished")
 
         if not response.success:
-            rospy.logwarn(f"Could not prepare local implementation for {goal_id}: {response.error_message}")
+            rospy.logwarn(f"Could not prepare local implementation for {goal_id}: {response.error_message}", logger_name="mission_control_remote_exec")
             self.__execute_remote_capability_action_server.publish_result(
                 status=GoalStatus(
                     goal_id=goal_handle.get_goal_id(),
@@ -158,6 +164,8 @@ class MissionControl:
             )
             return
 
+        rospy.logfatal("Resolving executor server!", logger_name="mission_control_remote_exec")
+
         remote_tree_slot_executor_topic = rospy.resolve_name(
             f"~remote_capability_slot/{remote_slot_name}"
         )
@@ -166,8 +174,9 @@ class MissionControl:
             remote_tree_slot_executor_topic,
             ExecuteCapabilityImplementationAction
         )
+        
         if not remote_slot_action_client.wait_for_server(timeout=rospy.Duration(secs=5)):
-            rospy.logwarn("Could not contact remote_capability slot before timeout")
+            rospy.logwarn("Could not contact remote_capability slot before timeout", logger_name="mission_control_remote_exec")
             self.__execute_remote_capability_action_server.publish_result(
                 status=GoalStatus(
                     goal_id=goal_handle.get_goal_id(),
@@ -181,6 +190,9 @@ class MissionControl:
 
             return
 
+        rospy.logfatal("Send goal!", logger_name="mission_control_remote_exec")
+        remote_slot_action_client.cancel_all_goals()
+
         remote_slot_action_client.send_goal(
             ExecuteCapabilityImplementationGoal(
                 implementation_tree=response.implementation_subtree,
@@ -192,7 +204,7 @@ class MissionControl:
 
         while not remote_slot_action_client.wait_for_result(timeout=rospy.Duration(nsecs=10)):
             if self._remote_capability_slot_goals[goal_id][1]:
-                rospy.logerr(f"Cancellation of goal {goal_id} requested!")
+                rospy.logerr(f"Cancellation of goal {goal_id} requested!", logger_name="mission_control_remote_exec")
                 remote_slot_action_client.cancel_goal()
                 return
 
@@ -228,11 +240,9 @@ class MissionControl:
                     self._remote_capability_slot_status
                 )
             )
-        rospy.logfatal(f"Executors: {self._remote_capability_slot_status}")
-        rospy.logfatal(f"IdleExecutors: {idle_executor_ids}")
 
         if len(idle_executor_ids) < 1:
-            rospy.logerr(f"No idle remote_capability_slot found, cannot execute remote capability.")
+            rospy.logerr(f"No idle remote_capability_slot found, cannot execute remote capability.", logger_name="mission_control_remote_exec")
             self.__execute_remote_capability_action_server.publish_result(
                 status=GoalStatus(
                     goal_id=goal_handle.get_goal_id(),
@@ -246,7 +256,7 @@ class MissionControl:
             return
 
         selected_executor_id = idle_executor_ids.pop()
-
+        rospy.logfatal(f"Selected executor: {selected_executor_id}", logger_name="mission_control_remote_exec")
         self.remote_capability_slot_status_callback(
             RemoteCapabilitySlotStatus(
                 name=selected_executor_id,
@@ -255,15 +265,15 @@ class MissionControl:
             )
         )
 
-        self._remote_capability_slot_goals[goal_handle.goal_id] = (selected_executor_id, False)
-
+        self._remote_capability_slot_goals[goal_id] = (selected_executor_id, False)
+        rospy.logfatal("Starting thread!", logger_name="mission_control_remote_exec")
         thread = threading.Thread(
             name=f"Thread-RemoteCapabilitySlot-{selected_executor_id}",
             target=self.execute_remote_capability_exec,
             args=(selected_executor_id, goal_handle)
         )
         thread.start()
-        rospy.loginfo("Started thread for execution of remote capability!")
+        rospy.loginfo("Started thread for execution of remote capability!", logger_name="mission_control_remote_exec")
 
     def execute_remote_capability_cancel_cb(self, goal_handle: ServerGoalHandle) -> None:
         """
@@ -334,7 +344,8 @@ class MissionControl:
             )
             find_best_executor_response = find_best_executor_service.call(
                 FindBestCapabilityExecutorRequest(
-                    capability=goal.capability
+                    capability=goal.capability,
+                    mission_control_name=rospy.get_node_uri()
                 )
             )
 
@@ -510,7 +521,6 @@ class MissionControl:
                 ] for n, s in self.executing_capabilities[hashable_capability].items()
             )
 
-        rospy.logerr(f"{self.executing_capabilities} - RESULT {response.available}")
         return response
 
     def prepare_local_capability_implementation(
