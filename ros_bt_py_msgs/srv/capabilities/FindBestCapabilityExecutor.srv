@@ -1,4 +1,5 @@
 CapabilityInterface capability
+string mission_control_name
 ---
 # result
 bool success
