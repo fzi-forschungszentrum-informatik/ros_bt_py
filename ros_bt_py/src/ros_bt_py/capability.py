@@ -68,7 +68,7 @@ WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS = 2
 WAIT_FOR_IMPLEMENTATION_ASSIGNMENT_TIMEOUT_SECONDS = 2
 
 WAIT_FOR_REMOTE_MISSION_CONTROL_TRIES = 3
-WAIT_FOR_REMOTE_EXECUTION_TIMEOUT_SECONDS = 30
+WAIT_FOR_REMOTE_EXECUTION_TIMEOUT_SECONDS = 120
 WAIT_FOR_OUTPUTS_TIMEOUT_SECONDS = 1
 
 
@@ -683,6 +683,8 @@ class Capability(ABC, Leaf):
             ExecuteRemoteCapabilityGoal(
                 interface=self.capability_interface,
                 implementation_name=self._implementation_name,
+                input_topic=self._input_bridge_topic,
+                output_topic=self._output_bridge_topic
             )
         )
         self._execute_capability_remote_client_start_time = rospy.Time.now()

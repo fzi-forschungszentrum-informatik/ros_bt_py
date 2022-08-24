@@ -37,20 +37,20 @@ Its purpose is to execute capability implementations upon remote requests.
 from threading import RLock, Event
 from typing import Optional
 
-import genpy
 import rospy
 from actionlib import SimpleActionServer
 from ros_bt_py_msgs.msg import (
     ExecuteCapabilityImplementationGoal, ExecuteCapabilityImplementationAction,
     ExecuteCapabilityImplementationFeedback, ExecuteCapabilityImplementationResult, Node as NodeMsg,
+    RemoteCapabilitySlotStatus,
 )
 from ros_bt_py_msgs.srv import (
     ControlTreeExecutionRequest, LoadTreeRequest, LoadTreeResponse, ClearTreeRequest,
     NotifyCapabilityExecutionStatus, NotifyCapabilityExecutionStatusRequest,
 )
-from rospy import ServiceProxy
+from rospy import ServiceProxy, Publisher
 
-from ros_bt_py.capability import CapabilityInputDataBridge, CapabilityOutputDataBridge
+from ros_bt_py.capability import CapabilityInputDataBridge, CapabilityOutputDataBridge, set_capability_io_bridge_topics
 from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.exceptions import BehaviorTreeException
 from ros_bt_py.node import Node, define_bt_node
@@ -83,12 +83,14 @@ class RemoteCapabilitySlot(Node):
             publish_debug_info_callback=self.nop,
             publish_debug_settings_callback=self.nop,
             publish_node_diagnostics_callback=self.nop,
-            debug_manager=DebugManager()
+            debug_manager=self.debug_manager
         )
         self._tree_root: Optional[Node] = None
         self._tree_manager_lock = RLock()
         self._tree_loaded_event: Event = Event()
         self._is_finished_event: Event = Event()
+
+        self._callback_lock = RLock()
 
         self.capability_interface = None
 
@@ -106,20 +108,19 @@ class RemoteCapabilitySlot(Node):
         self._remote_slot_executor_action_server = SimpleActionServer(
             remote_tree_slot_executor_topic,
             ExecuteCapabilityImplementationAction,
-            execute_cb=self._remote_slot_executor_cb
+            execute_cb=self._remote_slot_executor_cb,
+            auto_start=False
         )
 
         notify_capability_execution_status_topic = rospy.resolve_name(
             f"{rospy.get_namespace()}/mission_control/notify_capability_execution_status"
         )
-
-        rospy.logfatal(notify_capability_execution_status_topic)
-
         self._notify_capability_execution_status_client = ServiceProxy(
             notify_capability_execution_status_topic,
             NotifyCapabilityExecutionStatus,
             persistent=True
         )
+
         try:
             self._notify_capability_execution_status_client.wait_for_service(
                 timeout=rospy.Duration(secs=2)
@@ -140,46 +141,53 @@ class RemoteCapabilitySlot(Node):
             queue_size=1
         )
 
+        self._remote_slot_executor_action_server.start()
+
     def _remote_slot_executor_cb(self, goal: ExecuteCapabilityImplementationGoal) -> None:
-        self._is_finished_event.clear()
-        if self._tree_loaded_event.is_set():
+        with self._callback_lock:
+            self.logfatal("Remote Slot CB starting")
+
+            self._is_finished_event.clear()
             with self._tree_manager_lock:
+                if self._tree_loaded_event.is_set():
+                    self._tree_root.shutdown()
+                    self._tree_manager.clear(request=ClearTreeRequest())
+                    self._tree_loaded_event.clear()
+
+                rospy.logfatal("Loading impl tree")
+                service_response: LoadTreeResponse = self._tree_manager.load_tree(
+                    LoadTreeRequest(tree=goal.implementation_tree),
+                    prefix=self.name + "_"
+                )
+
+            if not service_response.success:
+                self._remote_slot_executor_action_server \
+                    .set_aborted(text=f"Could not load implementation tree: {service_response.error_message}")
+
+            with self._tree_manager_lock:
+                set_capability_io_bridge_topics(self._tree_manager, goal.interface, goal.input_topic, goal.output_topic)
+                self._tree_root = self._tree_manager.find_root()
                 self._tree_root.shutdown()
-                self._tree_manager.clear(request=ClearTreeRequest())
-                self._tree_loaded_event.clear()
-        with self._tree_manager_lock:
-            service_response: LoadTreeResponse = self._tree_manager.load_tree(
-                LoadTreeRequest(tree=goal.implementation_tree))
+                self._tree_root.setup()
 
-        if not service_response.success:
-            self._remote_slot_executor_action_server \
-                .set_aborted(text=f"Could not load implementation tree: {service_response.error_message}")
-
-        for node in self._tree_manager.nodes.values():
-            if hasattr(node, "__capability_interface") and \
-                    getattr(node, "__capability_interface") == goal.interface:
-                if isinstance(node, CapabilityInputDataBridge):
-                    node.capability_bridge_topic = goal.input_topic
-                    continue
-                if isinstance(node, CapabilityOutputDataBridge):
-                    node.capability_bridge_topic = goal.output_topic
-
-        with self._tree_manager_lock:
+            rospy.logfatal("Set tree loaded event!")
             self._tree_loaded_event.set()
-            self._tree_root = self._tree_manager.find_root()
 
-        while not self._is_finished_event.is_set():
-            if self._remote_slot_executor_action_server.is_preempt_requested():
-                #TODO Abort
-                pass
-        self._remote_slot_executor_action_server.set_succeeded(
-            result=ExecuteCapabilityImplementationResult(
-                success=True
+            while not self._is_finished_event.wait(timeout=1):
+                if self._remote_slot_executor_action_server.is_preempt_requested():
+                    self._remote_slot_executor_action_server.set_preempted()
+                    self.logwarn("Preempt requested!")
+                    self.cleanup()
+                    return
+
+            self._remote_slot_executor_action_server.set_succeeded(
+                result=ExecuteCapabilityImplementationResult(
+                    success=True
+                )
             )
-        )
+
 
     def _do_tick(self):
-        self.logwarn(f"TICK - {self.state}")
         if self.state is NodeMsg.IDLE:
             self._remote_capability_slot_status_publisher.publish(
                 RemoteCapabilitySlotStatus(
@@ -200,6 +208,13 @@ class RemoteCapabilitySlot(Node):
 
         if self.state is NodeMsg.UNASSIGNED:
             if self._tree_loaded_event.is_set():
+                self._remote_capability_slot_status_publisher.publish(
+                    RemoteCapabilitySlotStatus(
+                        name=self.name,
+                        status=RemoteCapabilitySlotStatus.RUNNING,
+                        timestamp=rospy.Time.now()
+                    )
+                )
                 self._notify_capability_execution_status_client.call(
                     NotifyCapabilityExecutionStatusRequest(
                         interface=self.capability_interface,
@@ -211,27 +226,10 @@ class RemoteCapabilitySlot(Node):
             return NodeMsg.UNASSIGNED
 
         if self.state is NodeMsg.RUNNING:
-            self.logwarn("TICK")
-            if self._remote_slot_executor_action_server.is_preempt_requested():
-                self._remote_slot_executor_action_server.set_preempted()
-
-                self._remote_capability_slot_status_publisher.publish(
-                    RemoteCapabilitySlotStatus(
-                        name=self.name,
-                        status=RemoteCapabilitySlotStatus.IDLE,
-                        timestamp=rospy.Time.now()
-                    )
-                )
-                self._notify_capability_execution_status_client.call(
-                    NotifyCapabilityExecutionStatusRequest(
-                        interface=self.capability_interface,
-                        node_name=self.name,
-                        status=NotifyCapabilityExecutionStatusRequest.SHUTDOWN
-                    )
-                )
-
-                self.cleanup()
+            if not self._tree_loaded_event.is_set():
+                self.logerr("No tree loaded; returning to UNASSIGNED state!")
                 return NodeMsg.UNASSIGNED
+
             self._remote_capability_slot_status_publisher.publish(
                 RemoteCapabilitySlotStatus(
                     name=self.name,
@@ -239,23 +237,15 @@ class RemoteCapabilitySlot(Node):
                     timestamp=rospy.Time.now()
                 )
             )
-            self.logwarn("Ticking impl!")
+
             new_state = self._tree_root.tick()
             if self.debug_manager and self.debug_manager.get_publish_subtrees():
                 self.debug_manager.add_subtree_info(
                     self.name, self._tree_manager.to_msg()
                 )
-            self._remote_slot_executor_action_server.publish_feedback(
-                ExecuteCapabilityImplementationFeedback(
-                    execution_status=new_state
-                )
-            )
+
             if new_state in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
-                self._remote_slot_executor_action_server.set_succeeded(
-                    result=ExecuteCapabilityImplementationResult(
-                        success=True
-                    )
-                )
+
                 if new_state == NodeMsg.SUCCEEDED:
                     status = NotifyCapabilityExecutionStatusRequest.SUCCEEDED
                 else:
@@ -271,6 +261,7 @@ class RemoteCapabilitySlot(Node):
                 self._is_finished_event.set()
                 self.cleanup()
                 return NodeMsg.UNASSIGNED
+
         return NodeMsg.RUNNING
 
     def _do_untick(self):
@@ -311,7 +302,6 @@ class RemoteCapabilitySlot(Node):
         self._remote_capability_slot_status_publisher.unregister()
         self._remote_capability_slot_status_publisher = None
 
-        self._remote_slot_executor_action_server = None
         self._notify_capability_execution_status_client.close()
 
     @staticmethod
@@ -327,8 +317,9 @@ class RemoteCapabilitySlot(Node):
         Cleans up any state changes that the node has and restores it to its original state.
         :return: None
         """
-        if self._tree_loaded_event.is_set():
-            with self._tree_manager_lock:
-                self._tree_root.shutdown()
-                self._tree_manager.clear(request=ClearTreeRequest())
-        self._tree_loaded_event.clear()
+        with self._tree_manager_lock:
+            rospy.logfatal("Cleaning up!")
+            if self._tree_loaded_event.is_set():
+                    self._tree_root.shutdown()
+                    self._tree_manager.clear(request=ClearTreeRequest())
+            self._tree_loaded_event.clear()
