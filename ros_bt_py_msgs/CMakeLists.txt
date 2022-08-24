@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
      FILES
+     CapabilityExecutionStatus.msg
      CapabilityImplementation.msg
      CapabilityInterface.msg
      CapabilityIOBridgeData.msg
@@ -45,7 +46,6 @@ add_service_files(
   capabilities/GetCapabilityInterfaces.srv
   capabilities/GetLocalBid.srv
   capabilities/LoadCapabilities.srv
-  capabilities/NotifyCapabilityExecutionStatus.srv
   capabilities/PrepareLocalImplementation.srv
   capabilities/PutCapabilityImplementation.srv
   capabilities/PutCapabilityInterfaces.srv
@@ -87,6 +87,7 @@ add_action_files(
   ExecuteCapabilityImplementation.action
   ExecuteRemoteCapability.action
   RunTree.action
+  FindBestExecutor.action
   )
 
 ## Generate added messages and services with any dependencies listed here

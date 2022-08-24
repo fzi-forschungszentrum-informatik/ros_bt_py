@@ -45,17 +45,16 @@ from actionlib import SimpleActionClient
 from actionlib_msgs.msg import GoalStatus
 from ros_bt_py_msgs.msg import (
     CapabilityInterface, Node as NodeMsg, Tree, ExecuteRemoteCapabilityAction,
-    ExecuteRemoteCapabilityGoal, CapabilityIOBridgeData,
+    ExecuteRemoteCapabilityGoal, CapabilityIOBridgeData, CapabilityExecutionStatus,
 )
 from ros_bt_py_msgs.msg import NodeData as NodeDataMsg
 from ros_bt_py_msgs.srv import (
     PrepareLocalImplementation, PrepareLocalImplementationRequest,
     LoadTreeRequest, ClearTreeRequest, ControlTreeExecutionRequest, GetCapabilityInterfacesRequest,
-    GetCapabilityInterfacesResponse, ControlTreeExecutionResponse, RequestCapabilityExecution,
-    RequestCapabilityExecutionRequest, RequestCapabilityExecutionResponse, NotifyCapabilityExecutionStatus,
-    NotifyCapabilityExecutionStatusRequest,
+    GetCapabilityInterfacesResponse, RequestCapabilityExecution,
+    RequestCapabilityExecutionRequest, RequestCapabilityExecutionResponse,
 )
-from rospy import ROSSerializationException, ROSException, ServiceProxy
+from rospy import ROSSerializationException, ROSException, Publisher
 
 from ros_bt_py.exceptions import BehaviorTreeException, TreeTopologyError
 from ros_bt_py.helpers import json_decode
@@ -302,7 +301,7 @@ class Capability(ABC, Leaf):
         self._request_capability_execution_service_proxy: Optional[AsyncServiceProxy] = None
         self._prepare_local_implementation_service_proxy: Optional[AsyncServiceProxy] = None
         self._execute_capability_remote_client: Optional[SimpleActionClient] = None
-        self._notify_capability_execution_status_client: Optional[ServiceProxy] = None
+        self._capability_execution_status_publisher: Optional[Publisher] = None
 
         # Input and output data bridge information
         self._input_bridge_topic: Optional[str] = None
@@ -486,20 +485,11 @@ class Capability(ABC, Leaf):
             f"{self.local_mc_topic}/notify_capability_execution_status"
         )
 
-        self._notify_capability_execution_status_client = ServiceProxy(
+        self._capability_execution_status_publisher = Publisher(
             notify_capability_execution_status_topic,
-            NotifyCapabilityExecutionStatus,
-            persistent=False
+            CapabilityExecutionStatus,
+            queue_size=1
         )
-        try:
-            self._notify_capability_execution_status_client.wait_for_service(
-                timeout=rospy.Duration(secs=WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS)
-            )
-        except rospy.ROSException as exc:
-            raise BehaviorTreeException(
-                f'Service "{self.local_mc_topic}/notify_capability_execution_status" not available'
-                f' after waiting f{WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS} seconds!'
-            ) from exc
 
     def _tick_unassigned(self) -> str:
         """
@@ -585,7 +575,11 @@ class Capability(ABC, Leaf):
                 self._local_implementation_tree_status = NodeMsg.FAILED
                 return
 
-            set_capability_io_bridge_topics(self.tree_manager, self.capability_interface, self._input_bridge_topic, self._output_bridge_topic)
+            set_capability_io_bridge_topics(
+                tree_manager=self.tree_manager,
+                interface=self.capability_interface,
+                input_topic=self._input_bridge_topic,
+                output_topic=self._output_bridge_topic)
 
             try:
                 self._local_implementation_tree_root = self.tree_manager.find_root()
@@ -618,11 +612,11 @@ class Capability(ABC, Leaf):
             if self._local_implementation_tree_status in [NodeMsg.IDLE, NodeMsg.FAILED]:
                 return NodeMsg.FAILED
 
-            self._notify_capability_execution_status_client.call(
-                NotifyCapabilityExecutionStatusRequest(
+            self._capability_execution_status_publisher.publish(
+                CapabilityExecutionStatus(
                     interface=self.capability_interface,
                     node_name=self.name,
-                    status=NotifyCapabilityExecutionStatusRequest.EXECUTING
+                    status=CapabilityExecutionStatus.EXECUTING
                 )
             )
             return NodeMsg.RUNNING
@@ -689,11 +683,11 @@ class Capability(ABC, Leaf):
         )
         self._execute_capability_remote_client_start_time = rospy.Time.now()
 
-        self._notify_capability_execution_status_client.call(
-            NotifyCapabilityExecutionStatusRequest(
+        self._capability_execution_status_publisher.publish(
+            CapabilityExecutionStatus(
                 interface=self.capability_interface,
                 node_name=self.name,
-                status=NotifyCapabilityExecutionStatusRequest.EXECUTING
+                status=CapabilityExecutionStatus.EXECUTING
             )
         )
 
@@ -720,11 +714,11 @@ class Capability(ABC, Leaf):
 
         if new_state in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
             if new_state == NodeMsg.SUCCEEDED:
-                status = NotifyCapabilityExecutionStatusRequest.SUCCEEDED
+                status = CapabilityExecutionStatus.SUCCEEDED
             else:
-                status = NotifyCapabilityExecutionStatusRequest.FAILED
-            self._notify_capability_execution_status_client.call(
-                NotifyCapabilityExecutionStatusRequest(
+                status = CapabilityExecutionStatus.FAILED
+            self._capability_execution_status_publisher.publish(
+                CapabilityExecutionStatus(
                     interface=self.capability_interface,
                     node_name=self.name,
                     status=status
@@ -835,11 +829,11 @@ class Capability(ABC, Leaf):
             self.state = self._old_state
 
         if self.state == NodeMsg.IDLE:
-            self._notify_capability_execution_status_client.call(
-                NotifyCapabilityExecutionStatusRequest(
+            self._capability_execution_status_publisher.publish(
+                CapabilityExecutionStatus(
                     interface=self.capability_interface,
                     node_name=self.name,
-                    status=NotifyCapabilityExecutionStatusRequest.IDLE
+                    status=CapabilityExecutionStatus.IDLE
                 )
             )
             return NodeMsg.UNASSIGNED
@@ -891,12 +885,12 @@ class Capability(ABC, Leaf):
         return NodeMsg.IDLE
 
     def _do_shutdown(self):
-        if self._notify_capability_execution_status_client is not None:
-            self._notify_capability_execution_status_client.call(
-                NotifyCapabilityExecutionStatusRequest(
+        if self._capability_execution_status_publisher is not None:
+            self._capability_execution_status_publisher.publish(
+                CapabilityExecutionStatus(
                     interface=self.capability_interface,
                     node_name=self.name,
-                    status=NotifyCapabilityExecutionStatusRequest.SHUTDOWN
+                    status=CapabilityExecutionStatus.SHUTDOWN
                 )
             )
         self._shutdown_local_implementation_tree()
@@ -913,7 +907,7 @@ class Capability(ABC, Leaf):
         self._request_capability_execution_service_proxy = None
         self._prepare_local_implementation_service_proxy = None
         self._execute_capability_remote_client = None
-        self._notify_capability_execution_status_client = None
+        self._capability_execution_status_publisher = None
 
     # Cleanup operations
 

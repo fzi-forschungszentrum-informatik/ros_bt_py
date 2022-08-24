@@ -20,14 +20,22 @@ if __name__ == '__main__':
 
     local_mc_prefix = f"{rospy.get_namespace()}/mission_control"
 
+    get_capability_interfaces_topic = rospy.resolve_name(
+        f"{rospy.get_namespace()}/capability_repository/capabilities/interfaces/get"
+    )
+
     get_capability_interface_service = rospy.ServiceProxy(
-        name=f"{rospy.get_namespace()}/capability_repository/capabilities/interfaces/get",
+        name=get_capability_interfaces_topic,
         service_class=GetCapabilityInterfaces,
         persistent=True,
     )
 
+    interfaces_announcement_topic = rospy.resolve_name(
+        f"{rospy.get_namespace()}/capability_repository/capabilities/interfaces"
+    )
+
     capability_interface_subscription = rospy.Subscriber(
-        name=f"{rospy.get_namespace()}/capability_repository/capabilities/interfaces",
+        name=interfaces_announcement_topic,
         data_class=std_msgs.msg.Time,
         callback=capability_node_class_from_capability_interface_callback,
         callback_args=(local_mc_prefix, get_capability_interface_service,),

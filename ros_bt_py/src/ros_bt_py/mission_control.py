@@ -15,23 +15,22 @@ from actionlib_msgs.msg import GoalStatus
 from rospy import ROSException, Service, ServiceProxy
 from rosservice import rosservice_find
 from ros_bt_py_msgs.msg import (
-    CapabilityImplementation, Precondition, ExecuteRemoteCapabilityAction,
-    ExecuteRemoteCapabilityActionGoal, ExecuteCapabilityImplementationGoal,
+    CapabilityImplementation, Precondition, ExecuteRemoteCapabilityAction, ExecuteCapabilityImplementationGoal,
     RemoteCapabilitySlotStatus, ExecuteRemoteCapabilityResult,
     ExecuteCapabilityImplementationAction, ExecuteCapabilityImplementationResult,
-    ExecuteCapabilityImplementationActionResult, ExecuteRemoteCapabilityGoal, ExecuteRemoteCapabilityActionResult,
+    ExecuteCapabilityImplementationActionResult, ExecuteRemoteCapabilityGoal,
+    CapabilityExecutionStatus,
 )
 from ros_bt_py_msgs.srv import (
     GetCapabilityImplementationsRequest, GetCapabilityImplementationsResponse,
     GetCapabilityImplementations, ControlTreeExecutionRequest, LoadTreeRequest, PrepareLocalImplementationRequest,
     PrepareLocalImplementationResponse,
-    NotifyCapabilityExecutionStatusRequest, NotifyCapabilityExecutionStatusResponse, LoadTreeResponse, AddNodeRequest,
+    LoadTreeResponse, AddNodeRequest,
     AddNodeResponse, MoveNodeRequest, AddNodeAtIndexRequest,
     CheckPreconditionStatusRequest, CheckPreconditionStatusResponse, CheckPreconditionStatus, ClearTreeRequest,
     MoveNodeResponse, AddNodeAtIndexResponse, PrepareLocalImplementation, RequestCapabilityExecutionRequest,
     RequestCapabilityExecutionResponse, GetLocalBidResponse, GetLocalBidRequest, GetLocalBid,
     FindBestCapabilityExecutor, FindBestCapabilityExecutorRequest, MigrateTreeRequest, RequestCapabilityExecution,
-    NotifyCapabilityExecutionStatus,
 )
 
 import ros_bt_py.nodes.sequence
@@ -87,10 +86,10 @@ class MissionControl:
             handler=self.check_precondition_status
         )
 
-        self._notify_capability_execution_status_service = rospy.Service(
+        self._capability_execution_status_subscriber = rospy.Subscriber(
             "~notify_capability_execution_status",
-            NotifyCapabilityExecutionStatus,
-            self.notify_capability_execution_status
+            CapabilityExecutionStatus,
+            callback=self.notify_capability_execution_status
         )
 
         self.__execute_remote_capability_action_server = ActionServer(
@@ -192,7 +191,6 @@ class MissionControl:
 
         rospy.logfatal("Send goal!", logger_name="mission_control_remote_exec")
         remote_slot_action_client.cancel_all_goals()
-
         remote_slot_action_client.send_goal(
             ExecuteCapabilityImplementationGoal(
                 implementation_tree=response.implementation_subtree,
@@ -301,27 +299,22 @@ class MissionControl:
 
     def notify_capability_execution_status(
             self,
-            request: NotifyCapabilityExecutionStatusRequest
-    ) -> NotifyCapabilityExecutionStatusResponse:
+            msg: CapabilityExecutionStatus
+    ) -> None:
         """
         ROS service handler allowing to notify the MissionControl node about changes in the
         capability execution states.
-        :param request:
+        :param msg:
         :return:
         """
-        response = NotifyCapabilityExecutionStatusResponse()
-
-        hashable_interface = HashableCapabilityInterface(request.interface)
+        hashable_interface = HashableCapabilityInterface(msg.interface)
 
         if hashable_interface not in self.executing_capabilities:
             self.executing_capabilities[hashable_interface] = {}
 
-        self.executing_capabilities[hashable_interface][request.node_name] = request.status
+        self.executing_capabilities[hashable_interface][msg.node_name] = msg.status
 
-        rospy.loginfo(f"Set status of {request.node_name} to {request.status}")
-
-        response.success = True
-        return response
+        rospy.logdebug(f"Set status of {msg.node_name} to {msg.status}", logger_name="mission_control")
 
     def request_capability_execution(
             self,
@@ -342,10 +335,11 @@ class MissionControl:
             find_best_executor_service.wait_for_service(
                 timeout=rospy.Duration(secs=5)
             )
+
             find_best_executor_response = find_best_executor_service.call(
                 FindBestCapabilityExecutorRequest(
                     capability=goal.capability,
-                    mission_control_name=rospy.get_node_uri()
+                    mission_control_name=rospy.get_name()
                 )
             )
 
@@ -516,8 +510,8 @@ class MissionControl:
         else:
             response.available = any(
                 s in [
-                    NotifyCapabilityExecutionStatusRequest.EXECUTING,
-                    NotifyCapabilityExecutionStatusRequest.SUCCEEDED
+                    CapabilityExecutionStatus.EXECUTING,
+                    CapabilityExecutionStatus.SUCCEEDED
                 ] for n, s in self.executing_capabilities[hashable_capability].items()
             )
 

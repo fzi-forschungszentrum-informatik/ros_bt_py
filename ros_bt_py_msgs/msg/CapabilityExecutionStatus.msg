@@ -8,6 +8,3 @@ string EXECUTING = EXECUTING
 string FAILED = FAILED
 string SUCCEEDED = SUCCEEDED
 string SHUTDOWN = SHUTDOWN
----
-bool success
-string error_message

@@ -41,18 +41,15 @@ import rospy
 from actionlib import SimpleActionServer
 from ros_bt_py_msgs.msg import (
     ExecuteCapabilityImplementationGoal, ExecuteCapabilityImplementationAction,
-    ExecuteCapabilityImplementationFeedback, ExecuteCapabilityImplementationResult, Node as NodeMsg,
-    RemoteCapabilitySlotStatus,
+    ExecuteCapabilityImplementationResult, Node as NodeMsg,
+    RemoteCapabilitySlotStatus, CapabilityExecutionStatus,
 )
 from ros_bt_py_msgs.srv import (
     ControlTreeExecutionRequest, LoadTreeRequest, LoadTreeResponse, ClearTreeRequest,
-    NotifyCapabilityExecutionStatus, NotifyCapabilityExecutionStatusRequest,
 )
-from rospy import ServiceProxy, Publisher
+from rospy import Publisher
 
-from ros_bt_py.capability import CapabilityInputDataBridge, CapabilityOutputDataBridge, set_capability_io_bridge_topics
-from ros_bt_py.debug_manager import DebugManager
-from ros_bt_py.exceptions import BehaviorTreeException
+from ros_bt_py.capability import set_capability_io_bridge_topics
 from ros_bt_py.node import Node, define_bt_node
 from ros_bt_py.node_config import NodeConfig
 from ros_bt_py.tree_manager import TreeManager
@@ -89,13 +86,14 @@ class RemoteCapabilitySlot(Node):
         self._tree_manager_lock = RLock()
         self._tree_loaded_event: Event = Event()
         self._is_finished_event: Event = Event()
+        self._node_reset_event: Event = Event()
 
         self._callback_lock = RLock()
 
         self.capability_interface = None
 
         self._remote_slot_executor_action_server: Optional[SimpleActionServer] = None
-        self._notify_capability_execution_status_client: Optional[ServiceProxy] = None
+        self._capability_execution_status_publisher: Optional[Publisher] = None
         self._remote_capability_slot_status_publisher: Optional[Publisher] = None
 
     def _do_setup(self):
@@ -103,7 +101,7 @@ class RemoteCapabilitySlot(Node):
         remote_tree_slot_executor_topic = rospy.resolve_name(
             f"{rospy.get_namespace()}/mission_control/remote_capability_slot/{self.name}"
         )
-        rospy.logfatal(remote_tree_slot_executor_topic)
+        self.logdebug(f"{self.name} topic: {remote_tree_slot_executor_topic}")
 
         self._remote_slot_executor_action_server = SimpleActionServer(
             remote_tree_slot_executor_topic,
@@ -112,24 +110,14 @@ class RemoteCapabilitySlot(Node):
             auto_start=False
         )
 
-        notify_capability_execution_status_topic = rospy.resolve_name(
+        capability_execution_status_topic = rospy.resolve_name(
             f"{rospy.get_namespace()}/mission_control/notify_capability_execution_status"
         )
-        self._notify_capability_execution_status_client = ServiceProxy(
-            notify_capability_execution_status_topic,
-            NotifyCapabilityExecutionStatus,
-            persistent=True
+        self._capability_execution_status_publisher = Publisher(
+            capability_execution_status_topic,
+            CapabilityExecutionStatus,
+            queue_size=1
         )
-
-        try:
-            self._notify_capability_execution_status_client.wait_for_service(
-                timeout=rospy.Duration(secs=2)
-            )
-        except rospy.ROSException as exc:
-            raise BehaviorTreeException(
-                f'Service "/notify_capability_execution_status" not available'
-                f' after waiting 2 seconds!'
-            ) from exc
 
         remote_capability_slot_status_topic = rospy.resolve_name(
             f"{rospy.get_namespace()}/mission_control/remote_slot_status"
@@ -145,16 +133,19 @@ class RemoteCapabilitySlot(Node):
 
     def _remote_slot_executor_cb(self, goal: ExecuteCapabilityImplementationGoal) -> None:
         with self._callback_lock:
-            self.logfatal("Remote Slot CB starting")
+            if not self._remote_slot_executor_action_server.is_active():
+                # FIXME: Callback gets invoked twice even thou only one goal is send!
+                self.logwarn("Invoked callback while no longer being active!")
+                return
 
             self._is_finished_event.clear()
             with self._tree_manager_lock:
-                if self._tree_loaded_event.is_set():
+                if self._tree_root is not None:
                     self._tree_root.shutdown()
                     self._tree_manager.clear(request=ClearTreeRequest())
+                    self._tree_root = None
                     self._tree_loaded_event.clear()
 
-                rospy.logfatal("Loading impl tree")
                 service_response: LoadTreeResponse = self._tree_manager.load_tree(
                     LoadTreeRequest(tree=goal.implementation_tree),
                     prefix=self.name + "_"
@@ -170,22 +161,28 @@ class RemoteCapabilitySlot(Node):
                 self._tree_root.shutdown()
                 self._tree_root.setup()
 
-            rospy.logfatal("Set tree loaded event!")
             self._tree_loaded_event.set()
 
             while not self._is_finished_event.wait(timeout=1):
                 if self._remote_slot_executor_action_server.is_preempt_requested():
+                    self.logdebug("Remote capability execution callback preempted!")
                     self._remote_slot_executor_action_server.set_preempted()
-                    self.logwarn("Preempt requested!")
                     self.cleanup()
                     return
 
+                if self._node_reset_event.is_set():
+                    self.logdebug("Node was reset, aborting execution!")
+                    self._remote_slot_executor_action_server.set_aborted()
+                    self.cleanup()
+                    self._node_reset_event.clear()
+                    return
+
+            self.logdebug("Setting action goal status completed!")
             self._remote_slot_executor_action_server.set_succeeded(
                 result=ExecuteCapabilityImplementationResult(
                     success=True
                 )
             )
-
 
     def _do_tick(self):
         if self.state is NodeMsg.IDLE:
@@ -197,11 +194,11 @@ class RemoteCapabilitySlot(Node):
                 )
             )
 
-            self._notify_capability_execution_status_client.call(
-                NotifyCapabilityExecutionStatusRequest(
+            self._capability_execution_status_publisher.publish(
+                CapabilityExecutionStatus(
                     interface=self.capability_interface,
                     node_name=self.name,
-                    status=NotifyCapabilityExecutionStatusRequest.IDLE
+                    status=CapabilityExecutionStatus.IDLE
                 )
             )
             return NodeMsg.UNASSIGNED
@@ -215,11 +212,11 @@ class RemoteCapabilitySlot(Node):
                         timestamp=rospy.Time.now()
                     )
                 )
-                self._notify_capability_execution_status_client.call(
-                    NotifyCapabilityExecutionStatusRequest(
+                self._capability_execution_status_publisher.publish(
+                    CapabilityExecutionStatus(
                         interface=self.capability_interface,
                         node_name=self.name,
-                        status=NotifyCapabilityExecutionStatusRequest.EXECUTING
+                        status=CapabilityExecutionStatus.EXECUTING
                     )
                 )
                 return NodeMsg.RUNNING
@@ -247,12 +244,12 @@ class RemoteCapabilitySlot(Node):
             if new_state in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
 
                 if new_state == NodeMsg.SUCCEEDED:
-                    status = NotifyCapabilityExecutionStatusRequest.SUCCEEDED
+                    status = CapabilityExecutionStatus.SUCCEEDED
                 else:
-                    status = NotifyCapabilityExecutionStatusRequest.FAILED
+                    status = CapabilityExecutionStatus.FAILED
 
-                self._notify_capability_execution_status_client.call(
-                    NotifyCapabilityExecutionStatusRequest(
+                self._capability_execution_status_publisher.publish(
+                    CapabilityExecutionStatus(
                         interface=self.capability_interface,
                         node_name=self.name,
                         status=status
@@ -284,8 +281,7 @@ class RemoteCapabilitySlot(Node):
         )
 
         self.cleanup()
-        if self._remote_slot_executor_action_server.is_active():
-            self._remote_slot_executor_action_server.set_aborted(text="RemoteCapabilitySlot has been reset!")
+        self._node_reset_event.set()
 
     def _do_shutdown(self):
         self._remote_capability_slot_status_publisher.publish(
@@ -295,14 +291,15 @@ class RemoteCapabilitySlot(Node):
                 timestamp=rospy.Time.now()
             )
         )
-
-        if self._remote_slot_executor_action_server.is_active():
-            self._remote_slot_executor_action_server.set_aborted(text="RemoteCapabilitySlot has been reset!")
+        self._node_reset_event.set()
+        rospy.sleep(rospy.Duration.from_sec(1))
 
         self._remote_capability_slot_status_publisher.unregister()
         self._remote_capability_slot_status_publisher = None
 
-        self._notify_capability_execution_status_client.close()
+        self._capability_execution_status_publisher.unregister()
+        del self._remote_slot_executor_action_server
+        self._node_reset_event.clear()
 
     @staticmethod
     def nop(msg) -> None:
@@ -319,7 +316,8 @@ class RemoteCapabilitySlot(Node):
         """
         with self._tree_manager_lock:
             rospy.logfatal("Cleaning up!")
-            if self._tree_loaded_event.is_set():
-                    self._tree_root.shutdown()
-                    self._tree_manager.clear(request=ClearTreeRequest())
+            if self._tree_root is not None:
+                self._tree_root.shutdown()
+                self._tree_manager.clear(request=ClearTreeRequest())
+            self._tree_root = None
             self._tree_loaded_event.clear()

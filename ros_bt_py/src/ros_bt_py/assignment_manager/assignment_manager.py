@@ -101,7 +101,9 @@ class SimpleAssignmentManager(AssignmentManager):
         bids: Dict[str, GetLocalBidResponse] = {}
 
         local_bid_services = rosservice.rosservice_find("ros_bt_py_msgs/GetLocalBid")
-        rospy.logfatal(f"Available services: {local_bid_services}")
+        rospy.logfatal(
+            f"Available services: {local_bid_services}", logger_name="assignment_system"
+        )
         for service_name in local_bid_services:
             service_proxy = ServiceProxy(
                 service_name,
@@ -114,13 +116,15 @@ class SimpleAssignmentManager(AssignmentManager):
                 )
             )
             if not bid_response.success:
-                rospy.logwarn(f"Failed to get bid from: {service_name}, {bid_response.error_message}")
+                rospy.logwarn(
+                    f"Failed to get bid from: {service_name}, {bid_response.error_message}",
+                    logger_name="assignment_system")
                 continue
             bids[service_name] = bid_response
 
         if len(bids) < 1:
             response.error_message = "No bids were present for this capability!"
-            rospy.logerr(response.error_message)
+            rospy.logerr(response.error_message, logger_name="assignment_system")
             response.success = False
             return response
 
@@ -129,7 +133,7 @@ class SimpleAssignmentManager(AssignmentManager):
         top_service_name: str = rosservice.get_service_node(top_bid[0])
         top_service_response: GetLocalBidResponse = top_bid[1]
 
-        rospy.logfatal(f"Executing  on {top_service_name} - {top_service_response}")
+        rospy.loginfo(f"Executing  on {top_service_name} - {top_service_response}", logger_name="assignment_system")
 
         response.success = True
         response.executor_mission_control_topic = top_service_name
