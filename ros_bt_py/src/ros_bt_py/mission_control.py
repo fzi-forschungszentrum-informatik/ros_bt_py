@@ -8,17 +8,15 @@ import threading
 from threading import RLock
 from typing import Dict, List, Tuple, Optional
 
-import actionlib
 import rospy
+
 from actionlib import ActionServer, ServerGoalHandle
 from actionlib_msgs.msg import GoalStatus
 from rospy import ROSException, Service, ServiceProxy
 from rosservice import rosservice_find
 from ros_bt_py_msgs.msg import (
-    CapabilityImplementation, Precondition, ExecuteRemoteCapabilityAction, ExecuteCapabilityImplementationGoal,
-    RemoteCapabilitySlotStatus, ExecuteRemoteCapabilityResult,
-    ExecuteCapabilityImplementationAction, ExecuteCapabilityImplementationResult,
-    ExecuteCapabilityImplementationActionResult, ExecuteRemoteCapabilityGoal,
+    CapabilityImplementation, Precondition, ExecuteRemoteCapabilityAction,
+    RemoteCapabilitySlotStatus, ExecuteRemoteCapabilityResult, ExecuteRemoteCapabilityGoal,
     CapabilityExecutionStatus,
 )
 from ros_bt_py_msgs.srv import (
@@ -31,9 +29,11 @@ from ros_bt_py_msgs.srv import (
     MoveNodeResponse, AddNodeAtIndexResponse, PrepareLocalImplementation, RequestCapabilityExecutionRequest,
     RequestCapabilityExecutionResponse, GetLocalBidResponse, GetLocalBidRequest, GetLocalBid,
     FindBestCapabilityExecutor, FindBestCapabilityExecutorRequest, MigrateTreeRequest, RequestCapabilityExecution,
+    RunRemoteCapabilitySlot, RunRemoteCapabilitySlotRequest, CancelRemoteCapabilitySlot,
+    CancelRemoteCapabilitySlotRequest, RunRemoteCapabilitySlotResponse,
 )
 
-import ros_bt_py.nodes.sequence
+from ros_bt_py.nodes.sequence import Sequence
 from ros_bt_py.capability import (
     capability_node_class_from_capability_interface,
 )
@@ -125,15 +125,96 @@ class MissionControl:
         cancellation.
         """
 
+    def shutdown(self):
+        """
+        Shuts down all the services and pub/sub  of this node.
+        :return: None
+        """
+        self.__request_capability_execution_service.shutdown()
+        self.__get_local_bid_service.shutdown()
+        self.__get_local_bid_service_client.shutdown()
+        self.__check_precondition_status_service.shutdown()
+        self.__prepare_local_implementation_service.shutdown()
+    @staticmethod
+    def __handle_async_service_call(service_proxy: AsyncServiceProxy):
+        """
+        Helper method to manage a call to a service via the AsyncServiceProxy.
+        The call method needs to be called beforehand, this method just handles the possible states until the result
+        is received.
+        It checks the states the service_proxy can be in and returns results depending on the current execution state.
+        This method in nonblocking.
+
+        :param service_proxy: The service proxy the call has been placed for.
+
+        :raises RuntimeError: Should the call to the AsyncServiceProxy be aborted or not placed before calling
+        this method a BehaviorTreeException will be raised.
+        :return: The response of the call if available, otherwise None.
+        """
+        state = service_proxy.get_state()
+
+        if state in [AsyncServiceProxy.IDLE, AsyncServiceProxy.SERVICE_AVAILABLE]:
+            raise RuntimeError(
+                f'Service is still idle'
+                f' (state ID: {state})'
+            )
+
+        if state is AsyncServiceProxy.TIMEOUT:
+            raise RuntimeError(
+                f'Service call timed out before succeeding'
+                f' (state ID: {state})'
+            )
+
+        if state is AsyncServiceProxy.ABORTED:
+            raise RuntimeError(
+                f'Service call was aborted before succeeding'
+                f' (state ID: {state})'
+            )
+
+        if state is AsyncServiceProxy.ERROR:
+            raise RuntimeError(
+                f'Service call returned a error before succeeding'
+                f' (state ID: {state})'
+            )
+
+        if state is AsyncServiceProxy.RUNNING:
+            return None
+
+        if state is AsyncServiceProxy.RESPONSE_READY:
+            response = service_proxy.get_response()
+            if response.success:
+                return response
+            raise RuntimeError(
+                f'Service call failed {response.error_message})'
+            )
+        raise RuntimeError(
+            f'Async proxy in invalid state {state})'
+        )
+
     def remote_capability_slot_status_callback(self, msg: RemoteCapabilitySlotStatus):
+        """
+        Subscriber callback used to update the status of remote capability slots.
+        :param msg: The new slot status.
+        :return: None
+        """
         rospy.loginfo(f"Updating status of remote capability slot: {msg.name} to {msg.status}")
         with self._remote_capability_slot_lock:
             self._remote_capability_slot_status[msg.name] = msg.status
 
     def execute_remote_capability_exec(self, remote_slot_name: str, goal_handle: ServerGoalHandle):
+        """
+        Method to control the execution of a remote capability in a local slot.
+        This method is intended to run in a separate thread to allow multiple parallel executions.
+        :param remote_slot_name: The remote slot name where the capability should be executed.
+        This must be a local capability slot.
+        :param goal_handle: The goal definition containing all the information about the execution.
+        :return: None
+        """
         goal_id = goal_handle.get_goal_id().id
 
-        rospy.logfatal(f"Starting execution of {goal_id} on {remote_slot_name}" , logger_name="mission_control_remote_exec")
+        rospy.loginfo(
+            f"Starting execution of {goal_id} on {remote_slot_name}",
+            logger_name="remote_capability_execution"
+            )
         goal: ExecuteRemoteCapabilityGoal = goal_handle.get_goal()
 
         prepare_local_capability_implementation_service_proxy = ServiceProxy(
@@ -147,10 +228,12 @@ class MissionControl:
                 implementation_name=goal.implementation_name
             )
         )
-        rospy.logfatal("service call finished")
 
         if not response.success:
-            rospy.logwarn(f"Could not prepare local implementation for {goal_id}: {response.error_message}", logger_name="mission_control_remote_exec")
+            rospy.logwarn(
+                f"Could not prepare local implementation for {goal_id}: {response.error_message}",
+                logger_name="remote_capability_execution"
+                )
             self.__execute_remote_capability_action_server.publish_result(
                 status=GoalStatus(
                     goal_id=goal_handle.get_goal_id(),
@@ -163,19 +246,30 @@ class MissionControl:
             )
             return
 
-        rospy.logfatal("Resolving executor server!", logger_name="mission_control_remote_exec")
-
-        remote_tree_slot_executor_topic = rospy.resolve_name(
-            f"~remote_capability_slot/{remote_slot_name}"
+        run_remote_capability_slot_topic = rospy.resolve_name(
+            f"~remote_capability_slot/{remote_slot_name}/run"
         )
 
-        remote_slot_action_client = actionlib.SimpleActionClient(
-            remote_tree_slot_executor_topic,
-            ExecuteCapabilityImplementationAction
+        run_remote_capability_slot_service_proxy = AsyncServiceProxy(
+            run_remote_capability_slot_topic,
+            RunRemoteCapabilitySlot
         )
-        
-        if not remote_slot_action_client.wait_for_server(timeout=rospy.Duration(secs=5)):
-            rospy.logwarn("Could not contact remote_capability slot before timeout", logger_name="mission_control_remote_exec")
+
+        cancel_remote_capability_slot_topic = rospy.resolve_name(
+            f"~remote_capability_slot/{remote_slot_name}/cancel"
+        )
+
+        cancel_remote_capability_slot_service_proxy = ServiceProxy(
+            cancel_remote_capability_slot_topic,
+            CancelRemoteCapabilitySlot
+        )
+
+        try:
+            run_remote_capability_slot_service_proxy.wait_for_service(timeout=rospy.Duration(secs=5))
+        except ROSException:
+            rospy.logwarn(
+                "Could not contact remote_capability slot before timeout", logger_name="remote_capability_execution"
+                )
             self.__execute_remote_capability_action_server.publish_result(
                 status=GoalStatus(
                     goal_id=goal_handle.get_goal_id(),
@@ -186,27 +280,37 @@ class MissionControl:
                     error_message="Could not contact remote_capability slot before timeout"
                 )
             )
-
             return
 
-        rospy.logfatal("Send goal!", logger_name="mission_control_remote_exec")
-        remote_slot_action_client.cancel_all_goals()
-        remote_slot_action_client.send_goal(
-            ExecuteCapabilityImplementationGoal(
+        rospy.loginfo(f"Send goal to {run_remote_capability_slot_topic}", logger_name="remote_capability_execution")
+        run_remote_capability_slot_service_proxy.call_service(
+            RunRemoteCapabilitySlotRequest(
                 implementation_tree=response.implementation_subtree,
                 interface=goal.interface,
                 input_topic=goal.input_topic,
                 output_topic=goal.output_topic
             )
         )
+        start_time = rospy.Time.now()
+        try:
+            response: Optional[RunRemoteCapabilitySlotResponse] \
+                = self.__handle_async_service_call(run_remote_capability_slot_service_proxy)
+        except RuntimeError as exc:
+            rospy.logerr(f"Failed to execute remote capability: {exc}", logger_name="remote_capability_execution")
+            return
 
-        while not remote_slot_action_client.wait_for_result(timeout=rospy.Duration(nsecs=10)):
-            if self._remote_capability_slot_goals[goal_id][1]:
-                rospy.logerr(f"Cancellation of goal {goal_id} requested!", logger_name="mission_control_remote_exec")
-                remote_slot_action_client.cancel_goal()
+        while response is None:
+            if (rospy.Time.now() - start_time > rospy.Duration.from_sec(60)) or \
+                    self._remote_capability_slot_goals[goal_id][1]:
+                rospy.logwarn(f"Cancellation of goal {goal_id} requested!", logger_name="remote_capability_execution")
+                cancel_remote_capability_slot_service_proxy.call(CancelRemoteCapabilitySlotRequest())
                 return
-
-        result: Optional[ExecuteCapabilityImplementationResult] = remote_slot_action_client.get_result()
+            try:
+                response: Optional[RunRemoteCapabilitySlotResponse] \
+                    = self.__handle_async_service_call(run_remote_capability_slot_service_proxy)
+            except RuntimeError as exc:
+                rospy.logerr(f"Failed to execute remote capability: {exc}", logger_name="remote_capability_execution")
+                return
 
         self.__execute_remote_capability_action_server.publish_result(
             status=GoalStatus(
@@ -214,8 +318,8 @@ class MissionControl:
                 status=GoalStatus.SUCCEEDED
             ),
             result=ExecuteRemoteCapabilityResult(
-                success=result.success,
-                error_message=result.error_message
+                success=response.success,
+                error_message=response.error_message
             )
         )
 
@@ -240,7 +344,10 @@ class MissionControl:
             )
 
         if len(idle_executor_ids) < 1:
-            rospy.logerr(f"No idle remote_capability_slot found, cannot execute remote capability.", logger_name="mission_control_remote_exec")
+            rospy.logerr(
+                "No idle remote_capability_slot found, cannot execute remote capability.",
+                logger_name="remote_capability_execution"
+                )
             self.__execute_remote_capability_action_server.publish_result(
                 status=GoalStatus(
                     goal_id=goal_handle.get_goal_id(),
@@ -248,13 +355,14 @@ class MissionControl:
                 ),
                 result=ExecuteRemoteCapabilityResult(
                     success=False,
+                    no_executor_available=True,
                     error_message="No remote capability slot executor available!"
                 )
             )
             return
 
         selected_executor_id = idle_executor_ids.pop()
-        rospy.logfatal(f"Selected executor: {selected_executor_id}", logger_name="mission_control_remote_exec")
+        rospy.logfatal(f"Selected executor: {selected_executor_id}", logger_name="remote_capability_execution")
         self.remote_capability_slot_status_callback(
             RemoteCapabilitySlotStatus(
                 name=selected_executor_id,
@@ -264,14 +372,14 @@ class MissionControl:
         )
 
         self._remote_capability_slot_goals[goal_id] = (selected_executor_id, False)
-        rospy.logfatal("Starting thread!", logger_name="mission_control_remote_exec")
+        rospy.logfatal("Starting thread!", logger_name="remote_capability_execution")
         thread = threading.Thread(
             name=f"Thread-RemoteCapabilitySlot-{selected_executor_id}",
             target=self.execute_remote_capability_exec,
             args=(selected_executor_id, goal_handle)
         )
         thread.start()
-        rospy.loginfo("Started thread for execution of remote capability!", logger_name="mission_control_remote_exec")
+        rospy.loginfo("Started thread for execution of remote capability!", logger_name="remote_capability_execution")
 
     def execute_remote_capability_cancel_cb(self, goal_handle: ServerGoalHandle) -> None:
         """
@@ -290,7 +398,7 @@ class MissionControl:
                     goal_id=goal_handle.get_goal_id(),
                     status=GoalStatus.ABORTED,
                 ),
-                result=ExecuteCapabilityImplementationActionResult()
+                result=ExecuteRemoteCapabilityResult()
             )
             return
         current_status = self._remote_capability_slot_goals[goal_id]
@@ -318,8 +426,13 @@ class MissionControl:
 
     def request_capability_execution(
             self,
-            goal: RequestCapabilityExecutionRequest
+            request: RequestCapabilityExecutionRequest
     ) -> RequestCapabilityExecutionResponse:
+        """
+        ROS service to trigger the execution of a capability implementation via a remote capability executor.
+        :param request: The request that should be archived.
+        :return: Response containing the result of the remote execution.
+        """
         response = RequestCapabilityExecutionResponse()
         rospy.loginfo("Received request to execute capability!")
 
@@ -338,7 +451,7 @@ class MissionControl:
 
             find_best_executor_response = find_best_executor_service.call(
                 FindBestCapabilityExecutorRequest(
-                    capability=goal.capability,
+                    capability=request.capability,
                     mission_control_name=rospy.get_name()
                 )
             )
@@ -358,7 +471,7 @@ class MissionControl:
 
         local_bid_response = self.get_local_bid(
             GetLocalBidRequest(
-                interface=goal.capability
+                interface=request.capability
             )
         )
 
@@ -384,6 +497,8 @@ class MissionControl:
         should be calculated
         :return: None
         """
+        # pylint: disable=too-many-statements,too-many-locals
+
         service_response = GetLocalBidResponse()
 
         capability_repository_topic = rospy.resolve_name(
@@ -477,7 +592,7 @@ class MissionControl:
             return service_response
 
         sorted_implementation_bids: List[Tuple[str, float]] = sorted(
-            [(n, v) for n, v in implementation_utility.items()], key=lambda v: v[1]
+            list(implementation_utility.items()), key=lambda v: v[1]
         )
 
         (best_implementation_name, best_implementation_bid) = sorted_implementation_bids[0]
@@ -532,6 +647,7 @@ class MissionControl:
         :param request: The request containing all the information about the implementation.
         :return: A response containing the result status, as well as the potential resulting tree.
         """
+        # pylint: disable=too-many-locals, too-many-statements
         response = PrepareLocalImplementationResponse()
 
         prepare_local_implementation_tree_manager = TreeManager(
@@ -592,7 +708,7 @@ class MissionControl:
             return response
 
         root_node = prepare_local_implementation_tree_manager.find_root()
-        root_sequence_node = ros_bt_py.nodes.sequence.Sequence(name="RootCapabilitySequence")
+        root_sequence_node = Sequence(name="RootCapabilitySequence")
         service_response: AddNodeResponse = prepare_local_implementation_tree_manager.add_node(
             AddNodeRequest(
                 parent_name=None,
@@ -677,6 +793,8 @@ class MissionControl:
         response.success = True
         response.implementation_subtree = prepare_local_implementation_tree_manager.tree_msg
         return response
+
+# pylint: disable=unused-argument
 
 
 def nop(msg):

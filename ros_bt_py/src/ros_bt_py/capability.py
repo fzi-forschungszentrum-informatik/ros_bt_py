@@ -40,21 +40,22 @@ from abc import ABC
 from typing import Optional, List, Type
 
 import rospy
-from std_msgs.msg import Time
 from actionlib import SimpleActionClient
 from actionlib_msgs.msg import GoalStatus
+from rospy import ROSSerializationException, ROSException, Publisher
+from std_msgs.msg import Time
+
 from ros_bt_py_msgs.msg import (
     CapabilityInterface, Node as NodeMsg, Tree, ExecuteRemoteCapabilityAction,
-    ExecuteRemoteCapabilityGoal, CapabilityIOBridgeData, CapabilityExecutionStatus,
+    ExecuteRemoteCapabilityGoal, CapabilityIOBridgeData, CapabilityExecutionStatus, ExecuteRemoteCapabilityResult,
+    NodeData as NodeDataMsg,
 )
-from ros_bt_py_msgs.msg import NodeData as NodeDataMsg
 from ros_bt_py_msgs.srv import (
     PrepareLocalImplementation, PrepareLocalImplementationRequest,
     LoadTreeRequest, ClearTreeRequest, ControlTreeExecutionRequest, GetCapabilityInterfacesRequest,
     GetCapabilityInterfacesResponse, RequestCapabilityExecution,
     RequestCapabilityExecutionRequest, RequestCapabilityExecutionResponse,
 )
-from rospy import ROSSerializationException, ROSException, Publisher
 
 from ros_bt_py.exceptions import BehaviorTreeException, TreeTopologyError
 from ros_bt_py.helpers import json_decode
@@ -75,6 +76,8 @@ class CapabilityDataBridge(ABC, Leaf):
     """
     Data bridge that allows the exchange of inputs and outputs between capability interfaces and nodes.
     """
+
+    # pylint: disable=too-few-public-methods
 
     def __init__(
             self,
@@ -114,6 +117,7 @@ class CapabilityInputDataBridge(CapabilityDataBridge):
     """
     CapabilityDataBridge that transfers the inputs of the interface as an output to the implementation.
     """
+    # pylint: disable=too-few-public-methods
 
     def __init__(
             self,
@@ -182,6 +186,8 @@ class CapabilityOutputDataBridge(CapabilityDataBridge):
     """
     CapabilityDataBridge that transfers the outputs of the implementation as an output to the interface.
     """
+
+    # pylint: disable=too-few-public-methods
 
     def __init__(
             self,
@@ -325,7 +331,7 @@ class Capability(ABC, Leaf):
 
         self._local_implementation_tree: Optional[Tree] = None
         self._local_implementation_tree_root: Optional[Node] = None
-        self._local_implementation_tree_status: str = NodeMsg.IDLE
+        self._setup_local_implementation_tree_status: str = NodeMsg.IDLE
 
     @staticmethod
     def nop(msg):
@@ -412,12 +418,6 @@ class Capability(ABC, Leaf):
 
         if action_state == GoalStatus.SUCCEEDED:
             action_result = action_client.get_result()
-
-            if not action_result.success:
-                raise BehaviorTreeException(
-                    f'Action did not finish successfully:'
-                    f' "{action_result.error_message}"'
-                )
             return action_result
 
         return None
@@ -563,7 +563,7 @@ class Capability(ABC, Leaf):
         :return: None
         """
         with self._capability_lock:
-            self._local_implementation_tree_status = NodeMsg.RUNNING
+            self._setup_local_implementation_tree_status = NodeMsg.RUNNING
 
             load_tree_response = self.tree_manager.load_tree(
                 request=LoadTreeRequest(tree=tree),
@@ -572,20 +572,21 @@ class Capability(ABC, Leaf):
 
             if not load_tree_response.success:
                 self.logerr(f"Error loading capability tree: {load_tree_response}")
-                self._local_implementation_tree_status = NodeMsg.FAILED
+                self._setup_local_implementation_tree_status = NodeMsg.FAILED
                 return
 
             set_capability_io_bridge_topics(
                 tree_manager=self.tree_manager,
                 interface=self.capability_interface,
                 input_topic=self._input_bridge_topic,
-                output_topic=self._output_bridge_topic)
+                output_topic=self._output_bridge_topic
+            )
 
             try:
                 self._local_implementation_tree_root = self.tree_manager.find_root()
             except TreeTopologyError:
                 self.logerr("Failed to get root of implementation tree!")
-                self._local_implementation_tree_status = NodeMsg.FAILED
+                self._setup_local_implementation_tree_status = NodeMsg.FAILED
                 return
 
             self._local_implementation_tree_root.shutdown()
@@ -596,7 +597,7 @@ class Capability(ABC, Leaf):
                     self.name, self.tree_manager.to_msg()
                 )
 
-            self._local_implementation_tree_status = NodeMsg.SUCCESS
+            self._setup_local_implementation_tree_status = NodeMsg.SUCCESS
             return
 
     def _tick_prepare_local_execution(self) -> str:
@@ -605,11 +606,13 @@ class Capability(ABC, Leaf):
         :return: The status of the node while the preparation is running.
         """
 
+        # pylint: disable=too-many-return-statements
+
         if self._prepare_local_tree_thread is not None:
-            if self._local_implementation_tree_status is NodeMsg.RUNNING:
+            if self._setup_local_implementation_tree_status is NodeMsg.RUNNING:
                 return NodeMsg.ASSIGNED
 
-            if self._local_implementation_tree_status in [NodeMsg.IDLE, NodeMsg.FAILED]:
+            if self._setup_local_implementation_tree_status in [NodeMsg.IDLE, NodeMsg.FAILED]:
                 return NodeMsg.FAILED
 
             self._capability_execution_status_publisher.publish(
@@ -631,7 +634,6 @@ class Capability(ABC, Leaf):
             if rospy.Time.now() - self._prepare_local_implementation_start_time > rospy.Duration(secs=10):
                 self.logerr("Timeout when waiting for local implementation to be prepared!")
                 return NodeMsg.FAILED
-
             return NodeMsg.ASSIGNED
 
         if not prepare_local_implementation_response.success:
@@ -749,13 +751,26 @@ class Capability(ABC, Leaf):
             return NodeMsg.FAILED
 
         try:
-            execute_remote_implementation_result = self._execute_action(self._execute_capability_remote_client)
+            execute_remote_implementation_result: Optional[ExecuteRemoteCapabilityResult] = self._execute_action(
+                self._execute_capability_remote_client
+                )
         except BehaviorTreeException as exc:
             self.logerr(f"Failed to execute action: {exc}")
             self._cleanup()
             return NodeMsg.FAILED
         if execute_remote_implementation_result is None:
             return NodeMsg.RUNNING
+
+        if not execute_remote_implementation_result.success:
+
+            if execute_remote_implementation_result.no_executor_available:
+                self.logerr("No executor available at the moment! Try again later!")
+                self._cleanup()
+                return NodeMsg.UNASSIGNED
+
+            self.logerr(f"Failed to execute action: {execute_remote_implementation_result.error_message}")
+            self._cleanup()
+            return NodeMsg.FAILED
 
         return NodeMsg.SUCCEEDED
 
@@ -995,7 +1010,7 @@ class Capability(ABC, Leaf):
 
         self._local_implementation_tree: Optional[Tree] = None
         self._local_implementation_tree_root: Optional[Node] = None
-        self._local_implementation_tree_status = NodeMsg.IDLE
+        self._setup_local_implementation_tree_status = NodeMsg.IDLE
 
 
 def capability_node_class_from_capability_interface(
@@ -1153,6 +1168,15 @@ def set_capability_io_bridge_topics(
         input_topic: str,
         output_topic: str
 ) -> None:
+    """
+    Sets the input and output bridge topics given a tree in a tree manger to the specified values.
+
+    :param tree_manager: The tree manager where the tree is stored
+    :param interface: The interface for which the input and output bridge values should be set.
+    :param input_topic: The topic used to bridge input values into the tree.
+    :param output_topic: The topic used to bridge output values out of the tree.
+    :return: None
+    """
     for node in tree_manager.nodes.values():
         if hasattr(node, "__capability_interface") and \
                 getattr(node, "__capability_interface") == interface:

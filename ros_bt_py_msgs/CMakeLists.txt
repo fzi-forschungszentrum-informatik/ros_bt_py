@@ -39,6 +39,7 @@ add_service_files(
   FILES
   AddNode.srv
   AddNodeAtIndex.srv
+  capabilities/CancelRemoteCapabilitySlot.srv
   capabilities/CheckPreconditionStatus.srv
   capabilities/DeleteCapabilityImplementation.srv
   capabilities/FindBestCapabilityExecutor.srv
@@ -50,6 +51,7 @@ add_service_files(
   capabilities/PutCapabilityImplementation.srv
   capabilities/PutCapabilityInterfaces.srv
   capabilities/RequestCapabilityExecution.srv
+  capabilities/RunRemoteCapabilitySlot.srv
   capabilities/SaveCapabilities.srv
   capabilities/UpdateCapabilityInterfaces.srv
   ChangeTreeName.srv
@@ -84,7 +86,6 @@ add_service_files(
 ## Generate actions in the 'action' folder
 add_action_files(
   FILES
-  ExecuteCapabilityImplementation.action
   ExecuteRemoteCapability.action
   RunTree.action
   FindBestExecutor.action
