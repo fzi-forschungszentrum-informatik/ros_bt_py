@@ -319,8 +319,62 @@ class ServiceInput(Leaf):
                                      has_upper_bound_failure=True)
 
         self.loginfo(f'Service {resolved_service} is unavailable or has wrong type.')
-        return UtilityBounds()
+        return UtilityBounds(can_execute=True)
 
+
+@define_bt_node(NodeConfig(
+    version='0.1.0',
+    options=
+    {
+        'service_type': type,
+        'wait_for_service_seconds': float
+    },
+    inputs=
+    {
+        'service_name': str
+    },
+    outputs={},
+    max_children=0,
+    optional_options=[]))
+class WaitForServiceInput(Leaf):
+    """Waits for a service to be available, fails if this wait times out
+    """
+    def _do_setup(self):
+        self._service_proxy = None
+
+    def _do_tick(self):
+        if self._service_proxy is None:
+            self._service_proxy = AsyncServiceProxy(
+                self.inputs['service_name'],
+                self.options['service_type']
+                )
+
+        if (self._service_proxy.get_state() == AsyncServiceProxy.IDLE
+                or self._service_proxy.get_state() == AsyncServiceProxy.ABORTED):
+            self._service_proxy.wait_for_service(
+                self.options['wait_for_service_seconds'])
+        if self._service_proxy.get_state() == AsyncServiceProxy.WAITING:
+            return NodeMsg.RUNNING
+        if self._service_proxy.get_state() == AsyncServiceProxy.SERVICE_AVAILABLE:
+            self._do_reset()
+            return NodeMsg.SUCCEEDED
+        self._do_reset()
+        return NodeMsg.FAILED
+
+    def _do_untick(self):
+        if self._service_proxy is not None:
+            self._service_proxy.stop_call()
+        return NodeMsg.IDLE
+
+    def _do_reset(self):
+        if self._service_proxy is not None:
+            self._service_proxy.stop_call()
+            self._service_proxy.shutdown()
+        self._service_proxy = None
+        return NodeMsg.IDLE
+
+    def _do_shutdown(self):
+        self._do_reset()
 
 @define_bt_node(
     NodeConfig(

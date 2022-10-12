@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
      FILES
+     AuctionMessage.msg
      CapabilityExecutionStatus.msg
      CapabilityImplementation.msg
      CapabilityInterface.msg
@@ -43,6 +44,7 @@ add_service_files(
   capabilities/CheckPreconditionStatus.srv
   capabilities/DeleteCapabilityImplementation.srv
   capabilities/FindBestCapabilityExecutor.srv
+  capabilities/GetAvailableRemoteCapabilitySlots.srv
   capabilities/GetCapabilityImplementations.srv
   capabilities/GetCapabilityInterfaces.srv
   capabilities/GetLocalBid.srv
@@ -51,6 +53,7 @@ add_service_files(
   capabilities/PutCapabilityImplementation.srv
   capabilities/PutCapabilityInterfaces.srv
   capabilities/RequestCapabilityExecution.srv
+  capabilities/ReserveRemoteCapabilitySlot.srv
   capabilities/RunRemoteCapabilitySlot.srv
   capabilities/SaveCapabilities.srv
   capabilities/UpdateCapabilityInterfaces.srv

@@ -1564,7 +1564,7 @@ def load_node_module(package_name):
     try:
         return importlib.import_module(package_name)
     except (ImportError, ValueError) as exc:
-        rospy.logerr(f"Could not load node module \"{package_name}\": {repr(exc)}")
+        rospy.logerr_throttle(30, f"Could not load node module \"{package_name}\": {repr(exc)}")
         return None
 
 

@@ -36,6 +36,7 @@ from typing import Type
 import rospy
 
 from ros_bt_py.assignment_manager.assignment_manager import AssignmentManager, SimpleAssignmentManager
+from ros_bt_py.assignment_manager.parallel_auction_manager import ParallelAuctionManager
 
 
 class AssignmentManagerNode:
@@ -101,7 +102,7 @@ class AssignmentManagerNode:
 if __name__ == "__main__":
     rospy.init_node("assignment_manager")
     try:
-        LOCAL_TOPIC_PREFIX: str = rospy.get_param("local_topic_prefix", default="/robot1")
+        LOCAL_TOPIC_PREFIX: str = rospy.get_namespace()
         ASSIGNMENT_TOPIC_PREFIX: str =\
             rospy.get_param("assignment_topic_prefix", default="/assignments")
 
@@ -111,7 +112,7 @@ if __name__ == "__main__":
     ASSIGNMENT_MANAGER_NODE = AssignmentManagerNode(
         local_topic_prefix=LOCAL_TOPIC_PREFIX,
         global_assignment_msg_topic_prefix=ASSIGNMENT_TOPIC_PREFIX,
-        assignment_manager=SimpleAssignmentManager
+        assignment_manager=ParallelAuctionManager
     )
     rospy.spin()
     ASSIGNMENT_MANAGER_NODE.shutdown()

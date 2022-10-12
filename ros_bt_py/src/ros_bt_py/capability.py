@@ -48,13 +48,14 @@ from std_msgs.msg import Time
 from ros_bt_py_msgs.msg import (
     CapabilityInterface, Node as NodeMsg, Tree, ExecuteRemoteCapabilityAction,
     ExecuteRemoteCapabilityGoal, CapabilityIOBridgeData, CapabilityExecutionStatus, ExecuteRemoteCapabilityResult,
-    NodeData as NodeDataMsg,
+    NodeData as NodeDataMsg, UtilityBounds,
 )
 from ros_bt_py_msgs.srv import (
     PrepareLocalImplementation, PrepareLocalImplementationRequest,
     LoadTreeRequest, ClearTreeRequest, ControlTreeExecutionRequest, GetCapabilityInterfacesRequest,
     GetCapabilityInterfacesResponse, RequestCapabilityExecution,
-    RequestCapabilityExecutionRequest, RequestCapabilityExecutionResponse,
+    RequestCapabilityExecutionRequest, RequestCapabilityExecutionResponse, GetLocalBid, GetLocalBidRequest,
+    GetLocalBidResponse,
 )
 
 from ros_bt_py.exceptions import BehaviorTreeException, TreeTopologyError
@@ -68,7 +69,6 @@ WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS = 2
 WAIT_FOR_IMPLEMENTATION_ASSIGNMENT_TIMEOUT_SECONDS = 2
 
 WAIT_FOR_REMOTE_MISSION_CONTROL_TRIES = 3
-WAIT_FOR_REMOTE_EXECUTION_TIMEOUT_SECONDS = 120
 WAIT_FOR_OUTPUTS_TIMEOUT_SECONDS = 1
 
 
@@ -147,10 +147,32 @@ class CapabilityInputDataBridge(CapabilityDataBridge):
             CapabilityIOBridgeData,
             callback=self._publish_inputs_cb
         )
+        try:
+            rospy.wait_for_message(
+                self.capability_bridge_topic,
+                CapabilityIOBridgeData,
+                timeout=rospy.Duration.from_sec(10)
+            )
+        except ROSException as exc:
+            rospy.logwarn(f"Failed to receive an initial message for the input bridge: {self.name}")
+            raise BehaviorTreeException(f"Input bridge {self.name} messages not populated!") from exc
+
+        while self._current_received_msg is None:
+            rospy.sleep(rospy.Duration.from_sec(0.01))
+
+        with self._lock:
+            for bridge_data in self._current_received_msg.bridge_data:
+                node_data: NodeDataMsg = bridge_data
+                try:
+                    self.outputs[node_data.key] = json_decode(node_data.serialized_value)
+                except TypeError as exc:
+                    self.logwarn(f"Could not set output {node_data.key}: {exc}")
+                    continue
+            self._handle_outputs()
 
     def _do_tick(self):
         if self.state == NodeMsg.IDLE:
-            return NodeMsg.RUNNING
+            self.state = NodeMsg.RUNNING
 
         if self.state == NodeMsg.RUNNING:
             with self._lock:
@@ -207,10 +229,8 @@ class CapabilityOutputDataBridge(CapabilityDataBridge):
             CapabilityIOBridgeData,
             queue_size=1000
         )
-        print(f"SETUP {self.name} - {self.state}")
 
     def _do_tick(self):
-        print(f"TICK {self.name} - {self.state}")
         if self.state == NodeMsg.IDLE:
             return NodeMsg.RUNNING
         if self.state == NodeMsg.RUNNING:
@@ -332,6 +352,67 @@ class Capability(ABC, Leaf):
         self._local_implementation_tree: Optional[Tree] = None
         self._local_implementation_tree_root: Optional[Node] = None
         self._setup_local_implementation_tree_status: str = NodeMsg.IDLE
+
+        local_bid_service_topic = rospy.resolve_name(f"{self.local_mc_topic}/get_local_bid")
+        self.__get_local_bid_service: rospy.ServiceProxy = rospy.ServiceProxy(
+            local_bid_service_topic,
+            GetLocalBid
+        )
+
+    def _do_calculate_utility(self):
+        if self._input_bridge_publisher is not None:
+            input_data = []
+            for key in self.inputs:
+                input_data_msg = NodeDataMsg()
+                input_data_msg.key = key
+                input_data_msg.serialized_value = self.inputs.get_serialized(key=key)
+                input_data_msg.serialized_type = self.inputs.get_serialized_type(key=key)
+                input_data.append(input_data_msg)
+
+            try:
+                self._input_bridge_publisher.publish(
+                    CapabilityIOBridgeData(
+                        bridge_data=input_data,
+                        timestamp=rospy.Time.now()
+                    )
+                )
+            except ROSSerializationException as exc:
+                error_msg = f"Could not serialize inputs to publish: {exc}"
+                self.logerr(error_msg)
+                raise BehaviorTreeException(error_msg) from exc
+            except ROSException as exc:
+                error_msg = f"Input data bridge publisher could not publish: {exc}"
+                self.logerr(error_msg)
+                raise BehaviorTreeException(error_msg) from exc
+
+        response: GetLocalBidResponse = self.__get_local_bid_service.call(
+            GetLocalBidRequest(
+                interface=self.capability_interface,
+                inputs_topic=self._input_bridge_topic,
+                outputs_topic=self._output_bridge_topic
+            )
+        )
+        if not response.success:
+            rospy.logfatal(
+                f"Could not calculate the utility value for the capability {self.name}: {response.error_message}"
+            )
+            return UtilityBounds(
+                can_execute=False
+            )
+        rospy.logfatal(
+            f"Evaluated value for local capability implementations {self.name}: {response.bid}"
+        )
+        return UtilityBounds(
+            can_execute=True,
+            has_lower_bound_success=True,
+            lower_bound_success=0,
+            has_upper_bound_success=True,
+            upper_bound_success=response.bid,
+            has_lower_bound_failure=True,
+            lower_bound_failure=0,
+            has_upper_bound_failure=True,
+            upper_bound_failure=response.bid
+        )
 
     @staticmethod
     def nop(msg):
@@ -468,7 +549,6 @@ class Capability(ABC, Leaf):
 
         self._input_bridge_topic = f"{capability_topic_prefix}/inputs"
         self._output_bridge_topic = f"{capability_topic_prefix}/outputs"
-
         self._input_bridge_publisher = rospy.Publisher(
             self._input_bridge_topic,
             CapabilityIOBridgeData,
@@ -498,9 +578,17 @@ class Capability(ABC, Leaf):
         """
         # pylint: disable=too-many-return-statements
         if self._internal_state == self.IDLE:
+            try:
+                require_local_execution = self.options['require_local_execution']
+            except KeyError:
+                require_local_execution = False
+
             self._request_capability_execution_service_proxy.call_service(
                 RequestCapabilityExecutionRequest(
-                    capability=self.capability_interface
+                    capability=self.capability_interface,
+                    inputs_topic=self._input_bridge_topic,
+                    outputs_topic=self._output_bridge_topic,
+                    require_local_execution=require_local_execution
                 )
             )
             self._internal_state = self.WAITING_FOR_ASSIGNMENT
@@ -539,7 +627,7 @@ class Capability(ABC, Leaf):
                 )
                 self._internal_state = self.EXECUTE_REMOTE
                 self._remote_mission_control_topic = \
-                    request_capability_execution_response.remote_mission_controller_topic
+                    f"{request_capability_execution_response.remote_mission_controller_topic}/mission_control"
             return NodeMsg.ASSIGNED
         return NodeMsg.FAILED
 
@@ -656,8 +744,9 @@ class Capability(ABC, Leaf):
         :return: the new status after the node was prepared.
         """
         if self._execute_capability_remote_client is None:
+            action_name = rospy.resolve_name(f'{self._remote_mission_control_topic}/execute_remote_capability')
             self._execute_capability_remote_client = SimpleActionClient(
-                f'{self._remote_mission_control_topic}/execute_remote_capability',
+                action_name,
                 ExecuteRemoteCapabilityAction
             )
 
@@ -741,10 +830,10 @@ class Capability(ABC, Leaf):
 
         # Check if the action ran into a timeout.
         if (rospy.Time.now() - self._execute_capability_remote_client_start_time
-                > rospy.Duration(WAIT_FOR_REMOTE_EXECUTION_TIMEOUT_SECONDS)):
+                > rospy.Duration(self.options["execution_timeout_sec"])):
             self.logerr(
                 f'ExecuteRemoteCapability action timed out after'
-                f' {WAIT_FOR_REMOTE_EXECUTION_TIMEOUT_SECONDS} seconds'
+                f' {self.options["execution_timeout_sec"]} seconds'
             )
             self._execute_capability_remote_client.cancel_goal()
             self._cleanup()
@@ -1053,7 +1142,10 @@ def capability_node_class_from_capability_interface(
 
     return define_bt_node(
         NodeConfig(
-            options={},
+            options={
+                'require_local_execution': bool,
+                'execution_timeout_sec': float
+            },
             inputs=inputs_dict,
             outputs=outputs_dict,
             max_children=0

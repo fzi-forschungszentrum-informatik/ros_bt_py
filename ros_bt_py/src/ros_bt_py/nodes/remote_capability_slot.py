@@ -236,7 +236,7 @@ class RemoteCapabilitySlot(Node):
             remote_capability_slot_status_topic,
             RemoteCapabilitySlotStatus,
             queue_size=1,
-            latch=True
+            latch=False
         )
 
     def _tick_idle(self) -> str:

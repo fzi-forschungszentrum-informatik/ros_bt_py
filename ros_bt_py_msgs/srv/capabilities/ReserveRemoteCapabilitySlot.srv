@@ -1,0 +1,5 @@
+string remote_mission_control
+string implementation_name
+---
+bool success
+string error

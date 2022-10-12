@@ -113,7 +113,7 @@ class RosParamInput(Leaf):
         return NodeMsg.IDLE
 
     def _do_calculate_utility(self):
-        return UtilityBounds()
+        return UtilityBounds(can_execute=True)
 
 
 @define_bt_node(

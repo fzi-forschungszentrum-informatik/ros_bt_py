@@ -116,9 +116,13 @@ class MigrationManager(object):
         node_module_migrations = load_migration_module(migrations_module)
         module_name = f"{node.module}.{node.node_class}"
 
+        if node.module.find("capability") != -1:
+            rospy.loginfo_throttle(10, "Migrations for capabilities are disabled!")
+            return
+
         if node_module_migrations is None:
-            if node.version == "":
-                rospy.logwarn(
+            if node.version == '':
+                rospy.logwarn_throttle(30,
                     f'{module_name} has no version information, please add a version and a migration to that version!',
                     logger_name="migration"
                 )
@@ -126,7 +130,7 @@ class MigrationManager(object):
                     migrations_module_name, MigrationInfoCollection(valid=True)
                 )
             else:
-                rospy.logerr(
+                rospy.logwarn_throttle(30,
                     '%s has a version (%s) but no migration, '
                     'please add the missing migration "%s"!' % (
                         module_name, node.version, migrations_module),

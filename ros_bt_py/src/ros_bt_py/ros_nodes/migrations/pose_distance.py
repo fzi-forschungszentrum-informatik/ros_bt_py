@@ -27,45 +27,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
-import rospy
+from ros_bt_py.migration import Migration, migration
 
-import std_msgs.msg
-
-from ros_bt_py_msgs.msg import Node as NodeMsg
-from ros_bt_py_msgs.msg import UtilityBounds
-
-from ros_bt_py.node import Leaf, define_bt_node
-from ros_bt_py.node_config import NodeConfig, OptionRef
-
-
-@define_bt_node(
-    NodeConfig(
-        options={"header_type": type},
-        inputs={},
-        outputs={"header": OptionRef("header_type")},
-        max_children=0,
-    )
-)
-class GetStdHeader(Leaf):
-    """Get ROS-Time in Header format"""
-
-    def _do_setup(self):
-        self.header = std_msgs.msg.Header()
+class PoseDistance(Migration):
+    @migration(from_version='', to_version='0.9.0', changelog='adding version number')
+    def adding_version(self):
         pass
 
-    def _do_tick(self):
-        self.header.stamp = rospy.Time.now()
-        if isinstance(self.header, self.options["header_type"]):
-            self.outputs["header"] = self.header
-            return NodeMsg.SUCCEEDED
-        else:
-            return NodeMsg.FAILED
-
-    def _do_shutdown(self):
+class GetListItem(Migration):
+    @migration(from_version='', to_version='0.9.0', changelog='adding version number')
+    def adding_version(self):
         pass
-
-    def _do_reset(self):
-        return NodeMsg.IDLE
-
-    def _do_untick(self):
-        return NodeMsg.IDLE

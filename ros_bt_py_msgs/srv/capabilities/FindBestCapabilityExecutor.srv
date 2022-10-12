@@ -1,4 +1,6 @@
 CapabilityInterface capability
+string inputs_topic
+string outputs_topic
 string mission_control_name
 ---
 # result
@@ -7,3 +9,4 @@ string error_message
 bool execute_local
 string executor_mission_control_topic
 string implementation_name
+float64 max_allowed_costs

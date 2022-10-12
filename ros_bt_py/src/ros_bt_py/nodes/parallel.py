@@ -219,10 +219,14 @@ class Parallel(FlowControl):
 
 @define_bt_node(
     NodeConfig(
-        options={"needed_successes": int, "tolerate_failures": int},
+        options={
+            'needed_successes': int,
+            'tolerate_failures': int
+        },
         inputs={},
         outputs={},
         max_children=None,
+        version="0.9.0"
     )
 )
 class ParallelFailureTolerance(FlowControl):

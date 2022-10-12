@@ -1,4 +1,6 @@
 CapabilityInterface interface
+string inputs_topic
+string outputs_topic
 ---
 string implementation_name
 float64 bid

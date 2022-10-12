@@ -1,5 +1,8 @@
 
 CapabilityInterface capability
+string inputs_topic
+string outputs_topic
+bool require_local_execution
 ---
 bool success
 string error_message
