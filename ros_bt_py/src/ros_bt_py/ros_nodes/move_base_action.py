@@ -28,13 +28,14 @@
 #  POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
 from math import sqrt
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 import rospy
 from move_base_msgs.msg import MoveBaseActionGoal, MoveBaseGoal
 from ros_bt_py_msgs.msg import UtilityBounds
 from rospy import ServiceProxy, Subscriber
 
+from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.exceptions import BehaviorTreeException
 from ros_bt_py.node import define_bt_node
 from ros_bt_py.node_config import NodeConfig

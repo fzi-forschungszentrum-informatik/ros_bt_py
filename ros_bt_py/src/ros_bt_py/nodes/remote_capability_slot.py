@@ -370,6 +370,13 @@ class RemoteCapabilitySlot(Node):
         return NodeMsg.RUNNING
 
     def _do_tick(self):
+        if self.simulate_tick:
+            self.logdebug(f"Simulating tick. {self.name} is not executing!")
+            if self.succeed_always:
+                return NodeMsg.SUCCEEDED
+
+            return NodeMsg.RUNNING
+
         if self.state is NodeMsg.SHUTDOWN:
             raise BehaviorTreeException("Ticking shutdown node!")
 

@@ -665,7 +665,9 @@ class MissionControl:
             publish_debug_info_callback=nop,
             publish_debug_settings_callback=nop,
             publish_node_diagnostics_callback=nop,
-            debug_manager=DebugManager()
+            debug_manager=DebugManager(),
+            simulate_tick=True,
+            succeed_always=False
         )
         get_local_bid_migration_manager = MigrationManager(tree_manager=get_local_bid_tree_manager)
 

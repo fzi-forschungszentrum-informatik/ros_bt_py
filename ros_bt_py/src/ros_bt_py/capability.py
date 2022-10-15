@@ -962,6 +962,13 @@ class Capability(ABC, Leaf):
                 self.logerr(error_msg)
                 raise BehaviorTreeException(error_msg) from exc
 
+        if self.simulate_tick:
+            self.logdebug(f"Simulating tick. {self.name} is not executing!")
+            if self.succeed_always:
+                return NodeMsg.SUCCEEDED
+
+            return NodeMsg.RUNNING
+
         if self.state == NodeMsg.PAUSED:
             self.state = self._old_state
 

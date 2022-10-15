@@ -51,7 +51,7 @@ from ros_bt_py_msgs.srv import (
     GetSubtreeResponse, SetExecutionModeResponse, SetOptionsResponse, ModifyBreakpointsResponse, ChangeTreeNameResponse,
     ClearTreeRequest, LoadTreeFromPathRequest, SetExecutionModeRequest, AddNodeRequest, ReloadTreeRequest,
     ChangeTreeNameRequest, MorphNodeRequest, ReplaceNodeRequest, GenerateSubtreeRequest, GetSubtreeRequest,
-    SetOptionsRequest,
+    SetOptionsRequest, SetSimulateTickRequest, SetSimulateTickResponse,
 )
 
 from ros_bt_py.debug_manager import DebugManager
@@ -267,8 +267,8 @@ class TreeManager:
             publish_node_diagnostics_callback=None,
             show_traceback_on_exception=False,
             capability_interfaces_callback=None,
-            simulate_ticks=False,
-            auto_succeed_nodes=False
+            simulate_tick=False,
+            succeed_always=False
             ):
         self.name = name
         self.publish_tree = publish_tree_callback
@@ -306,11 +306,11 @@ class TreeManager:
             rospy.loginfo('No callback for local capability interface announcements provided.')
 
         # When auto succeed nodes is set, all nodes that are ticked will return the succeeded status.
-        self.auto_succeed_nodes = auto_succeed_nodes
+        self.succeed_always = succeed_always
 
         # The simulate ticks flag requires nodes that call external services or cause changes to the
         # environment to skip these calls.
-        self.simulate_ticks = simulate_ticks
+        self.simulate_tick = simulate_tick
 
         if name is None:
             name = ""
@@ -662,6 +662,10 @@ class TreeManager:
                     instance = self.instantiate_node_from_msg(
                         node, allow_rename=False, permissive=request.permissive
                     )
+
+                    instance.simulate_tick = self.simulate_tick
+                    instance.succeed_always = self.succeed_always
+
                     for child_name in node.child_names:
                         instance.add_child(self.nodes[child_name])
                     self.nodes[node.name] = instance
@@ -1062,6 +1066,20 @@ class TreeManager:
         return response
 
     @is_edit_service
+    def set_simulate_tick(self, request: SetSimulateTickRequest) -> SetSimulateTickResponse:
+        """
+        Sets the simulate tick status to allows to simulate ticks without causing actual actions.
+        :param request: The request to process containing the new values.
+        :return: The result of the request.
+        """
+        self.simulate_tick = request.simulate_tick
+        self.succeed_always = request.succeed_always
+
+        response = SetSimulateTickResponse()
+        response.success = True
+        return response
+
+    @is_edit_service
     def add_node(self, request: AddNodeRequest) -> AddNodeResponse:
         """Add the node in this request to the tree.
 
@@ -1101,6 +1119,9 @@ class TreeManager:
             response.success = False
             response.error_message = str(exc)
             return response
+
+        instance.succeed_always = self.succeed_always
+        instance.simulate_tick = self.simulate_tick
 
         # Add node as child of the named parent, if any
         if request.parent_name:

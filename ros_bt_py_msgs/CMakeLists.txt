@@ -82,6 +82,7 @@ add_service_files(
   SaveTree.srv
   SetExecutionMode.srv
   SetOptions.srv
+  SetSimulateTick.srv
   TestService.srv
   WireNodeData.srv
   )

@@ -109,6 +109,13 @@ class Service(Leaf):
         return NodeMsg.IDLE
 
     def _do_tick(self):
+        if self.simulate_tick:
+            self.logdebug(f"Simulating tick. {self.name} is not executing!")
+            if self.succeed_always:
+                return NodeMsg.SUCCEEDED
+
+            return NodeMsg.RUNNING
+
         if not self._service_available:
             return NodeMsg.FAILED
         # If theres' no service call in-flight, and we have already reported
@@ -239,6 +246,13 @@ class ServiceInput(Leaf):
         return NodeMsg.IDLE
 
     def _do_tick(self):
+        if self.simulate_tick:
+            self.logdebug(f"Simulating tick. {self.name} is not executing!")
+            if self.succeed_always:
+                return NodeMsg.SUCCEEDED
+
+            return NodeMsg.RUNNING
+
         # If the service name changed
         if self.inputs.is_updated("service_name"):
             if self._service_proxy is not None:
@@ -343,6 +357,13 @@ class WaitForServiceInput(Leaf):
         self._service_proxy = None
 
     def _do_tick(self):
+        if self.simulate_tick:
+            self.logdebug(f"Simulating tick. {self.name} is not executing!")
+            if self.succeed_always:
+                return NodeMsg.SUCCEEDED
+
+            return NodeMsg.RUNNING
+
         if self._service_proxy is None:
             self._service_proxy = AsyncServiceProxy(
                 self.inputs['service_name'],
@@ -399,10 +420,15 @@ class WaitForService(Leaf):
         )
 
     def _do_tick(self):
-        if (
-            self._service_proxy.get_state() == AsyncServiceProxy.IDLE
-            or self._service_proxy.get_state() == AsyncServiceProxy.ABORTED
-        ):
+        if self.simulate_tick:
+            self.logdebug(f"Simulating tick. {self.name} is not executing!")
+            if self.succeed_always:
+                return NodeMsg.SUCCEEDED
+
+            return NodeMsg.RUNNING
+
+        if (self._service_proxy.get_state() == AsyncServiceProxy.IDLE
+                or self._service_proxy.get_state() == AsyncServiceProxy.ABORTED):
             self._last_service_call_time = rospy.Time.now()
             self._service_proxy.wait_for_service(
                 self.options["wait_for_service_seconds"]

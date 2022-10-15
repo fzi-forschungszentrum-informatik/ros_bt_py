@@ -120,6 +120,13 @@ class Action(Leaf):
             self._feedback = feedback
 
     def _do_tick(self):
+        if self.simulate_tick:
+            self.logdebug("Simulating tick. Action is not executing!")
+            if self.succeed_always:
+                return NodeMsg.SUCCEEDED
+
+            return NodeMsg.RUNNING
+
         if not self._action_available:
             if (
                 "fail_if_not_available" in self.options
