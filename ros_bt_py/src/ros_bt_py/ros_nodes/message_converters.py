@@ -28,12 +28,14 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
 import inspect
+from typing import Optional, Dict
 
 import genpy
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from std_msgs.msg import Duration, Time
 
+from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
@@ -55,9 +57,20 @@ class MessageToFields(Leaf):
     If the input is not as ROS message, it will be be passed through
 
     """
-
-    def __init__(self, options=None, debug_manager=None, name=None):
-        super(MessageToFields, self).__init__(options, debug_manager, name)
+    def __init__(self,
+                 options: Optional[Dict] = None,
+                 debug_manager: Optional[DebugManager] = None,
+                 name: str = None,
+                 succeed_always: bool = False,
+                 simulate_tick: bool = False
+                 ):
+        super(MessageToFields, self).__init__(
+            options=options,
+            debug_manager=debug_manager,
+            name=name,
+            succeed_always=succeed_always,
+            simulate_tick=simulate_tick
+        )
 
         node_outputs = {}
 
@@ -140,9 +153,19 @@ class FieldsToMessage(Leaf):
     If the output is not as ROS message, the input will be be passed through
 
     """
-
-    def __init__(self, options=None, debug_manager=None, name=None):
-        super(FieldsToMessage, self).__init__(options, debug_manager, name)
+    def __init__(self,
+                 options: Optional[Dict] = None,
+                 debug_manager: Optional[DebugManager] = None,
+                 name: str = None,
+                 succeed_always: bool = False,
+                 simulate_tick: bool = False):
+        super(FieldsToMessage, self).__init__(
+            options=options,
+            debug_manager=debug_manager,
+            name=name,
+            succeed_always=succeed_always,
+            simulate_tick=simulate_tick
+        )
 
         node_inputs = {}
 

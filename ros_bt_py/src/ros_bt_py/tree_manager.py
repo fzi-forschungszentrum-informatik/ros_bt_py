@@ -266,7 +266,9 @@ class TreeManager:
             publish_debug_settings_callback=None,
             publish_node_diagnostics_callback=None,
             show_traceback_on_exception=False,
-            capability_interfaces_callback=None
+            capability_interfaces_callback=None,
+            simulate_ticks=False,
+            auto_succeed_nodes=False
             ):
         self.name = name
         self.publish_tree = publish_tree_callback
@@ -302,6 +304,13 @@ class TreeManager:
         self.capability_interfaces_callback = capability_interfaces_callback
         if not self.capability_interfaces_callback is None:
             rospy.loginfo('No callback for local capability interface announcements provided.')
+
+        # When auto succeed nodes is set, all nodes that are ticked will return the succeeded status.
+        self.auto_succeed_nodes = auto_succeed_nodes
+
+        # The simulate ticks flag requires nodes that call external services or cause changes to the
+        # environment to skip these calls.
+        self.simulate_ticks = simulate_ticks
 
         if name is None:
             name = ""

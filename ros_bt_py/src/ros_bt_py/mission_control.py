@@ -451,7 +451,7 @@ class MissionControl:
                 )
                 return
             selected_executor_id = idle_executor_ids.pop()
-        rospy.logfatal(f"Selected executor: {selected_executor_id}", logger_name="remote_capability_execution")
+        rospy.logdebug(f"Selected executor: {selected_executor_id}", logger_name="remote_capability_execution")
         self.remote_capability_slot_status_callback(
             RemoteCapabilitySlotStatus(
                 name=selected_executor_id,
@@ -461,7 +461,7 @@ class MissionControl:
         )
 
         self._remote_capability_slot_goals[goal_id] = (selected_executor_id, False)
-        rospy.logfatal("Starting thread!", logger_name="remote_capability_execution")
+        rospy.logdebug("Starting thread!", logger_name="remote_capability_execution")
         thread = threading.Thread(
             name=f"Thread-RemoteCapabilitySlot-{selected_executor_id}",
             target=self.execute_remote_capability_exec,
@@ -709,7 +709,7 @@ class MissionControl:
 
             calculated_utility = \
                 get_local_bid_tree_manager.find_root().calculate_utility()
-            rospy.logfatal(f"Calculated utility for {request.interface}: {calculated_utility}")
+            #rospy.logfatal(f"Calculated utility for {request.interface}: {calculated_utility}")
 
             implementation_utility[
                 implementation.name] = calculated_utility.upper_bound_success

@@ -37,7 +37,7 @@ at runtime.
 import secrets
 import threading
 from abc import ABC
-from typing import Optional, List, Type
+from typing import Optional, List, Type, Dict
 
 import rospy
 from actionlib import SimpleActionClient
@@ -58,6 +58,7 @@ from ros_bt_py_msgs.srv import (
     GetLocalBidResponse,
 )
 
+from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.exceptions import BehaviorTreeException, TreeTopologyError
 from ros_bt_py.helpers import json_decode
 from ros_bt_py.node import define_bt_node, Leaf, Node
@@ -83,7 +84,9 @@ class CapabilityDataBridge(ABC, Leaf):
             self,
             debug_manager=None,
             name=None,
-            options=None
+            options=None,
+            simulate_tick=False,
+            succeed_always=False
     ):
         """
         Creates a new capability data bridge node.
@@ -92,7 +95,13 @@ class CapabilityDataBridge(ABC, Leaf):
         :param name: The name of the node.
         :param options: The node options.
         """
-        super().__init__(options=options, debug_manager=debug_manager, name=name)
+        super(CapabilityDataBridge, self).__init__(
+            options=options,
+            debug_manager=debug_manager,
+            name=name,
+            simulate_tick=simulate_tick,
+            succeed_always=succeed_always
+        )
         self._source_capability_bridge_topic: Optional[str] = None
 
     @property
@@ -121,11 +130,19 @@ class CapabilityInputDataBridge(CapabilityDataBridge):
 
     def __init__(
             self,
-            debug_manager=None,
-            name=None,
-            options=None
+            options: Optional[Dict] = None,
+            debug_manager: Optional[DebugManager] = None,
+            name: str = None,
+            succeed_always: bool = False,
+            simulate_tick: bool = False
     ):
-        super().__init__(options=options, debug_manager=debug_manager, name=name)
+        super(CapabilityInputDataBridge, self).__init__(
+            options=options,
+            debug_manager=debug_manager,
+            name=name,
+            simulate_tick=simulate_tick,
+            succeed_always=succeed_always
+        )
         self._source_capability_inputs_subscriber: Optional[rospy.Subscriber] = None
         self._current_received_msg: Optional[CapabilityIOBridgeData] = None
         self._lock = threading.RLock()
@@ -213,11 +230,19 @@ class CapabilityOutputDataBridge(CapabilityDataBridge):
 
     def __init__(
             self,
-            debug_manager=None,
-            name=None,
-            options=None
+            options: Optional[Dict] = None,
+            debug_manager: Optional[DebugManager] = None,
+            name: str = None,
+            succeed_always: bool = False,
+            simulate_tick: bool = False
     ):
-        super().__init__(options=options, debug_manager=debug_manager, name=name)
+        super().__init__(
+            options=options,
+            debug_manager=debug_manager,
+            name=name,
+            succeed_always=succeed_always,
+            simulate_tick=simulate_tick
+        )
         self._source_capability_outputs_publisher: Optional[rospy.Publisher] = None
 
     def _do_setup(self):
@@ -284,11 +309,19 @@ class Capability(ABC, Leaf):
 
     def __init__(
             self,
-            debug_manager=None,
-            name=None,
-            options=None
+            options: Optional[Dict] = None,
+            debug_manager: Optional[DebugManager] = None,
+            name: str = None,
+            succeed_always: bool = False,
+            simulate_tick: bool = False
     ):
-        super().__init__(options=options, debug_manager=debug_manager, name=name)
+        super().__init__(
+            options=options,
+            debug_manager=debug_manager,
+            name=name,
+            succeed_always=succeed_always,
+            simulate_tick=simulate_tick
+        )
 
         if hasattr(self, '__capability_interface'):
             self.capability_interface = getattr(self, '__capability_interface')

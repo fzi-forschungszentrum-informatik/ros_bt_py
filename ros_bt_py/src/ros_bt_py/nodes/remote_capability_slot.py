@@ -35,7 +35,7 @@ Its purpose is to execute capability implementations upon remote requests.
 
 # pylint: disable=import-error, no-name-in-module
 from threading import RLock, Event
-from typing import Optional
+from typing import Optional, Dict
 
 import rospy
 from rospy import Publisher, Service
@@ -50,6 +50,7 @@ from ros_bt_py_msgs.srv import (
 )
 
 from ros_bt_py.capability import set_capability_io_bridge_topics
+from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.exceptions import BehaviorTreeException
 from ros_bt_py.node import Node, define_bt_node
 from ros_bt_py.node_config import NodeConfig
@@ -73,8 +74,20 @@ class RemoteCapabilitySlot(Node):
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self, options=None, debug_manager=None, name=None):
-        super().__init__(options, debug_manager, name)
+    def __init__(self,
+                 options: Optional[Dict] = None,
+                 debug_manager: Optional[DebugManager] = None,
+                 name: str = None,
+                 succeed_always: bool = False,
+                 simulate_tick: bool = False
+    ):
+        super(RemoteCapabilitySlot, self).__init__(
+            options=options,
+            debug_manager=debug_manager,
+            name=name,
+            simulate_tick=simulate_tick,
+            succeed_always=succeed_always
+        )
 
         self._tree_manager = TreeManager(
             name="RemoteTreeSlotTreeManager",

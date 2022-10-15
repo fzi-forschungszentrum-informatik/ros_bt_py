@@ -60,8 +60,20 @@ def eucledian_distance(pose1: Pose, pose2: Pose) -> float:
     )
 )
 class MoveBaseAction(Action):
-    def __init__(self, options=None, debug_manager=None, name=None):
-        super(MoveBaseAction, self).__init__(options=options, debug_manager=debug_manager, name=name)
+    def __init__(self,
+                 options: Optional[Dict] = None,
+                 debug_manager: Optional[DebugManager] = None,
+                 name: str = None,
+                 succeed_always: bool = False,
+                 simulate_tick: bool = False
+                 ):
+        super(MoveBaseAction, self).__init__(
+            options=options,
+            debug_manager=debug_manager,
+            name=name,
+            succeed_always=succeed_always,
+            simulate_tick=simulate_tick
+        )
         self.__amcl_sub: Optional[Subscriber] = None
         self.__amcl_pose: PoseWithCovarianceStamped = PoseWithCovarianceStamped()
 
@@ -83,7 +95,14 @@ class MoveBaseAction(Action):
         try:
             self._handle_inputs()
         except BehaviorTreeException:
-            rospy.logfatal("Failed to receive the input values")
+            rospy.logerr("Failed to receive the input values")
+            return UtilityBounds(
+                can_execute=True,
+                has_lower_bound_success=True,
+                has_upper_bound_success=True,
+                has_lower_bound_failure=True,
+                has_upper_bound_failure=True
+            )
 
         try:
             goal: MoveBaseGoal = self.inputs["goal"]

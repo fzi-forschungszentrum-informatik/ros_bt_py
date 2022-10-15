@@ -256,24 +256,28 @@ class Node(object):
     _node_config = None
     permissive = False
 
-    def __init__(self, options=None, debug_manager=None, name=None):
+    def __init__(self,
+                 options: Optional[Dict] = None,
+                 debug_manager: Optional[DebugManager] = None,
+                 name: str = None,
+                 succeed_always: bool = False,
+                 simulate_tick: bool = False):
         """Prepare class members
 
         After this finishes, the Node is *not* ready to run. You still
         need to do your own initialization in :meth:`_do_setup`.
 
-        :param dict options:
+        :param succeed_always: If checked the node will return successful after every tick.
 
-        Map from option names to option values. Use these for
-        configuring your node, do not provide a custom `__init()__`
-        method!
+        :param simulate_tick: If true, the node should not change the environment, eg. by calling external services.
+        These calls should be omitted.
 
-        :param ros_bt_py.debug_manager.DebugManager debug_manager:
+        :param dict options: Map from option names to option values. Use these for configuring your node,
+        do not provide a custom `__init()__` method!
 
-        :param str name:
+        :param debug_manager: Debug manager used to debug a behavior tree.
 
-        Name of the node - defaults to None, in which case the node name
-        is set to the name of its class.
+        :param name: Name of the node - defaults to None, in which case the node name is set to the name of its class.
 
         :raises: NodeConfigError
 
@@ -293,6 +297,9 @@ class Node(object):
         self.subscribers = []
 
         self.debug_manager = debug_manager
+
+        self.succeed_always = succeed_always
+        self.simulate_tick = simulate_tick
 
         if not self._node_config:
             raise NodeConfigError("Missing node_config, cannot initialize!")

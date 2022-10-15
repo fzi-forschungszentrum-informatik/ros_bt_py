@@ -27,10 +27,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
+from typing import Optional, Dict
+
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import UtilityBounds, Tree, NodeDataLocation
 from ros_bt_py_msgs.srv import LoadTreeRequest
 
+from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.exceptions import BehaviorTreeException
 from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message
 from ros_bt_py.node import Leaf, define_bt_node
@@ -59,10 +62,21 @@ class Subtree(Leaf):
     could only feasibly be set in the Subtree node's own options, but
     at that point we don't know their names or types yet.
     """
-
-    def __init__(self, options=None, debug_manager=None, name=None):
+    def __init__(self,
+                 options: Optional[Dict] = None,
+                 debug_manager: Optional[DebugManager] = None,
+                 name: str = None,
+                 succeed_always: bool = False,
+                 simulate_tick: bool = False
+                 ):
         """Create the tree manager, load the subtree and call `super.__init__()`"""
-        super(Subtree, self).__init__(options, debug_manager, name)
+        super(Subtree, self).__init__(
+            options=options,
+            debug_manager=debug_manager,
+            name=name,
+            succeed_always=succeed_always,
+            simulate_tick=simulate_tick
+        )
 
         self.root = None
         self.prefix = f"{self.name}."

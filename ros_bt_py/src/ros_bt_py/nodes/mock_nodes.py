@@ -27,9 +27,12 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
+from typing import Optional, Dict
+
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import UtilityBounds
 
+from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.exceptions import NodeConfigError
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
@@ -52,8 +55,20 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
     )
 )
 class MockLeaf(Leaf):
-    def __init__(self, options=None, debug_manager=None, name=None):
-        super(Leaf, self).__init__(options, debug_manager, name)
+    def __init__(self,
+                 options: Optional[Dict] = None,
+                 debug_manager: Optional[DebugManager] = None,
+                 name: str = None,
+                 succeed_always: bool = False,
+                 simulate_tick: bool = False
+                 ):
+        super(Leaf, self).__init__(
+            options=options,
+            debug_manager=debug_manager,
+            name=name,
+            succeed_always=succeed_always,
+            simulate_tick=simulate_tick
+        )
 
         self.setup_called = False
         self.tick_count = 0
