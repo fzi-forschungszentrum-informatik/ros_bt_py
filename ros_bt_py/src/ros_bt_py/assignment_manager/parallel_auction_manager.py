@@ -70,7 +70,8 @@ class AuctionStatus:
 
     @property
     def is_closed(self):
-        return self.__is_closed
+        with self.__auction_status_lock:
+            return self.__is_closed
 
     @is_closed.setter
     def is_closed(self, is_closed: bool):
@@ -78,19 +79,22 @@ class AuctionStatus:
             self.__is_closed = is_closed
 
     def get_valid_bids(self):
-        return list(
-            map(
-                lambda y: (y, self.__bids[y]["bid"]),
-                filter(lambda x: self.__bids[x]["executors"] > 0, self.__bids)
-                )
-        )
+        with self.__auction_status_lock:
+            return list(
+                map(
+                    lambda y: (y, self.__bids[y]["bid"]),
+                    filter(lambda x: self.__bids[x]["executors"] > 0, self.__bids)
+                    )
+            )
 
     def get_bid(self, robot_name: str):
-        try:
-            return self.__bids[robot_name]
-        except KeyError as exc:
-            rospy.logwarn(f"Failed to receive the bid for robot {robot_name}")
-            raise exc
+        with self.__auction_status_lock:
+            try:
+                rospy.logfatal(f"Get bid: {robot_name}")
+                return self.__bids[robot_name]
+            except KeyError as exc:
+                rospy.logwarn(f"Failed to receive the bid for robot {robot_name}")
+                raise exc
 
     def set_bid(self, robot_name: str, bid: float, no_executors: int, implementation_name: str):
         with self.__auction_status_lock:
@@ -99,6 +103,7 @@ class AuctionStatus:
                 "executors"     : no_executors,
                 "implementation": implementation_name
             }
+            rospy.logfatal(f"Set bid: {robot_name} {self.__bids[robot_name]}")
 
 
 class ParallelAuctionManager(AssignmentManager):
@@ -260,7 +265,7 @@ class ParallelAuctionManager(AssignmentManager):
             rospy.logdebug("Received bid for foreign auction, ignoring!")
             return
 
-        if msg.timestamp > auction_status.deadline:
+        if auction_status.is_closed or msg.timestamp > auction_status.deadline:
             rospy.logwarn(
                 f"Ignoring bid from {msg.sender_id} for auction {msg.auction_id}, as it arrived after the deadline!"
                 )
@@ -292,7 +297,10 @@ class ParallelAuctionManager(AssignmentManager):
                 with self.running_auctions_lock:
                     for auction_id in filter(self._is_running_auction, self.running_auctions):
                         status = self.running_auctions[auction_id]
-                        local_bid = status.get_bid(self.__local_topic_prefix)
+                        try:
+                            local_bid = status.get_bid(self.__local_topic_prefix)
+                        except KeyError:
+                            continue
 
                         bid_msg = AuctionMessage(
                             auction_id=auction_id,
@@ -357,11 +365,12 @@ class ParallelAuctionManager(AssignmentManager):
         current_auction_id = str(uuid.uuid4())
         current_deadline = rospy.Time.now() + self.__auction_duration
 
-        self.running_auctions[current_auction_id] = AuctionStatus(
-            auction_id=current_auction_id,
-            auctioneer_id=self.__local_topic_prefix,
-            deadline=current_deadline
-        )
+        with self.running_auctions_lock:
+            self.running_auctions[current_auction_id] = AuctionStatus(
+                auction_id=current_auction_id,
+                auctioneer_id=self.__local_topic_prefix,
+                deadline=current_deadline
+            )
 
         self.__global_auction_message_pub.publish(
             AuctionMessage(
@@ -375,6 +384,7 @@ class ParallelAuctionManager(AssignmentManager):
                 deadline=current_deadline
             )
         )
+
         rospy.sleep(self.__auction_duration + rospy.Duration.from_sec(0.02))
 
         self.__global_auction_message_pub.publish(

@@ -77,12 +77,13 @@ class MoveBaseAction(Action):
         )
         self.__amcl_sub: Optional[Subscriber] = None
         self.__amcl_pose: PoseWithCovarianceStamped = PoseWithCovarianceStamped()
+        self._amcl_pose_updated = False
 
     def _amcl_sub_callback(self, pose: PoseWithCovarianceStamped):
         self.__amcl_pose = pose
+        self._amcl_pose_updated = True
 
     def _do_setup(self):
-        make_plan_topic = rospy.resolve_name(f"{self.options['action_name']}/make_plan")
         amcl_topic = rospy.resolve_name(self.options["amcl_pose_topic"])
         self.__amcl_sub = Subscriber(
             amcl_topic,
@@ -118,13 +119,21 @@ class MoveBaseAction(Action):
                 has_upper_bound_failure=True
             )
 
-        start_pose = PoseStamped(
-            header=self.__amcl_pose.header,
-            pose=self.__amcl_pose.pose.pose
-        )
+        tries = 0
+        while not self._amcl_pose_updated:
+            rospy.sleep(0.1)
+            tries += 1
+            if tries > 10:
+                rospy.logerr(f"Failed to get amcl pose for utility value calc!")
+                return UtilityBounds(
+                    can_execute=True,
+                    has_lower_bound_success=True,
+                    has_upper_bound_success=True,
+                    has_lower_bound_failure=True,
+                    has_upper_bound_failure=True
+                )
 
-        distance = eucledian_distance(start_pose.pose, goal_pose.pose)
-        rospy.logfatal(f"Eucledian distance: {distance}, from {start_pose} to {goal_pose}")
+        distance = eucledian_distance(self.__amcl_pose.pose.pose, goal_pose.pose)
 
         return UtilityBounds(
             can_execute=True,

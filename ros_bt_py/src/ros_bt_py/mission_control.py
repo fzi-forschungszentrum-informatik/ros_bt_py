@@ -713,8 +713,16 @@ class MissionControl:
                 get_local_bid_tree_manager.find_root().calculate_utility()
             #rospy.logfatal(f"Calculated utility for {request.interface}: {calculated_utility}")
 
-            implementation_utility[
-                implementation.name] = calculated_utility.upper_bound_success
+            if calculated_utility.lower_bound_success == 0:
+                implementation_utility[
+                    implementation.name] =\
+                    (calculated_utility.upper_bound_failure - calculated_utility.lower_bound_failure)
+            else:
+                implementation_utility[
+                    implementation.name] = \
+                    calculated_utility.lower_bound_success + \
+                    (calculated_utility.upper_bound_failure - calculated_utility.lower_bound_failure)\
+                    / calculated_utility.lower_bound_success
 
             get_local_bid_tree_manager.find_root().shutdown()
 

@@ -36,6 +36,7 @@
       ros_bt_py.ros_nodes.pose_distance,
       ros_bt_py.ros_nodes.lookup_tf,
       ros_bt_py.ros_nodes.enum,
+      ros_bt_py.ros_nodes.explore_service,
       ros_bt_py.capability,
   " />
 
