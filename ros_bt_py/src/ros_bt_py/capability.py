@@ -146,6 +146,7 @@ class CapabilityInputDataBridge(CapabilityDataBridge):
         self._source_capability_inputs_subscriber: Optional[rospy.Subscriber] = None
         self._current_received_msg: Optional[CapabilityIOBridgeData] = None
         self._lock = threading.RLock()
+        self._message_lock = threading.RLock()
 
     def _publish_inputs_cb(self, msg: CapabilityIOBridgeData):
         """
@@ -153,31 +154,32 @@ class CapabilityInputDataBridge(CapabilityDataBridge):
         :param msg: The received message.
         :return: None
         """
-        with self._lock:
+        with self._message_lock:
             self._current_received_msg = msg
 
     def _do_setup(self):
-        if self.capability_bridge_topic is None:
-            raise BehaviorTreeException(f"{self.name}: No input topic set!")
-        self._source_capability_inputs_subscriber = rospy.Subscriber(
-            self.capability_bridge_topic,
-            CapabilityIOBridgeData,
-            callback=self._publish_inputs_cb
-        )
-        try:
-            rospy.wait_for_message(
+        with self._lock:
+            if self.capability_bridge_topic is None:
+                raise BehaviorTreeException(f"{self.name}: No input topic set!")
+            self._source_capability_inputs_subscriber = rospy.Subscriber(
                 self.capability_bridge_topic,
                 CapabilityIOBridgeData,
-                timeout=rospy.Duration.from_sec(10)
+                callback=self._publish_inputs_cb
             )
-        except ROSException as exc:
-            rospy.logwarn(f"Failed to receive an initial message for the input bridge: {self.name}")
-            raise BehaviorTreeException(f"Input bridge {self.name} messages not populated!") from exc
+            try:
+                rospy.wait_for_message(
+                    self.capability_bridge_topic,
+                    CapabilityIOBridgeData,
+                    timeout=rospy.Duration.from_sec(10)
+                )
+            except ROSException as exc:
+                rospy.logwarn(f"Failed to receive an initial message for the input bridge: {self.name}")
+                raise BehaviorTreeException(f"Input bridge {self.name} messages not populated!") from exc
 
-        while self._current_received_msg is None:
-            rospy.sleep(rospy.Duration.from_sec(0.01))
+            while self._current_received_msg is None:
+                rospy.sleep(rospy.Duration.from_sec(0.1))
 
-        with self._lock:
+
             for bridge_data in self._current_received_msg.bridge_data:
                 node_data: NodeDataMsg = bridge_data
                 try:
@@ -188,37 +190,45 @@ class CapabilityInputDataBridge(CapabilityDataBridge):
             self._handle_outputs()
 
     def _do_tick(self):
-        if self.state == NodeMsg.IDLE:
-            self.state = NodeMsg.RUNNING
+        with self._lock:
+            if self.state == NodeMsg.IDLE:
+                self.state = NodeMsg.RUNNING
 
-        if self.state == NodeMsg.RUNNING:
-            with self._lock:
-                if self._current_received_msg is not None:
-                    for bridge_data in self._current_received_msg.bridge_data:
-                        node_data: NodeDataMsg = bridge_data
-                        try:
-                            self.outputs[node_data.key] = json_decode(node_data.serialized_value)
-                        except TypeError as exc:
-                            self.logwarn(f"Could not set output {node_data.key}: {exc}")
-                            continue
+            if self.state == NodeMsg.RUNNING:
+                with self._message_lock:
+                    if self._current_received_msg is not None:
+                        for bridge_data in self._current_received_msg.bridge_data:
+                            node_data: NodeDataMsg = bridge_data
+                            try:
+                                self.outputs[node_data.key] = json_decode(node_data.serialized_value)
+                            except TypeError as exc:
+                                self.logwarn(f"Could not set output {node_data.key}: {exc}")
+                                continue
 
-                    return NodeMsg.SUCCEEDED
-            return NodeMsg.RUNNING
-        return self.state
+                        return NodeMsg.SUCCEEDED
+                    return NodeMsg.RUNNING
+            return self.state
 
     def _do_untick(self):
-        self._current_received_msg = None
-        return NodeMsg.IDLE
+        with self._lock:
+            with self._message_lock:
+                self._current_received_msg = None
+            return NodeMsg.IDLE
 
     def _do_reset(self):
-        self._current_received_msg = None
-        return NodeMsg.IDLE
+        with self._lock:
+            with self._message_lock:
+                self._current_received_msg = None
+            return NodeMsg.IDLE
 
     def _do_shutdown(self):
-        self._current_received_msg = None
-        if self._source_capability_inputs_subscriber is not None:
-            self._source_capability_inputs_subscriber.unregister()
-            self._source_capability_inputs_subscriber = None
+        with self._lock:
+            with self._message_lock:
+                self._current_received_msg = None
+
+            if self._source_capability_inputs_subscriber is not None:
+                self._source_capability_inputs_subscriber.unregister()
+                self._source_capability_inputs_subscriber = None
 
 
 class CapabilityOutputDataBridge(CapabilityDataBridge):
@@ -244,51 +254,57 @@ class CapabilityOutputDataBridge(CapabilityDataBridge):
             simulate_tick=simulate_tick
         )
         self._source_capability_outputs_publisher: Optional[rospy.Publisher] = None
+        self._lock = threading.RLock()
 
     def _do_setup(self):
-        if self.capability_bridge_topic is None:
-            raise BehaviorTreeException(f"{self.name}: No input topic set!")
+        with self._lock:
+            if self.capability_bridge_topic is None:
+                raise BehaviorTreeException(f"{self.name}: No input topic set!")
 
-        self._source_capability_outputs_publisher = rospy.Publisher(
-            self.capability_bridge_topic,
-            CapabilityIOBridgeData,
-            queue_size=1000
-        )
+            self._source_capability_outputs_publisher = rospy.Publisher(
+                self.capability_bridge_topic,
+                CapabilityIOBridgeData,
+                queue_size=1000
+            )
 
     def _do_tick(self):
-        if self.state == NodeMsg.IDLE:
-            return NodeMsg.RUNNING
-        if self.state == NodeMsg.RUNNING:
-            if self._source_capability_outputs_publisher is not None:
+        with self._lock:
+            if self.state == NodeMsg.IDLE:
+                return NodeMsg.RUNNING
+            if self.state == NodeMsg.RUNNING:
+                if self._source_capability_outputs_publisher is not None:
 
-                outputs = []
-                for key in self.inputs:
-                    output = NodeDataMsg()
-                    output.key = key
-                    output.serialized_value = self.inputs.get_serialized(key=key)
-                    output.serialized_type = self.inputs.get_serialized_type(key=key)
-                    outputs.append(output)
+                    outputs = []
+                    for key in self.inputs:
+                        output = NodeDataMsg()
+                        output.key = key
+                        output.serialized_value = self.inputs.get_serialized(key=key)
+                        output.serialized_type = self.inputs.get_serialized_type(key=key)
+                        outputs.append(output)
 
-                self._source_capability_outputs_publisher.publish(
-                    CapabilityIOBridgeData(
-                        bridge_data=outputs,
-                        timestamp=rospy.Time.now()
+                    self._source_capability_outputs_publisher.publish(
+                        CapabilityIOBridgeData(
+                            bridge_data=outputs,
+                            timestamp=rospy.Time.now()
+                        )
                     )
-                )
-                return NodeMsg.SUCCEEDED
+                    return NodeMsg.SUCCEEDED
+                return NodeMsg.FAILED
             return NodeMsg.FAILED
-        return NodeMsg.FAILED
 
     def _do_untick(self):
-        return NodeMsg.IDLE
+        with self._lock:
+            return NodeMsg.IDLE
 
     def _do_reset(self):
-        return NodeMsg.IDLE
+        with self._lock:
+            return NodeMsg.IDLE
 
     def _do_shutdown(self):
-        if self._source_capability_outputs_publisher is not None:
-            self._source_capability_outputs_publisher.unregister()
-            self._source_capability_outputs_publisher = None
+        with self._lock:
+            if self._source_capability_outputs_publisher is not None:
+                self._source_capability_outputs_publisher.unregister()
+                self._source_capability_outputs_publisher = None
 
 
 class Capability(ABC, Leaf):
@@ -426,15 +442,12 @@ class Capability(ABC, Leaf):
             )
         )
         if not response.success:
-            rospy.logfatal(
+            rospy.logerr(
                 f"Could not calculate the utility value for the capability {self.name}: {response.error_message}"
             )
             return UtilityBounds(
                 can_execute=False
             )
-        rospy.logfatal(
-            f"Evaluated value for local capability implementations {self.name}: {response.bid}"
-        )
         return UtilityBounds(
             can_execute=True,
             has_lower_bound_success=True,
@@ -654,7 +667,7 @@ class Capability(ABC, Leaf):
                 self._internal_state = self.EXECUTE_LOCAL
 
             else:
-                self.loginfo(
+                self.logfatal(
                     f"Executing capability remotely on"
                     f" {request_capability_execution_response.remote_mission_controller_topic}"
                 )

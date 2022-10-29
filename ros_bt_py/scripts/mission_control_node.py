@@ -44,4 +44,7 @@ if __name__ == '__main__':
     rospy.init_node('mission_control')
 
     MISSION_CONTROL = MissionControl()
-    rospy.spin()
+    while not rospy.is_shutdown():
+        rospy.rostime.wallsleep(0.5)
+
+    MISSION_CONTROL.shutdown()
