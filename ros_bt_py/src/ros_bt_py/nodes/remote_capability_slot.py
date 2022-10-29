@@ -38,7 +38,8 @@ from threading import RLock, Event
 from typing import Optional, Dict
 
 import rospy
-from rospy import Publisher, Service
+import std_msgs.msg
+from rospy import Publisher, Service, ROSException
 from ros_bt_py_msgs.msg import (
     Node as NodeMsg,
     RemoteCapabilitySlotStatus, CapabilityExecutionStatus, CapabilityInterface,
@@ -98,6 +99,7 @@ class RemoteCapabilitySlot(Node):
             debug_manager=self.debug_manager
         )
         self._tree_root: Optional[Node] = None
+        self._ping_publisher: Optional[Publisher] = None
 
         self._run_remote_capability_service: Optional[Service] = None
         self._cancel_remote_capability_service: Optional[Service] = None
@@ -132,6 +134,13 @@ class RemoteCapabilitySlot(Node):
             self._canceled_event.clear()
 
             self.capability_interface = req.interface
+
+            self._ping_publisher = Publisher(
+                req.ping_topic,
+                data_class=std_msgs.msg.Time,
+                queue_size=1
+            )
+            self._ping_publisher.publish(std_msgs.msg.Time(rospy.Time.now()))
 
             if self._tree_loaded_event.is_set():
                 self._tree_root.shutdown()
@@ -200,7 +209,7 @@ class RemoteCapabilitySlot(Node):
         response = CancelRemoteCapabilitySlotResponse()
         self.logdebug(f"Cancellation request received: {req}")
         self._request_cancellation_event.set()
-        if not self._canceled_event.wait(timeout=0.002):
+        if not self._canceled_event.wait(timeout=0.1):
             response.success = False
             response.error_message = "No confirmation of cancellation was received!"
         else:
@@ -377,6 +386,12 @@ class RemoteCapabilitySlot(Node):
 
             return NodeMsg.RUNNING
 
+        if self._ping_publisher is not None and self._ping_publisher:
+            try:
+                self._ping_publisher.publish(std_msgs.msg.Time(rospy.Time.now()))
+            except ROSException as exc:
+                self.logwarn(f"Exception when publishing ping: {exc}")
+
         if self.state is NodeMsg.SHUTDOWN:
             raise BehaviorTreeException("Ticking shutdown node!")
 
@@ -458,3 +473,7 @@ class RemoteCapabilitySlot(Node):
             self._tree_root = None
         self._tree_manager.clear(request=ClearTreeRequest())
         self._tree_loaded_event.clear()
+
+        if self._ping_publisher is not None:
+            self._ping_publisher.unregister()
+        self._ping_publisher = None

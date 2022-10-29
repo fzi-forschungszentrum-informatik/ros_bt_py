@@ -43,10 +43,10 @@ from ros_bt_py.nodes.service import ServiceInput
         version="1.0.0"
     )
 )
-class HuskyExploreService(ServiceInput):
+class HuskyIdentifyService(ServiceInput):
     def _do_calculate_utility(self) -> UtilityBounds:
         # This number is the duration in (sec * 10) / detection radius
-        utility_value = 53
+        utility_value = 100
         return UtilityBounds(
             can_execute=True,
             has_lower_bound_success=True,
@@ -69,10 +69,10 @@ class HuskyExploreService(ServiceInput):
         version="1.0.0"
     )
 )
-class SpotExploreService(ServiceInput):
+class SpotIdentifyService(ServiceInput):
     def _do_calculate_utility(self) -> UtilityBounds:
         # This number is the duration in (sec * 10) / detection radius
-        utility_value = 13
+        utility_value = 10
         return UtilityBounds(
             can_execute=True,
             has_lower_bound_success=True,
@@ -86,27 +86,3 @@ class SpotExploreService(ServiceInput):
         )
 
 
-@define_bt_node(
-    NodeConfig(
-        inputs={},
-        options={},
-        outputs={},
-        max_children=0,
-        version="1.0.0"
-    )
-)
-class BebopExploreService(ServiceInput):
-    def _do_calculate_utility(self) -> UtilityBounds:
-        # This number is the duration in (sec * 10) / detection radius
-        utility_value = 4
-        return UtilityBounds(
-            can_execute=True,
-            has_lower_bound_success=True,
-            lower_bound_success=utility_value,
-            has_upper_bound_success=True,
-            upper_bound_success=utility_value,
-            has_lower_bound_failure=True,
-            lower_bound_failure=0,
-            has_upper_bound_failure=True,
-            upper_bound_failure=utility_value
-        )

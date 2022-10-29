@@ -2,6 +2,7 @@ CapabilityInterface interface
 string implementation_name
 string input_topic
 string output_topic
+string ping_topic
 ---
 string error_message
 bool success

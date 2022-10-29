@@ -37,6 +37,7 @@
       ros_bt_py.ros_nodes.lookup_tf,
       ros_bt_py.ros_nodes.enum,
       ros_bt_py.ros_nodes.explore_service,
+      ros_bt_py.ros_nodes.identify_service,
       ros_bt_py.capability,
   " />
 
@@ -114,33 +115,14 @@
         <param name="default_tree_control_command" value="$(arg default_tree_control_command)" />
       </node>
 
-      <node name="capability_repository" pkg="ros_bt_py" type="capability_repository_node.py" output="log" respawn="true" />
-      <node name="mission_control" pkg="ros_bt_py" type="mission_control_node.py" output="log" respawn="true" />
-      <node name="assignment_manager" pkg="ros_bt_py" type="assignment_manager_node.py" output="log" respawn="true" />
-
-        <!-- behavior tree backend, responsible for executing the tree -->
-      <node if="$(arg dual)" name="tree_node_dual" pkg="ros_bt_py" type="tree_node.py" output="log"
-            respawn="true">
-        <!-- a list of modules that are availble in the editor web interface -->
-        <rosparam param="node_modules" subst_value="True">
-          [
-          $(arg default_node_modules)
-          $(arg additional_node_modules)
-          ]
-        </rosparam>
-        <param name="show_traceback_on_exception" value="$(arg show_traceback_on_exception)" />
-        <param name="load_default_tree" value="$(arg load_default_tree)" />
-        <param name="load_default_tree_permissive" value="$(arg load_default_tree_permissive)" />
-        <param name="default_tree_path" value="$(arg default_tree_path)" />
-        <param name="default_tree_tick_frequency_hz" value="$(arg default_tree_tick_frequency_hz)" />
-        <param name="default_tree_control_command" value="$(arg default_tree_control_command)" />
-      </node>
-
       <group if="$(arg web_interface)">
         <!-- helper node that prints the url of the editor web interface for convenience -->
         <node name="print_editor_url" pkg="ros_bt_py" type="print_editor_url.py" output="screen">
           <param name="port" value="$(arg port)" />
         </node>
       </group>
+      <node name="capability_repository" pkg="ros_bt_py" type="capability_repository_node.py" output="log" respawn="true" />
+      <node name="assignment_manager" pkg="ros_bt_py" type="assignment_manager_node.py" output="log" respawn="true" />
+      <node name="mission_control" pkg="ros_bt_py" type="mission_control_node.py" output="log" respawn="true" />
   </group>
 </launch>

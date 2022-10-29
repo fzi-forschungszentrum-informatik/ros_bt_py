@@ -40,6 +40,7 @@ from abc import ABC
 from typing import Optional, List, Type, Dict
 
 import rospy
+import std_msgs.msg
 from actionlib import SimpleActionClient
 from actionlib_msgs.msg import GoalStatus
 from rospy import ROSSerializationException, ROSException, Publisher
@@ -385,6 +386,10 @@ class Capability(ABC, Leaf):
         self._output_bridge_subscriber: Optional[rospy.Subscriber] = None
         self._last_received_outputs: Optional[CapabilityIOBridgeData] = None
 
+        # Ping used to indicate that a remote capability is still running!
+        self._ping_topic: Optional[str] = None
+        self._last_ping_timestamp: Optional[rospy.Time] = None
+
         # Result variables used to track if the implementation is finished
         self._result_status: Optional[str] = None
         self._result_timestamp: Optional[rospy.Time] = None
@@ -392,8 +397,6 @@ class Capability(ABC, Leaf):
         # Variables for remote trees
         self._remote_mission_control_topic: Optional[str] = None
         self._execute_capability_remote_client_connection_tries: int = 0
-        self._execute_capability_remote_client_start_time: Optional[rospy.Time] = None
-
         # Variables for local trees
         self._prepare_local_tree_thread: Optional[threading.Thread] = None
         self._prepare_local_implementation_start_time: Optional[rospy.Time] = None
@@ -607,6 +610,14 @@ class Capability(ABC, Leaf):
             callback=self._publish_outputs_cb
         )
 
+        self._ping_topic = f"{capability_topic_prefix}/ping"
+        self._ping_subscriber = rospy.Subscriber(
+            self._ping_topic,
+            std_msgs.msg.Time,
+            self._update_remote_exec_ping,
+            queue_size=1
+        )
+
         notify_capability_execution_status_topic = rospy.resolve_name(
             f"{self.local_mc_topic}/notify_capability_execution_status"
         )
@@ -616,6 +627,10 @@ class Capability(ABC, Leaf):
             CapabilityExecutionStatus,
             queue_size=1
         )
+
+    def _update_remote_exec_ping(self, msg: std_msgs.msg.Time):
+        with self._capability_lock:
+            self._last_ping_timestamp = msg.data
 
     def _tick_unassigned(self) -> str:
         """
@@ -790,7 +805,9 @@ class Capability(ABC, Leaf):
         :return: the new status after the node was prepared.
         """
         if self._execute_capability_remote_client is None:
+
             action_name = rospy.resolve_name(f'{self._remote_mission_control_topic}/execute_remote_capability')
+            self.logfatal(f"Running on: {self._remote_mission_control_topic} {action_name}")
             self._execute_capability_remote_client = SimpleActionClient(
                 action_name,
                 ExecuteRemoteCapabilityAction
@@ -815,10 +832,12 @@ class Capability(ABC, Leaf):
                 interface=self.capability_interface,
                 implementation_name=self._implementation_name,
                 input_topic=self._input_bridge_topic,
-                output_topic=self._output_bridge_topic
+                output_topic=self._output_bridge_topic,
+                ping_topic=self._ping_topic
             )
         )
-        self._execute_capability_remote_client_start_time = rospy.Time.now()
+        with self._capability_lock:
+            self._last_ping_timestamp = rospy.Time.now()
 
         self._capability_execution_status_publisher.publish(
             CapabilityExecutionStatus(
@@ -875,7 +894,7 @@ class Capability(ABC, Leaf):
         """
 
         # Check if the action ran into a timeout.
-        if (rospy.Time.now() - self._execute_capability_remote_client_start_time
+        if (rospy.Time.now() - self._last_ping_timestamp
                 > rospy.Duration(self.options["execution_timeout_sec"])):
             self.logerr(
                 f'ExecuteRemoteCapability action timed out after'
@@ -897,7 +916,6 @@ class Capability(ABC, Leaf):
             return NodeMsg.RUNNING
 
         if not execute_remote_implementation_result.success:
-
             if execute_remote_implementation_result.no_executor_available:
                 self.logerr("No executor available at the moment! Try again later!")
                 self._cleanup()
@@ -1052,6 +1070,12 @@ class Capability(ABC, Leaf):
             )
         self._shutdown_local_implementation_tree()
         self._unregister_io_bridge_publishers_subscribers()
+
+        if self._ping_subscriber is not None:
+            self._ping_subscriber.unregister()
+            del self._ping_subscriber
+
+
         self._stop_calls_action_clients_async_service_clients()
 
         self._request_capability_execution_service_proxy.shutdown()
@@ -1059,11 +1083,12 @@ class Capability(ABC, Leaf):
 
         self._cleanup()
 
-        self._input_bridge_publisher = None
+        self._ping_subscriber = None
         self._output_bridge_subscriber = None
+        self._input_bridge_publisher = None
+
         self._request_capability_execution_service_proxy = None
         self._prepare_local_implementation_service_proxy = None
-        self._execute_capability_remote_client = None
         self._capability_execution_status_publisher = None
 
     # Cleanup operations
@@ -1075,9 +1100,12 @@ class Capability(ABC, Leaf):
         """
         if self._output_bridge_subscriber is not None:
             self._output_bridge_subscriber.unregister()
+            del self._output_bridge_subscriber
+
 
         if self._input_bridge_publisher is not None:
             self._input_bridge_publisher.unregister()
+            del self._input_bridge_publisher
 
     def _stop_calls_action_clients_async_service_clients(self):
         """
@@ -1132,27 +1160,30 @@ class Capability(ABC, Leaf):
         :return: None
         """
         # Wait for prepare local tree thread to finish
-        if self._prepare_local_tree_thread is not None:
-            self._prepare_local_tree_thread.join()
-        self._prepare_local_tree_thread: Optional[threading.Thread] = None
+        with self._capability_lock:
+            if self._prepare_local_tree_thread is not None:
+                self._prepare_local_tree_thread.join()
+            self._prepare_local_tree_thread: Optional[threading.Thread] = None
 
-        self._internal_state = self.IDLE
+            self._internal_state = self.IDLE
 
-        self._implementation_name: Optional[str] = None
-        self._result_status = None
-        self._result_timestamp = None
+            self._implementation_name: Optional[str] = None
+            self._result_status = None
+            self._result_timestamp = None
 
-        # Variables for remote trees
-        self._remote_mission_control_topic: Optional[str] = None
-        self._execute_capability_remote_client_connection_tries: int = 0
-        self._execute_capability_remote_client_start_time: Optional[rospy.Time] = None
+            # Variables for remote trees
+            self._remote_mission_control_topic: Optional[str] = None
+            self._execute_capability_remote_client_connection_tries: int = 0
 
-        # Variables for local trees
-        self._clear_local_implementation_tree()
+            # Variables for local trees
+            self._clear_local_implementation_tree()
 
-        self._local_implementation_tree: Optional[Tree] = None
-        self._local_implementation_tree_root: Optional[Node] = None
-        self._setup_local_implementation_tree_status = NodeMsg.IDLE
+            self._local_implementation_tree: Optional[Tree] = None
+            self._local_implementation_tree_root: Optional[Node] = None
+            self._setup_local_implementation_tree_status = NodeMsg.IDLE
+
+            del self._execute_capability_remote_client
+            self._execute_capability_remote_client = None
 
 
 def capability_node_class_from_capability_interface(
