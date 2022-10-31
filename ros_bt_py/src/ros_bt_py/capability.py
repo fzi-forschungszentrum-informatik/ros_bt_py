@@ -43,7 +43,7 @@ import rospy
 import std_msgs.msg
 from actionlib import SimpleActionClient
 from actionlib_msgs.msg import GoalStatus
-from rospy import ROSSerializationException, ROSException, Publisher
+from rospy import ROSSerializationException, ROSException, Publisher, Subscriber
 from std_msgs.msg import Time
 
 from ros_bt_py_msgs.msg import (
@@ -228,7 +228,11 @@ class CapabilityInputDataBridge(CapabilityDataBridge):
                 self._current_received_msg = None
 
             if self._source_capability_inputs_subscriber is not None:
-                self._source_capability_inputs_subscriber.unregister()
+                try:
+                    self._source_capability_inputs_subscriber.unregister()
+                except AttributeError as exc:
+                    self.logfatal(f"Attribute error during unregister: {exc}")
+
                 self._source_capability_inputs_subscriber = None
 
 
@@ -304,7 +308,10 @@ class CapabilityOutputDataBridge(CapabilityDataBridge):
     def _do_shutdown(self):
         with self._lock:
             if self._source_capability_outputs_publisher is not None:
-                self._source_capability_outputs_publisher.unregister()
+                try:
+                    self._source_capability_outputs_publisher.unregister()
+                except AttributeError as exc:
+                    self.logfatal(f"Attribute error during unregister: {exc}")
                 self._source_capability_outputs_publisher = None
 
 
@@ -388,6 +395,7 @@ class Capability(ABC, Leaf):
 
         # Ping used to indicate that a remote capability is still running!
         self._ping_topic: Optional[str] = None
+        self._ping_subscriber: Optional[Subscriber] = None
         self._last_ping_timestamp: Optional[rospy.Time] = None
 
         # Result variables used to track if the implementation is finished
@@ -563,8 +571,11 @@ class Capability(ABC, Leaf):
 
     def _do_setup(self):
         try:
+            prepare_local_implementation_name =\
+                rospy.resolve_name(f'{self.local_mc_topic}/prepare_local_implementation')
+
             rospy.wait_for_service(
-                f'{self.local_mc_topic}/prepare_local_implementation',
+                prepare_local_implementation_name,
                 timeout=rospy.Duration(secs=WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS)
             )
         except rospy.ROSException as exc:
@@ -574,7 +585,7 @@ class Capability(ABC, Leaf):
             ) from exc
 
         self._prepare_local_implementation_service_proxy = AsyncServiceProxy(
-            f'{self.local_mc_topic}/prepare_local_implementation',
+            prepare_local_implementation_name,
             PrepareLocalImplementation
         )
 
@@ -682,7 +693,7 @@ class Capability(ABC, Leaf):
                 self._internal_state = self.EXECUTE_LOCAL
 
             else:
-                self.logfatal(
+                self.loginfo(
                     f"Executing capability remotely on"
                     f" {request_capability_execution_response.remote_mission_controller_topic}"
                 )
@@ -807,7 +818,7 @@ class Capability(ABC, Leaf):
         if self._execute_capability_remote_client is None:
 
             action_name = rospy.resolve_name(f'{self._remote_mission_control_topic}/execute_remote_capability')
-            self.logfatal(f"Running on: {self._remote_mission_control_topic} {action_name}")
+            #self.logdebug(f"Running on: {self._remote_mission_control_topic} {action_name}")
             self._execute_capability_remote_client = SimpleActionClient(
                 action_name,
                 ExecuteRemoteCapabilityAction
@@ -994,7 +1005,7 @@ class Capability(ABC, Leaf):
                 raise BehaviorTreeException(error_msg) from exc
 
         if self.simulate_tick:
-            self.logdebug(f"Simulating tick. {self.name} is not executing!")
+            #self.logdebug(f"Simulating tick. {self.name} is not executing!")
             if self.succeed_always:
                 return NodeMsg.SUCCEEDED
 
