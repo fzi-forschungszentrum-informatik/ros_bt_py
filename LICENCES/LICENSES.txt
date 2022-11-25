@@ -1,7 +1,7 @@
 This is the package contains the ROS_BT_PY Behavior Tree Library
 It was developed on at the FZI Research Center for Information Technology in Karlsruhe, Germany.
 
-The Library Itself is distributed under the BDS-3-Clause License.
+The Library Itself is distributed under the BSD-3-Clause License.
 
 The Package contains third party code which is distributed under its own license:
 - Package/Library (Version if applicable) - Licence

@@ -127,6 +127,7 @@ class Service(Leaf):
             new_state = NodeMsg.SUCCEEDED
             if self._service_proxy.get_state() == AsyncServiceProxy.RESPONSE_READY:
                 self.outputs['response'] = self._service_proxy.get_response()
+                self._service_proxy.stop_call()
             if self._service_proxy.get_state() == AsyncServiceProxy.ERROR:
                 # TODO(nberg): Leave old response or set to None?
                 self._service_proxy.stop_call()

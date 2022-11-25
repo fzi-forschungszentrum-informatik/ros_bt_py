@@ -78,7 +78,6 @@
   -->
   <arg name="default_dual_tree_control_command" default="0" />
 
-  <!-- -->
   <arg name="show_traceback_on_exception" default="false" />
   
   <group if="$(arg web_interface)">
