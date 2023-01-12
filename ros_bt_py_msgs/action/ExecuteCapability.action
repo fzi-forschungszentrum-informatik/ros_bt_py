@@ -11,4 +11,3 @@ string remote_mission_controller_topic
 # feedback
 float64 progress
 string message
-

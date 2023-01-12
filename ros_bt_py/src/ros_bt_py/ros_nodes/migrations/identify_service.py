@@ -36,12 +36,12 @@ from ros_bt_py.nodes.service import ServiceInput
 
 
 class HuskyIdentifyService(Migration):
-    @migration(from_version='', to_version='1.0.0', changelog='adding version number')
+    @migration(from_version="", to_version="1.0.0", changelog="adding version number")
     def adding_version(self):
         pass
 
 
 class SpotIdentifyService(Migration):
-    @migration(from_version='', to_version='1.0.0', changelog='adding version number')
+    @migration(from_version="", to_version="1.0.0", changelog="adding version number")
     def adding_version(self):
         pass

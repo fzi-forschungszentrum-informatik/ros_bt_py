@@ -49,21 +49,22 @@ from ros_bt_py.ros_helpers import EnumValue, get_message_constant_fields
     )
 )
 class Enum(Leaf):
-    """Exposes a constant in a ROS message as an output
-    """
-    def __init__(self,
-                 options: Optional[Dict] = None,
-                 debug_manager: Optional[DebugManager] = None,
-                 name: str = None,
-                 succeed_always: bool = False,
-                 simulate_tick: bool = False
-                 ):
+    """Exposes a constant in a ROS message as an output"""
+
+    def __init__(
+        self,
+        options: Optional[Dict] = None,
+        debug_manager: Optional[DebugManager] = None,
+        name: str = None,
+        succeed_always: bool = False,
+        simulate_tick: bool = False,
+    ):
         super(Enum, self).__init__(
             options=options,
             debug_manager=debug_manager,
             name=name,
             succeed_always=succeed_always,
-            simulate_tick=simulate_tick
+            simulate_tick=simulate_tick,
         )
 
         node_outputs = {}
@@ -71,7 +72,9 @@ class Enum(Leaf):
         constants = get_message_constant_fields(self.options["ros_message_type"])
 
         if not constants:
-            raise BehaviorTreeException(f"{self.options['ros_message_type']} has no constant fields")
+            raise BehaviorTreeException(
+                f"{self.options['ros_message_type']} has no constant fields"
+            )
 
         if self.options["constant_name"].enum_value not in constants:
             raise BehaviorTreeException(
@@ -127,18 +130,21 @@ class EnumFields(Leaf):
 
     The outputs will be named after the fields in the ROS message
     """
-    def __init__(self,
-                 options: Optional[Dict] = None,
-                 debug_manager: Optional[DebugManager] = None,
-                 name: str = None,
-                 succeed_always: bool = False,
-                 simulate_tick: bool = False):
+
+    def __init__(
+        self,
+        options: Optional[Dict] = None,
+        debug_manager: Optional[DebugManager] = None,
+        name: str = None,
+        succeed_always: bool = False,
+        simulate_tick: bool = False,
+    ):
         super(EnumFields, self).__init__(
             options=options,
             debug_manager=debug_manager,
             name=name,
             succeed_always=succeed_always,
-            simulate_tick=simulate_tick
+            simulate_tick=simulate_tick,
         )
 
         node_outputs = {}
@@ -146,7 +152,9 @@ class EnumFields(Leaf):
         constants = get_message_constant_fields(self.options["ros_message_type"])
 
         if not constants:
-            raise BehaviorTreeException(f"{self.options['ros_message_type']} has no constant fields")
+            raise BehaviorTreeException(
+                f"{self.options['ros_message_type']} has no constant fields"
+            )
 
         self.msg = self.options["ros_message_type"]()
 

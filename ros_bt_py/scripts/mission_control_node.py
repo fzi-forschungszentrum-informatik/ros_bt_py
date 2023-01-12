@@ -9,13 +9,14 @@ import rospy
 import std_msgs
 from ros_bt_py_msgs.srv import GetCapabilityInterfaces
 
-from ros_bt_py.capability import capability_node_class_from_capability_interface_callback
+from ros_bt_py.capability import (
+    capability_node_class_from_capability_interface_callback,
+)
 from ros_bt_py.mission_control import MissionControl
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     local_repository_prefix = rospy.get_param(
-        "~local_repository_prefix",
-        default="/capability_repository_node"
+        "~local_repository_prefix", default="/capability_repository_node"
     )
 
     local_mc_prefix = f"{rospy.get_namespace()}/mission_control"
@@ -38,10 +39,13 @@ if __name__ == '__main__':
         name=interfaces_announcement_topic,
         data_class=std_msgs.msg.Time,
         callback=capability_node_class_from_capability_interface_callback,
-        callback_args=(local_mc_prefix, get_capability_interface_service,),
+        callback_args=(
+            local_mc_prefix,
+            get_capability_interface_service,
+        ),
     )
 
-    rospy.init_node('mission_control')
+    rospy.init_node("mission_control")
 
     MISSION_CONTROL = MissionControl()
     while not rospy.is_shutdown():

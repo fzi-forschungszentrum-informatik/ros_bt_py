@@ -35,17 +35,14 @@ from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 from ros_bt_py_msgs.msg import Node as NodeMsg
 
+
 @define_bt_node(
     NodeConfig(
-        options={
-            "frame_id": str
-        },
+        options={"frame_id": str},
         inputs={},
-        outputs={
-            "header": Header
-        },
+        outputs={"header": Header},
         version="1.0.0",
-        max_children=0
+        max_children=0,
     )
 )
 class CreateStampedRosHeader(Leaf):
@@ -54,16 +51,12 @@ class CreateStampedRosHeader(Leaf):
     def _do_setup(self):
         self.seq = 0
         self.outputs["header"] = Header(
-            seq=self.seq,
-            stamp=rospy.Time.now(),
-            frame_id=self.options["frame_id"]
+            seq=self.seq, stamp=rospy.Time.now(), frame_id=self.options["frame_id"]
         )
 
     def _do_tick(self):
         self.outputs["header"] = Header(
-            seq=self.seq,
-            stamp=rospy.Time.now(),
-            frame_id=self.options["frame_id"]
+            seq=self.seq, stamp=rospy.Time.now(), frame_id=self.options["frame_id"]
         )
         self.seq += 1
         return NodeMsg.SUCCEEDED
@@ -77,25 +70,27 @@ class CreateStampedRosHeader(Leaf):
     def _do_untick(self):
         return NodeMsg.IDLE
 
+
 @define_bt_node(
     NodeConfig(
-        options={'header_type': type},
+        options={"header_type": type},
         inputs={},
-        outputs={'header': OptionRef('header_type')},
+        outputs={"header": OptionRef("header_type")},
         max_children=0,
-        version="0.9.0"
+        version="0.9.0",
     )
 )
 class GetStdHeader(Leaf):
     """Get ROS-Time in Header format"""
+
     def _do_setup(self):
         self.header = std_msgs.msg.Header()
         pass
 
     def _do_tick(self):
         self.header.stamp = rospy.Time.now()
-        if isinstance(self.header, self.options['header_type']):
-            self.outputs['header'] = self.header
+        if isinstance(self.header, self.options["header_type"]):
+            self.outputs["header"] = self.header
             return NodeMsg.SUCCEEDED
         else:
             return NodeMsg.FAILED
@@ -108,4 +103,3 @@ class GetStdHeader(Leaf):
 
     def _do_untick(self):
         return NodeMsg.IDLE
-

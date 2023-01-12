@@ -27,7 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
-import rospy
+"""BT nodes to get values from containers and other nodes."""
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
 
@@ -46,7 +46,7 @@ from ros_bt_py.helpers import rgetattr
     )
 )
 class GetConstListItem(Decorator):
-    """Extracts the item at the given `index` from `list`
+    """Extracts the item at the given `index` from `list`.
 
     The option parameter `succeed_on_stale_data` determines whether
     the node returns SUCCEEDED or RUNNING if `list` hasn't been
@@ -112,7 +112,7 @@ class GetConstListItem(Decorator):
     )
 )
 class GetListItem(Decorator):
-    """Extracts the item at the given `index` from `list`
+    """Extracts the item at the given `index` from `list`.
 
     The option parameter `succeed_on_stale_data` determines whether
     the node returns SUCCEEDED or RUNNING if `list` hasn't been
@@ -176,6 +176,8 @@ class GetListItem(Decorator):
     )
 )
 class GetDictItem(Decorator):
+    """Get a item with a specific key from a dict input."""
+
     def _do_setup(self):
         for child in self.children:
             child.setup()
@@ -196,7 +198,9 @@ class GetDictItem(Decorator):
                 self.outputs["value"] = self.inputs["dict"][self.options["key"]]
                 return NodeMsg.SUCCEEDED
             except KeyError:
-                self.logerr(f"Key {self.options['key']} is not in dict {str(self.inputs['dict'])}")
+                self.logerr(
+                    f"Key {self.options['key']} is not in dict {str(self.inputs['dict'])}"
+                )
                 return NodeMsg.FAILED
         else:
             if self.options["succeed_on_stale_data"]:
@@ -229,6 +233,8 @@ class GetDictItem(Decorator):
     )
 )
 class GetMultipleDictItems(Decorator):
+    """Get multiple dict items with a specific list of keys."""
+
     def _do_setup(self):
         for child in self.children:
             child.setup()
@@ -251,7 +257,10 @@ class GetMultipleDictItems(Decorator):
                 ]
                 return NodeMsg.SUCCEEDED
             except KeyError:
-                self.logerr(f"One of the key ({self.options['keys']}) is not in dict {str(self.inputs['dict'])}")
+                self.logerr(
+                    f"One of the key ({self.options['keys']}) is not in dict "
+                    f"{str(self.inputs['dict'])}"
+                )
                 return NodeMsg.FAILED
         else:
             if self.options["succeed_on_stale_data"]:
@@ -284,6 +293,8 @@ class GetMultipleDictItems(Decorator):
     )
 )
 class GetDictItemFromKey(Decorator):
+    """Get a specific dict item with a key as data input."""
+
     def _do_setup(self):
         for child in self.children:
             child.setup()
@@ -304,7 +315,9 @@ class GetDictItemFromKey(Decorator):
                 self.outputs["value"] = self.options["dict"][self.inputs["key"]]
                 return NodeMsg.SUCCEEDED
             except KeyError:
-                self.logerr(f"Key {self.inputs['key']} is not in dict {str(self.options['dict'])}")
+                self.logerr(
+                    f"Key {self.inputs['key']} is not in dict {str(self.options['dict'])}"
+                )
                 return NodeMsg.FAILED
         else:
             if self.options["succeed_on_stale_data"]:
@@ -337,6 +350,8 @@ class GetDictItemFromKey(Decorator):
     )
 )
 class GetAttr(Decorator):
+    """Get a specific attribute form a python object."""
+
     def _do_setup(self):
         for child in self.children:
             child.setup()
@@ -359,7 +374,10 @@ class GetAttr(Decorator):
                 )
                 return NodeMsg.SUCCEEDED
             except AttributeError:
-                self.logerr(f"Object {self.inputs['object']} does not have attribute {self.options['attr_name']}")
+                self.logerr(
+                    f"Object {self.inputs['object']} does not have attribute "
+                    f"{self.options['attr_name']}"
+                )
                 return NodeMsg.FAILED
         else:
             if self.options["succeed_on_stale_data"]:

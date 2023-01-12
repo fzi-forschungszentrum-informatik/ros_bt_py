@@ -31,9 +31,6 @@ import unittest
 from socket import error
 import errno
 
-import threading
-from time import sleep
-
 from tornado.testing import AsyncTestCase, gen_test, bind_unused_port
 from tornado.httpclient import AsyncHTTPClient
 from tornado.httpserver import HTTPServer

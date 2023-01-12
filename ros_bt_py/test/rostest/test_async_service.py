@@ -36,7 +36,6 @@ except ImportError:
     import mock
 
 import os
-import signal
 
 import rospy
 from std_srvs.srv import SetBool, SetBoolRequest, SetBoolResponse

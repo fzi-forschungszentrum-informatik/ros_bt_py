@@ -65,7 +65,7 @@ from ros_bt_py_msgs.srv import (
     ChangeTreeNameRequest,
 )
 
-from ros_bt_py.node import Node, Leaf, FlowControl, define_bt_node
+from ros_bt_py.node import Leaf, FlowControl, define_bt_node
 from ros_bt_py.node_config import NodeConfig
 from ros_bt_py.nodes.sequence import Sequence
 from ros_bt_py.nodes.mock_nodes import MockLeaf
@@ -74,7 +74,7 @@ from ros_bt_py.exceptions import (
     MissingParentError,
     TreeTopologyError,
 )
-from ros_bt_py.tree_manager import TreeManager
+from ros_bt_py.tree_manager import TreeManager, get_available_nodes
 from ros_bt_py.tree_manager import (
     get_success as tm_get_success,
     get_error_message as tm_get_error_message,
@@ -2850,7 +2850,7 @@ class TestTreeManager(unittest.TestCase):
         # self.manager.nodes['outer_seq'].remove_child = mock.MagicMock()
         # self.manager.nodes['outer_seq'].remove_child.side_effect = KeyError()
 
-        set_options_response = self.manager.set_options(
+        self.manager.set_options(
             SetOptionsRequest(node_name="inner_seq", rename_node=True, new_name="bar")
         )
         self.assertIsNotNone(set_options_response)
@@ -2879,7 +2879,7 @@ class TestTreeManager(unittest.TestCase):
         self.manager.wire_data = mock.MagicMock()
         self.manager.wire_data.return_value = WireNodeDataResponse(success=False)
 
-        set_options_response = self.manager.set_options(
+        self.manager.set_options(
             SetOptionsRequest(node_name="inner_seq", rename_node=True, new_name="bar")
         )
         self.assertIsNotNone(set_options_response)
@@ -2905,7 +2905,7 @@ class TestTreeManager(unittest.TestCase):
         self.manager.wire_data = mock.MagicMock()
         self.manager.wire_data.return_value = WireNodeDataResponse(success=False)
 
-        set_options_response = self.manager.set_options(
+        self.manager.set_options(
             SetOptionsRequest(node_name="inner_seq", rename_node=True, new_name="bar")
         )
         self.assertIsNotNone(set_options_response)
@@ -2934,7 +2934,7 @@ class TestTreeManager(unittest.TestCase):
         self.manager.wire_data = mock.MagicMock()
         self.manager.wire_data.return_value = WireNodeDataResponse(success=False)
 
-        set_options_response = self.manager.set_options(
+        self.manager.set_options(
             SetOptionsRequest(node_name="inner_seq", rename_node=True, new_name="bar")
         )
         self.assertIsNotNone(set_options_response)
@@ -2959,7 +2959,7 @@ class TestTreeManager(unittest.TestCase):
             "outer_seq"
         ].remove_child.side_effect = BehaviorTreeException()
 
-        set_options_response = self.manager.set_options(
+        self.manager.set_options(
             SetOptionsRequest(node_name="outer_seq", rename_node=True, new_name="bar")
         )
         self.assertIsNotNone(set_options_response)
@@ -2987,11 +2987,20 @@ class TestTreeManager(unittest.TestCase):
         # Neither by adding...
         self.assertFalse(get_success(self.manager.add_node(add_request)))
         # Nor deleting a node
-        self.assertFalse(get_success(self.manager.remove_node(
-            RemoveNodeRequest(node_name='first',
-                              remove_children=False))))
-        self.assertFalse(get_success(self.manager.set_options(
-            SetOptionsRequest(node_name='first', options=[]))))
+        self.assertFalse(
+            get_success(
+                self.manager.remove_node(
+                    RemoveNodeRequest(node_name="first", remove_children=False)
+                )
+            )
+        )
+        self.assertFalse(
+            get_success(
+                self.manager.set_options(
+                    SetOptionsRequest(node_name="first", options=[])
+                )
+            )
+        )
 
         # But after shutting it down, we can edit it again
         self.assertTrue(

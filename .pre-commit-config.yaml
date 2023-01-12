@@ -8,9 +8,9 @@ repos:
       - id: check-merge-conflict
       - id: check-symlinks
       - id: check-xml
-        exclude: ((trees/)|(html/))
+        exclude: ^ros_bt_py/html/
       - id: end-of-file-fixer
-        exclude: ((trees/)|(html/))
+        exclude: ^ros_bt_py/html/
       - id: mixed-line-ending
       - id: trailing-whitespace
         exclude: ((trees/)|(html/))
@@ -34,12 +34,3 @@ repos:
 #      - id: clang-format
       - id: catkin_lint
       - id: roslint-python
-  - repo: https://github.com/Lucas-C/pre-commit-hooks
-    rev: v1.3.1
-    hooks:
-      - id: insert-license
-        files: \.py$
-        args:
-          - --license-filepath
-          - LICENCE
-          - --fuzzy-match-generates-todo

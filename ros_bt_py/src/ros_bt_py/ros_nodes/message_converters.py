@@ -57,19 +57,21 @@ class MessageToFields(Leaf):
     If the input is not as ROS message, it will be be passed through
 
     """
-    def __init__(self,
-                 options: Optional[Dict] = None,
-                 debug_manager: Optional[DebugManager] = None,
-                 name: str = None,
-                 succeed_always: bool = False,
-                 simulate_tick: bool = False
-                 ):
+
+    def __init__(
+        self,
+        options: Optional[Dict] = None,
+        debug_manager: Optional[DebugManager] = None,
+        name: str = None,
+        succeed_always: bool = False,
+        simulate_tick: bool = False,
+    ):
         super(MessageToFields, self).__init__(
             options=options,
             debug_manager=debug_manager,
             name=name,
             succeed_always=succeed_always,
-            simulate_tick=simulate_tick
+            simulate_tick=simulate_tick,
         )
 
         node_outputs = {}
@@ -153,18 +155,21 @@ class FieldsToMessage(Leaf):
     If the output is not as ROS message, the input will be be passed through
 
     """
-    def __init__(self,
-                 options: Optional[Dict] = None,
-                 debug_manager: Optional[DebugManager] = None,
-                 name: str = None,
-                 succeed_always: bool = False,
-                 simulate_tick: bool = False):
+
+    def __init__(
+        self,
+        options: Optional[Dict] = None,
+        debug_manager: Optional[DebugManager] = None,
+        name: str = None,
+        succeed_always: bool = False,
+        simulate_tick: bool = False,
+    ):
         super(FieldsToMessage, self).__init__(
             options=options,
             debug_manager=debug_manager,
             name=name,
             succeed_always=succeed_always,
-            simulate_tick=simulate_tick
+            simulate_tick=simulate_tick,
         )
 
         node_inputs = {}

@@ -41,7 +41,7 @@ class OptionRef(object):
         self.option_key = option_key
 
     def __repr__(self):
-        return f'OptionRef(option_key={self.option_key!r})'
+        return f"OptionRef(option_key={self.option_key!r})"
 
     def __eq__(self, other):
         return self.option_key == other.option_key
@@ -50,13 +50,20 @@ class OptionRef(object):
         return not self == other
 
     def __name__(self):
-        return f'OptionRef(option_key={self.option_key!r})'
+        return f"OptionRef(option_key={self.option_key!r})"
 
 
 class NodeConfig(object):
-    def __init__(self, options: Dict[str, type], inputs: Dict[str, type], outputs: Dict[str, type],
-                 max_children: Optional[int],
-                 optional_options: Optional[List[str]] = None, version: str = '', tags: Optional[List[str]] = None):
+    def __init__(
+        self,
+        options: Dict[str, type],
+        inputs: Dict[str, type],
+        outputs: Dict[str, type],
+        max_children: Optional[int],
+        optional_options: Optional[List[str]] = None,
+        version: str = "",
+        tags: Optional[List[str]] = None,
+    ):
         """Describes the interface of a :class:ros_bt_py.node.Node
 
         :type options Dict[str, type]
@@ -134,7 +141,9 @@ class NodeConfig(object):
           raise `ValueError`.
         """
         if self.max_children != other.max_children:
-            raise ValueError(f'Mismatch in max_children: {self.max_children} vs {other.max_children}')
+            raise ValueError(
+                f"Mismatch in max_children: {self.max_children} vs {other.max_children}"
+            )
         duplicate_inputs = []
         for key in other.inputs:
             if key in self.inputs:
@@ -158,10 +167,10 @@ class NodeConfig(object):
             msg = "Duplicate keys: "
             keys_strings = []
             if duplicate_inputs:
-                keys_strings.append(f'inputs: {str(duplicate_inputs)}')
+                keys_strings.append(f"inputs: {str(duplicate_inputs)}")
             if duplicate_outputs:
-                keys_strings.append(f'outputs: {str(duplicate_outputs)}')
+                keys_strings.append(f"outputs: {str(duplicate_outputs)}")
             if duplicate_options:
-                keys_strings.append(f'options: {str(duplicate_options)}')
-            msg += ', '.join(keys_strings)
+                keys_strings.append(f"options: {str(duplicate_options)}")
+            msg += ", ".join(keys_strings)
             raise KeyError(msg)

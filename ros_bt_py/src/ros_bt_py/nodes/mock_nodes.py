@@ -55,19 +55,20 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
     )
 )
 class MockLeaf(Leaf):
-    def __init__(self,
-                 options: Optional[Dict] = None,
-                 debug_manager: Optional[DebugManager] = None,
-                 name: str = None,
-                 succeed_always: bool = False,
-                 simulate_tick: bool = False
-                 ):
+    def __init__(
+        self,
+        options: Optional[Dict] = None,
+        debug_manager: Optional[DebugManager] = None,
+        name: str = None,
+        succeed_always: bool = False,
+        simulate_tick: bool = False,
+    ):
         super(Leaf, self).__init__(
             options=options,
             debug_manager=debug_manager,
             name=name,
             succeed_always=succeed_always,
-            simulate_tick=simulate_tick
+            simulate_tick=simulate_tick,
         )
 
         self.setup_called = False

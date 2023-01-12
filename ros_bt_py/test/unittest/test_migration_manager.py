@@ -34,9 +34,6 @@ try:
 except ImportError:
     import mock
 
-import sys
-import time
-
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import Tree
 from ros_bt_py_msgs.srv import (
@@ -47,8 +44,8 @@ from ros_bt_py_msgs.srv import (
 
 from ros_bt_py.testing_nodes import migrations_test_nodes
 
-from ros_bt_py.migration import MigrationManager
-from ros_bt_py.tree_manager import TreeManager
+from ros_bt_py.migration import MigrationManager, check_node_versions
+from ros_bt_py.tree_manager import TreeManager, get_available_nodes
 
 
 class TestMigrationManager(unittest.TestCase):
@@ -653,7 +650,7 @@ class TestMigrationManager(unittest.TestCase):
         response = get_available_nodes(request)
         self.assertTrue(response.success)
 
-        migration_manager = MigrationManager(tree_manager=tree_manager)
+        MigrationManager(tree_manager=tree_manager)
 
         tree = Tree()
         # package, but file does not exist

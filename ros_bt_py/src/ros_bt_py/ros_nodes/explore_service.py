@@ -35,13 +35,7 @@ from ros_bt_py.nodes.service import ServiceInput
 
 
 @define_bt_node(
-    NodeConfig(
-        inputs={},
-        options={},
-        outputs={},
-        max_children=0,
-        version="1.0.0"
-    )
+    NodeConfig(inputs={}, options={}, outputs={}, max_children=0, version="1.0.0")
 )
 class HuskyExploreService(ServiceInput):
     def _do_calculate_utility(self) -> UtilityBounds:
@@ -56,18 +50,12 @@ class HuskyExploreService(ServiceInput):
             has_lower_bound_failure=True,
             lower_bound_failure=0,
             has_upper_bound_failure=True,
-            upper_bound_failure=utility_value
+            upper_bound_failure=utility_value,
         )
 
 
 @define_bt_node(
-    NodeConfig(
-        inputs={},
-        options={},
-        outputs={},
-        max_children=0,
-        version="1.0.0"
-    )
+    NodeConfig(inputs={}, options={}, outputs={}, max_children=0, version="1.0.0")
 )
 class SpotExploreService(ServiceInput):
     def _do_calculate_utility(self) -> UtilityBounds:
@@ -82,18 +70,12 @@ class SpotExploreService(ServiceInput):
             has_lower_bound_failure=True,
             lower_bound_failure=0,
             has_upper_bound_failure=True,
-            upper_bound_failure=utility_value
+            upper_bound_failure=utility_value,
         )
 
 
 @define_bt_node(
-    NodeConfig(
-        inputs={},
-        options={},
-        outputs={},
-        max_children=0,
-        version="1.0.0"
-    )
+    NodeConfig(inputs={}, options={}, outputs={}, max_children=0, version="1.0.0")
 )
 class BebopExploreService(ServiceInput):
     def _do_calculate_utility(self) -> UtilityBounds:
@@ -108,5 +90,5 @@ class BebopExploreService(ServiceInput):
             has_lower_bound_failure=True,
             lower_bound_failure=0,
             has_upper_bound_failure=True,
-            upper_bound_failure=utility_value
+            upper_bound_failure=utility_value,
         )

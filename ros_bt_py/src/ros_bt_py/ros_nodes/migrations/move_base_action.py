@@ -29,12 +29,14 @@
 #  -------- END LICENSE BLOCK --------
 from ros_bt_py.migration import Migration, migration
 
+
 class MoveBaseAction(Migration):
-    @migration(from_version='', to_version='1.0.0', changelog='adding version number')
+    @migration(from_version="", to_version="1.0.0", changelog="adding version number")
     def adding_version(self):
         pass
 
+
 class BebopMoveBaseAction(Migration):
-    @migration(from_version='', to_version='1.0.0', changelog='adding version number')
+    @migration(from_version="", to_version="1.0.0", changelog="adding version number")
     def adding_version(self):
         pass

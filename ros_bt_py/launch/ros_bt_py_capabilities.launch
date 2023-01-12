@@ -53,7 +53,7 @@
 
   <!-- additional node_modules from other packages that are loaded into the editor
        this must be a list of modules, for example:
-  
+
        <arg name="additional_node_modules" default="future_advanced_nodes.learning, future_advanced_nodes.doing," />
   -->
   <arg name="additional_node_modules" default="" />

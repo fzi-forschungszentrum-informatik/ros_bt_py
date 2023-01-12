@@ -72,12 +72,15 @@ class RemoteSlot(Leaf):
     """
 
     def _do_setup(self):
-        rospy.wait_for_service(f"{self.options['slot_namespace']}/control_slot_execution",
-                               self.options['wait_for_service_seconds'])
+        rospy.wait_for_service(
+            f"{self.options['slot_namespace']}/control_slot_execution",
+            self.options["wait_for_service_seconds"],
+        )
 
         self._service_proxy = AsyncServiceProxy(
             f"{self.options['slot_namespace']}/control_slot_execution",
-            ControlTreeExecution)
+            ControlTreeExecution,
+        )
 
         self._lock = Lock()
         # We're only interested in the tree_finished member of
@@ -192,26 +195,35 @@ class RemoteSlot(Leaf):
         return NodeMsg.IDLE
 
     def _do_calculate_utility(self):
-        resolved_service = rospy.resolve_name(f"{self.options['slot_namespace']}/control_slot_execution")
+        resolved_service = rospy.resolve_name(
+            f"{self.options['slot_namespace']}/control_slot_execution"
+        )
 
         try:
             service_type_name = rosservice.get_service_type(resolved_service)
         except rosservice.ROSServiceIOException as exc:
             # Defaults to no bounds set, dragging down the utility
             # score
-            self.loginfo(f'Unable to check for service {resolved_service}: {str(exc)}')
+            self.loginfo(f"Unable to check for service {resolved_service}: {str(exc)}")
             return UtilityBounds()
 
         if service_type_name:
             service_type = get_service_class(service_type_name)
 
             if service_type == ControlTreeExecution:
-                self.loginfo(('Found service %s with correct type, returning '
-                              'filled out UtilityBounds') % resolved_service)
-                return UtilityBounds(has_lower_bound_success=True,
-                                     has_upper_bound_success=True,
-                                     has_lower_bound_failure=True,
-                                     has_upper_bound_failure=True)
+                self.loginfo(
+                    (
+                        "Found service %s with correct type, returning "
+                        "filled out UtilityBounds"
+                    )
+                    % resolved_service
+                )
+                return UtilityBounds(
+                    has_lower_bound_success=True,
+                    has_upper_bound_success=True,
+                    has_lower_bound_failure=True,
+                    has_upper_bound_failure=True,
+                )
 
-        self.loginfo(f'Service {resolved_service} is unavailable or has wrong type.')
+        self.loginfo(f"Service {resolved_service} is unavailable or has wrong type.")
         return UtilityBounds()

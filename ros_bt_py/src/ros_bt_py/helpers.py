@@ -116,7 +116,9 @@ def fix_yaml(request: FixYamlRequest) -> FixYamlResponse:
         indent = index - linebreak_index - 1 + 2
 
         # now replace the search_string with the proper linebreak
-        tree_yaml = f"{tree_yaml[:index + replace_len]}\n{tree_yaml[index + replace_len + 1:]}"
+        tree_yaml = (
+            f"{tree_yaml[:index + replace_len]}\n{tree_yaml[index + replace_len + 1:]}"
+        )
 
         # now check all newlines until they are not "\n- " any more
         newline_index = index + replace_len
@@ -247,7 +249,6 @@ class HashableCapabilityInterface:
         self.interface: CapabilityInterface = interface
 
     def __eq__(self, other: object) -> bool:
-
         def compare_node_data_lists(list1: list, list2: list) -> bool:
             l1_node_data = {(x.key, json_decode(x.serialized_type)) for x in list1}
             l2_node_data = {(x.key, json_decode(x.serialized_type)) for x in list2}
@@ -257,10 +258,12 @@ class HashableCapabilityInterface:
         if not isinstance(other, HashableCapabilityInterface):
             return False
 
-        return ((self.interface.name == other.interface.name) and
-                compare_node_data_lists(self.interface.inputs, other.interface.inputs) and
-                compare_node_data_lists(self.interface.outputs, other.interface.outputs) and
-                compare_node_data_lists(self.interface.options, other.interface.options))
+        return (
+            (self.interface.name == other.interface.name)
+            and compare_node_data_lists(self.interface.inputs, other.interface.inputs)
+            and compare_node_data_lists(self.interface.outputs, other.interface.outputs)
+            and compare_node_data_lists(self.interface.options, other.interface.options)
+        )
 
     def __ne__(self, other: object) -> bool:
         return not self.__eq__(other)
@@ -269,8 +272,23 @@ class HashableCapabilityInterface:
         return hash(
             (
                 self.interface.name,
-                frozenset({(x.key, json_decode(x.serialized_type)) for x in self.interface.inputs}),
-                frozenset({(x.key, json_decode(x.serialized_type)) for x in self.interface.outputs}),
-                frozenset({(x.key, json_decode(x.serialized_type)) for x in self.interface.options})
+                frozenset(
+                    {
+                        (x.key, json_decode(x.serialized_type))
+                        for x in self.interface.inputs
+                    }
+                ),
+                frozenset(
+                    {
+                        (x.key, json_decode(x.serialized_type))
+                        for x in self.interface.outputs
+                    }
+                ),
+                frozenset(
+                    {
+                        (x.key, json_decode(x.serialized_type))
+                        for x in self.interface.options
+                    }
+                ),
             )
         )

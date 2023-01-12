@@ -533,7 +533,7 @@ class App extends Component
         messageType : 'ros_bt_py_msgs/Packages'
       });
 
-     
+
       // Subscribe again
       this.tree_topic.subscribe(this.onTreeUpdate);
       this.debug_topic.subscribe(this.onDebugUpdate);

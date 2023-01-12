@@ -29,7 +29,9 @@
 #  -------- END LICENSE BLOCK --------
 """
 Module for handling BT nodes related to capabilities.
-It defines the base ABC for Capability nodes and functions to create class definitions for capability interfaces
+
+It defines the base ABC for Capability nodes
+and functions to create class definitions for capability interfaces
 at runtime.
 """
 # pylint: disable=no-name-in-module,import-error,too-many-lines
@@ -47,15 +49,30 @@ from rospy import ROSSerializationException, ROSException, Publisher, Subscriber
 from std_msgs.msg import Time
 
 from ros_bt_py_msgs.msg import (
-    CapabilityInterface, Node as NodeMsg, Tree, ExecuteRemoteCapabilityAction,
-    ExecuteRemoteCapabilityGoal, CapabilityIOBridgeData, CapabilityExecutionStatus, ExecuteRemoteCapabilityResult,
-    NodeData as NodeDataMsg, UtilityBounds,
+    CapabilityInterface,
+    Node as NodeMsg,
+    Tree,
+    ExecuteRemoteCapabilityAction,
+    ExecuteRemoteCapabilityGoal,
+    CapabilityIOBridgeData,
+    CapabilityExecutionStatus,
+    ExecuteRemoteCapabilityResult,
+    NodeData as NodeDataMsg,
+    UtilityBounds,
 )
 from ros_bt_py_msgs.srv import (
-    PrepareLocalImplementation, PrepareLocalImplementationRequest,
-    LoadTreeRequest, ClearTreeRequest, ControlTreeExecutionRequest, GetCapabilityInterfacesRequest,
-    GetCapabilityInterfacesResponse, RequestCapabilityExecution,
-    RequestCapabilityExecutionRequest, RequestCapabilityExecutionResponse, GetLocalBid, GetLocalBidRequest,
+    PrepareLocalImplementation,
+    PrepareLocalImplementationRequest,
+    LoadTreeRequest,
+    ClearTreeRequest,
+    ControlTreeExecutionRequest,
+    GetCapabilityInterfacesRequest,
+    GetCapabilityInterfacesResponse,
+    RequestCapabilityExecution,
+    RequestCapabilityExecutionRequest,
+    RequestCapabilityExecutionResponse,
+    GetLocalBid,
+    GetLocalBidRequest,
     GetLocalBidResponse,
 )
 
@@ -75,22 +92,20 @@ WAIT_FOR_OUTPUTS_TIMEOUT_SECONDS = 1
 
 
 class CapabilityDataBridge(ABC, Leaf):
-    """
-    Data bridge that allows the exchange of inputs and outputs between capability interfaces and nodes.
-    """
+    """Data bridge that allows the exchange of data between capability interfaces and nodes."""
 
     # pylint: disable=too-few-public-methods
 
     def __init__(
-            self,
-            debug_manager=None,
-            name=None,
-            options=None,
-            simulate_tick=False,
-            succeed_always=False
+        self,
+        debug_manager=None,
+        name=None,
+        options=None,
+        simulate_tick=False,
+        succeed_always=False,
     ):
         """
-        Creates a new capability data bridge node.
+        Create a new capability data bridge node.
 
         :param debug_manager: The debug manager to use.
         :param name: The name of the node.
@@ -101,7 +116,7 @@ class CapabilityDataBridge(ABC, Leaf):
             debug_manager=debug_manager,
             name=name,
             simulate_tick=simulate_tick,
-            succeed_always=succeed_always
+            succeed_always=succeed_always,
         )
         self._source_capability_bridge_topic: Optional[str] = None
 
@@ -109,6 +124,7 @@ class CapabilityDataBridge(ABC, Leaf):
     def capability_bridge_topic(self) -> str:
         """
         The topic to use for communication with the capability.
+
         :return: string containing the topic
         """
         return self._source_capability_bridge_topic
@@ -116,7 +132,8 @@ class CapabilityDataBridge(ABC, Leaf):
     @capability_bridge_topic.setter
     def capability_bridge_topic(self, new_topic: str):
         """
-        Sets the topic used for communication with the capability.
+        Set the topic used for communication with the capability.
+
         :param new_topic: The new topic to use.
         :return: None
         """
@@ -124,25 +141,24 @@ class CapabilityDataBridge(ABC, Leaf):
 
 
 class CapabilityInputDataBridge(CapabilityDataBridge):
-    """
-    CapabilityDataBridge that transfers the inputs of the interface as an output to the implementation.
-    """
+    """CapabilityDataBridge that transfers the interface inputs to the implementations inputs."""
+
     # pylint: disable=too-few-public-methods
 
     def __init__(
-            self,
-            options: Optional[Dict] = None,
-            debug_manager: Optional[DebugManager] = None,
-            name: str = None,
-            succeed_always: bool = False,
-            simulate_tick: bool = False
+        self,
+        options: Optional[Dict] = None,
+        debug_manager: Optional[DebugManager] = None,
+        name: str = None,
+        succeed_always: bool = False,
+        simulate_tick: bool = False,
     ):
         super(CapabilityInputDataBridge, self).__init__(
             options=options,
             debug_manager=debug_manager,
             name=name,
             simulate_tick=simulate_tick,
-            succeed_always=succeed_always
+            succeed_always=succeed_always,
         )
         self._source_capability_inputs_subscriber: Optional[rospy.Subscriber] = None
         self._current_received_msg: Optional[CapabilityIOBridgeData] = None
@@ -165,26 +181,31 @@ class CapabilityInputDataBridge(CapabilityDataBridge):
             self._source_capability_inputs_subscriber = rospy.Subscriber(
                 self.capability_bridge_topic,
                 CapabilityIOBridgeData,
-                callback=self._publish_inputs_cb
+                callback=self._publish_inputs_cb,
             )
             try:
                 rospy.wait_for_message(
                     self.capability_bridge_topic,
                     CapabilityIOBridgeData,
-                    timeout=rospy.Duration.from_sec(10)
+                    timeout=rospy.Duration.from_sec(10),
                 )
             except ROSException as exc:
-                rospy.logwarn(f"Failed to receive an initial message for the input bridge: {self.name}")
-                raise BehaviorTreeException(f"Input bridge {self.name} messages not populated!") from exc
+                rospy.logwarn(
+                    f"Failed to receive an initial message for the input bridge: {self.name}"
+                )
+                raise BehaviorTreeException(
+                    f"Input bridge {self.name} messages not populated!"
+                ) from exc
 
             while self._current_received_msg is None:
                 rospy.sleep(rospy.Duration.from_sec(0.1))
 
-
             for bridge_data in self._current_received_msg.bridge_data:
                 node_data: NodeDataMsg = bridge_data
                 try:
-                    self.outputs[node_data.key] = json_decode(node_data.serialized_value)
+                    self.outputs[node_data.key] = json_decode(
+                        node_data.serialized_value
+                    )
                 except TypeError as exc:
                     self.logwarn(f"Could not set output {node_data.key}: {exc}")
                     continue
@@ -201,9 +222,13 @@ class CapabilityInputDataBridge(CapabilityDataBridge):
                         for bridge_data in self._current_received_msg.bridge_data:
                             node_data: NodeDataMsg = bridge_data
                             try:
-                                self.outputs[node_data.key] = json_decode(node_data.serialized_value)
+                                self.outputs[node_data.key] = json_decode(
+                                    node_data.serialized_value
+                                )
                             except TypeError as exc:
-                                self.logwarn(f"Could not set output {node_data.key}: {exc}")
+                                self.logwarn(
+                                    f"Could not set output {node_data.key}: {exc}"
+                                )
                                 continue
 
                         return NodeMsg.SUCCEEDED
@@ -238,25 +263,26 @@ class CapabilityInputDataBridge(CapabilityDataBridge):
 
 class CapabilityOutputDataBridge(CapabilityDataBridge):
     """
-    CapabilityDataBridge that transfers the outputs of the implementation as an output to the interface.
+    CapabilityDataBridge that transfers the outputs
+    of the implementation as an output to the interface.
     """
 
     # pylint: disable=too-few-public-methods
 
     def __init__(
-            self,
-            options: Optional[Dict] = None,
-            debug_manager: Optional[DebugManager] = None,
-            name: str = None,
-            succeed_always: bool = False,
-            simulate_tick: bool = False
+        self,
+        options: Optional[Dict] = None,
+        debug_manager: Optional[DebugManager] = None,
+        name: str = None,
+        succeed_always: bool = False,
+        simulate_tick: bool = False,
     ):
         super().__init__(
             options=options,
             debug_manager=debug_manager,
             name=name,
             succeed_always=succeed_always,
-            simulate_tick=simulate_tick
+            simulate_tick=simulate_tick,
         )
         self._source_capability_outputs_publisher: Optional[rospy.Publisher] = None
         self._lock = threading.RLock()
@@ -267,9 +293,7 @@ class CapabilityOutputDataBridge(CapabilityDataBridge):
                 raise BehaviorTreeException(f"{self.name}: No input topic set!")
 
             self._source_capability_outputs_publisher = rospy.Publisher(
-                self.capability_bridge_topic,
-                CapabilityIOBridgeData,
-                queue_size=1000
+                self.capability_bridge_topic, CapabilityIOBridgeData, queue_size=1000
             )
 
     def _do_tick(self):
@@ -278,19 +302,19 @@ class CapabilityOutputDataBridge(CapabilityDataBridge):
                 return NodeMsg.RUNNING
             if self.state == NodeMsg.RUNNING:
                 if self._source_capability_outputs_publisher is not None:
-
                     outputs = []
                     for key in self.inputs:
                         output = NodeDataMsg()
                         output.key = key
                         output.serialized_value = self.inputs.get_serialized(key=key)
-                        output.serialized_type = self.inputs.get_serialized_type(key=key)
+                        output.serialized_type = self.inputs.get_serialized_type(
+                            key=key
+                        )
                         outputs.append(output)
 
                     self._source_capability_outputs_publisher.publish(
                         CapabilityIOBridgeData(
-                            bridge_data=outputs,
-                            timestamp=rospy.Time.now()
+                            bridge_data=outputs, timestamp=rospy.Time.now()
                         )
                     )
                     return NodeMsg.SUCCEEDED
@@ -319,9 +343,10 @@ class Capability(ABC, Leaf):
     """
     ABC for Capability nodes that implements the necessary logic for capabilities to function.
 
-    The class manages the lifecycle of capabilities and performs the necessary communications to allow the
-    capability to function.
+    The class manages the lifecycle of capabilities and performs the necessary
+    communications to allow the capability to function.
     """
+
     # pylint: disable=too-many-instance-attributes, too-few-public-methods
 
     # States to structure the do_tick() method
@@ -332,32 +357,36 @@ class Capability(ABC, Leaf):
     WAITING_FOR_OUTPUT_VALUES = 4
 
     def __init__(
-            self,
-            options: Optional[Dict] = None,
-            debug_manager: Optional[DebugManager] = None,
-            name: str = None,
-            succeed_always: bool = False,
-            simulate_tick: bool = False
+        self,
+        options: Optional[Dict] = None,
+        debug_manager: Optional[DebugManager] = None,
+        name: str = None,
+        succeed_always: bool = False,
+        simulate_tick: bool = False,
     ):
         super().__init__(
             options=options,
             debug_manager=debug_manager,
             name=name,
             succeed_always=succeed_always,
-            simulate_tick=simulate_tick
+            simulate_tick=simulate_tick,
         )
 
-        if hasattr(self, '__capability_interface'):
-            self.capability_interface = getattr(self, '__capability_interface')
+        if hasattr(self, "__capability_interface"):
+            self.capability_interface = getattr(self, "__capability_interface")
         else:
             rospy.logwarn("Created Capability without interface! This is not intended!")
-            raise BehaviorTreeException("Created Capability without interface! This is not intended!")
+            raise BehaviorTreeException(
+                "Created Capability without interface! This is not intended!"
+            )
 
-        if hasattr(self, '__local_mc_topic'):
-            self.local_mc_topic = getattr(self, '__local_mc_topic')
+        if hasattr(self, "__local_mc_topic"):
+            self.local_mc_topic = getattr(self, "__local_mc_topic")
         else:
             rospy.logwarn("Created Capability without interface! This is not intended!")
-            raise BehaviorTreeException("Created Capability without interface! This is not intended!")
+            raise BehaviorTreeException(
+                "Created Capability without interface! This is not intended!"
+            )
 
         self._internal_state = self.IDLE
         """Internal state used to track the execution progress of the capability."""
@@ -368,7 +397,7 @@ class Capability(ABC, Leaf):
             publish_debug_info_callback=self.nop,
             publish_debug_settings_callback=self.nop,
             publish_node_diagnostics_callback=self.nop,
-            debug_manager=self.debug_manager
+            debug_manager=self.debug_manager,
         )
         """Tree manager used to run the local capability implementations."""
 
@@ -381,8 +410,12 @@ class Capability(ABC, Leaf):
         self._implementation_name: Optional[str] = None
 
         # Action and service clients
-        self._request_capability_execution_service_proxy: Optional[AsyncServiceProxy] = None
-        self._prepare_local_implementation_service_proxy: Optional[AsyncServiceProxy] = None
+        self._request_capability_execution_service_proxy: Optional[
+            AsyncServiceProxy
+        ] = None
+        self._prepare_local_implementation_service_proxy: Optional[
+            AsyncServiceProxy
+        ] = None
         self._execute_capability_remote_client: Optional[SimpleActionClient] = None
         self._capability_execution_status_publisher: Optional[Publisher] = None
 
@@ -413,10 +446,11 @@ class Capability(ABC, Leaf):
         self._local_implementation_tree_root: Optional[Node] = None
         self._setup_local_implementation_tree_status: str = NodeMsg.IDLE
 
-        local_bid_service_topic = rospy.resolve_name(f"{self.local_mc_topic}/get_local_bid")
+        local_bid_service_topic = rospy.resolve_name(
+            f"{self.local_mc_topic}/get_local_bid"
+        )
         self.__get_local_bid_service: rospy.ServiceProxy = rospy.ServiceProxy(
-            local_bid_service_topic,
-            GetLocalBid
+            local_bid_service_topic, GetLocalBid
         )
 
     def _do_calculate_utility(self):
@@ -426,14 +460,15 @@ class Capability(ABC, Leaf):
                 input_data_msg = NodeDataMsg()
                 input_data_msg.key = key
                 input_data_msg.serialized_value = self.inputs.get_serialized(key=key)
-                input_data_msg.serialized_type = self.inputs.get_serialized_type(key=key)
+                input_data_msg.serialized_type = self.inputs.get_serialized_type(
+                    key=key
+                )
                 input_data.append(input_data_msg)
 
             try:
                 self._input_bridge_publisher.publish(
                     CapabilityIOBridgeData(
-                        bridge_data=input_data,
-                        timestamp=rospy.Time.now()
+                        bridge_data=input_data, timestamp=rospy.Time.now()
                     )
                 )
             except ROSSerializationException as exc:
@@ -449,16 +484,15 @@ class Capability(ABC, Leaf):
             GetLocalBidRequest(
                 interface=self.capability_interface,
                 inputs_topic=self._input_bridge_topic,
-                outputs_topic=self._output_bridge_topic
+                outputs_topic=self._output_bridge_topic,
             )
         )
         if not response.success:
             rospy.logerr(
-                f"Could not calculate the utility value for the capability {self.name}: {response.error_message}"
+                f"Could not calculate the utility value for the capability {self.name}:"
+                f" {response.error_message}"
             )
-            return UtilityBounds(
-                can_execute=False
-            )
+            return UtilityBounds(can_execute=False)
         return UtilityBounds(
             can_execute=True,
             has_lower_bound_success=True,
@@ -468,53 +502,48 @@ class Capability(ABC, Leaf):
             has_lower_bound_failure=True,
             lower_bound_failure=0,
             has_upper_bound_failure=True,
-            upper_bound_failure=response.bid
+            upper_bound_failure=response.bid,
         )
 
     @staticmethod
     def nop(msg):
-        """no op "publisher" to stop tree_manager from spamming complaints for not-set publishers
-        """
+        """no op "publisher" """
 
     @staticmethod
     def __handle_async_service_call(service_proxy: AsyncServiceProxy):
         """
         Helper method to manage a call to a service via the AsyncServiceProxy.
-        The call method needs to be called beforehand, this method just handles the possible states until the result
-        is received.
-        It checks the states the service_proxy can be in and returns results depending on the current execution state.
+        The call method needs to be called beforehand,
+        this method just handles the possible states until the result is received.
+        It checks the states the service_proxy can be in and returns results depending
+        on the current execution state.
         This method in nonblocking.
 
         :param service_proxy: The service proxy the call has been placed for.
 
-        :raises BehaviorTreeException: Should the call to the AsyncServiceProxy be aborted or not placed before calling
+        :raises BehaviorTreeException: Should the call to the AsyncServiceProxy be aborted
+        or not placed before calling
         this method a BehaviorTreeException will be raised.
         :return: The response of the call if available, otherwise None.
         """
         state = service_proxy.get_state()
 
         if state in [AsyncServiceProxy.IDLE, AsyncServiceProxy.SERVICE_AVAILABLE]:
-            raise BehaviorTreeException(
-                f'Service is still idle'
-                f' (state ID: {state})'
-            )
+            raise BehaviorTreeException(f"Service is still idle (state ID: {state})")
 
         if state is AsyncServiceProxy.TIMEOUT:
             raise BehaviorTreeException(
-                f'Service call timed out before succeeding'
-                f' (state ID: {state})'
+                f"Service call timed out before succeeding (state ID: {state})"
             )
 
         if state is AsyncServiceProxy.ABORTED:
             raise BehaviorTreeException(
-                f'Service call was aborted before succeeding'
-                f' (state ID: {state})'
+                f"Service call was aborted before succeeding (state ID: {state})"
             )
 
         if state is AsyncServiceProxy.ERROR:
             raise BehaviorTreeException(
-                f'Service call returned a error before succeeding'
-                f' (state ID: {state})'
+                f"Service call returned a error before succeeding (state ID: {state})"
             )
 
         if state is AsyncServiceProxy.RUNNING:
@@ -525,11 +554,9 @@ class Capability(ABC, Leaf):
             if response.success:
                 return response
             raise BehaviorTreeException(
-                f'Service call failed {response.error_message})'
+                f"Service call failed {response.error_message})"
             )
-        raise RuntimeError(
-            f'Async proxy in invalid state {state})'
-        )
+        raise RuntimeError(f"Async proxy in invalid state {state})")
 
     @staticmethod
     def _execute_action(action_client: SimpleActionClient):
@@ -544,14 +571,12 @@ class Capability(ABC, Leaf):
 
         if action_state in [GoalStatus.ABORTED, GoalStatus.REJECTED, GoalStatus.LOST]:
             raise BehaviorTreeException(
-                f'Action ended without succeeding'
-                f' (state ID: {action_state})'
+                f"Action ended without succeeding (state ID: {action_state})"
             )
 
         if action_state in [GoalStatus.RECALLED, GoalStatus.PREEMPTED]:
             raise BehaviorTreeException(
-                f'Action was willingly canceled before succeeding'
-                f' (state ID: {action_state})'
+                f"Action was willingly canceled before succeeding (state ID: {action_state})"
             )
 
         if action_state == GoalStatus.SUCCEEDED:
@@ -562,7 +587,8 @@ class Capability(ABC, Leaf):
 
     def _publish_outputs_cb(self, msg: CapabilityIOBridgeData):
         """
-        Callback to store the received output values locally and allow them to be processed in the next tick.
+        Callback to store the received output values locally and allow them to be
+        processed in the next tick.
         :param msg: The received output values.
         :return:None
         """
@@ -571,54 +597,56 @@ class Capability(ABC, Leaf):
 
     def _do_setup(self):
         try:
-            prepare_local_implementation_name =\
-                rospy.resolve_name(f'{self.local_mc_topic}/prepare_local_implementation')
+            prepare_local_implementation_name = rospy.resolve_name(
+                f"{self.local_mc_topic}/prepare_local_implementation"
+            )
 
             rospy.wait_for_service(
                 prepare_local_implementation_name,
-                timeout=rospy.Duration(secs=WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS)
+                timeout=rospy.Duration(
+                    secs=WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS
+                ),
             )
         except rospy.ROSException as exc:
             raise BehaviorTreeException(
                 f'Service "{self.local_mc_topic}/prepare_local_implementation" not available'
-                f' after waiting f{WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS} seconds!'
+                f" after waiting f{WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS} seconds!"
             ) from exc
 
         self._prepare_local_implementation_service_proxy = AsyncServiceProxy(
-            prepare_local_implementation_name,
-            PrepareLocalImplementation
+            prepare_local_implementation_name, PrepareLocalImplementation
         )
 
         # Create an action client for FindBestExecutor
         self._request_capability_execution_service_proxy = AsyncServiceProxy(
-            f'{self.local_mc_topic}/execute_capability',
-            RequestCapabilityExecution
+            f"{self.local_mc_topic}/execute_capability", RequestCapabilityExecution
         )
 
         try:
             self._request_capability_execution_service_proxy.wait_for_service(
-                timeout=rospy.Duration(secs=WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS)
+                timeout=rospy.Duration(
+                    secs=WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS
+                )
             )
         except rospy.ROSException as exc:
             raise BehaviorTreeException(
                 f'Service "{self.local_mc_topic}/execute_capability" not available'
-                f' after waiting f{WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS} seconds!'
+                f" after waiting f{WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS} seconds!"
             ) from exc
 
-        capability_topic_prefix = rospy.resolve_name(f"~/capabilities/{self.name}_{secrets.randbelow(100000)}")
+        capability_topic_prefix = rospy.resolve_name(
+            f"~/capabilities/{self.name}_{secrets.randbelow(100000)}"
+        )
 
         self._input_bridge_topic = f"{capability_topic_prefix}/inputs"
         self._output_bridge_topic = f"{capability_topic_prefix}/outputs"
         self._input_bridge_publisher = rospy.Publisher(
-            self._input_bridge_topic,
-            CapabilityIOBridgeData,
-            queue_size=1,
-            latch=True
+            self._input_bridge_topic, CapabilityIOBridgeData, queue_size=1, latch=True
         )
         self._output_bridge_subscriber = rospy.Subscriber(
             self._output_bridge_topic,
             CapabilityIOBridgeData,
-            callback=self._publish_outputs_cb
+            callback=self._publish_outputs_cb,
         )
 
         self._ping_topic = f"{capability_topic_prefix}/ping"
@@ -626,7 +654,7 @@ class Capability(ABC, Leaf):
             self._ping_topic,
             std_msgs.msg.Time,
             self._update_remote_exec_ping,
-            queue_size=1
+            queue_size=1,
         )
 
         notify_capability_execution_status_topic = rospy.resolve_name(
@@ -636,7 +664,7 @@ class Capability(ABC, Leaf):
         self._capability_execution_status_publisher = Publisher(
             notify_capability_execution_status_topic,
             CapabilityExecutionStatus,
-            queue_size=1
+            queue_size=1,
         )
 
     def _update_remote_exec_ping(self, msg: std_msgs.msg.Time):
@@ -651,7 +679,7 @@ class Capability(ABC, Leaf):
         # pylint: disable=too-many-return-statements
         if self._internal_state == self.IDLE:
             try:
-                require_local_execution = self.options['require_local_execution']
+                require_local_execution = self.options["require_local_execution"]
             except KeyError:
                 require_local_execution = False
 
@@ -660,24 +688,32 @@ class Capability(ABC, Leaf):
                     capability=self.capability_interface,
                     inputs_topic=self._input_bridge_topic,
                     outputs_topic=self._output_bridge_topic,
-                    require_local_execution=require_local_execution
+                    require_local_execution=require_local_execution,
                 )
             )
             self._internal_state = self.WAITING_FOR_ASSIGNMENT
 
         if self._internal_state == self.WAITING_FOR_ASSIGNMENT:
             try:
-                request_capability_execution_response: Optional[RequestCapabilityExecutionResponse] = \
-                    self.__handle_async_service_call(self._request_capability_execution_service_proxy)
+                request_capability_execution_response: Optional[
+                    RequestCapabilityExecutionResponse
+                ] = self.__handle_async_service_call(
+                    self._request_capability_execution_service_proxy
+                )
             except BehaviorTreeException as exc:
-                self.logerr(f"Failed to request execute capability service, no implementation will be selected: {exc}")
+                self.logerr(
+                    "Failed to request execute capability service, no implementation will be"
+                    f" selected: {exc}"
+                )
                 self._cleanup()
                 return NodeMsg.FAILED
 
             if request_capability_execution_response is None:
                 return NodeMsg.UNASSIGNED
 
-            self._implementation_name = request_capability_execution_response.implementation_name
+            self._implementation_name = (
+                request_capability_execution_response.implementation_name
+            )
 
             if request_capability_execution_response.execute_local:
                 self.loginfo("Executing capability locally!")
@@ -685,7 +721,7 @@ class Capability(ABC, Leaf):
                 self._prepare_local_implementation_service_proxy.call_service(
                     req=PrepareLocalImplementationRequest(
                         implementation_name=self._implementation_name,
-                        interface=self.capability_interface
+                        interface=self.capability_interface,
                     )
                 )
                 self._prepare_local_implementation_start_time = rospy.Time.now()
@@ -694,12 +730,14 @@ class Capability(ABC, Leaf):
 
             else:
                 self.loginfo(
-                    f"Executing capability remotely on"
+                    "Executing capability remotely on"
                     f" {request_capability_execution_response.remote_mission_controller_topic}"
                 )
                 self._internal_state = self.EXECUTE_REMOTE
-                self._remote_mission_control_topic = \
-                    f"{request_capability_execution_response.remote_mission_controller_topic}/mission_control"
+                self._remote_mission_control_topic = (
+                    f"{request_capability_execution_response.remote_mission_controller_topic}"
+                    f"/mission_control"
+                )
             return NodeMsg.ASSIGNED
         return NodeMsg.FAILED
 
@@ -726,8 +764,7 @@ class Capability(ABC, Leaf):
             self._setup_local_implementation_tree_status = NodeMsg.RUNNING
 
             load_tree_response = self.tree_manager.load_tree(
-                request=LoadTreeRequest(tree=tree),
-                prefix=self.name + "_"
+                request=LoadTreeRequest(tree=tree), prefix=self.name + "_"
             )
 
             if not load_tree_response.success:
@@ -739,7 +776,7 @@ class Capability(ABC, Leaf):
                 tree_manager=self.tree_manager,
                 interface=self.capability_interface,
                 input_topic=self._input_bridge_topic,
-                output_topic=self._output_bridge_topic
+                output_topic=self._output_bridge_topic,
             )
 
             try:
@@ -772,39 +809,50 @@ class Capability(ABC, Leaf):
             if self._setup_local_implementation_tree_status is NodeMsg.RUNNING:
                 return NodeMsg.ASSIGNED
 
-            if self._setup_local_implementation_tree_status in [NodeMsg.IDLE, NodeMsg.FAILED]:
+            if self._setup_local_implementation_tree_status in [
+                NodeMsg.IDLE,
+                NodeMsg.FAILED,
+            ]:
                 return NodeMsg.FAILED
 
             self._capability_execution_status_publisher.publish(
                 CapabilityExecutionStatus(
                     interface=self.capability_interface,
                     node_name=self.name,
-                    status=CapabilityExecutionStatus.EXECUTING
+                    status=CapabilityExecutionStatus.EXECUTING,
                 )
             )
             return NodeMsg.RUNNING
         try:
-            prepare_local_implementation_response = \
-                self.__handle_async_service_call(self._prepare_local_implementation_service_proxy)
+            prepare_local_implementation_response = self.__handle_async_service_call(
+                self._prepare_local_implementation_service_proxy
+            )
         except BehaviorTreeException as exc:
             self.logerr(f"Failed to receive prepared tree from mission control: {exc}")
             return NodeMsg.FAILED
 
         if prepare_local_implementation_response is None:
-            if rospy.Time.now() - self._prepare_local_implementation_start_time > rospy.Duration(secs=10):
-                self.logerr("Timeout when waiting for local implementation to be prepared!")
+            if (
+                rospy.Time.now() - self._prepare_local_implementation_start_time
+                > rospy.Duration(secs=10)
+            ):
+                self.logerr(
+                    "Timeout when waiting for local implementation to be prepared!"
+                )
                 return NodeMsg.FAILED
             return NodeMsg.ASSIGNED
 
         if not prepare_local_implementation_response.success:
-            error_msg = f'Prepare local implementation request failed: ' \
-                        f'{prepare_local_implementation_response.error_message}'
+            error_msg = (
+                "Prepare local implementation request failed: "
+                f"{prepare_local_implementation_response.error_message}"
+            )
             self.logerr(error_msg)
             raise BehaviorTreeException(error_msg)
 
         self._prepare_local_tree_thread = threading.Thread(
             target=self._setup_local_implementation_tree,
-            args=(prepare_local_implementation_response.implementation_subtree,)
+            args=(prepare_local_implementation_response.implementation_subtree,),
         )
         self._prepare_local_tree_thread.start()
 
@@ -816,24 +864,24 @@ class Capability(ABC, Leaf):
         :return: the new status after the node was prepared.
         """
         if self._execute_capability_remote_client is None:
-
-            action_name = rospy.resolve_name(f'{self._remote_mission_control_topic}/execute_remote_capability')
-            #self.logdebug(f"Running on: {self._remote_mission_control_topic} {action_name}")
+            action_name = rospy.resolve_name(
+                f"{self._remote_mission_control_topic}/execute_remote_capability"
+            )
+            # self.logdebug(f"Running on: {self._remote_mission_control_topic} {action_name}")
             self._execute_capability_remote_client = SimpleActionClient(
-                action_name,
-                ExecuteRemoteCapabilityAction
+                action_name, ExecuteRemoteCapabilityAction
             )
 
         if self._execute_capability_remote_client_connection_tries > 10:
             self._cleanup()
 
             raise BehaviorTreeException(
-                f'Action server "{self._remote_mission_control_topic}/execute_remote_capability" not available'
-                f' after trying 10 times.'
+                f'Action server "{self._remote_mission_control_topic}/execute_remote_capability"'
+                " not available after trying 10 times."
             )
 
         if not self._execute_capability_remote_client.wait_for_server(
-                timeout=rospy.Duration(nsecs=10)
+            timeout=rospy.Duration(nsecs=10)
         ):
             self._execute_capability_remote_client_connection_tries += 1
             return NodeMsg.ASSIGNED
@@ -844,7 +892,7 @@ class Capability(ABC, Leaf):
                 implementation_name=self._implementation_name,
                 input_topic=self._input_bridge_topic,
                 output_topic=self._output_bridge_topic,
-                ping_topic=self._ping_topic
+                ping_topic=self._ping_topic,
             )
         )
         with self._capability_lock:
@@ -854,7 +902,7 @@ class Capability(ABC, Leaf):
             CapabilityExecutionStatus(
                 interface=self.capability_interface,
                 node_name=self.name,
-                status=CapabilityExecutionStatus.EXECUTING
+                status=CapabilityExecutionStatus.EXECUTING,
             )
         )
 
@@ -865,16 +913,16 @@ class Capability(ABC, Leaf):
         Performs the ticking operation if the capability is executed locally.
         It retrieves the local implementation and performs the ticking operations.
 
-        :raise BehaviorTreeException: If the implementation cannot be received or nodes cannot be instantiated.
+        :raise BehaviorTreeException: If the implementation cannot be received
+        or nodes cannot be instantiated.
         :return: The statue of the node from NodeMsg.
         """
-        # No current implementation is present, one needs to be received from the mission controller.
+        # No current implementation is present, one needs to be received from
+        # the mission controller.
 
         new_state = self._local_implementation_tree_root.tick()
         if self.debug_manager and self.debug_manager.get_publish_subtrees():
-            self.debug_manager.add_subtree_info(
-                self.name, self.tree_manager.to_msg()
-            )
+            self.debug_manager.add_subtree_info(self.name, self.tree_manager.to_msg())
 
         if new_state in [NodeMsg.ASSIGNED, NodeMsg.UNASSIGNED]:
             return NodeMsg.RUNNING
@@ -888,12 +936,13 @@ class Capability(ABC, Leaf):
                 CapabilityExecutionStatus(
                     interface=self.capability_interface,
                     node_name=self.name,
-                    status=status
+                    status=status,
                 )
             )
             self._local_implementation_tree_root.shutdown()
             self._shutdown_local_implementation_tree()
-            # Not sure why this would be needed, as reset should be called which performs this action too.
+            # Not sure why this would be needed,
+            # as reset should be called which performs this action too.
             # self._cleanup()
         return new_state
 
@@ -905,10 +954,11 @@ class Capability(ABC, Leaf):
         """
 
         # Check if the action ran into a timeout.
-        if (rospy.Time.now() - self._last_ping_timestamp
-                > rospy.Duration(self.options["execution_timeout_sec"])):
+        if rospy.Time.now() - self._last_ping_timestamp > rospy.Duration(
+            self.options["execution_timeout_sec"]
+        ):
             self.logerr(
-                f'ExecuteRemoteCapability action timed out after'
+                "ExecuteRemoteCapability action timed out after"
                 f' {self.options["execution_timeout_sec"]} seconds'
             )
             self._execute_capability_remote_client.cancel_goal()
@@ -916,9 +966,9 @@ class Capability(ABC, Leaf):
             return NodeMsg.FAILED
 
         try:
-            execute_remote_implementation_result: Optional[ExecuteRemoteCapabilityResult] = self._execute_action(
-                self._execute_capability_remote_client
-                )
+            execute_remote_implementation_result: Optional[
+                ExecuteRemoteCapabilityResult
+            ] = self._execute_action(self._execute_capability_remote_client)
         except BehaviorTreeException as exc:
             self.logerr(f"Failed to execute action: {exc}")
             self._cleanup()
@@ -932,7 +982,9 @@ class Capability(ABC, Leaf):
                 self._cleanup()
                 return NodeMsg.UNASSIGNED
 
-            self.logerr(f"Failed to execute action: {execute_remote_implementation_result.error_message}")
+            self.logerr(
+                f"Failed to execute action: {execute_remote_implementation_result.error_message}"
+            )
             self._cleanup()
             return NodeMsg.FAILED
 
@@ -946,22 +998,25 @@ class Capability(ABC, Leaf):
         new_state = NodeMsg.RUNNING
 
         if self._internal_state == self.WAITING_FOR_OUTPUT_VALUES:
-
             if self._last_received_outputs is not None:
                 for bridge_data in self._last_received_outputs.bridge_data:
                     node_data: NodeDataMsg = bridge_data
 
                     try:
-                        self.outputs[node_data.key] = json_decode(node_data.serialized_value)
+                        self.outputs[node_data.key] = json_decode(
+                            node_data.serialized_value
+                        )
                     except TypeError as exc:
                         self.logwarn(f"Could not set output {node_data.key}: {exc}")
                         continue
                 return self._result_status
 
-            if rospy.Time.now() - self._result_timestamp > rospy.Duration(secs=WAIT_FOR_OUTPUTS_TIMEOUT_SECONDS):
+            if rospy.Time.now() - self._result_timestamp > rospy.Duration(
+                secs=WAIT_FOR_OUTPUTS_TIMEOUT_SECONDS
+            ):
                 self.logwarn(
-                    "Timed out while waiting for results! Check if the implementation contains a valid"
-                    "OutputDataBridge!"
+                    "Timed out while waiting for results! Check if the implementation contains a"
+                    " validOutputDataBridge!"
                 )
                 return self._result_status
 
@@ -986,13 +1041,14 @@ class Capability(ABC, Leaf):
                 input_data_msg = NodeDataMsg()
                 input_data_msg.key = key
                 input_data_msg.serialized_value = self.inputs.get_serialized(key=key)
-                input_data_msg.serialized_type = self.inputs.get_serialized_type(key=key)
+                input_data_msg.serialized_type = self.inputs.get_serialized_type(
+                    key=key
+                )
                 input_data.append(input_data_msg)
             try:
                 self._input_bridge_publisher.publish(
                     CapabilityIOBridgeData(
-                        bridge_data=input_data,
-                        timestamp=rospy.Time.now()
+                        bridge_data=input_data, timestamp=rospy.Time.now()
                     )
                 )
             except ROSSerializationException as exc:
@@ -1005,7 +1061,7 @@ class Capability(ABC, Leaf):
                 raise BehaviorTreeException(error_msg) from exc
 
         if self.simulate_tick:
-            #self.logdebug(f"Simulating tick. {self.name} is not executing!")
+            # self.logdebug(f"Simulating tick. {self.name} is not executing!")
             if self.succeed_always:
                 return NodeMsg.SUCCEEDED
 
@@ -1019,7 +1075,7 @@ class Capability(ABC, Leaf):
                 CapabilityExecutionStatus(
                     interface=self.capability_interface,
                     node_name=self.name,
-                    status=CapabilityExecutionStatus.IDLE
+                    status=CapabilityExecutionStatus.IDLE,
                 )
             )
             return NodeMsg.UNASSIGNED
@@ -1076,7 +1132,7 @@ class Capability(ABC, Leaf):
                 CapabilityExecutionStatus(
                     interface=self.capability_interface,
                     node_name=self.name,
-                    status=CapabilityExecutionStatus.SHUTDOWN
+                    status=CapabilityExecutionStatus.SHUTDOWN,
                 )
             )
         self._shutdown_local_implementation_tree()
@@ -1085,7 +1141,6 @@ class Capability(ABC, Leaf):
         if self._ping_subscriber is not None:
             self._ping_subscriber.unregister()
             del self._ping_subscriber
-
 
         self._stop_calls_action_clients_async_service_clients()
 
@@ -1113,7 +1168,6 @@ class Capability(ABC, Leaf):
             self._output_bridge_subscriber.unregister()
             del self._output_bridge_subscriber
 
-
         if self._input_bridge_publisher is not None:
             self._input_bridge_publisher.unregister()
             del self._input_bridge_publisher
@@ -1129,8 +1183,14 @@ class Capability(ABC, Leaf):
         if self._prepare_local_implementation_service_proxy is not None:
             self._prepare_local_implementation_service_proxy.stop_call()
 
-        if self._execute_capability_remote_client is not None and \
-                self._execute_capability_remote_client.get_state() in [GoalStatus.ACTIVE, GoalStatus.PREEMPTING]:
+        if (
+            self._execute_capability_remote_client is not None
+            and self._execute_capability_remote_client.get_state()
+            in [
+                GoalStatus.ACTIVE,
+                GoalStatus.PREEMPTING,
+            ]
+        ):
             self._execute_capability_remote_client.cancel_goal()
 
     def _shutdown_local_implementation_tree(self) -> bool:
@@ -1144,10 +1204,14 @@ class Capability(ABC, Leaf):
                 self._local_implementation_tree_root.shutdown()
 
                 response = self.tree_manager.control_execution(
-                    ControlTreeExecutionRequest(command=ControlTreeExecutionRequest.SHUTDOWN)
+                    ControlTreeExecutionRequest(
+                        command=ControlTreeExecutionRequest.SHUTDOWN
+                    )
                 )
                 if not response.success:
-                    self.logwarn(f"Could not shutdown local capability: {response.error_message}")
+                    self.logwarn(
+                        f"Could not shutdown local capability: {response.error_message}"
+                    )
                     return False
 
         return True
@@ -1161,7 +1225,9 @@ class Capability(ABC, Leaf):
             with self._capability_lock:
                 response = self.tree_manager.clear(ClearTreeRequest())
                 if not response.success:
-                    self.logwarn(f"Could not clear local capability tree: {response.error_message}")
+                    self.logwarn(
+                        f"Could not clear local capability tree: {response.error_message}"
+                    )
                     return False
         return True
 
@@ -1198,8 +1264,7 @@ class Capability(ABC, Leaf):
 
 
 def capability_node_class_from_capability_interface(
-        capability_interface: CapabilityInterface,
-        mission_control_topic: str
+    capability_interface: CapabilityInterface, mission_control_topic: str
 ) -> Type[Capability]:
     """
     Uses a capability interface in combination with a mission control topic to create a new class
@@ -1208,7 +1273,8 @@ def capability_node_class_from_capability_interface(
 
     This function uses the python type(...) metaclass to create a new subclass for the provided
     interface definition.
-    This class is then decorated with the define_bt_node decorator to create a valid node class definition.
+    This class is then decorated with the define_bt_node
+    decorator to create a valid node class definition.
 
     All created classes are placed in the `ros_bt_py.capability` module.
     Their names are currently used as identifier.
@@ -1223,33 +1289,32 @@ def capability_node_class_from_capability_interface(
 
     outputs_dict = {}
     for output_node_data in capability_interface.outputs:
-        outputs_dict[output_node_data.key] = json_decode(output_node_data.serialized_type)
+        outputs_dict[output_node_data.key] = json_decode(
+            output_node_data.serialized_type
+        )
 
     capability_node_class = type(
         capability_interface.name,
         (Capability,),
         {
-            '__capability_interface': capability_interface,
-            '__local_mc_topic'      : mission_control_topic,
-            '__module__'            : Capability.__module__
-        }
+            "__capability_interface": capability_interface,
+            "__local_mc_topic": mission_control_topic,
+            "__module__": Capability.__module__,
+        },
     )
 
     return define_bt_node(
         NodeConfig(
-            options={
-                'require_local_execution': bool,
-                'execution_timeout_sec': float
-            },
+            options={"require_local_execution": bool, "execution_timeout_sec": float},
             inputs=inputs_dict,
             outputs=outputs_dict,
-            max_children=0
+            max_children=0,
         )
     )(capability_node_class)
 
 
 def capability_input_data_bridge_from_interface(
-        capability_interface: CapabilityInterface,
+    capability_interface: CapabilityInterface,
 ) -> Type[CapabilityInputDataBridge]:
     """
     Create an in memory version of a CapabilityInputDataBridge from a CapabilityInterface.
@@ -1265,23 +1330,18 @@ def capability_input_data_bridge_from_interface(
         f"{capability_interface.name}_InputDataBridge",
         (CapabilityInputDataBridge,),
         {
-            '__capability_interface': capability_interface,
-            '__module__'            : f"{CapabilityInputDataBridge.__module__}.bridge"
-        }
+            "__capability_interface": capability_interface,
+            "__module__": f"{CapabilityInputDataBridge.__module__}.bridge",
+        },
     )
 
     return define_bt_node(
-        NodeConfig(
-            options={},
-            inputs={},
-            outputs=inputs_dict,
-            max_children=0
-        )
+        NodeConfig(options={}, inputs={}, outputs=inputs_dict, max_children=0)
     )(capability_input_bridge_node_class)
 
 
 def capability_output_data_bridge_from_interface(
-        capability_interface: CapabilityInterface,
+    capability_interface: CapabilityInterface,
 ) -> Type[CapabilityOutputDataBridge]:
     """
     Creates an in memory representation of a CapabilityOutputDataBridge.
@@ -1292,31 +1352,25 @@ def capability_output_data_bridge_from_interface(
 
     outputs_dict = {}
     for output_node_data in capability_interface.outputs:
-        outputs_dict[output_node_data.key] = json_decode(output_node_data.serialized_type)
+        outputs_dict[output_node_data.key] = json_decode(
+            output_node_data.serialized_type
+        )
 
     capability_output_bridge_node_class = type(
         f"{capability_interface.name}_OutputDataBridge",
         (CapabilityOutputDataBridge,),
         {
-            '__capability_interface': capability_interface,
-            '__module__'            : f"{CapabilityOutputDataBridge.__module__}.bridge"
-        }
+            "__capability_interface": capability_interface,
+            "__module__": f"{CapabilityOutputDataBridge.__module__}.bridge",
+        },
     )
 
     return define_bt_node(
-        NodeConfig(
-            options={},
-            inputs=outputs_dict,
-            outputs={},
-            max_children=0
-        )
+        NodeConfig(options={}, inputs=outputs_dict, outputs={}, max_children=0)
     )(capability_output_bridge_node_class)
 
 
-def capability_node_class_from_capability_interface_callback(
-        msg: Time,
-        args: List
-):
+def capability_node_class_from_capability_interface_callback(msg: Time, args: List):
     # pylint: disable=unused-argument
     """
     Rospy service callback used to register capability interfaces with the local Node class.
@@ -1327,7 +1381,9 @@ def capability_node_class_from_capability_interface_callback(
     """
 
     if len(args) < 2:
-        rospy.logerr("Create capability node callback received less then one extra args.")
+        rospy.logerr(
+            "Create capability node callback received less then one extra args."
+        )
         return
     if not isinstance(args[0], str):
         rospy.logerr("First args is not a string!")
@@ -1340,7 +1396,9 @@ def capability_node_class_from_capability_interface_callback(
     rospy.loginfo(f"Received new capability information at {msg}")
 
     service_proxy: rospy.ServiceProxy = args[1]
-    response: GetCapabilityInterfacesResponse = service_proxy.call(GetCapabilityInterfacesRequest())
+    response: GetCapabilityInterfacesResponse = service_proxy.call(
+        GetCapabilityInterfacesRequest()
+    )
     if not response.success:
         rospy.logwarn(f"Failed to get capability interfaces: {response.error_message}!")
     for interface in response.interfaces:
@@ -1350,10 +1408,10 @@ def capability_node_class_from_capability_interface_callback(
 
 
 def set_capability_io_bridge_topics(
-        tree_manager: TreeManager,
-        interface: CapabilityInterface,
-        input_topic: str,
-        output_topic: str
+    tree_manager: TreeManager,
+    interface: CapabilityInterface,
+    input_topic: str,
+    output_topic: str,
 ) -> None:
     """
     Sets the input and output bridge topics given a tree in a tree manger to the specified values.
@@ -1365,8 +1423,10 @@ def set_capability_io_bridge_topics(
     :return: None
     """
     for node in tree_manager.nodes.values():
-        if hasattr(node, "__capability_interface") and \
-                getattr(node, "__capability_interface") == interface:
+        if (
+            hasattr(node, "__capability_interface")
+            and getattr(node, "__capability_interface") == interface
+        ):
             if isinstance(node, CapabilityInputDataBridge):
                 node.capability_bridge_topic = input_topic
                 continue

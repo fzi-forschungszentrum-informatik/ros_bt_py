@@ -173,22 +173,29 @@ class Service(Leaf):
         except rosservice.ROSServiceIOException as exc:
             # Defaults to no bounds set, dragging down the utility
             # score
-            self.loginfo(f'Unable to check for service {resolved_service}: {str(exc)}')
+            self.loginfo(f"Unable to check for service {resolved_service}: {str(exc)}")
             return UtilityBounds()
 
         if service_type_name:
             service_type = get_service_class(service_type_name)
 
-            if service_type == self.options['service_type']:
-                self.loginfo(('Found service %s with correct type, returning '
-                              'filled out UtilityBounds') % resolved_service)
-                return UtilityBounds(can_execute=True,
-                                     has_lower_bound_success=True,
-                                     has_upper_bound_success=True,
-                                     has_lower_bound_failure=True,
-                                     has_upper_bound_failure=True)
+            if service_type == self.options["service_type"]:
+                self.loginfo(
+                    (
+                        "Found service %s with correct type, returning "
+                        "filled out UtilityBounds"
+                    )
+                    % resolved_service
+                )
+                return UtilityBounds(
+                    can_execute=True,
+                    has_lower_bound_success=True,
+                    has_upper_bound_success=True,
+                    has_lower_bound_failure=True,
+                    has_upper_bound_failure=True,
+                )
 
-        self.loginfo(f'Service {resolved_service} is unavailable or has wrong type.')
+        self.loginfo(f"Service {resolved_service} is unavailable or has wrong type.")
         return UtilityBounds()
 
 
@@ -317,42 +324,45 @@ class ServiceInput(Leaf):
         except rosservice.ROSServiceIOException as exc:
             # Defaults to no bounds set, dragging down the utility
             # score
-            self.loginfo(f'Unable to check for service {resolved_service}: {str(exc)}')
+            self.loginfo(f"Unable to check for service {resolved_service}: {str(exc)}")
             return UtilityBounds()
 
         if service_type_name:
             service_type = get_service_class(service_type_name)
 
-            if service_type == self.options['service_type']:
-                self.loginfo(('Found service %s with correct type, returning '
-                              'filled out UtilityBounds') % resolved_service)
-                return UtilityBounds(can_execute=True,
-                                     has_lower_bound_success=True,
-                                     has_upper_bound_success=True,
-                                     has_lower_bound_failure=True,
-                                     has_upper_bound_failure=True)
+            if service_type == self.options["service_type"]:
+                self.loginfo(
+                    (
+                        "Found service %s with correct type, returning "
+                        "filled out UtilityBounds"
+                    )
+                    % resolved_service
+                )
+                return UtilityBounds(
+                    can_execute=True,
+                    has_lower_bound_success=True,
+                    has_upper_bound_success=True,
+                    has_lower_bound_failure=True,
+                    has_upper_bound_failure=True,
+                )
 
-        self.loginfo(f'Service {resolved_service} is unavailable or has wrong type.')
+        self.loginfo(f"Service {resolved_service} is unavailable or has wrong type.")
         return UtilityBounds(can_execute=True)
 
 
-@define_bt_node(NodeConfig(
-    version='0.1.0',
-    options=
-    {
-        'service_type': type,
-        'wait_for_service_seconds': float
-    },
-    inputs=
-    {
-        'service_name': str
-    },
-    outputs={},
-    max_children=0,
-    optional_options=[]))
+@define_bt_node(
+    NodeConfig(
+        version="0.1.0",
+        options={"service_type": type, "wait_for_service_seconds": float},
+        inputs={"service_name": str},
+        outputs={},
+        max_children=0,
+        optional_options=[],
+    )
+)
 class WaitForServiceInput(Leaf):
-    """Waits for a service to be available, fails if this wait times out
-    """
+    """Waits for a service to be available, fails if this wait times out"""
+
     def _do_setup(self):
         self._service_proxy = None
 
@@ -366,14 +376,16 @@ class WaitForServiceInput(Leaf):
 
         if self._service_proxy is None:
             self._service_proxy = AsyncServiceProxy(
-                self.inputs['service_name'],
-                self.options['service_type']
-                )
+                self.inputs["service_name"], self.options["service_type"]
+            )
 
-        if (self._service_proxy.get_state() == AsyncServiceProxy.IDLE
-                or self._service_proxy.get_state() == AsyncServiceProxy.ABORTED):
+        if (
+            self._service_proxy.get_state() == AsyncServiceProxy.IDLE
+            or self._service_proxy.get_state() == AsyncServiceProxy.ABORTED
+        ):
             self._service_proxy.wait_for_service(
-                self.options['wait_for_service_seconds'])
+                self.options["wait_for_service_seconds"]
+            )
         if self._service_proxy.get_state() == AsyncServiceProxy.WAITING:
             return NodeMsg.RUNNING
         if self._service_proxy.get_state() == AsyncServiceProxy.SERVICE_AVAILABLE:
@@ -427,8 +439,10 @@ class WaitForService(Leaf):
 
             return NodeMsg.RUNNING
 
-        if (self._service_proxy.get_state() == AsyncServiceProxy.IDLE
-                or self._service_proxy.get_state() == AsyncServiceProxy.ABORTED):
+        if (
+            self._service_proxy.get_state() == AsyncServiceProxy.IDLE
+            or self._service_proxy.get_state() == AsyncServiceProxy.ABORTED
+        ):
             self._last_service_call_time = rospy.Time.now()
             self._service_proxy.wait_for_service(
                 self.options["wait_for_service_seconds"]

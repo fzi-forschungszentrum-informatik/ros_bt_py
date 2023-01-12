@@ -45,11 +45,6 @@ from ros_bt_py.nodes.mock_nodes import MockUtilityLeaf
 from ros_bt_py.node_data import NodeDataMap, NodeData as NodeDataObj
 from ros_bt_py.helpers import json_encode, json_decode
 
-try:
-    range = xrange
-except NameError:
-    pass
-
 
 class TestLoadModule(unittest.TestCase):
     def testLoadModule(self):
@@ -428,7 +423,7 @@ class TestPassthroughNode(unittest.TestCase):
             PassthroughNode.__name__ in Node.node_classes[PassthroughNode.__module__]
         )
         self.assertEqual(
-            PassthroughNode,
+            [PassthroughNode],
             Node.node_classes[PassthroughNode.__module__][PassthroughNode.__name__],
         )
 
@@ -584,7 +579,7 @@ class TestPassthroughNode(unittest.TestCase):
         self.assertTrue(node_class.__module__ in Node.node_classes)
         self.assertTrue(node_class.__name__ in Node.node_classes[node_class.__module__])
         self.assertEqual(
-            node_class, Node.node_classes[node_class.__module__][node_class.__name__]
+            [node_class], Node.node_classes[node_class.__module__][node_class.__name__]
         )
 
         self.assertEqual(instance.options["passthrough_type"], int)

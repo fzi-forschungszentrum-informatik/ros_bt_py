@@ -145,22 +145,26 @@ class Action(Leaf):
             # goal - so we can send a new one!
             if loglevel_is(rospy.DEBUG):
                 self.logdebug(f"Sending goal: {str(self.inputs['goal'])}")
-            self._ac.send_goal(self.inputs['goal'], feedback_cb=self._feedback_cb)
+            self._ac.send_goal(self.inputs["goal"], feedback_cb=self._feedback_cb)
             self._last_goal_time = rospy.Time.now()
             self._active_goal = deepcopy(self.inputs["goal"])
             return NodeMsg.RUNNING
         current_state = self._ac.get_state()
         if loglevel_is(rospy.DEBUG):
-            self.logdebug(f'current_state: {current_state}')
+            self.logdebug(f"current_state: {current_state}")
         with self._lock:
-            self.outputs['goal_status'] = current_state
-            self.outputs['feedback'] = self._feedback
+            self.outputs["goal_status"] = current_state
+            self.outputs["feedback"] = self._feedback
 
-        if self.options['timeout_seconds'] != 0 and self._last_goal_time is not None:
-            seconds_since_goal_start = (rospy.Time.now() - self._last_goal_time).to_sec()
-            if seconds_since_goal_start > self.options['timeout_seconds']:
-                self.logwarn(f"Stopping timed-out goal after {self.options['timeout_seconds']:f} seconds!")
-                self.outputs['goal_status'] = GoalStatus.LOST
+        if self.options["timeout_seconds"] != 0 and self._last_goal_time is not None:
+            seconds_since_goal_start = (
+                rospy.Time.now() - self._last_goal_time
+            ).to_sec()
+            if seconds_since_goal_start > self.options["timeout_seconds"]:
+                self.logwarn(
+                    f"Stopping timed-out goal after {self.options['timeout_seconds']:f} seconds!"
+                )
+                self.outputs["goal_status"] = GoalStatus.LOST
                 self._ac.cancel_goal()
                 self._ac.stop_tracking_goal()
                 self._last_goal_time = None

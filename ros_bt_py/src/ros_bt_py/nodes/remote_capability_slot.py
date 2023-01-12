@@ -42,12 +42,20 @@ import std_msgs.msg
 from rospy import Publisher, Service, ROSException
 from ros_bt_py_msgs.msg import (
     Node as NodeMsg,
-    RemoteCapabilitySlotStatus, CapabilityExecutionStatus, CapabilityInterface,
+    RemoteCapabilitySlotStatus,
+    CapabilityExecutionStatus,
+    CapabilityInterface,
 )
 from ros_bt_py_msgs.srv import (
-    LoadTreeRequest, LoadTreeResponse, ClearTreeRequest, RunRemoteCapabilitySlot,
-    RunRemoteCapabilitySlotRequest, RunRemoteCapabilitySlotResponse, CancelRemoteCapabilitySlotRequest,
-    CancelRemoteCapabilitySlotResponse, CancelRemoteCapabilitySlot,
+    LoadTreeRequest,
+    LoadTreeResponse,
+    ClearTreeRequest,
+    RunRemoteCapabilitySlot,
+    RunRemoteCapabilitySlotRequest,
+    RunRemoteCapabilitySlotResponse,
+    CancelRemoteCapabilitySlotRequest,
+    CancelRemoteCapabilitySlotResponse,
+    CancelRemoteCapabilitySlot,
 )
 
 from ros_bt_py.capability import set_capability_io_bridge_topics
@@ -65,29 +73,29 @@ from ros_bt_py.tree_manager import TreeManager
         outputs={},
         options={},
         optional_options=[],
-        tags=['capabilities', 'remote']
+        tags=["capabilities", "remote"],
     )
 )
 class RemoteCapabilitySlot(Node):
-    """
-    Node class that allows the execution of Capabilities upon remote requests.
-    """
+    """Node class that allows the execution of Capabilities upon remote requests."""
 
     # pylint: disable=too-many-instance-attributes
 
-    def __init__(self,
-                 options: Optional[Dict] = None,
-                 debug_manager: Optional[DebugManager] = None,
-                 name: str = None,
-                 succeed_always: bool = False,
-                 simulate_tick: bool = False
+    def __init__(
+        self,
+        options: Optional[Dict] = None,
+        debug_manager: Optional[DebugManager] = None,
+        name: str = None,
+        succeed_always: bool = False,
+        simulate_tick: bool = False,
     ):
+        """Instanciate a new RemoteCapabilitySlot BT node."""
         super(RemoteCapabilitySlot, self).__init__(
             options=options,
             debug_manager=debug_manager,
             name=name,
             simulate_tick=simulate_tick,
-            succeed_always=succeed_always
+            succeed_always=succeed_always,
         )
 
         self._tree_manager = TreeManager(
@@ -96,7 +104,7 @@ class RemoteCapabilitySlot(Node):
             publish_debug_info_callback=self.nop,
             publish_debug_settings_callback=self.nop,
             publish_node_diagnostics_callback=self.nop,
-            debug_manager=self.debug_manager
+            debug_manager=self.debug_manager,
         )
         self._tree_root: Optional[Node] = None
         self._ping_publisher: Optional[Publisher] = None
@@ -121,8 +129,8 @@ class RemoteCapabilitySlot(Node):
         self.capability_interface: Optional[CapabilityInterface] = None
 
     def run_remote_capability_callback(
-            self,
-            req: RunRemoteCapabilitySlotRequest) -> RunRemoteCapabilitySlotResponse:
+        self, req: RunRemoteCapabilitySlotRequest
+    ) -> RunRemoteCapabilitySlotResponse:
         """
         ROS service to execute a capability implementation on the remote capability slot.
 
@@ -136,9 +144,7 @@ class RemoteCapabilitySlot(Node):
             self.capability_interface = req.interface
 
             self._ping_publisher = Publisher(
-                req.ping_topic,
-                data_class=std_msgs.msg.Time,
-                queue_size=1
+                req.ping_topic, data_class=std_msgs.msg.Time, queue_size=1
             )
             self._ping_publisher.publish(std_msgs.msg.Time(rospy.Time.now()))
 
@@ -153,21 +159,23 @@ class RemoteCapabilitySlot(Node):
             # Setup tree
 
             service_response: LoadTreeResponse = self._tree_manager.load_tree(
-                LoadTreeRequest(tree=req.implementation_tree),
-                prefix=self.name + "_"
+                LoadTreeRequest(tree=req.implementation_tree), prefix=self.name + "_"
             )
 
             if not service_response.success:
                 self._capability_implementation_available_event.clear()
                 response.success = False
-                response.error_message = f"Could not load implementation tree: {service_response.error_message}"
+                response.error_message = (
+                    "Could not load implementation tree: "
+                    f"{service_response.error_message}"
+                )
                 return response
 
             set_capability_io_bridge_topics(
                 tree_manager=self._tree_manager,
                 interface=req.interface,
                 input_topic=req.input_topic,
-                output_topic=req.output_topic
+                output_topic=req.output_topic,
             )
 
             self._tree_root = self._tree_manager.find_root()
@@ -198,11 +206,11 @@ class RemoteCapabilitySlot(Node):
             return response
 
     def cancel_remote_capability_callback(
-            self,
-            req: CancelRemoteCapabilitySlotRequest
+        self, req: CancelRemoteCapabilitySlotRequest
     ) -> CancelRemoteCapabilitySlotResponse:
         """
         Cancel the currently running capability execution.
+
         :param req: None
         :return: True if the cancel request was a success, false if there was an error.
         """
@@ -238,27 +246,27 @@ class RemoteCapabilitySlot(Node):
         self._run_remote_capability_service = Service(
             remote_tree_slot_executor_run_topic,
             RunRemoteCapabilitySlot,
-            self.run_remote_capability_callback
+            self.run_remote_capability_callback,
         )
 
         self._cancel_remote_capability_service = Service(
             remote_tree_slot_executor_cancel_topic,
             CancelRemoteCapabilitySlot,
-            self.cancel_remote_capability_callback
+            self.cancel_remote_capability_callback,
         )
 
         self._capability_execution_status_publisher = Publisher(
             capability_execution_status_topic,
             CapabilityExecutionStatus,
             queue_size=1,
-            latch=True
+            latch=True,
         )
 
         self._remote_capability_slot_status_publisher = Publisher(
             remote_capability_slot_status_topic,
             RemoteCapabilitySlotStatus,
             queue_size=1,
-            latch=False
+            latch=False,
         )
 
     def _tick_idle(self) -> str:
@@ -266,14 +274,14 @@ class RemoteCapabilitySlot(Node):
             RemoteCapabilitySlotStatus(
                 name=self.name,
                 status=RemoteCapabilitySlotStatus.IDLE,
-                timestamp=rospy.Time.now()
+                timestamp=rospy.Time.now(),
             )
         )
         self._capability_execution_status_publisher.publish(
             CapabilityExecutionStatus(
                 interface=self.capability_interface,
                 node_name=self.name,
-                status=CapabilityExecutionStatus.IDLE
+                status=CapabilityExecutionStatus.IDLE,
             )
         )
         return NodeMsg.UNASSIGNED
@@ -283,7 +291,7 @@ class RemoteCapabilitySlot(Node):
             RemoteCapabilitySlotStatus(
                 name=self.name,
                 status=RemoteCapabilitySlotStatus.IDLE,
-                timestamp=rospy.Time.now()
+                timestamp=rospy.Time.now(),
             )
         )
 
@@ -292,14 +300,14 @@ class RemoteCapabilitySlot(Node):
                 RemoteCapabilitySlotStatus(
                     name=self.name,
                     status=RemoteCapabilitySlotStatus.RUNNING,
-                    timestamp=rospy.Time.now()
+                    timestamp=rospy.Time.now(),
                 )
             )
             self._capability_execution_status_publisher.publish(
                 CapabilityExecutionStatus(
                     interface=self.capability_interface,
                     node_name=self.name,
-                    status=CapabilityExecutionStatus.EXECUTING
+                    status=CapabilityExecutionStatus.EXECUTING,
                 )
             )
             return NodeMsg.ASSIGNED
@@ -311,19 +319,21 @@ class RemoteCapabilitySlot(Node):
             RemoteCapabilitySlotStatus(
                 name=self.name,
                 status=RemoteCapabilitySlotStatus.RUNNING,
-                timestamp=rospy.Time.now()
+                timestamp=rospy.Time.now(),
             )
         )
         self._capability_execution_status_publisher.publish(
             CapabilityExecutionStatus(
                 interface=self.capability_interface,
                 node_name=self.name,
-                status=CapabilityExecutionStatus.EXECUTING
+                status=CapabilityExecutionStatus.EXECUTING,
             )
         )
 
-        if self._canceled_event.is_set() or \
-                not self._capability_implementation_available_event.is_set():
+        if (
+            self._canceled_event.is_set()
+            or not self._capability_implementation_available_event.is_set()
+        ):
             return NodeMsg.UNASSIGNED
 
         if self._tree_loaded_event.is_set():
@@ -333,23 +343,23 @@ class RemoteCapabilitySlot(Node):
 
     def _tick_running(self):
 
-        if self._canceled_event.is_set() or \
-                not self._capability_implementation_available_event.is_set():
+        if (
+            self._canceled_event.is_set()
+            or not self._capability_implementation_available_event.is_set()
+        ):
             return NodeMsg.UNASSIGNED
 
         self._remote_capability_slot_status_publisher.publish(
             RemoteCapabilitySlotStatus(
                 name=self.name,
                 status=RemoteCapabilitySlotStatus.RUNNING,
-                timestamp=rospy.Time.now()
+                timestamp=rospy.Time.now(),
             )
         )
 
         new_state = self._tree_root.tick()
         if self.debug_manager and self.debug_manager.get_publish_subtrees():
-            self.debug_manager.add_subtree_info(
-                self.name, self._tree_manager.to_msg()
-            )
+            self.debug_manager.add_subtree_info(self.name, self._tree_manager.to_msg())
 
         if new_state in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
 
@@ -362,7 +372,7 @@ class RemoteCapabilitySlot(Node):
                 CapabilityExecutionStatus(
                     interface=self.capability_interface,
                     node_name=self.name,
-                    status=status
+                    status=status,
                 )
             )
 
@@ -370,7 +380,7 @@ class RemoteCapabilitySlot(Node):
                 RemoteCapabilitySlotStatus(
                     name=self.name,
                     status=RemoteCapabilitySlotStatus.IDLE,
-                    timestamp=rospy.Time.now()
+                    timestamp=rospy.Time.now(),
                 )
             )
             self._capability_implementation_available_event.clear()
@@ -420,7 +430,7 @@ class RemoteCapabilitySlot(Node):
             RemoteCapabilitySlotStatus(
                 name=self.name,
                 status=RemoteCapabilitySlotStatus.SHUTDOWN,
-                timestamp=rospy.Time.now()
+                timestamp=rospy.Time.now(),
             )
         )
 
@@ -433,7 +443,7 @@ class RemoteCapabilitySlot(Node):
                 RemoteCapabilitySlotStatus(
                     name=self.name,
                     status=RemoteCapabilitySlotStatus.SHUTDOWN,
-                    timestamp=rospy.Time.now()
+                    timestamp=rospy.Time.now(),
                 )
             )
         rospy.sleep(rospy.Duration.from_sec(1))
@@ -464,7 +474,8 @@ class RemoteCapabilitySlot(Node):
 
     def cleanup(self) -> None:
         """
-        Cleans up any state changes that the node has and restores it to its original state.
+        Clean up any state changes that the node has and restores it to its original state.
+
         :return: None
         """
         self.logdebug("Cleaning up!")

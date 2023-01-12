@@ -28,14 +28,15 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #  POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
-"""
-Module containing a ros node for the AssignmentManager class.
-"""
+"""Module containing a ros node for the AssignmentManager class."""
 from typing import Type
 
 import rospy
 
-from ros_bt_py.assignment_manager.assignment_manager import AssignmentManager, SimpleAssignmentManager
+from ros_bt_py.assignment_manager.assignment_manager import (
+    AssignmentManager,
+    SimpleAssignmentManager,
+)
 from ros_bt_py.assignment_manager.parallel_auction_manager import ParallelAuctionManager
 
 
@@ -43,27 +44,29 @@ class AssignmentManagerNode:
     """
     Node to run a AssignmentManager class implementation.
 
-    This sets up the rospy services and maps them to the respective methods in the AssignmentManager.
+    This sets up the rospy services and maps them to the respective methods in a AssignmentManager.
     """
+
     def __init__(
-            self,
-            local_topic_prefix: str,
-            global_assignment_msg_topic_prefix: str,
-            assignment_manager: Type[AssignmentManager]
-            ):
+        self,
+        local_topic_prefix: str,
+        global_assignment_msg_topic_prefix: str,
+        assignment_manager: Type[AssignmentManager],
+    ):
         """
-        Creates a new AssignmentManagerNode.
+        Create a new AssignmentManagerNode.
+
         This method will directly setup rospy services.
 
-        :param local_topic_prefix: The ros topic prefix used to communicate with local services like the mission
-        control on the same robot.
-        :param global_assignment_msg_topic_prefix: The ros topic used for communicating with other AssignmentManagers
-        for example in an auction.
+        :param local_topic_prefix: The ros topic prefix used to communicate with
+        local services like the mission control on the same robot.
+        :param global_assignment_msg_topic_prefix: The ros topic used for communicating with
+        other AssignmentManagers for example in an auction.
         :param assignment_manager: The assignment manager class implementation to use.
         """
         self.assignment_manager = assignment_manager(
-            local_mission_control_topic=f'{local_topic_prefix}/mission_control',
-            global_assignment_msg_topic_prefix=global_assignment_msg_topic_prefix
+            local_topic_prefix=local_topic_prefix,
+            global_assignment_msg_topic_prefix=global_assignment_msg_topic_prefix,
         )
 
         self.__add_assignment_request_service = rospy.Service(
@@ -103,8 +106,9 @@ if __name__ == "__main__":
     rospy.init_node("assignment_manager")
     try:
         LOCAL_TOPIC_PREFIX: str = rospy.get_namespace()
-        ASSIGNMENT_TOPIC_PREFIX: str =\
-            rospy.get_param("assignment_topic_prefix", default="/assignments")
+        ASSIGNMENT_TOPIC_PREFIX: str = rospy.get_param(
+            "assignment_topic_prefix", default="/assignments"
+        )
 
     except rospy.ROSException as exc:
         rospy.logerr(f"Failed to retrieve parameters from parameter server: {exc}")
@@ -112,7 +116,6 @@ if __name__ == "__main__":
     ASSIGNMENT_MANAGER_NODE = AssignmentManagerNode(
         local_topic_prefix=LOCAL_TOPIC_PREFIX,
         global_assignment_msg_topic_prefix=ASSIGNMENT_TOPIC_PREFIX,
-        assignment_manager=ParallelAuctionManager
+        assignment_manager=ParallelAuctionManager,
     )
     rospy.spin()
-    ASSIGNMENT_MANAGER_NODE.shutdown()

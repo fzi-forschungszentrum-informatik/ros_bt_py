@@ -156,13 +156,18 @@ class RosParamOption(Leaf):
             params = rospy.get_param_names()
         except rospy.ROSException:
             return UtilityBounds()
-        if (resolved_param_name in params
-                and isinstance(rospy.get_param(resolved_param_name), self.options['param_type'])):
-            return UtilityBounds(can_execute=True,
-                                 has_lower_bound_success=True,
-                                 has_upper_bound_success=True,
-                                 has_lower_bound_failure=True,
-                                 has_upper_bound_failure=True)
+        if resolved_param_name in params and isinstance(
+            rospy.get_param(resolved_param_name), self.options["param_type"]
+        ):
+            return UtilityBounds(
+                can_execute=True,
+                has_lower_bound_success=True,
+                has_upper_bound_success=True,
+                has_lower_bound_failure=True,
+                has_upper_bound_failure=True,
+            )
 
-        self.loginfo(f'Parameter {resolved_param_name} is not available or has wrong type')
+        self.loginfo(
+            f"Parameter {resolved_param_name} is not available or has wrong type"
+        )
         return UtilityBounds()

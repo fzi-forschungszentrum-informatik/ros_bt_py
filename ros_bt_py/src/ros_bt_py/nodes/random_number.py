@@ -115,7 +115,9 @@ def validate_range(minimum, maximum):
     """checks if `minimum` < `maximum` and raises a BehaviorTreeException if not"""
     if minimum == maximum:
         raise BehaviorTreeException(
-            f'minimum ({minimum}) cannot be equal to maximum ({maximum})')
+            f"minimum ({minimum}) cannot be equal to maximum ({maximum})"
+        )
     if minimum > maximum:
         raise BehaviorTreeException(
-            f'minimum ({minimum}) cannot be greater that maximum ({maximum})')
+            f"minimum ({minimum}) cannot be greater that maximum ({maximum})"
+        )

@@ -27,6 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
+"""BT Node to open a file from disk and publish its contents."""
 import yaml
 import rospkg
 
@@ -35,17 +36,15 @@ from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig
 
-try:  # pragma: no cover
-    basestring
-except NameError:  # pragma: no cover
-    basestring = str
-
 
 class LoadFileError(Exception):
+    """Exception when the file cannot be loaded."""
+
     pass
 
 
 def load_file(path):
+    """Load a file from a ROS url."""
     rospack = rospkg.RosPack()
     file_path = ""
     if path.startswith("file://"):
@@ -55,17 +54,20 @@ def load_file(path):
         package_path = rospack.get_path(package_name)
         file_path = package_path + path[len("package://") + len(package_name) :]
     else:
-        raise LoadFileError(f'File path "{path}" is malformed. It needs to start with either "file://" or "package://"')
+        raise LoadFileError(
+            f'File path "{path}" is malformed.'
+            'It needs to start with either "file://" or "package://"'
+        )
     try:
         data_file = open(file_path, "r")
     except IOError as ex:
-        error_msg = f'Error opening file {file_path}: {str(ex)}'
+        error_msg = f"Error opening file {file_path}: {str(ex)}"
         raise LoadFileError(error_msg)
     with data_file:
         try:
             data = yaml.safe_load(data_file)
         except yaml.YAMLError as ex:
-            raise LoadFileError(f'Yaml error in file {file_path}: {str(ex)}')
+            raise LoadFileError(f"Yaml error in file {file_path}: {str(ex)}")
     return data
 
 
@@ -86,8 +88,8 @@ def load_file(path):
 )
 class YamlListOption(Leaf):
     """Loads a yaml file from the location pointed to by `file_path`.
-    This uses package:// and file:// style URIs.
 
+    This uses package:// and file:// style URIs.
     """
 
     def _do_setup(self):
@@ -139,8 +141,8 @@ class YamlListOption(Leaf):
 )
 class YamlListInput(Leaf):
     """Loads a yaml file (list) from the location pointed to by `file_path`.
-    This uses package:// and file:// style URIs.
 
+    This uses package:// and file:// style URIs.
     """
 
     def _do_setup(self):
@@ -188,8 +190,8 @@ class YamlListInput(Leaf):
 )
 class YamlDictInput(Leaf):
     """Loads a yaml file (dict) from the location pointed to by `file_path`.
-    This uses package:// and file:// style URIs.
 
+    This uses package:// and file:// style URIs.
     """
 
     def _do_setup(self):

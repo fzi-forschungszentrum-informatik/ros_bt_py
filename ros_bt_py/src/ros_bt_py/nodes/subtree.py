@@ -27,6 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
+"""BT node to encapsulate a part of a tree in a reusable subtree."""
 from typing import Optional, Dict
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
@@ -51,7 +52,7 @@ from ros_bt_py.node_config import NodeConfig
     )
 )
 class Subtree(Leaf):
-    """Loads a subtree from the location pointed to by `subtree_uri`
+    """Loads a subtree from the location pointed to by `subtree_uri`.
 
     This is the only node that modifies its `node_config` member - it
     will populate its inputs and outputs when its constructor is
@@ -62,20 +63,22 @@ class Subtree(Leaf):
     could only feasibly be set in the Subtree node's own options, but
     at that point we don't know their names or types yet.
     """
-    def __init__(self,
-                 options: Optional[Dict] = None,
-                 debug_manager: Optional[DebugManager] = None,
-                 name: str = None,
-                 succeed_always: bool = False,
-                 simulate_tick: bool = False
-                 ):
-        """Create the tree manager, load the subtree and call `super.__init__()`"""
+
+    def __init__(  # noqa: C901
+        self,
+        options: Optional[Dict] = None,
+        debug_manager: Optional[DebugManager] = None,
+        name: str = None,
+        succeed_always: bool = False,
+        simulate_tick: bool = False,
+    ):
+        """Create the tree manager, load the subtree."""
         super(Subtree, self).__init__(
             options=options,
             debug_manager=debug_manager,
             name=name,
             succeed_always=succeed_always,
-            simulate_tick=simulate_tick
+            simulate_tick=simulate_tick,
         )
 
         self.root = None
@@ -128,6 +131,7 @@ class Subtree(Leaf):
                 ):
                     modified_public_node_data.append(node_data)
             subtree_msg.public_node_data = modified_public_node_data
+
         for node_data in subtree_msg.public_node_data:
             # Remove the prefix from the node name to make for nicer
             # input/output names (and also not break wirings)
@@ -136,11 +140,17 @@ class Subtree(Leaf):
                 node_name = node_name[len(self.prefix) :]
 
             if node_data.data_kind == NodeDataLocation.INPUT_DATA:
-                subtree_inputs[f'{node_name}.{node_data.data_key}'] = \
-                    self.manager.nodes[node_data.node_name].inputs.get_type(node_data.data_key)
+                subtree_inputs[
+                    f"{node_name}.{node_data.data_key}"
+                ] = self.manager.nodes[node_data.node_name].inputs.get_type(
+                    node_data.data_key
+                )
             elif node_data.data_kind == NodeDataLocation.OUTPUT_DATA:
-                subtree_outputs[f'{node_name}.{node_data.data_key}'] = \
-                    self.manager.nodes[node_data.node_name].outputs.get_type(node_data.data_key)
+                subtree_outputs[
+                    f"{node_name}.{node_data.data_key}"
+                ] = self.manager.nodes[node_data.node_name].outputs.get_type(
+                    node_data.data_key
+                )
 
         # merge subtree input and option dicts, so we can receive
         # option updates between ticks
@@ -166,13 +176,17 @@ class Subtree(Leaf):
                 node_name = node_name[len(self.prefix) :]
 
             if node_data.data_kind == NodeDataLocation.INPUT_DATA:
-                if options.get('use_io_nodes') and node_data.node_name not in io_inputs:
-                    self.logwarn(f"removed an unconnected input ({node_name}) from the subtree")
+                if options.get("use_io_nodes") and node_data.node_name not in io_inputs:
+                    self.logwarn(
+                        f"removed an unconnected input ({node_name}) from the subtree"
+                    )
                 else:
                     self.inputs.subscribe(
-                        key=f'{node_name}.{node_data.data_key}',
-                        callback=self.manager.nodes[node_data.node_name].inputs.get_callback(
-                            node_data.data_key))
+                        key=f"{node_name}.{node_data.data_key}",
+                        callback=self.manager.nodes[
+                            node_data.node_name
+                        ].inputs.get_callback(node_data.data_key),
+                    )
             elif node_data.data_kind == NodeDataLocation.OUTPUT_DATA:
                 if (
                     options.get("use_io_nodes")
@@ -183,13 +197,17 @@ class Subtree(Leaf):
                     self.manager.nodes[node_data.node_name].outputs.subscribe(
                         key=node_data.data_key,
                         callback=self.outputs.get_callback(
-                            f'{node_name}.{node_data.data_key}'))
+                            f"{node_name}.{node_data.data_key}"
+                        ),
+                    )
 
     def _do_setup(self):
         self.root = self.manager.find_root()
         if self.root is None:
             raise BehaviorTreeException(
-                f"Cannot find root in subtree, does the subtree {self.options['subtree_path']} exist?")
+                "Cannot find root in subtree, does the subtree "
+                f"{self.options['subtree_path']} exist?"
+            )
         self.root.setup()
         if self.debug_manager and self.debug_manager.get_publish_subtrees():
             self.manager.name = self.name

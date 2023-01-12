@@ -115,11 +115,16 @@ class PackageManager(object):
                         actions.append(msg_type)
                     append_msg = True
                     for action in actions:
-                        if (msg_type == f"{action}Feedback" or msg_type == f"{action}Goal"
-                                or msg_type == f"{action}Result"):
+                        if (
+                            msg_type == f"{action}Feedback"
+                            or msg_type == f"{action}Goal"
+                            or msg_type == f"{action}Result"
+                        ):
                             append_msg = False
                     if append_msg:
-                        messages.append(Message(msg=f"{package}/{msg_type}", service=False))
+                        messages.append(
+                            Message(msg=f"{package}/{msg_type}", service=False)
+                        )
                 path = f"{package_path}/srv"
                 resources = []
                 if os.path.isdir(path):
@@ -152,7 +157,9 @@ class PackageManager(object):
             response.success = True
         except Exception as e:
             response.success = False
-            response.error_message = f"Could not get message fields for {request.message_type}: {e}"
+            response.error_message = (
+                f"Could not get message fields for {request.message_type}: {e}"
+            )
         return response
 
     def get_message_constant_fields_handler(self, request):
@@ -170,7 +177,9 @@ class PackageManager(object):
                 response.success = True
             except Exception as e:
                 response.success = False
-                response.error_message = f"Could not get message fields for {request.message_type}: {e}"
+                response.error_message = (
+                    f"Could not get message fields for {request.message_type}: {e}"
+                )
         return response
 
     def publish_packages_list(self):
