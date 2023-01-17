@@ -8,7 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation)
 
 ## Generate messages in the 'msg' folder
-add_message_files(
+add_message_files(FILES
      AuctionMessage.msg
      CapabilityExecutionStatus.msg
      CapabilityImplementation.msg
@@ -35,7 +35,7 @@ add_message_files(
      )
 
 ## Generate services in the 'srv' folder
-add_service_files(
+add_service_files(FILES
   AddNode.srv
   AddNodeAtIndex.srv
   capabilities/CancelRemoteCapabilitySlot.srv
@@ -86,7 +86,7 @@ add_service_files(
   )
 
 ## Generate actions in the 'action' folder
-add_action_files(
+add_action_files(FILES
   ExecuteRemoteCapability.action
   RunTree.action
   FindBestExecutor.action

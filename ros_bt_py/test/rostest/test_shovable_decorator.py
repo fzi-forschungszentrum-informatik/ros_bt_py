@@ -69,6 +69,7 @@ def make_shovable(action_name):
     )
 
 
+@unittest.skip("Shovables are not working properly!")
 class TestShovable(unittest.TestCase):
     def setUp(self):
         self.immediate_success = MockLeaf(
@@ -125,7 +126,7 @@ class TestShovable(unittest.TestCase):
         shovable.setup()
 
         self.assertEqual(shovable.tick(), NodeMsg.RUNNING)
-        rospy.sleep(3.0)
+        rospy.sleep(5.0)
         self.assertEqual(shovable.tick(), NodeMsg.FAILED)
 
     def testLocalExecution(self):

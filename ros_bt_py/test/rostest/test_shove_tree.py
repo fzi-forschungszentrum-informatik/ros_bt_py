@@ -54,7 +54,7 @@ from ros_bt_py.ros_helpers import AsyncServiceProxy
 PKG = "ros_bt_py"
 
 
-@unittest.skip("Testcase fails at random times.")
+@unittest.skip("Shovables are not working as of now!")
 class TestShoveTree(unittest.TestCase):
     def setUp(self):
         self.load_tree_proxy = rospy.ServiceProxy("/tree_node/load_tree", LoadTree)

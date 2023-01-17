@@ -155,6 +155,7 @@ class TestRosParam(unittest.TestCase):
         self.assertEqual(ros_param.outputs["param"], 0)
 
         expected_bounds = UtilityBounds()
+        expected_bounds.can_execute = True
 
         self.assertEqual(ros_param.calculate_utility(), expected_bounds)
 

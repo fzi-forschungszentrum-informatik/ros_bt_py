@@ -42,7 +42,7 @@ from std_msgs.msg import Header
 from ros_bt_py_msgs.msg import Node as NodeMsg, UtilityBounds
 
 from ros_bt_py.node_config import NodeConfig
-from ros_bt_py.nodes.ros_header import GetStdHeader
+from ros_bt_py.ros_nodes.ros_header import GetStdHeader
 
 PKG = "ros_bt_py"
 

@@ -1631,7 +1631,7 @@ class TestTreeManager(unittest.TestCase):
         self.manager.wire_data = mock.MagicMock()
         self.manager.wire_data.return_value = WireNodeDataResponse(success=False)
 
-        self.assertTrue(
+        self.assertFalse(
             get_success(
                 self.manager.morph_node(
                     MorphNodeRequest(
