@@ -13,12 +13,9 @@ repos:
         exclude: ^ros_bt_py/html/
       - id: mixed-line-ending
       - id: trailing-whitespace
-        exclude: ((trees/)|(html/))
       - id: check-shebang-scripts-are-executable
       - id: check-executables-have-shebangs
       - id: fix-byte-order-marker  # Forbid UTF-8 byte-order markers
-      - id: no-commit-to-branch
-        args: [--branch, master]
   - repo: https://github.com/psf/black
     rev: 22.3.0
     hooks:
