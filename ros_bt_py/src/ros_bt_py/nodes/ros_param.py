@@ -35,6 +35,7 @@ from ros_bt_py_msgs.msg import UtilityBounds
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
+
 @define_bt_node(NodeConfig(
     version='0.9.0',
     options={'param_type': type, 'default_value': OptionRef('param_type'), 'param_name': str},
@@ -66,6 +67,7 @@ class RosParamNoInput(Leaf):
 
     def _do_calculate_utility(self):
         return UtilityBounds()
+
 
 @define_bt_node(NodeConfig(
     version='0.9.0',
