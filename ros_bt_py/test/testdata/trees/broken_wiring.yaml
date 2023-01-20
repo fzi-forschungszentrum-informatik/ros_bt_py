@@ -1,60 +1,60 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     max_children: 0
     name: "Constant_2"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "0"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     max_children: 0
     name: "Constant"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "0"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     max_children: -1
@@ -65,22 +65,22 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-data_wirings: 
-  - 
-    source: 
+data_wirings:
+  -
+    source:
       node_name: "Constant"
       data_kind: "outputs"
       data_key: "constant"
-    target: 
+    target:
       node_name: "Compare"
       data_kind: "inputs"
       data_key: "a"
-  - 
-    source: 
+  -
+    source:
       node_name: "Constant_2"
       data_kind: "outputs"
       data_key: "constant"
-    target: 
+    target:
       node_name: "Compare"
       data_kind: "inputs"
       data_key: "b"

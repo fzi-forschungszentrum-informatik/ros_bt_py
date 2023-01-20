@@ -1,83 +1,83 @@
 name: ''
 path: ''
 root_name: "Sequence"
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     max_children: 0
     name: "Constant"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "42"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.compare"
     node_class: "ALessThanB"
     max_children: 0
     name: "ALessThanB"
     child_names: []
     options: []
-    inputs: 
-      - 
+    inputs:
+      -
         key: "a"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
-      - 
+      -
         key: "b"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.io"
     node_class: "IOInputOption"
     max_children: 0
     name: "IOInputOption"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "default"
         serialized_value: "42"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "io_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "in"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "out"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "io_type"
         target: "default"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     max_children: -1
@@ -91,24 +91,24 @@ nodes:
 data_wirings: []
 tick_frequency_hz: 10.0
 state: "EDITABLE"
-public_node_data: 
-  - 
+public_node_data:
+  -
     node_name: "IOInputOption"
     data_kind: "inputs"
     data_key: "in"
-  - 
+  -
     node_name: "IOInputOption"
     data_kind: "outputs"
     data_key: "out"
-  - 
+  -
     node_name: "ALessThanB"
     data_kind: "inputs"
     data_key: "a"
-  - 
+  -
     node_name: "ALessThanB"
     data_kind: "inputs"
     data_key: "b"
-  - 
+  -
     node_name: "Constant"
     data_kind: "outputs"
     data_key: "constant"

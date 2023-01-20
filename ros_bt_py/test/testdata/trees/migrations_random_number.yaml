@@ -1,8 +1,8 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.random_number"
     node_class: "RandomIntInputs"
     version: ''
@@ -10,47 +10,47 @@ nodes:
     name: "RandomIntInputs"
     child_names: []
     options: []
-    inputs: 
-      - 
+    inputs:
+      -
         key: "max"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "min"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "random_number"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.random_number"
     node_class: "RandomInt"
     version: ''
     max_children: 0
     name: "RandomInt"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "max"
         serialized_value: "0"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "min"
         serialized_value: "0"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "random_number"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     version: ''
@@ -65,20 +65,20 @@ nodes:
 data_wirings: []
 tick_frequency_hz: 10.0
 state: "EDITABLE"
-public_node_data: 
-  - 
+public_node_data:
+  -
     node_name: "RandomInt"
     data_kind: "outputs"
     data_key: "random_number"
-  - 
+  -
     node_name: "RandomIntInputs"
     data_kind: "inputs"
     data_key: "max"
-  - 
+  -
     node_name: "RandomIntInputs"
     data_kind: "inputs"
     data_key: "min"
-  - 
+  -
     node_name: "RandomIntInputs"
     data_kind: "outputs"
     data_key: "random_number"

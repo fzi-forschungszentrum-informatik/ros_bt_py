@@ -11,7 +11,7 @@ The Package contains third party code which is distributed under its own license
 - Bootstrap (4.4.1)     - MIT Licence
 - react	(16.13.1)       - MIT Licence
 - react-dom (16.13.1)   - MIT Licence
-- react-modal (3.11.2)  - MIT Licence	
+- react-modal (3.11.2)  - MIT Licence
 - js-yaml (3)           - MIT Licence
 
 - jsoneditor.js	(8.6.4) - Apache 2.0

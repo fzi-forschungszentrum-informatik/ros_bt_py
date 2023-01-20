@@ -1,35 +1,35 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     max_children: 0
     name: "Constant"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "{\"py/object\": \"std_msgs.msg._Time.Time\", \"py/state\": [{\"py/object\": \"genpy.rostime.Time\"\
   , \"py/state\": [23, 42]}]}"
         serialized_type: "{\"py/type\": \"std_msgs.msg._Time.Time\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"std_msgs.msg._Time.Time\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"std_msgs.msg._Time.Time\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     max_children: -1
@@ -40,146 +40,146 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     max_children: 0
     name: "Constant_3"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "\"foo\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.str\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     max_children: 0
     name: "Constant_2"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "0"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.topic"
     node_class: "TopicPublisher"
     max_children: 0
     name: "TopicPublisher"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "topic_type"
         serialized_value: "{\"py/type\": \"std_msgs.msg._Header.Header\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "topic_name"
         serialized_value: "\"/foo\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "message"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"std_msgs.msg._Header.Header\"}"
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.ros_nodes.message_converters"
     node_class: "FieldsToMessage"
     max_children: 0
     name: "FieldsToMessage"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "output_type"
         serialized_value: "{\"py/type\": \"std_msgs.msg._Header.Header\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "stamp"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"std_msgs.msg._Time.Time\"}"
-      - 
+      -
         key: "frame_id"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-      - 
+      -
         key: "seq"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "out"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"std_msgs.msg._Header.Header\"}"
     option_wirings: []
     state: "UNINITIALIZED"
-data_wirings: 
-  - 
-    source: 
+data_wirings:
+  -
+    source:
       node_name: "Constant"
       data_kind: "outputs"
       data_key: "constant"
-    target: 
+    target:
       node_name: "FieldsToMessage"
       data_kind: "inputs"
       data_key: "stamp"
-  - 
-    source: 
+  -
+    source:
       node_name: "Constant_2"
       data_kind: "outputs"
       data_key: "constant"
-    target: 
+    target:
       node_name: "FieldsToMessage"
       data_kind: "inputs"
       data_key: "seq"
-  - 
-    source: 
+  -
+    source:
       node_name: "Constant_3"
       data_kind: "outputs"
       data_key: "constant"
-    target: 
+    target:
       node_name: "FieldsToMessage"
       data_kind: "inputs"
       data_key: "frame_id"
-  - 
-    source: 
+  -
+    source:
       node_name: "FieldsToMessage"
       data_kind: "outputs"
       data_key: "out"
-    target: 
+    target:
       node_name: "TopicPublisher"
       data_kind: "inputs"
       data_key: "message"

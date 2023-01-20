@@ -37,20 +37,29 @@ import genpy
 import catkin
 from catkin.find_in_workspaces import find_in_workspaces
 from ros_bt_py_msgs.msg import Message, Messages, Package, Packages
-from ros_bt_py_msgs.srv import GetMessageFields, GetMessageFieldsResponse, SaveTreeResponse
+from ros_bt_py_msgs.srv import (
+    GetMessageFields,
+    GetMessageFieldsResponse,
+    SaveTreeResponse,
+)
 from ros_bt_py_msgs.srv import GetPackageStructureResponse, FixYamlRequest
 
 from ros_bt_py.node import increment_name
-from ros_bt_py.helpers import fix_yaml, remove_input_output_values, json_encode, json_decode
+from ros_bt_py.helpers import (
+    fix_yaml,
+    remove_input_output_values,
+    json_encode,
+    json_decode,
+)
 from ros_bt_py.ros_helpers import get_message_constant_fields
 
 
 class PackageManager(object):
-    """Provides functionality to interact with ROS messages and catkin packages
-    """
-    def __init__(self,
-                 publish_message_list_callback=None,
-                 publish_packages_list_callback=None):
+    """Provides functionality to interact with ROS messages and catkin packages"""
+
+    def __init__(
+        self, publish_message_list_callback=None, publish_packages_list_callback=None
+    ):
         # using rospkg is nice because it provides path resolution and honors CATKIN_IGNORE file
         # so we do not have to do this manually
         self.rospack = rospkg.RosPack()
@@ -65,11 +74,13 @@ class PackageManager(object):
         paths = []
         path = rospack.get_path(pkgname)
         paths.append(path)
-        results = find_in_workspaces(search_dirs=['share'],
-                                     project=pkgname,
-                                     first_match_only=True,
-                                     workspace_to_source_spaces=_catkin_workspace_to_source_spaces,
-                                     source_path_to_packages=_catkin_source_path_to_packages)
+        results = find_in_workspaces(
+            search_dirs=["share"],
+            project=pkgname,
+            first_match_only=True,
+            workspace_to_source_spaces=_catkin_workspace_to_source_spaces,
+            source_path_to_packages=_catkin_source_path_to_packages,
+        )
         if results and results[0] != path:
             paths.append(results[0])
         return paths
@@ -79,7 +90,7 @@ class PackageManager(object):
         Uses a similar strategy to rosmsg/rossrv to detect message/service files.
         """
         if self.message_list_pub is None:
-            rospy.logwarn('No callback for publishing message list data provided.')
+            rospy.logwarn("No callback for publishing message list data provided.")
             return
         rospack = rospkg.RosPack()
 
@@ -92,26 +103,37 @@ class PackageManager(object):
                 path = package_path + "/msg"
                 resources = []
                 if os.path.isdir(path):
-                    resources = [f for f in os.listdir(path)
-                                 if os.path.isfile(os.path.join(path, f))]
-                result = [x[:-len(".msg")] for x in resources]
+                    resources = [
+                        f
+                        for f in os.listdir(path)
+                        if os.path.isfile(os.path.join(path, f))
+                    ]
+                result = [x[: -len(".msg")] for x in resources]
                 result.sort()
                 for msg_type in result:
                     if msg_type[-6:] == "Action":
                         actions.append(msg_type)
                     append_msg = True
                     for action in actions:
-                        if (msg_type == action + "Feedback" or msg_type == action + "Goal"
-                                or msg_type == action + "Result"):
+                        if (
+                            msg_type == action + "Feedback"
+                            or msg_type == action + "Goal"
+                            or msg_type == action + "Result"
+                        ):
                             append_msg = False
                     if append_msg:
-                        messages.append(Message(msg=package + "/" + msg_type, service=False))
+                        messages.append(
+                            Message(msg=package + "/" + msg_type, service=False)
+                        )
                 path = package_path + "/srv"
                 resources = []
                 if os.path.isdir(path):
-                    resources = [f for f in os.listdir(path)
-                                 if os.path.isfile(os.path.join(path, f))]
-                result = [x[:-len(".srv")] for x in resources]
+                    resources = [
+                        f
+                        for f in os.listdir(path)
+                        if os.path.isfile(os.path.join(path, f))
+                    ]
+                result = [x[: -len(".srv")] for x in resources]
                 result.sort()
                 for srv_type in result:
                     messages.append(Message(msg=package + "/" + srv_type, service=True))
@@ -121,8 +143,7 @@ class PackageManager(object):
         self.message_list_pub.publish(msg)
 
     def get_message_fields(self, request):
-        """Returns the jsonpickled fields of the provided message type.
-        """
+        """Returns the jsonpickled fields of the provided message type."""
         response = GetMessageFieldsResponse()
         try:
             message_class = None
@@ -137,7 +158,9 @@ class PackageManager(object):
         except Exception as e:
             response.success = False
             response.error_message = "Could not get message fields for %s: %s" % (
-                request.message_type, e)
+                request.message_type,
+                e,
+            )
         return response
 
     def get_message_constant_fields_handler(self, request):
@@ -145,7 +168,9 @@ class PackageManager(object):
         if request.service:
             # not supported yet
             response.success = False
-            response.error_message = "Constant message fields for services are not yet supported"
+            response.error_message = (
+                "Constant message fields for services are not yet supported"
+            )
         else:
             try:
                 message_class = roslib.message.get_message_class(request.message_type)
@@ -154,12 +179,14 @@ class PackageManager(object):
             except Exception as e:
                 response.success = False
                 response.error_message = "Could not get message fields for %s: %s" % (
-                    request.message_type, e)
+                    request.message_type,
+                    e,
+                )
         return response
 
     def publish_packages_list(self):
         if self.packages_list_pub is None:
-            rospy.logwarn('No callback for publishing packages list data provided.')
+            rospy.logwarn("No callback for publishing packages list data provided.")
             return
         # get source_paths, which allows us to restrict the package list to packages
         # within the source space
@@ -199,18 +226,21 @@ class PackageManager(object):
         self.item_id = 0
 
     def path_to_dict(self, path, show_hidden=False, parent=0):
-        """Turns a path into a dictionary
-        """
-        d = {'name': os.path.basename(path)}
-        d['item_id'] = self.get_id()
-        d['parent'] = parent
+        """Turns a path into a dictionary"""
+        d = {"name": os.path.basename(path)}
+        d["item_id"] = self.get_id()
+        d["parent"] = parent
         if os.path.isdir(path):
-            d['type'] = "directory"
-            d['children'] = [self.path_to_dict(os.path.join(path, f),
-                                               show_hidden=show_hidden, parent=d['item_id'])
-                             for f in os.listdir(path) if (show_hidden or not f.startswith("."))]
+            d["type"] = "directory"
+            d["children"] = [
+                self.path_to_dict(
+                    os.path.join(path, f), show_hidden=show_hidden, parent=d["item_id"]
+                )
+                for f in os.listdir(path)
+                if (show_hidden or not f.startswith("."))
+            ]
         else:
-            d['type'] = "file"
+            d["type"] = "file"
         return d
 
     def get_package_structure(self, request):
@@ -223,7 +253,8 @@ class PackageManager(object):
             package_path = self.rospack.get_path(request.package)
             self.reset_id()
             package_structure = self.path_to_dict(
-                path=package_path, show_hidden=request.show_hidden)
+                path=package_path, show_hidden=request.show_hidden
+            )
 
             response.success = True
             response.package_structure = json_encode(package_structure)
@@ -263,10 +294,12 @@ class PackageManager(object):
             package_path = self.rospack.get_path(request.package)
             save_path = os.path.join(package_path, request.filename)
 
-            if os.path.commonprefix(
-                    [os.path.realpath(save_path), package_path]) != package_path:
+            if (
+                os.path.commonprefix([os.path.realpath(save_path), package_path])
+                != package_path
+            ):
                 response.success = False
-                response.error_message = 'Path outside package path'
+                response.error_message = "Path outside package path"
                 return response
             save_path = save_path.rstrip(os.sep)  # split trailing /
             path, filename = os.path.split(save_path)
@@ -300,7 +333,7 @@ class PackageManager(object):
                         response.error_message = "Overwrite not allowed"
                         return response
 
-            with open(save_path, 'w') as save_file:
+            with open(save_path, "w") as save_file:
                 msg = genpy.message.strify_message(request.tree)
                 fix_yaml_response = fix_yaml(request=FixYamlRequest(broken_yaml=msg))
                 save_file.write(fix_yaml_response.fixed_yaml)

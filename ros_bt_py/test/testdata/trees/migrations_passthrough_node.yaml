@@ -1,8 +1,8 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     version: ''
@@ -14,25 +14,25 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.passthrough_node"
     node_class: "PassthroughNode"
     version: ''
     max_children: 0
     name: "PassthroughNode"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "passthrough_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "in"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "out"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
@@ -41,12 +41,12 @@ nodes:
 data_wirings: []
 tick_frequency_hz: 10.0
 state: "EDITABLE"
-public_node_data: 
-  - 
+public_node_data:
+  -
     node_name: "PassthroughNode"
     data_kind: "inputs"
     data_key: "in"
-  - 
+  -
     node_name: "PassthroughNode"
     data_kind: "outputs"
     data_key: "out"

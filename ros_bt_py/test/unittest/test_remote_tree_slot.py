@@ -28,6 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
 import unittest
+
 try:
     import unittest.mock as mock
 except ImportError:
@@ -48,6 +49,7 @@ from ros_bt_py.nodes.mock_nodes import MockLeaf, MockUtilityLeaf
 
 class MockGoalHandle(object):
     """Simple Facsimile of the GoalHandle used by actionlib.ActionServer"""
+
     INIT = 0
     RUNNING = 1
     REJECTED = 2
@@ -71,7 +73,7 @@ class MockGoalHandle(object):
         self.state = MockGoalHandle.ACCEPTED
         self.result = result
 
-    def set_rejected(self, result=None, text=''):
+    def set_rejected(self, result=None, text=""):
         self.state = MockGoalHandle.REJECTED
         self.result = result
 
@@ -91,37 +93,49 @@ class MockGoalHandle(object):
 class TestRemoteTreeSlot(unittest.TestCase):
     def setUp(self):
         self.cheap_fail = MockUtilityLeaf(
-            name='cheap_fail',
+            name="cheap_fail",
             options={
-                'can_execute': True,
-                'utility_lower_bound_success': 5.0,
-                'utility_upper_bound_success': 10.0,
-                'utility_lower_bound_failure': 1.0,
-                'utility_upper_bound_failure': 2.0})
+                "can_execute": True,
+                "utility_lower_bound_success": 5.0,
+                "utility_upper_bound_success": 10.0,
+                "utility_lower_bound_failure": 1.0,
+                "utility_upper_bound_failure": 2.0,
+            },
+        )
         self.cheap_success = MockUtilityLeaf(
-            name='cheap_success',
+            name="cheap_success",
             options={
-                'can_execute': True,
-                'utility_lower_bound_success': 1.0,
-                'utility_upper_bound_success': 2.0,
-                'utility_lower_bound_failure': 5.0,
-                'utility_upper_bound_failure': 10.0})
+                "can_execute": True,
+                "utility_lower_bound_success": 1.0,
+                "utility_upper_bound_success": 2.0,
+                "utility_lower_bound_failure": 5.0,
+                "utility_upper_bound_failure": 10.0,
+            },
+        )
 
-        self.utility_root = Sequence()\
-            .add_child(self.cheap_fail)\
-            .add_child(self.cheap_success)
+        self.utility_root = (
+            Sequence().add_child(self.cheap_fail).add_child(self.cheap_success)
+        )
 
-        self.run_then_fail = MockLeaf(name='run_then_fail',
-                                      options={'output_type': int,
-                                               'state_values': [Node.RUNNING, Node.FAILED],
-                                               'output_values': [1, 1]})
-        self.run_then_succeed = MockLeaf(name='run_then_succeed',
-                                         options={'output_type': int,
-                                                  'state_values': [Node.RUNNING, Node.SUCCEEDED],
-                                                  'output_values': [1, 1]})
-        self.execute_root = Sequence()\
-            .add_child(self.run_then_succeed)\
-            .add_child(self.run_then_fail)
+        self.run_then_fail = MockLeaf(
+            name="run_then_fail",
+            options={
+                "output_type": int,
+                "state_values": [Node.RUNNING, Node.FAILED],
+                "output_values": [1, 1],
+            },
+        )
+        self.run_then_succeed = MockLeaf(
+            name="run_then_succeed",
+            options={
+                "output_type": int,
+                "state_values": [Node.RUNNING, Node.SUCCEEDED],
+                "output_values": [1, 1],
+            },
+        )
+        self.execute_root = (
+            Sequence().add_child(self.run_then_succeed).add_child(self.run_then_fail)
+        )
 
         self.slot_state = None
         self.remote_slot = RemoteTreeSlot(publish_slot_state=self.update_state)
@@ -131,13 +145,17 @@ class TestRemoteTreeSlot(unittest.TestCase):
 
     def testEvalUtility(self):
         utility_tree, _, _ = self.utility_root.get_subtree_msg()
-        res = self.remote_slot.evaluate_utility_handler(EvaluateUtilityRequest(utility_tree))
+        res = self.remote_slot.evaluate_utility_handler(
+            EvaluateUtilityRequest(utility_tree)
+        )
 
         self.assertEqual(res.utility, self.utility_root.calculate_utility())
 
         # Try to evaluate utility of a tree that does not exist
-        utility_tree = Tree(path='package://ros_bt_py/etc/trees/notareal.file')
-        res = self.remote_slot.evaluate_utility_handler(EvaluateUtilityRequest(utility_tree))
+        utility_tree = Tree(path="package://ros_bt_py/etc/trees/notareal.file")
+        res = self.remote_slot.evaluate_utility_handler(
+            EvaluateUtilityRequest(utility_tree)
+        )
 
         self.assertEqual(res.utility.can_execute, False)
 
@@ -181,7 +199,9 @@ class TestRemoteTreeSlot(unittest.TestCase):
 
         # Try to evaluate utility when another tree is already loaded
         utility_tree, _, _ = self.utility_root.get_subtree_msg()
-        res = self.remote_slot.evaluate_utility_handler(EvaluateUtilityRequest(utility_tree))
+        res = self.remote_slot.evaluate_utility_handler(
+            EvaluateUtilityRequest(utility_tree)
+        )
 
         self.assertEqual(res.utility.can_execute, False)
 
@@ -189,8 +209,9 @@ class TestRemoteTreeSlot(unittest.TestCase):
         execute_tree, _, _ = self.execute_root.get_subtree_msg()
 
         # Nothing to do, succeeding
-        res = self.remote_slot.control_tree_execution_handler(ControlTreeExecutionRequest(
-            command=ControlTreeExecutionRequest.STOP))
+        res = self.remote_slot.control_tree_execution_handler(
+            ControlTreeExecutionRequest(command=ControlTreeExecutionRequest.STOP)
+        )
         self.assertTrue(get_success(res), get_error_message(res))
 
         gh = MockGoalHandle(RunTreeGoal(tree=execute_tree), goal_id=1)
@@ -203,20 +224,27 @@ class TestRemoteTreeSlot(unittest.TestCase):
         self.assertFalse(self.slot_state.tree_running)
         self.assertFalse(self.slot_state.tree_finished)
 
-        res = self.remote_slot.control_tree_execution_handler(ControlTreeExecutionRequest(
-            command=ControlTreeExecutionRequest.TICK_PERIODICALLY,
-            tick_frequency_hz=10))
+        res = self.remote_slot.control_tree_execution_handler(
+            ControlTreeExecutionRequest(
+                command=ControlTreeExecutionRequest.TICK_PERIODICALLY,
+                tick_frequency_hz=10,
+            )
+        )
         self.assertFalse(get_success(res), get_error_message(res))
 
         rospy.sleep(0.2)
 
-        res = self.remote_slot.control_tree_execution_handler(ControlTreeExecutionRequest(
-            command=ControlTreeExecutionRequest.STOP))
+        res = self.remote_slot.control_tree_execution_handler(
+            ControlTreeExecutionRequest(command=ControlTreeExecutionRequest.STOP)
+        )
         self.assertTrue(get_success(res), get_error_message(res))
 
-        res = self.remote_slot.control_tree_execution_handler(ControlTreeExecutionRequest(
-            command=ControlTreeExecutionRequest.TICK_UNTIL_RESULT,
-            tick_frequency_hz=10))
+        res = self.remote_slot.control_tree_execution_handler(
+            ControlTreeExecutionRequest(
+                command=ControlTreeExecutionRequest.TICK_UNTIL_RESULT,
+                tick_frequency_hz=10,
+            )
+        )
 
         self.assertTrue(get_success(res), get_error_message(res))
         # If the ControlTreeExecution call was successful, the tree
@@ -236,7 +264,7 @@ class TestRemoteTreeSlot(unittest.TestCase):
         self.assertTrue(self.slot_state.tree_finished)
 
         # Try to run a tree that does not exist
-        not_available_tree = Tree(path='package://ros_bt_py/etc/trees/notareal.file')
+        not_available_tree = Tree(path="package://ros_bt_py/etc/trees/notareal.file")
         gh = MockGoalHandle(RunTreeGoal(tree=not_available_tree), goal_id=1)
         self.assertEqual(gh.state, MockGoalHandle.INIT)
 
@@ -256,9 +284,12 @@ class TestRemoteTreeSlot(unittest.TestCase):
 
         self.assertEqual(gh.state, MockGoalHandle.ACCEPTED)
 
-        res = self.remote_slot.control_tree_execution_handler(ControlTreeExecutionRequest(
-            command=ControlTreeExecutionRequest.TICK_UNTIL_RESULT,
-            tick_frequency_hz=10))
+        res = self.remote_slot.control_tree_execution_handler(
+            ControlTreeExecutionRequest(
+                command=ControlTreeExecutionRequest.TICK_UNTIL_RESULT,
+                tick_frequency_hz=10,
+            )
+        )
 
         self.assertTrue(get_success(res), get_error_message(res))
         self.assertEqual(self.remote_slot.tree_manager.get_state(), Tree.TICKING)
@@ -280,8 +311,9 @@ class TestRemoteTreeSlot(unittest.TestCase):
 
     def testRunTreeHandler(self):
         self.remote_slot.tree_manager.control_execution = mock.MagicMock()
-        self.remote_slot.tree_manager.control_execution.return_value = \
+        self.remote_slot.tree_manager.control_execution.return_value = (
             ControlTreeExecutionResponse(success=False)
+        )
 
         execute_tree, _, _ = self.execute_root.get_subtree_msg()
 
@@ -299,11 +331,13 @@ class TestRemoteTreeSlot(unittest.TestCase):
         self.remote_slot.run_tree_handler(gh)
 
         self.remote_slot.tree_manager.control_execution = mock.MagicMock()
-        self.remote_slot.tree_manager.control_execution.return_value = \
+        self.remote_slot.tree_manager.control_execution.return_value = (
             ControlTreeExecutionResponse(success=False)
+        )
 
-        res = self.remote_slot.control_tree_execution_handler(ControlTreeExecutionRequest(
-            command=ControlTreeExecutionRequest.TICK_ONCE))
+        res = self.remote_slot.control_tree_execution_handler(
+            ControlTreeExecutionRequest(command=ControlTreeExecutionRequest.TICK_ONCE)
+        )
         self.assertFalse(get_success(res))
 
     def testCancelRunTreeHandler(self):
@@ -315,16 +349,18 @@ class TestRemoteTreeSlot(unittest.TestCase):
         self.remote_slot.run_tree_handler(gh)
 
         self.remote_slot.tree_manager.control_execution = mock.MagicMock()
-        self.remote_slot.tree_manager.control_execution.return_value = \
+        self.remote_slot.tree_manager.control_execution.return_value = (
             ControlTreeExecutionResponse(success=False)
+        )
 
         self.assertRaises(Exception, self.remote_slot.cancel_run_tree_handler, gh)
 
         self.remote_slot.update_tree_msg = mock.MagicMock()
         self.remote_slot.latest_tree = Tree()
 
-        self.remote_slot.tree_manager.control_execution.return_value = \
+        self.remote_slot.tree_manager.control_execution.return_value = (
             ControlTreeExecutionResponse(success=True)
+        )
 
         self.remote_slot.cancel_run_tree_handler(gh)
         self.assertEqual(gh.state, MockGoalHandle.CANCELED)
@@ -332,13 +368,13 @@ class TestRemoteTreeSlot(unittest.TestCase):
 
 def get_success(response):
     if isinstance(response, dict):
-        return response['success']
+        return response["success"]
 
     return response.success
 
 
 def get_error_message(response):
     if isinstance(response, dict):
-        return response['error_message']
+        return response["error_message"]
 
     return response.error_message

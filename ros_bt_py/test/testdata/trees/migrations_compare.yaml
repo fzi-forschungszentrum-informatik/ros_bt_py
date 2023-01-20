@@ -1,56 +1,56 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.compare"
     node_class: "Compare"
     version: ""
     max_children: 0
     name: "Compare"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "compare_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "a"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "b"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.compare"
     node_class: "CompareNewOnly"
     version: ""
     max_children: 0
     name: "CompareNewOnly"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "compare_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "a"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "b"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     version: ''
@@ -62,54 +62,54 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.compare"
     node_class: "LessThanConstant"
     version: ""
     max_children: 0
     name: "LessThanConstant"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "target"
         serialized_value: "1.2"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "a"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.compare"
     node_class: "CompareConstant"
     version: ""
     max_children: 0
     name: "CompareConstant"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "expected"
         serialized_value: "0"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "compare_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "in"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
     outputs: []
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "compare_type"
         target: "expected"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.compare"
     node_class: "ALessThanB"
     version: ""
@@ -117,12 +117,12 @@ nodes:
     name: "ALessThanB"
     child_names: []
     options: []
-    inputs: 
-      - 
+    inputs:
+      -
         key: "a"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
-      - 
+      -
         key: "b"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
@@ -132,36 +132,36 @@ nodes:
 data_wirings: []
 tick_frequency_hz: 10.0
 state: "EDITABLE"
-public_node_data: 
-  - 
+public_node_data:
+  -
     node_name: "ALessThanB"
     data_kind: "inputs"
     data_key: "a"
-  - 
+  -
     node_name: "ALessThanB"
     data_kind: "inputs"
     data_key: "b"
-  - 
+  -
     node_name: "Compare"
     data_kind: "inputs"
     data_key: "a"
-  - 
+  -
     node_name: "Compare"
     data_kind: "inputs"
     data_key: "b"
-  - 
+  -
     node_name: "CompareConstant"
     data_kind: "inputs"
     data_key: "in"
-  - 
+  -
     node_name: "CompareNewOnly"
     data_kind: "inputs"
     data_key: "a"
-  - 
+  -
     node_name: "CompareNewOnly"
     data_kind: "inputs"
     data_key: "b"
-  - 
+  -
     node_name: "LessThanConstant"
     data_kind: "inputs"
     data_key: "a"

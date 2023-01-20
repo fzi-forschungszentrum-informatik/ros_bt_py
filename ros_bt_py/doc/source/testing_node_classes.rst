@@ -128,7 +128,7 @@ Rostests consist of two major components:
      :language: xml
 
 2. The Test Code
-  
+
   rostest_ test files use `unittest`, just like regular unit tests,
   but unlike those, they need to be executable, so they need a `#!`
   line at the beginning, as well as a proper `main` method.

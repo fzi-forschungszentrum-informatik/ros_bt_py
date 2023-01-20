@@ -1,32 +1,32 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.topic"
     node_class: "TopicPublisher"
     version: ''
     max_children: 0
     name: "TopicPublisher"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "topic_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "topic_name"
         serialized_value: "\"foo\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "message"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     version: ''
@@ -38,49 +38,49 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.topic"
     node_class: "TopicOnlineSubscriber"
     version: ''
     max_children: 0
     name: "TopicOnlineSubscriber"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "topic_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "topic_name"
         serialized_value: "\"foo\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "message"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.topic"
     node_class: "TopicSubscriber"
     version: ''
     max_children: 0
     name: "TopicSubscriber"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "topic_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "topic_name"
         serialized_value: "\"foo\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "message"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
@@ -89,16 +89,16 @@ nodes:
 data_wirings: []
 tick_frequency_hz: 10.0
 state: "EDITABLE"
-public_node_data: 
-  - 
+public_node_data:
+  -
     node_name: "TopicOnlineSubscriber"
     data_kind: "outputs"
     data_key: "message"
-  - 
+  -
     node_name: "TopicPublisher"
     data_kind: "inputs"
     data_key: "message"
-  - 
+  -
     node_name: "TopicSubscriber"
     data_kind: "outputs"
     data_key: "message"

@@ -68,7 +68,7 @@ def loglevel_is(level):
     verbose, any level *below* `level` also returns `True`.
 
     """
-    logging_level = logging.getLogger('rosout').getEffectiveLevel()
+    logging_level = logging.getLogger("rosout").getEffectiveLevel()
     return logging_level <= rospy_log_level_to_logging_log_level(level)
 
 
@@ -93,8 +93,8 @@ def fix_yaml(request):
     last_index = 0
 
     index = 0
-    search_string = 'child_names: - '
-    replace_string = 'child_names:'
+    search_string = "child_names: - "
+    replace_string = "child_names:"
     search_len = len(search_string)
     replace_len = len(replace_string)
     while index < len(tree_yaml):
@@ -103,13 +103,16 @@ def fix_yaml(request):
             break
 
         # find the last linebreak and count number of spaces until child_names:
-        linebreak_index = tree_yaml.rfind('\n', last_index, index)
+        linebreak_index = tree_yaml.rfind("\n", last_index, index)
 
         indent = index - linebreak_index - 1 + 2
 
         # now replace the search_string with the proper linebreak
-        tree_yaml = tree_yaml[:index + replace_len] + '\n' + \
-            tree_yaml[index + replace_len + 1:]
+        tree_yaml = (
+            tree_yaml[: index + replace_len]
+            + "\n"
+            + tree_yaml[index + replace_len + 1 :]
+        )
 
         # now check all newlines until they are not "\n- " any more
         newline_index = index + replace_len
@@ -123,15 +126,16 @@ def fix_yaml(request):
             # skip "\n"
             newline_index = newline_index + 1
             # check if the line starts with "- "
-            if tree_yaml[newline_index:newline_index + 2] == "- ":
+            if tree_yaml[newline_index : newline_index + 2] == "- ":
                 # fix it by adding the correct indent:
-                tree_yaml = tree_yaml[:newline_index] + ' ' * indent + \
-                    tree_yaml[newline_index:]
+                tree_yaml = (
+                    tree_yaml[:newline_index] + " " * indent + tree_yaml[newline_index:]
+                )
             else:
                 # found no compatible newline
                 break
             # find next "\n"
-            newline_index = tree_yaml.find('\n', newline_index + indent + 2)
+            newline_index = tree_yaml.find("\n", newline_index + indent + 2)
 
     response.success = True
     response.fixed_yaml = tree_yaml
@@ -156,11 +160,12 @@ def remove_input_output_values(tree):
 def rgetattr(obj, attr, *args):
     def _getattr(obj, attr):
         return getattr(obj, attr, *args)
-    return functools.reduce(_getattr, [obj] + attr.split('.'))
+
+    return functools.reduce(_getattr, [obj] + attr.split("."))
 
 
 def rsetattr(obj, attr, val):
-    pre, _, post = attr.rpartition('.')
+    pre, _, post = attr.rpartition(".")
     return setattr(rgetattr(obj, pre) if pre else obj, post, val)
 
 
@@ -170,7 +175,7 @@ def get_default_value(data_type, ros=False):
     elif data_type is int or data_type is long:
         return 0
     elif data_type is str or data_type is basestring or data_type is unicode:
-        return 'foo'
+        return "foo"
     elif data_type is float:
         return 1.2
     elif data_type is bool:
@@ -195,7 +200,7 @@ def json_encode(data):
     """Wrapper for jsonpickle.encode
     Makes sure that python2 __builtin__ gets encoded as python3 builtins
     """
-    return jsonpickle.encode(data).replace('builtins.', '__builtin__.')
+    return jsonpickle.encode(data).replace("builtins.", "__builtin__.")
 
 
 def json_decode(data):
@@ -203,9 +208,9 @@ def json_decode(data):
     Makes sure that python3 builtins get treated as __builtin__ in python2
     """
     if sys.version_info.major == 2:
-        data = data.replace('builtins.', '__builtin__.')
+        data = data.replace("builtins.", "__builtin__.")
     elif sys.version_info.major >= 2:
-        data = data.replace('__builtin__.', 'builtins.')
+        data = data.replace("__builtin__.", "builtins.")
     return jsonpickle.decode(data)
 
 

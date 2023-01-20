@@ -47,7 +47,7 @@
 
   <!-- additional node_modules from other packages that are loaded into the editor
        this must be a list of modules, for example:
-  
+
        <arg name="additional_node_modules" default="future_advanced_nodes.learning, future_advanced_nodes.doing," />
   -->
   <arg name="additional_node_modules" default="" />
@@ -79,7 +79,7 @@
   <arg name="default_dual_tree_control_command" default="0" />
 
   <arg name="show_traceback_on_exception" default="false" />
-  
+
   <group if="$(arg web_interface)">
     <!-- rosbridge that provides the websocket connection for the web interface -->
     <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch">

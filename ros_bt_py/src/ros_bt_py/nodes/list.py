@@ -33,12 +33,15 @@ from ros_bt_py.node import Leaf, Decorator, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={'list': list},
-    outputs={'length': int},
-    max_children=0))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={},
+        inputs={"list": list},
+        outputs={"length": int},
+        max_children=0,
+    )
+)
 class ListLength(Leaf):
     """Compute list length"""
 
@@ -46,7 +49,7 @@ class ListLength(Leaf):
         pass
 
     def _do_tick(self):
-        self.outputs['length'] = len(self.inputs['list'])
+        self.outputs["length"] = len(self.inputs["list"])
         return NodeMsg.SUCCEEDED
 
     def _do_shutdown(self):
@@ -59,13 +62,15 @@ class ListLength(Leaf):
         return NodeMsg.IDLE
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'element_type': type,
-             'index': int},
-    inputs={'list': list},
-    outputs={'element': OptionRef('element_type')},
-    max_children=0))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={"element_type": type, "index": int},
+        inputs={"list": list},
+        outputs={"element": OptionRef("element_type")},
+        max_children=0,
+    )
+)
 class GetListElementOption(Leaf):
     """Return element at given index in the list"""
 
@@ -73,7 +78,7 @@ class GetListElementOption(Leaf):
         pass
 
     def _do_tick(self):
-        self.outputs['element'] = self.inputs['list'][self.options['index']]
+        self.outputs["element"] = self.inputs["list"][self.options["index"]]
         return NodeMsg.SUCCEEDED
 
     def _do_shutdown(self):
@@ -86,16 +91,15 @@ class GetListElementOption(Leaf):
         return NodeMsg.IDLE
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'element_type': type,
-             'index': int
-             },
-    inputs={'list': list,
-            'element': OptionRef('element_type')
-            },
-    outputs={'list': list},
-    max_children=0))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={"element_type": type, "index": int},
+        inputs={"list": list, "element": OptionRef("element_type")},
+        outputs={"list": list},
+        max_children=0,
+    )
+)
 class InsertInList(Leaf):
     """Return a new list with the inserted element"""
 
@@ -103,10 +107,9 @@ class InsertInList(Leaf):
         pass
 
     def _do_tick(self):
-        if self.inputs.is_updated('list') or self.inputs.is_updated('element'):
-            self.outputs['list'] = list(self.inputs['list'])
-            self.outputs['list'].insert(
-                self.options['index'], self.inputs['element'])
+        if self.inputs.is_updated("list") or self.inputs.is_updated("element"):
+            self.outputs["list"] = list(self.inputs["list"])
+            self.outputs["list"].insert(self.options["index"], self.inputs["element"])
         return NodeMsg.SUCCEEDED
 
     def _do_shutdown(self):
@@ -119,15 +122,15 @@ class InsertInList(Leaf):
         return NodeMsg.IDLE
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'compare_type': type,
-             'list': list},
-    inputs={
-        'in': OptionRef('compare_type')
-    },
-    outputs={},
-    max_children=0))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={"compare_type": type, "list": list},
+        inputs={"in": OptionRef("compare_type")},
+        outputs={},
+        max_children=0,
+    )
+)
 class IsInList(Leaf):
     """Check if `in` is in provided list
 
@@ -140,10 +143,10 @@ class IsInList(Leaf):
 
     def _do_tick(self):
         if not self._received_in:
-            if self.inputs.is_updated('in'):
+            if self.inputs.is_updated("in"):
                 self._received_in = True
 
-        if self._received_in and self.inputs['in'] in self.options['list']:
+        if self._received_in and self.inputs["in"] in self.options["list"]:
             return NodeMsg.SUCCEEDED
         else:
             return NodeMsg.FAILED
@@ -163,13 +166,15 @@ class IsInList(Leaf):
         pass
 
 
-@define_bt_node(NodeConfig(
-    version='1.0.0',
-    options={'item_type': type},
-    inputs={'list': list},
-    outputs={'list_item': OptionRef('item_type')
-             },
-    max_children=1))
+@define_bt_node(
+    NodeConfig(
+        version="1.0.0",
+        options={"item_type": type},
+        inputs={"list": list},
+        outputs={"list_item": OptionRef("item_type")},
+        max_children=1,
+    )
+)
 class IterateList(Decorator):
     """
     Iterate through list provided as input.
@@ -191,20 +196,20 @@ class IterateList(Decorator):
         self.counter = 0
 
     def _do_tick(self):
-        if self.inputs.is_updated('list'):
-            self.logwarn('Input list changed - resetting iterator')
+        if self.inputs.is_updated("list"):
+            self.logwarn("Input list changed - resetting iterator")
             self.reset_counter()
 
         # if no items in 'list' directly succeed
-        if len(self.inputs['list']) > 0:
-            self.outputs['list_item'] = self.inputs['list'][self.counter]
+        if len(self.inputs["list"]) > 0:
+            self.outputs["list_item"] = self.inputs["list"][self.counter]
         else:
-            self.logwarn('Nothing to iterate, input list is empty')
+            self.logwarn("Nothing to iterate, input list is empty")
             return NodeMsg.SUCCEEDED
 
         if len(self.children) == 0:
             self.counter += 1
-            if self.counter == len(self.inputs['list']):
+            if self.counter == len(self.inputs["list"]):
                 self.reset_counter()
                 return NodeMsg.SUCCEEDED
         else:
@@ -218,7 +223,7 @@ class IterateList(Decorator):
                     # we only increment the counter when the child succeeded
                     self.counter += 1
                     self.output_changed = True
-                    if self.counter == len(self.inputs['list']):
+                    if self.counter == len(self.inputs["list"]):
                         self.reset_counter()
                         return NodeMsg.SUCCEEDED
                 elif result == NodeMsg.FAILED:

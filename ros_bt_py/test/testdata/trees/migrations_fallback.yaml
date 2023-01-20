@@ -1,8 +1,8 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.fallback"
     node_class: "Fallback"
     version: ''
@@ -14,7 +14,7 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.fallback"
     node_class: "MemoryFallback"
     version: ''

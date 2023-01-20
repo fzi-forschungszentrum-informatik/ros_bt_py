@@ -37,12 +37,9 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 from ros_bt_py.nodes.shovable import Shovable
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={},
-    outputs={},
-    max_children=None))
+@define_bt_node(
+    NodeConfig(version="0.9.0", options={}, inputs={}, outputs={}, max_children=None)
+)
 class ParallelIfRemote(FlowControl):
     """Act like a Sequence if children are run locally, like a Parallel if remotely
 
@@ -51,6 +48,7 @@ class ParallelIfRemote(FlowControl):
     fashion.
 
     """
+
     def _do_setup(self):
         for child in self.children:
             child.setup()
@@ -69,7 +67,7 @@ class ParallelIfRemote(FlowControl):
             # remotely, also tick the next child
             elif child_state == NodeMsg.RUNNING:
                 if isinstance(child, Shovable):
-                    if child.outputs['running_remotely']:
+                    if child.outputs["running_remotely"]:
                         remote_running = True
                         continue
             # In other cases, stop ticking children and return

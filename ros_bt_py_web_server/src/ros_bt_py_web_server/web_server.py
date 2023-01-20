@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #  -------- BEGIN LICENSE BLOCK --------
 # Copyright 2022 FZI Forschungszentrum Informatik
 #
@@ -38,8 +37,14 @@ from tornado.ioloop import IOLoop
 
 
 class Package(object):
-    def __init__(self, name, absolute_path, subdirectory='', default_filename='index.html',
-                 rewrite_requests_to_default_filename=False):
+    def __init__(
+        self,
+        name,
+        absolute_path,
+        subdirectory="",
+        default_filename="index.html",
+        rewrite_requests_to_default_filename=False,
+    ):
         self.name = name
         self.absolute_path = absolute_path
         self.subdirectory = subdirectory
@@ -47,20 +52,29 @@ class Package(object):
         self.rewrite_requests_to_default_filename = rewrite_requests_to_default_filename
 
     def __repr__(self):
-        return \
-            'Package(name=%s, absolute_path=%s, subdirectory=%s, default_filename=%s, ' \
-            'rewrite_requests_to_default_filename=%s)' % (
+        return (
+            "Package(name=%s, absolute_path=%s, subdirectory=%s, default_filename=%s, "
+            "rewrite_requests_to_default_filename=%s)"
+            % (
                 self.name,
                 self.absolute_path,
                 self.subdirectory,
                 self.default_filename,
-                self.rewrite_requests_to_default_filename)
+                self.rewrite_requests_to_default_filename,
+            )
+        )
 
 
 class CustomStaticFileHandler(StaticFileHandler):
-    def initialize(self, path, package, subdirectory='',
-                   default_filename=None, cache_static_files=True,
-                   rewrite_requests_to_default_filename=False):
+    def initialize(
+        self,
+        path,
+        package,
+        subdirectory="",
+        default_filename=None,
+        cache_static_files=True,
+        rewrite_requests_to_default_filename=False,
+    ):
         self.root = path
         self.default_filename = default_filename
         self.cache_static_files = cache_static_files
@@ -71,19 +85,25 @@ class CustomStaticFileHandler(StaticFileHandler):
     def write_error(self, status_code, *args, **kwargs):
         if status_code == 404:
             if self.rewrite_requests_to_default_filename:
-                self.render(self.root + '/' + self.default_filename)
+                self.render(self.root + "/" + self.default_filename)
             else:
                 file_path = self.default_filename
                 if self.subdirectory:
-                    file_path = self.subdirectory + '/' + file_path
-                self.render("templates/404.html", file_path=file_path, package=self.package)
+                    file_path = self.subdirectory + "/" + file_path
+                self.render(
+                    "templates/404.html", file_path=file_path, package=self.package
+                )
         else:
-            super(CustomStaticFileHandler, self).write_error(status_code, *args, **kwargs)
+            super(CustomStaticFileHandler, self).write_error(
+                status_code, *args, **kwargs
+            )
 
     def set_extra_headers(self, path):
         if not self.cache_static_files:
             # disable cache for multiple browsers
-            self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            self.set_header(
+                "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0"
+            )
 
 
 class PackageListRequestHandler(RequestHandler):
@@ -95,13 +115,15 @@ class PackageListRequestHandler(RequestHandler):
 
 
 class WebServer(object):
-    '''Provides a simple tornado based web server
-    '''
-    def __init__(self,
-                 port=8085,
-                 packages=[],
-                 cache_static_files=True,
-                 serve_single_package_from_root=False):
+    """Provides a simple tornado based web server"""
+
+    def __init__(
+        self,
+        port=8085,
+        packages=[],
+        cache_static_files=True,
+        serve_single_package_from_root=False,
+    ):
         self.port = port
         self.rospack = rospkg.RosPack()
         self.packages = []
@@ -112,30 +134,38 @@ class WebServer(object):
         if packages:
             # only provide the given packages
             for package in packages:
-                if 'directory' not in package:
-                    subdirectory = ''
+                if "directory" not in package:
+                    subdirectory = ""
                 else:
-                    subdirectory = package['directory']
-                if 'default_filename' not in package:
-                    default_filename = 'index.html'
+                    subdirectory = package["directory"]
+                if "default_filename" not in package:
+                    default_filename = "index.html"
                 else:
-                    default_filename = package['default_filename']
-                if 'rewrite_requests_to_default_filename' not in package:
+                    default_filename = package["default_filename"]
+                if "rewrite_requests_to_default_filename" not in package:
                     rewrite_requests_to_default_filename = False
                 else:
-                    rewrite_requests_to_default_filename = \
-                        package['rewrite_requests_to_default_filename']
-                if 'package' not in package:
-                    rospy.logwarn('[web_server]: No "package" key in provided package config:'
-                                  '"%s"' % package)
+                    rewrite_requests_to_default_filename = package[
+                        "rewrite_requests_to_default_filename"
+                    ]
+                if "package" not in package:
+                    rospy.logwarn(
+                        '[web_server]: No "package" key in provided package config:'
+                        '"%s"' % package
+                    )
                 else:
-                    package_path = self.rospack.get_path(package['package'])
-                    self.packages.append(Package(
-                        name=package['package'],
-                        absolute_path=package_path,
-                        subdirectory=subdirectory,
-                        default_filename=default_filename,
-                        rewrite_requests_to_default_filename=rewrite_requests_to_default_filename))
+                    package_path = self.rospack.get_path(package["package"])
+                    self.packages.append(
+                        Package(
+                            name=package["package"],
+                            absolute_path=package_path,
+                            subdirectory=subdirectory,
+                            default_filename=default_filename,
+                            rewrite_requests_to_default_filename=(
+                                rewrite_requests_to_default_filename
+                            ),
+                        )
+                    )
         else:
             # provide all available packages
             packages = self.rospack.list()
@@ -148,33 +178,45 @@ class WebServer(object):
         handlers = []
         if len(self.packages) == 1 and self.serve_single_package_from_root:
             package = self.packages[0]
-            handler = (r'/(.*)|/',
-                       CustomStaticFileHandler,
-                       {'path': package.absolute_path + '/' + package.subdirectory,
-                        'package': package.name,
-                        'subdirectory': package.subdirectory,
-                        'default_filename': package.default_filename,
-                        'cache_static_files': self.cache_static_files,
-                        'rewrite_requests_to_default_filename':
-                            package.rewrite_requests_to_default_filename})
+            handler = (
+                r"/(.*)|/",
+                CustomStaticFileHandler,
+                {
+                    "path": package.absolute_path + "/" + package.subdirectory,
+                    "package": package.name,
+                    "subdirectory": package.subdirectory,
+                    "default_filename": package.default_filename,
+                    "cache_static_files": self.cache_static_files,
+                    "rewrite_requests_to_default_filename": (
+                        package.rewrite_requests_to_default_filename
+                    ),
+                },
+            )
             handlers.append(handler)
         else:
-            handlers = [('/', PackageListRequestHandler, {'packages': self.packages})]
+            handlers = [("/", PackageListRequestHandler, {"packages": self.packages})]
 
             for package in self.packages:
-                handler = ('/' + package.name,
-                           RedirectHandler,
-                           {'url': '/' + package.name + '/'})
+                handler = (
+                    "/" + package.name,
+                    RedirectHandler,
+                    {"url": "/" + package.name + "/"},
+                )
                 handlers.append(handler)
-                handler = (r'/' + package.name + r'/(.*)|/' + package.name,
-                           CustomStaticFileHandler,
-                           {'path': package.absolute_path + '/' + package.subdirectory,
-                            'package': package.name,
-                            'subdirectory': package.subdirectory,
-                            'default_filename': package.default_filename,
-                            'cache_static_files': self.cache_static_files,
-                            'rewrite_requests_to_default_filename':
-                                package.rewrite_requests_to_default_filename})
+                handler = (
+                    r"/" + package.name + r"/(.*)|/" + package.name,
+                    CustomStaticFileHandler,
+                    {
+                        "path": package.absolute_path + "/" + package.subdirectory,
+                        "package": package.name,
+                        "subdirectory": package.subdirectory,
+                        "default_filename": package.default_filename,
+                        "cache_static_files": self.cache_static_files,
+                        "rewrite_requests_to_default_filename": (
+                            package.rewrite_requests_to_default_filename
+                        ),
+                    },
+                )
                 handlers.append(handler)
 
         self.application = Application(handlers)
@@ -187,11 +229,13 @@ class WebServer(object):
             self.ioloop.start()
         except error as socket_error:
             if socket_error.errno is errno.EADDRINUSE:
-                rospy.logerr('[web_server]: Port: "%d": %s' % (
-                    self.port, str(socket_error)))
+                rospy.logerr(
+                    '[web_server]: Port: "%d": %s' % (self.port, str(socket_error))
+                )
             elif socket_error.errno is errno.EACCES:
-                rospy.logerr('[web_server]: Port: "%d": %s' % (
-                    self.port, str(socket_error)))
+                rospy.logerr(
+                    '[web_server]: Port: "%d": %s' % (self.port, str(socket_error))
+                )
             else:
                 raise socket_error
 

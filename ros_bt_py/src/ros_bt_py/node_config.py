@@ -35,11 +35,12 @@ class OptionRef(object):
     Can be used instead of an actual type in the maps passed to a
     :class:NodeConfig
     """
+
     def __init__(self, option_key):
         self.option_key = option_key
 
     def __repr__(self):
-        return 'OptionRef(option_key=%r)' % self.option_key
+        return "OptionRef(option_key=%r)" % self.option_key
 
     def __eq__(self, other):
         return self.option_key == other.option_key
@@ -48,12 +49,20 @@ class OptionRef(object):
         return not self == other
 
     def __name__(self):
-        return 'OptionRef(option_key=%r)' % self.option_key
+        return "OptionRef(option_key=%r)" % self.option_key
 
 
 class NodeConfig(object):
-    def __init__(self, options, inputs, outputs, max_children,
-                 optional_options=[], version='', tags=[]):
+    def __init__(
+        self,
+        options,
+        inputs,
+        outputs,
+        max_children,
+        optional_options=[],
+        version="",
+        tags=[],
+    ):
         """Describes the interface of a :class:ros_bt_py.node.Node
 
         :param dict(str, type) options
@@ -87,23 +96,28 @@ class NodeConfig(object):
         self.tags = tags
 
     def __repr__(self):
-        return \
-            'NodeConfig(inputs=%r, outputs=%r, options=%r, max_children=%r,' \
-            ' optional_options=%s, version=%s)' % (
+        return (
+            "NodeConfig(inputs=%r, outputs=%r, options=%r, max_children=%r,"
+            " optional_options=%s, version=%s)"
+            % (
                 self.inputs,
                 self.outputs,
                 self.options,
                 self.max_children,
                 self.optional_options,
-                self.version)
+                self.version,
+            )
+        )
 
     def __eq__(self, other):
-        return (self.inputs == other.inputs
-                and self.outputs == other.outputs
-                and self.options == other.options
-                and self.max_children == other.max_children
-                and self.optional_options == other.optional_options
-                and self.version == other.version)
+        return (
+            self.inputs == other.inputs
+            and self.outputs == other.outputs
+            and self.options == other.options
+            and self.max_children == other.max_children
+            and self.optional_options == other.optional_options
+            and self.version == other.version
+        )
 
     def __ne__(self, other):
         return not self == other
@@ -117,8 +131,10 @@ class NodeConfig(object):
           raise `ValueError`.
         """
         if self.max_children != other.max_children:
-            raise ValueError('Mismatch in max_children: %s vs %s'
-                             % (self.max_children, other.max_children))
+            raise ValueError(
+                "Mismatch in max_children: %s vs %s"
+                % (self.max_children, other.max_children)
+            )
         duplicate_inputs = []
         for key in other.inputs:
             if key in self.inputs:
@@ -139,13 +155,13 @@ class NodeConfig(object):
             self.options[key] = other.options[key]
 
         if duplicate_inputs or duplicate_outputs or duplicate_options:
-            msg = 'Duplicate keys: '
+            msg = "Duplicate keys: "
             keys_strings = []
             if duplicate_inputs:
-                keys_strings.append('inputs: %s' % str(duplicate_inputs))
+                keys_strings.append("inputs: %s" % str(duplicate_inputs))
             if duplicate_outputs:
-                keys_strings.append('outputs: %s' % str(duplicate_outputs))
+                keys_strings.append("outputs: %s" % str(duplicate_outputs))
             if duplicate_options:
-                keys_strings.append('options: %s' % str(duplicate_options))
-            msg += ', '.join(keys_strings)
+                keys_strings.append("options: %s" % str(duplicate_options))
+            msg += ", ".join(keys_strings)
             raise KeyError(msg)

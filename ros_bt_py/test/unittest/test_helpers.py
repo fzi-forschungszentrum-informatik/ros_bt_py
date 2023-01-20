@@ -29,6 +29,7 @@
 #  -------- END LICENSE BLOCK --------
 import unittest
 import sys
+
 try:
     import unittest.mock as mock
 except ImportError:
@@ -45,29 +46,25 @@ from ros_bt_py.ros_helpers import LoggerLevel, EnumValue
 class TestHelpers(unittest.TestCase):
     def testLogLevelMapping(self):
         self.assertEqual(
-            rospy_log_level_to_logging_log_level(rospy.DEBUG),
-            logging.DEBUG)
+            rospy_log_level_to_logging_log_level(rospy.DEBUG), logging.DEBUG
+        )
+
+        self.assertEqual(rospy_log_level_to_logging_log_level(rospy.INFO), logging.INFO)
+
+        self.assertEqual(rospy_log_level_to_logging_log_level(rospy.WARN), logging.WARN)
 
         self.assertEqual(
-            rospy_log_level_to_logging_log_level(rospy.INFO),
-            logging.INFO)
+            rospy_log_level_to_logging_log_level(rospy.ERROR), logging.ERROR
+        )
 
         self.assertEqual(
-            rospy_log_level_to_logging_log_level(rospy.WARN),
-            logging.WARN)
-
-        self.assertEqual(
-            rospy_log_level_to_logging_log_level(rospy.ERROR),
-            logging.ERROR)
-
-        self.assertEqual(
-            rospy_log_level_to_logging_log_level(rospy.FATAL),
-            logging.FATAL)
+            rospy_log_level_to_logging_log_level(rospy.FATAL), logging.FATAL
+        )
 
     def testGetDefaultValue(self):
-        self.assertEqual(get_default_value(LoggerLevel).logger_level, 'info')
+        self.assertEqual(get_default_value(LoggerLevel).logger_level, "info")
 
-        self.assertEqual(get_default_value(EnumValue).enum_value, '')
+        self.assertEqual(get_default_value(EnumValue).enum_value, "")
 
     def testJsonEncode(self):
         self.assertEqual(json_encode(int), '{"py/type": "__builtin__.int"}')
@@ -79,8 +76,8 @@ class TestHelpers(unittest.TestCase):
             self.assertEqual(json_decode('{"py/type": "builtins.int"}'), int)
 
     def testJsonDecode23(self):
-        with mock.patch.object(sys, 'version_info') as version_info:
+        with mock.patch.object(sys, "version_info") as version_info:
             version_info.major = 2
-            self.assertEqual(json_decode('{}'), {})
+            self.assertEqual(json_decode("{}"), {})
             version_info.major = 3
-            self.assertEqual(json_decode('{}'), {})
+            self.assertEqual(json_decode("{}"), {})

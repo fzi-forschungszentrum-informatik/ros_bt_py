@@ -1,8 +1,8 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.list"
     node_class: "ListLength"
     version: ""
@@ -10,13 +10,13 @@ nodes:
     name: "ListLength"
     child_names: []
     options: []
-    inputs: 
-      - 
+    inputs:
+      -
         key: "list"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "length"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
@@ -25,12 +25,12 @@ nodes:
 data_wirings: []
 tick_frequency_hz: 10.0
 state: "EDITABLE"
-public_node_data: 
-  - 
+public_node_data:
+  -
     node_name: "ListLength"
     data_kind: "inputs"
     data_key: "list"
-  - 
+  -
     node_name: "ListLength"
     data_kind: "outputs"
     data_key: "length"
