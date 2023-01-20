@@ -1,25 +1,25 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.list"
     node_class: "IsInList"
     version: ""
     max_children: 0
     name: "IsInList"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "compare_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "list"
         serialized_value: "[]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "in"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
@@ -29,8 +29,8 @@ nodes:
 data_wirings: []
 tick_frequency_hz: 10.0
 state: "EDITABLE"
-public_node_data: 
-  - 
+public_node_data:
+  -
     node_name: "IsInList"
     data_kind: "inputs"
     data_key: "in"

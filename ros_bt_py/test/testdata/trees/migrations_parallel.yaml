@@ -1,16 +1,16 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.parallel"
     node_class: "Parallel"
     version: ''
     max_children: -1
     name: "Parallel"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "needed_successes"
         serialized_value: "0"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
@@ -18,7 +18,7 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     version: ''

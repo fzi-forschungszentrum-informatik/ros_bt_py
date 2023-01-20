@@ -90,4 +90,3 @@ $ roslaunch ros_bt_py ros_bt_py.launch dual:=true
 ```
 The BT GUI will be available in the same address, but you'll have two namespaces -- tree_node and tree_node_dual.
 Just open two tabs, and select a different namespace on each one.
-

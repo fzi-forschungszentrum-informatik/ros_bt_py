@@ -37,8 +37,12 @@ import rospy
 from actionlib_msgs.msg import GoalStatus
 from std_msgs.msg import Int32
 from std_srvs.srv import SetBool, SetBoolRequest, SetBoolResponse
-from actionlib_tutorials.msg import (FibonacciAction, FibonacciGoal, FibonacciResult,
-                                     FibonacciFeedback)
+from actionlib_tutorials.msg import (
+    FibonacciAction,
+    FibonacciGoal,
+    FibonacciResult,
+    FibonacciFeedback,
+)
 
 from ros_bt_py_msgs.msg import FindBestExecutorAction, FindBestExecutorGoal
 
@@ -47,73 +51,85 @@ from ros_bt_py.nodes.service import Service
 from ros_bt_py.nodes.topic import TopicSubscriber
 from ros_bt_py.nodes.sequence import Sequence
 
-PKG = 'ros_bt_py'
+PKG = "ros_bt_py"
 
 
 class TestRosLeafUtility(unittest.TestCase):
     def setUp(self):
-        self.ac = SimpleActionClient('find_best_executor', FindBestExecutorAction)
+        self.ac = SimpleActionClient("find_best_executor", FindBestExecutorAction)
 
         # If find_best_executor isn't available within 2 seconds, fail
         # the test
         self.assertTrue(self.ac.wait_for_server(timeout=rospy.Duration(2.0)))
 
-        self.topic = TopicSubscriber(options={
-            'topic_type': Int32,
-            'topic_name': 'numbers_out'})
+        self.topic = TopicSubscriber(
+            options={"topic_type": Int32, "topic_name": "numbers_out"}
+        )
         self.topic_2 = TopicSubscriber(
-            name='Topic2',
+            name="Topic2", options={"topic_type": Int32, "topic_name": "foo"}
+        )
+        self.action = Action(
             options={
-                'topic_type': Int32,
-                'topic_name': 'foo'})
-        self.action = Action(options={
-            'action_type': FibonacciAction,
-            'goal_type': FibonacciGoal,
-            'result_type': FibonacciResult,
-            'feedback_type': FibonacciFeedback,
-            'action_name': 'fibonacci',
-            'wait_for_action_server_seconds': 1.0,
-            'timeout_seconds': 1.0})
-        self.service = Service(options={
-            'service_type': SetBool,
-            'request_type': SetBoolRequest,
-            'response_type': SetBoolResponse,
-            'service_name': 'delay_1s_if_true',
-            'wait_for_service_seconds': 1.0,
-            'wait_for_response_seconds': 1.0})
+                "action_type": FibonacciAction,
+                "goal_type": FibonacciGoal,
+                "result_type": FibonacciResult,
+                "feedback_type": FibonacciFeedback,
+                "action_name": "fibonacci",
+                "wait_for_action_server_seconds": 1.0,
+                "timeout_seconds": 1.0,
+            }
+        )
+        self.service = Service(
+            options={
+                "service_type": SetBool,
+                "request_type": SetBoolRequest,
+                "response_type": SetBoolResponse,
+                "service_name": "delay_1s_if_true",
+                "wait_for_service_seconds": 1.0,
+                "wait_for_response_seconds": 1.0,
+            }
+        )
 
     def call_find_best_exec_with_node(self, node):
         goal_state = self.ac.send_goal_and_wait(
-            node_to_goal(node),
-            execute_timeout=rospy.Duration(2.0))
+            node_to_goal(node), execute_timeout=rospy.Duration(2.0)
+        )
         self.assertEqual(goal_state, GoalStatus.SUCCEEDED)
         return self.ac.get_result()
 
     def testBestExecForSingleNodes(self):
         for node in [self.topic, self.action, self.service]:
             self.assertEqual(
-                rospy.resolve_name(self.call_find_best_exec_with_node(node)
-                                   .best_executor_namespace),
-                rospy.resolve_name('has_stuff/good_slot/'),
-                msg='Wrong namespace for node %s' % node.name)
+                rospy.resolve_name(
+                    self.call_find_best_exec_with_node(node).best_executor_namespace
+                ),
+                rospy.resolve_name("has_stuff/good_slot/"),
+                msg="Wrong namespace for node %s" % node.name,
+            )
 
         # Just to be sure, test one node that should be executed in
         # the other namespace
         self.assertEqual(
-            rospy.resolve_name(self.call_find_best_exec_with_node(self.topic_2)
-                               .best_executor_namespace),
-            rospy.resolve_name('no_stuff/bad_slot/'))
+            rospy.resolve_name(
+                self.call_find_best_exec_with_node(self.topic_2).best_executor_namespace
+            ),
+            rospy.resolve_name("no_stuff/bad_slot/"),
+        )
 
     def testBestExecForSequence(self):
-        seq = Sequence()\
-            .add_child(self.topic)\
-            .add_child(self.action)\
+        seq = (
+            Sequence()
+            .add_child(self.topic)
+            .add_child(self.action)
             .add_child(self.service)
+        )
 
         self.assertEqual(
-            rospy.resolve_name(self.call_find_best_exec_with_node(seq)
-                               .best_executor_namespace),
-            rospy.resolve_name('has_stuff/good_slot/'))
+            rospy.resolve_name(
+                self.call_find_best_exec_with_node(seq).best_executor_namespace
+            ),
+            rospy.resolve_name("has_stuff/good_slot/"),
+        )
 
 
 def node_to_goal(node):
@@ -122,11 +138,13 @@ def node_to_goal(node):
     return goal
 
 
-if __name__ == '__main__':
-    rospy.init_node('test_action_leaf')
+if __name__ == "__main__":
+    rospy.init_node("test_action_leaf")
     import rostest
     import sys
     import os
-    os.environ['COVERAGE_FILE'] = '%s.%s.coverage' % (PKG, 'test_ros_leaf_utility')
-    rostest.rosrun(PKG, 'test_action_leaf', TestRosLeafUtility,
-                   sysargs=sys.argv + ['--cov'])
+
+    os.environ["COVERAGE_FILE"] = "%s.%s.coverage" % (PKG, "test_ros_leaf_utility")
+    rostest.rosrun(
+        PKG, "test_action_leaf", TestRosLeafUtility, sysargs=sys.argv + ["--cov"]
+    )

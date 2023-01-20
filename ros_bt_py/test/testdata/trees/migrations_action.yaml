@@ -1,95 +1,95 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.action"
     node_class: "Action"
     version: ""
     max_children: 0
     name: "Action"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "goal_type"
         serialized_value: "{\"py/type\": \"actionlib.msg._TestGoal.TestGoal\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "timeout_seconds"
         serialized_value: "1.2"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
-      - 
+      -
         key: "feedback_type"
         serialized_value: "{\"py/type\": \"actionlib.msg._TestFeedback.TestFeedback\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "action_name"
         serialized_value: "\"foo\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-      - 
+      -
         key: "fail_if_not_available"
         serialized_value: "true"
         serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
-      - 
+      -
         key: "action_type"
         serialized_value: "{\"py/type\": \"actionlib.msg._TestAction.TestAction\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "wait_for_action_server_seconds"
         serialized_value: "1.2"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
-      - 
+      -
         key: "result_type"
         serialized_value: "{\"py/type\": \"actionlib.msg._TestResult.TestResult\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "goal"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"actionlib.msg._TestGoal.TestGoal\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "goal_status"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "feedback"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"actionlib.msg._TestFeedback.TestFeedback\"}"
-      - 
+      -
         key: "result"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"actionlib.msg._TestResult.TestResult\"}"
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: ""
     max_children: 0
     name: "Constant"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "{\"py/object\": \"actionlib.msg._TestGoal.TestGoal\", \"py/state\": [0]}"
         serialized_type: "{\"py/type\": \"actionlib.msg._TestGoal.TestGoal\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"actionlib.msg._TestGoal.TestGoal\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"actionlib.msg._TestGoal.TestGoal\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     version: ''
@@ -101,28 +101,28 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-data_wirings: 
-  - 
-    source: 
+data_wirings:
+  -
+    source:
       node_name: "Constant"
       data_kind: "outputs"
       data_key: "constant"
-    target: 
+    target:
       node_name: "Action"
       data_kind: "inputs"
       data_key: "goal"
 tick_frequency_hz: 10.0
 state: "EDITABLE"
-public_node_data: 
-  - 
+public_node_data:
+  -
     node_name: "Action"
     data_kind: "outputs"
     data_key: "goal_status"
-  - 
+  -
     node_name: "Action"
     data_kind: "outputs"
     data_key: "feedback"
-  - 
+  -
     node_name: "Action"
     data_kind: "outputs"
     data_key: "result"

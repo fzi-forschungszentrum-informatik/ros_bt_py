@@ -1,8 +1,8 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.wait"
     node_class: "WaitInput"
     version: ''
@@ -10,15 +10,15 @@ nodes:
     name: "WaitInput"
     child_names: []
     options: []
-    inputs: 
-      - 
+    inputs:
+      -
         key: "seconds_to_wait"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     version: ''
@@ -30,15 +30,15 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.wait"
     node_class: "Wait"
     version: ''
     max_children: 0
     name: "Wait"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "seconds_to_wait"
         serialized_value: "0"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
@@ -49,8 +49,8 @@ nodes:
 data_wirings: []
 tick_frequency_hz: 10.0
 state: "EDITABLE"
-public_node_data: 
-  - 
+public_node_data:
+  -
     node_name: "WaitInput"
     data_kind: "inputs"
     data_key: "seconds_to_wait"

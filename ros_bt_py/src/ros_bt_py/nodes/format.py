@@ -41,8 +41,9 @@ class ExtendedFormatter(Formatter):
 
     Formatter with extended conversion symbol
     """
+
     def convert_field(self, value, conversion):
-        """ Extend conversion symbol
+        """Extend conversion symbol
         Following additional symbol has been added
         * l: convert to string and low case
         * u: convert to string and up case
@@ -70,20 +71,23 @@ class ExtendedFormatter(Formatter):
 myformatter = ExtendedFormatter()
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={'a': str, 'b': str},
-    outputs={'formatted_string': str},
-    max_children=0))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={},
+        inputs={"a": str, "b": str},
+        outputs={"formatted_string": str},
+        max_children=0,
+    )
+)
 class StringConcatenation(Leaf):
-    """Concatenate strings a and b
-    """
+    """Concatenate strings a and b"""
+
     def _do_setup(self):
         return NodeMsg.IDLE
 
     def _do_tick(self):
-        self.outputs['formatted_string'] = self.inputs['a'] + self.inputs['b']
+        self.outputs["formatted_string"] = self.inputs["a"] + self.inputs["b"]
         return NodeMsg.SUCCEEDED
 
     def _do_untick(self):
@@ -93,17 +97,20 @@ class StringConcatenation(Leaf):
         pass
 
     def _do_reset(self):
-        self.outputs['formatted_string'] = None
+        self.outputs["formatted_string"] = None
         self.outputs.reset_updated()
         return NodeMsg.IDLE
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'format_string': str},
-    inputs={'dict': dict},
-    outputs={'formatted_string': str},
-    max_children=0))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={"format_string": str},
+        inputs={"dict": dict},
+        outputs={"formatted_string": str},
+        max_children=0,
+    )
+)
 class FormatOptionNode(Leaf):
     """Accepts a dictionary as input and outputs a formatted string
     based on the format string set in the options.
@@ -115,13 +122,15 @@ class FormatOptionNode(Leaf):
     results in the following output:
     formatted_string: 'foo bar'
     """
+
     def _do_setup(self):
         return NodeMsg.IDLE
 
     def _do_tick(self):
         try:
-            self.outputs['formatted_string'] = myformatter.format(self.options['format_string'],
-                                                                  **self.inputs['dict'])
+            self.outputs["formatted_string"] = myformatter.format(
+                self.options["format_string"], **self.inputs["dict"]
+            )
         except Exception:
             return NodeMsg.FAILED
         return NodeMsg.SUCCEEDED
@@ -133,18 +142,20 @@ class FormatOptionNode(Leaf):
         pass
 
     def _do_reset(self):
-        self.outputs['formatted_string'] = None
+        self.outputs["formatted_string"] = None
         self.outputs.reset_updated()
         return NodeMsg.IDLE
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={'dict': dict,
-            'format_string': str},
-    outputs={'formatted_string': str},
-    max_children=0))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={},
+        inputs={"dict": dict, "format_string": str},
+        outputs={"formatted_string": str},
+        max_children=0,
+    )
+)
 class FormatInputNode(Leaf):
     """Accepts a dictionary and a format string as input and outputs a formatted string
     based on the format string
@@ -156,13 +167,15 @@ class FormatInputNode(Leaf):
     results in the following output:
     formatted_string: 'foo bar'
     """
+
     def _do_setup(self):
         return NodeMsg.IDLE
 
     def _do_tick(self):
         try:
-            self.outputs['formatted_string'] = myformatter.format(self.inputs['format_string'],
-                                                                  **self.inputs['dict'])
+            self.outputs["formatted_string"] = myformatter.format(
+                self.inputs["format_string"], **self.inputs["dict"]
+            )
         except Exception:
             return NodeMsg.FAILED
         return NodeMsg.SUCCEEDED
@@ -174,17 +187,20 @@ class FormatInputNode(Leaf):
         pass
 
     def _do_reset(self):
-        self.outputs['formatted_string'] = None
+        self.outputs["formatted_string"] = None
         self.outputs.reset_updated()
         return NodeMsg.IDLE
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'format_strings': list},
-    inputs={'dict': dict},
-    outputs={'formatted_strings': list},
-    max_children=0))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={"format_strings": list},
+        inputs={"dict": dict},
+        outputs={"formatted_strings": list},
+        max_children=0,
+    )
+)
 class FormatOptionListNode(Leaf):
     """Accepts a dictionary as input and outputs a formatted strings in the list
     based on the format string set in the options.
@@ -196,14 +212,15 @@ class FormatOptionListNode(Leaf):
     results in the following output:
     formatted_strings: ['foo bar', 'bar bar']
     """
+
     def _do_setup(self):
         return NodeMsg.IDLE
 
     def _do_tick(self):
         try:
-            self.outputs['formatted_strings'] = [
-                myformatter.format(phrase, **self.inputs['dict'])
-                for phrase in self.options['format_strings']
+            self.outputs["formatted_strings"] = [
+                myformatter.format(phrase, **self.inputs["dict"])
+                for phrase in self.options["format_strings"]
             ]
         except Exception:
             return NodeMsg.FAILED
@@ -216,18 +233,20 @@ class FormatOptionListNode(Leaf):
         pass
 
     def _do_reset(self):
-        self.outputs['formatted_strings'] = None
+        self.outputs["formatted_strings"] = None
         self.outputs.reset_updated()
         return NodeMsg.IDLE
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={'dict': dict,
-            'format_strings': list},
-    outputs={'formatted_strings': list},
-    max_children=0))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={},
+        inputs={"dict": dict, "format_strings": list},
+        outputs={"formatted_strings": list},
+        max_children=0,
+    )
+)
 class FormatInputListNode(Leaf):
     """Accepts a dictionary and a list of format strings as input and
     outputs a list of formatted strings based on the format string
@@ -239,14 +258,15 @@ class FormatInputListNode(Leaf):
     results in the following output:
     formatted_strings: ['foo bar', 'bar bar']
     """
+
     def _do_setup(self):
         return NodeMsg.IDLE
 
     def _do_tick(self):
         try:
-            self.outputs['formatted_strings'] = [
-                myformatter.format(phrase, **self.inputs['dict'])
-                for phrase in self.inputs['format_strings']
+            self.outputs["formatted_strings"] = [
+                myformatter.format(phrase, **self.inputs["dict"])
+                for phrase in self.inputs["format_strings"]
             ]
         except Exception:
             return NodeMsg.FAILED
@@ -259,29 +279,31 @@ class FormatInputListNode(Leaf):
         pass
 
     def _do_reset(self):
-        self.outputs['formatted_strings'] = None
+        self.outputs["formatted_strings"] = None
         self.outputs.reset_updated()
         return NodeMsg.IDLE
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={'path': str},
-    outputs={'filename': str,
-             'extension': str},
-    max_children=0))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={},
+        inputs={"path": str},
+        outputs={"filename": str, "extension": str},
+        max_children=0,
+    )
+)
 class GetFileExtension(Leaf):
-    """Return filename and extension of the provided path
-    """
+    """Return filename and extension of the provided path"""
+
     def _do_setup(self):
         return NodeMsg.IDLE
 
     def _do_tick(self):
-        if self.inputs.is_updated('path'):
-            filename, extension = os.path.splitext(self.inputs['path'])
-            self.outputs['extension'] = extension
-            self.outputs['filename'] = filename
+        if self.inputs.is_updated("path"):
+            filename, extension = os.path.splitext(self.inputs["path"])
+            self.outputs["extension"] = extension
+            self.outputs["filename"] = filename
         return NodeMsg.SUCCEEDED
 
     def _do_untick(self):

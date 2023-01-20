@@ -1,126 +1,126 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.io"
     node_class: "IOInput"
     version: ''
     max_children: 0
     name: "IOInput"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "io_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "default"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "in"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "out"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.io"
     node_class: "IOOutput"
     version: ''
     max_children: 0
     name: "IOOutput"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "io_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "default"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "in"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "out"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.io"
     node_class: "IOOutputOption"
     version: ''
     max_children: 0
     name: "IOOutputOption"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "default"
         serialized_value: "0"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "io_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "in"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "out"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "io_type"
         target: "default"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.io"
     node_class: "IOInputOption"
     version: ''
     max_children: 0
     name: "IOInputOption"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "default"
         serialized_value: "0"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "io_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "in"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "out"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "io_type"
         target: "default"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     version: ''
@@ -135,44 +135,44 @@ nodes:
 data_wirings: []
 tick_frequency_hz: 10.0
 state: "EDITABLE"
-public_node_data: 
-  - 
+public_node_data:
+  -
     node_name: "IOInput"
     data_kind: "inputs"
     data_key: "default"
-  - 
+  -
     node_name: "IOInput"
     data_kind: "inputs"
     data_key: "in"
-  - 
+  -
     node_name: "IOInput"
     data_kind: "outputs"
     data_key: "out"
-  - 
+  -
     node_name: "IOInputOption"
     data_kind: "inputs"
     data_key: "in"
-  - 
+  -
     node_name: "IOInputOption"
     data_kind: "outputs"
     data_key: "out"
-  - 
+  -
     node_name: "IOOutput"
     data_kind: "inputs"
     data_key: "default"
-  - 
+  -
     node_name: "IOOutput"
     data_kind: "inputs"
     data_key: "in"
-  - 
+  -
     node_name: "IOOutput"
     data_kind: "outputs"
     data_key: "out"
-  - 
+  -
     node_name: "IOOutputOption"
     data_kind: "inputs"
     data_key: "in"
-  - 
+  -
     node_name: "IOOutputOption"
     data_kind: "outputs"
     data_key: "out"

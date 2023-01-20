@@ -39,9 +39,7 @@ from ros_bt_py.ros_nodes.pose_distance import PoseDistance
 
 class testPoseDistance(unittest.TestCase):
     def testPoseDistance(self):
-        self.pose_distance = PoseDistance({
-            'succeed_on_stale_data': False
-        })
+        self.pose_distance = PoseDistance({"succeed_on_stale_data": False})
         self.pose_distance.setup()
 
         a = Pose()
@@ -55,20 +53,18 @@ class testPoseDistance(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.pose_distance.tick()
 
-        self.pose_distance.inputs['pose_a'] = a
-        self.pose_distance.inputs['pose_b'] = b
+        self.pose_distance.inputs["pose_a"] = a
+        self.pose_distance.inputs["pose_b"] = b
 
         self.assertEqual(self.pose_distance.tick(), NodeMsg.SUCCEEDED)
-        self.assertAlmostEqual(self.pose_distance.outputs['distance_pos'], 1.0)
-        self.assertAlmostEqual(self.pose_distance.outputs['distance_angle'], 1.5)
+        self.assertAlmostEqual(self.pose_distance.outputs["distance_pos"], 1.0)
+        self.assertAlmostEqual(self.pose_distance.outputs["distance_angle"], 1.5)
 
         # Should return RUNNING on stale data
         self.assertEqual(self.pose_distance.tick(), NodeMsg.RUNNING)
 
     def testPoseDistanceStaleData(self):
-        self.pose_distance = PoseDistance({
-            'succeed_on_stale_data': True
-        })
+        self.pose_distance = PoseDistance({"succeed_on_stale_data": True})
         self.pose_distance.setup()
 
         a = Pose()
@@ -82,12 +78,12 @@ class testPoseDistance(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.pose_distance.tick()
 
-        self.pose_distance.inputs['pose_a'] = a
-        self.pose_distance.inputs['pose_b'] = b
+        self.pose_distance.inputs["pose_a"] = a
+        self.pose_distance.inputs["pose_b"] = b
 
         self.assertEqual(self.pose_distance.tick(), NodeMsg.SUCCEEDED)
-        self.assertAlmostEqual(self.pose_distance.outputs['distance_pos'], 1.0)
-        self.assertAlmostEqual(self.pose_distance.outputs['distance_angle'], 1.5)
+        self.assertAlmostEqual(self.pose_distance.outputs["distance_pos"], 1.0)
+        self.assertAlmostEqual(self.pose_distance.outputs["distance_angle"], 1.5)
 
         self.assertEqual(self.pose_distance.tick(), NodeMsg.SUCCEEDED)
 

@@ -36,14 +36,15 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 from ros_bt_py.helpers import rgetattr
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'list_type': type,
-             'index': int,
-             'succeed_on_stale_data': bool},
-    inputs={'list': list},
-    outputs={'item': OptionRef('list_type')},
-    max_children=1))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={"list_type": type, "index": int, "succeed_on_stale_data": bool},
+        inputs={"list": list},
+        outputs={"item": OptionRef("list_type")},
+        max_children=1,
+    )
+)
 class GetConstListItem(Decorator):
     """Extracts the item at the given `index` from `list`
 
@@ -52,13 +53,14 @@ class GetConstListItem(Decorator):
     updated since the last tick.
 
     """
+
     def _do_setup(self):
         for child in self.children:
             child.setup()
             # We have a child, so set list to an empty list. We're avoiding an
             # error this way because we know what we're doing, don't use this
             # gratuitously!
-            self.inputs['list'] = []
+            self.inputs["list"] = []
             self.inputs.reset_updated()
         return NodeMsg.IDLE
 
@@ -67,29 +69,31 @@ class GetConstListItem(Decorator):
         for child in self.children:
             child.tick()
 
-        if self.inputs.is_updated('list'):
+        if self.inputs.is_updated("list"):
             try:
-                self.outputs['item'] = self.inputs['list'][self.options['index']]
+                self.outputs["item"] = self.inputs["list"][self.options["index"]]
                 return NodeMsg.SUCCEEDED
             except IndexError:
-                self.logerr('List index %d out of bound for list %s'
-                            % (self.options['index'], self.inputs['list']))
+                self.logerr(
+                    "List index %d out of bound for list %s"
+                    % (self.options["index"], self.inputs["list"])
+                )
                 return NodeMsg.FAILED
         else:
-            if self.options['succeed_on_stale_data']:
+            if self.options["succeed_on_stale_data"]:
                 # We don't need to check whether we have gotten any
                 # data at all, because if we hadn't the tick method
                 # would raise an error
                 return NodeMsg.SUCCEEDED
             else:
-                self.loginfo('No new data since last tick!')
+                self.loginfo("No new data since last tick!")
                 return NodeMsg.RUNNING
 
     def _do_shutdown(self):
         pass
 
     def _do_reset(self):
-        self.outputs['item'] = None
+        self.outputs["item"] = None
         self.outputs.reset_updated()
         self._do_setup()
         return NodeMsg.IDLE
@@ -98,14 +102,15 @@ class GetConstListItem(Decorator):
         return NodeMsg.IDLE
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'list_type': type,
-             'succeed_on_stale_data': bool},
-    inputs={'list': list,
-            'index': int},
-    outputs={'item': OptionRef('list_type')},
-    max_children=1))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={"list_type": type, "succeed_on_stale_data": bool},
+        inputs={"list": list, "index": int},
+        outputs={"item": OptionRef("list_type")},
+        max_children=1,
+    )
+)
 class GetListItem(Decorator):
     """Extracts the item at the given `index` from `list`
 
@@ -114,13 +119,14 @@ class GetListItem(Decorator):
     updated since the last tick.
 
     """
+
     def _do_setup(self):
         for child in self.children:
             child.setup()
             # We have a child, so set list to an empty list. We're avoiding an
             # error this way because we know what we're doing, don't use this
             # gratuitously!
-            self.inputs['list'] = []
+            self.inputs["list"] = []
             self.inputs.reset_updated()
         return NodeMsg.IDLE
 
@@ -129,26 +135,28 @@ class GetListItem(Decorator):
         for child in self.children:
             child.tick()
 
-        if self.inputs.is_updated('list') or self.inputs.is_updated('index'):
+        if self.inputs.is_updated("list") or self.inputs.is_updated("index"):
             try:
-                self.outputs['item'] = self.inputs['list'][self.inputs['index']]
+                self.outputs["item"] = self.inputs["list"][self.inputs["index"]]
                 return NodeMsg.SUCCEEDED
             except IndexError:
-                self.logerr('List index %d out of bound for list %s'
-                            % (self.inputs['index'], self.inputs['list']))
+                self.logerr(
+                    "List index %d out of bound for list %s"
+                    % (self.inputs["index"], self.inputs["list"])
+                )
                 return NodeMsg.FAILED
         else:
-            if self.options['succeed_on_stale_data']:
+            if self.options["succeed_on_stale_data"]:
                 return NodeMsg.SUCCEEDED
             else:
-                self.loginfo('No new data since last tick!')
+                self.loginfo("No new data since last tick!")
                 return NodeMsg.RUNNING
 
     def _do_shutdown(self):
         pass
 
     def _do_reset(self):
-        self.outputs['item'] = None
+        self.outputs["item"] = None
         self.outputs.reset_updated()
         self._do_setup()
         self.inputs.reset_updated()
@@ -158,14 +166,15 @@ class GetListItem(Decorator):
         return NodeMsg.IDLE
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'value_type': type,
-             'key': str,
-             'succeed_on_stale_data': bool},
-    inputs={'dict': dict},
-    outputs={'value': OptionRef('value_type')},
-    max_children=1))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={"value_type": type, "key": str, "succeed_on_stale_data": bool},
+        inputs={"dict": dict},
+        outputs={"value": OptionRef("value_type")},
+        max_children=1,
+    )
+)
 class GetDictItem(Decorator):
     def _do_setup(self):
         for child in self.children:
@@ -173,7 +182,7 @@ class GetDictItem(Decorator):
             # We have a child, so set dict to an empty dict. We're avoiding an
             # error this way because we know what we're doing, don't use this
             # gratuitously!
-            self.inputs['dict'] = {}
+            self.inputs["dict"] = {}
             self.inputs.reset_updated()
         return NodeMsg.IDLE
 
@@ -182,26 +191,28 @@ class GetDictItem(Decorator):
         for child in self.children:
             child.tick()
 
-        if self.inputs.is_updated('dict'):
+        if self.inputs.is_updated("dict"):
             try:
-                self.outputs['value'] = self.inputs['dict'][self.options['key']]
+                self.outputs["value"] = self.inputs["dict"][self.options["key"]]
                 return NodeMsg.SUCCEEDED
             except KeyError:
-                self.logerr('Key %s is not in dict %s'
-                            % (self.options['key'], str(self.inputs['dict'])))
+                self.logerr(
+                    "Key %s is not in dict %s"
+                    % (self.options["key"], str(self.inputs["dict"]))
+                )
                 return NodeMsg.FAILED
         else:
-            if self.options['succeed_on_stale_data']:
+            if self.options["succeed_on_stale_data"]:
                 return NodeMsg.SUCCEEDED
             else:
-                self.loginfo('No new data since last tick!')
+                self.loginfo("No new data since last tick!")
                 return NodeMsg.RUNNING
 
     def _do_shutdown(self):
         pass
 
     def _do_reset(self):
-        self.outputs['value'] = None
+        self.outputs["value"] = None
         self.outputs.reset_updated()
         self._do_setup()
         self.inputs.reset_updated()
@@ -211,13 +222,15 @@ class GetDictItem(Decorator):
         return NodeMsg.IDLE
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'keys': list,
-             'succeed_on_stale_data': bool},
-    inputs={'dict': dict},
-    outputs={'values': list},
-    max_children=1))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={"keys": list, "succeed_on_stale_data": bool},
+        inputs={"dict": dict},
+        outputs={"values": list},
+        max_children=1,
+    )
+)
 class GetMultipleDictItems(Decorator):
     def _do_setup(self):
         for child in self.children:
@@ -225,7 +238,7 @@ class GetMultipleDictItems(Decorator):
             # We have a child, so set dict to an empty dict. We're avoiding an
             # error this way because we know what we're doing, don't use this
             # gratuitously!
-            self.inputs['dict'] = {}
+            self.inputs["dict"] = {}
             self.inputs.reset_updated()
         return NodeMsg.IDLE
 
@@ -234,26 +247,30 @@ class GetMultipleDictItems(Decorator):
         for child in self.children:
             child.tick()
 
-        if self.inputs.is_updated('dict'):
+        if self.inputs.is_updated("dict"):
             try:
-                self.outputs['values'] = [self.inputs['dict'][k] for k in self.options['keys']]
+                self.outputs["values"] = [
+                    self.inputs["dict"][k] for k in self.options["keys"]
+                ]
                 return NodeMsg.SUCCEEDED
             except KeyError:
-                self.logerr('One of the key (%s) is not in dict %s'
-                            % (self.options['keys'], str(self.inputs['dict'])))
+                self.logerr(
+                    "One of the key (%s) is not in dict %s"
+                    % (self.options["keys"], str(self.inputs["dict"]))
+                )
                 return NodeMsg.FAILED
         else:
-            if self.options['succeed_on_stale_data']:
+            if self.options["succeed_on_stale_data"]:
                 return NodeMsg.SUCCEEDED
             else:
-                self.loginfo('No new data since last tick!')
+                self.loginfo("No new data since last tick!")
                 return NodeMsg.RUNNING
 
     def _do_shutdown(self):
         pass
 
     def _do_reset(self):
-        self.outputs['values'] = []
+        self.outputs["values"] = []
         self.outputs.reset_updated()
         self._do_setup()
         self.inputs.reset_updated()
@@ -263,14 +280,15 @@ class GetMultipleDictItems(Decorator):
         return NodeMsg.IDLE
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'value_type': type,
-             'dict': dict,
-             'succeed_on_stale_data': bool},
-    inputs={'key': str},
-    outputs={'value': OptionRef('value_type')},
-    max_children=1))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={"value_type": type, "dict": dict, "succeed_on_stale_data": bool},
+        inputs={"key": str},
+        outputs={"value": OptionRef("value_type")},
+        max_children=1,
+    )
+)
 class GetDictItemFromKey(Decorator):
     def _do_setup(self):
         for child in self.children:
@@ -278,7 +296,7 @@ class GetDictItemFromKey(Decorator):
             # We have a child, so set key to an empty string. We're avoiding an
             # error this way because we know what we're doing, don't use this
             # gratuitously!
-            self.inputs['key'] = ''
+            self.inputs["key"] = ""
             self.inputs.reset_updated()
         return NodeMsg.IDLE
 
@@ -287,26 +305,28 @@ class GetDictItemFromKey(Decorator):
         for child in self.children:
             child.tick()
 
-        if self.inputs.is_updated('key'):
+        if self.inputs.is_updated("key"):
             try:
-                self.outputs['value'] = self.options['dict'][self.inputs['key']]
+                self.outputs["value"] = self.options["dict"][self.inputs["key"]]
                 return NodeMsg.SUCCEEDED
             except KeyError:
-                self.logerr('Key %s is not in dict %s'
-                            % (self.inputs['key'], str(self.options['dict'])))
+                self.logerr(
+                    "Key %s is not in dict %s"
+                    % (self.inputs["key"], str(self.options["dict"]))
+                )
                 return NodeMsg.FAILED
         else:
-            if self.options['succeed_on_stale_data']:
+            if self.options["succeed_on_stale_data"]:
                 return NodeMsg.SUCCEEDED
             else:
-                self.loginfo('No new data since last tick!')
+                self.loginfo("No new data since last tick!")
                 return NodeMsg.RUNNING
 
     def _do_shutdown(self):
         pass
 
     def _do_reset(self):
-        self.outputs['value'] = None
+        self.outputs["value"] = None
         self.outputs.reset_updated()
         self._do_setup()
         self.inputs.reset_updated()
@@ -316,14 +336,15 @@ class GetDictItemFromKey(Decorator):
         return NodeMsg.IDLE
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'attr_type': type,
-             'attr_name': str,
-             'succeed_on_stale_data': bool},
-    inputs={'object': object},
-    outputs={'attr': OptionRef('attr_type')},
-    max_children=1))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={"attr_type": type, "attr_name": str, "succeed_on_stale_data": bool},
+        inputs={"object": object},
+        outputs={"attr": OptionRef("attr_type")},
+        max_children=1,
+    )
+)
 class GetAttr(Decorator):
     def _do_setup(self):
         for child in self.children:
@@ -331,7 +352,7 @@ class GetAttr(Decorator):
             # We have a child, so set object to an empty object. We're avoiding an
             # error this way because we know what we're doing, don't use this
             # gratuitously!
-            self.inputs['object'] = object()
+            self.inputs["object"] = object()
             self.inputs.reset_updated()
         return NodeMsg.IDLE
 
@@ -340,27 +361,30 @@ class GetAttr(Decorator):
         for child in self.children:
             child.tick()
 
-        if self.inputs.is_updated('object'):
+        if self.inputs.is_updated("object"):
             try:
-                self.outputs['attr'] = rgetattr(self.inputs['object'],
-                                                self.options['attr_name'])
+                self.outputs["attr"] = rgetattr(
+                    self.inputs["object"], self.options["attr_name"]
+                )
                 return NodeMsg.SUCCEEDED
             except AttributeError:
-                self.logerr('Object %s does not have attribute %s'
-                            % (self.inputs['object'], self.options['attr_name']))
+                self.logerr(
+                    "Object %s does not have attribute %s"
+                    % (self.inputs["object"], self.options["attr_name"])
+                )
                 return NodeMsg.FAILED
         else:
-            if self.options['succeed_on_stale_data']:
+            if self.options["succeed_on_stale_data"]:
                 return NodeMsg.SUCCEEDED
             else:
-                self.loginfo('No new data since last tick!')
+                self.loginfo("No new data since last tick!")
                 return NodeMsg.RUNNING
 
     def _do_shutdown(self):
         pass
 
     def _do_reset(self):
-        self.outputs['attr'] = None
+        self.outputs["attr"] = None
         self.outputs.reset_updated()
         self._do_setup()
         self.inputs.reset_updated()

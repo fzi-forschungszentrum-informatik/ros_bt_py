@@ -62,6 +62,7 @@ class RemoteTreeSlot(object):
     allowed to execute.
 
     """
+
     def __init__(self, publish_slot_state):
         """Initialize the `RemoteTreeSlot`
 
@@ -74,9 +75,8 @@ class RemoteTreeSlot(object):
         self.run_tree_gh = None
         self.latest_tree = None
         self.slot_state = RemoteSlotState(
-            tree_in_slot=False,
-            tree_running=False,
-            tree_finished=False)
+            tree_in_slot=False, tree_running=False, tree_finished=False
+        )
 
         self._lock = Lock()
 
@@ -98,22 +98,26 @@ class RemoteTreeSlot(object):
         """
         if self.run_tree_gh:
             # defaults to a message that has no bounds set
-            rospy.logwarn('Trying to evaluate utility when another tree is already loaded.')
+            rospy.logwarn(
+                "Trying to evaluate utility when another tree is already loaded."
+            )
             return EvaluateUtilityResponse()
 
         # shut down and clear TreeManager, just to be sure
-        self.tree_manager.control_execution(ControlTreeExecutionRequest(
-            command=ControlTreeExecutionRequest.SHUTDOWN))
+        self.tree_manager.control_execution(
+            ControlTreeExecutionRequest(command=ControlTreeExecutionRequest.SHUTDOWN)
+        )
         self.tree_manager.clear(None)
 
-        rospy.loginfo('Loading tree: %s' % str(request.tree))
+        rospy.loginfo("Loading tree: %s" % str(request.tree))
         res = self.tree_manager.load_tree(LoadTreeRequest(tree=request.tree))
         if not get_success(res):
             rospy.logerr(get_error_message(res))
             return EvaluateUtilityResponse()
 
         return EvaluateUtilityResponse(
-            utility=self.tree_manager.find_root().calculate_utility())
+            utility=self.tree_manager.find_root().calculate_utility()
+        )
 
     def run_tree_handler(self, goal_handle):
         """This is the `goal_callback` for the `RunTree` Action.
@@ -128,35 +132,42 @@ class RemoteTreeSlot(object):
         server (i.e. accepting/rejecting the goal, finishing it or
         accepting cancelling/other preemption)
         """
-        rospy.loginfo('Got RunTree goal')
+        rospy.loginfo("Got RunTree goal")
         if self.run_tree_gh:
-            rospy.loginfo('Rejected goal because we already have a tree loaded')
+            rospy.loginfo("Rejected goal because we already have a tree loaded")
             goal_handle.set_rejected()
             return
 
-        stop_res = self.tree_manager.control_execution(ControlTreeExecutionRequest(
-            command=ControlTreeExecutionRequest.SHUTDOWN))
+        stop_res = self.tree_manager.control_execution(
+            ControlTreeExecutionRequest(command=ControlTreeExecutionRequest.SHUTDOWN)
+        )
         if not get_success(stop_res):
             rospy.loginfo(
-                'Rejected goal because shutting down the old tree failed with error %s' %
-                get_error_message(stop_res))
-            goal_handle.set_rejected(text=('Failed to shutdown old tree: %s' %
-                                           get_error_message(stop_res)))
+                "Rejected goal because shutting down the old tree failed with error %s"
+                % get_error_message(stop_res)
+            )
+            goal_handle.set_rejected(
+                text=("Failed to shutdown old tree: %s" % get_error_message(stop_res))
+            )
             return
 
         res = self.tree_manager.load_tree(
-            LoadTreeRequest(tree=goal_handle.get_goal().tree))
+            LoadTreeRequest(tree=goal_handle.get_goal().tree)
+        )
         if not get_success(res):
             rospy.loginfo(
-                'Rejected goal because loading the tree failed with error %s' %
-                get_error_message(res))
-            goal_handle.set_rejected(text=('Failed to load tree: %s' % get_error_message(res)))
+                "Rejected goal because loading the tree failed with error %s"
+                % get_error_message(res)
+            )
+            goal_handle.set_rejected(
+                text=("Failed to load tree: %s" % get_error_message(res))
+            )
             return
 
         self.run_tree_gh = goal_handle
         self.latest_tree = None
 
-        rospy.loginfo('Successfully loaded tree')
+        rospy.loginfo("Successfully loaded tree")
         self.slot_state.tree_in_slot = True
         self.slot_state.tree_finished = False
         self.publish_slot_state(self.slot_state)
@@ -170,34 +181,41 @@ class RemoteTreeSlot(object):
 
         """
         if not self.run_tree_gh:
-            rospy.logdebug('Received a ControlTreeExecution request with no tree loaded. '
-                           'Nothing to do, succeeding.')
+            rospy.logdebug(
+                "Received a ControlTreeExecution request with no tree loaded. "
+                "Nothing to do, succeeding."
+            )
             return ControlTreeExecutionResponse(success=True)
 
         # No matter what happens, the tree is not finished.
         self.slot_state.tree_finished = False
 
         if request.command not in [
-                ControlTreeExecutionRequest.TICK_ONCE,
-                ControlTreeExecutionRequest.TICK_UNTIL_RESULT,
-                ControlTreeExecutionRequest.STOP,
-                ControlTreeExecutionRequest.RESET,
-                ControlTreeExecutionRequest.SHUTDOWN]:
-            rospy.loginfo('Received invalid command: ' + str(request.command))
+            ControlTreeExecutionRequest.TICK_ONCE,
+            ControlTreeExecutionRequest.TICK_UNTIL_RESULT,
+            ControlTreeExecutionRequest.STOP,
+            ControlTreeExecutionRequest.RESET,
+            ControlTreeExecutionRequest.SHUTDOWN,
+        ]:
+            rospy.loginfo("Received invalid command: " + str(request.command))
             return ControlTreeExecutionResponse(
                 success=False,
-                error_message=('RemoteTreeSlot does not allow ControlTreeExecution command "%s"'
-                               % request.command))
-        rospy.loginfo('Sending command %d to tree', request.command)
+                error_message=(
+                    'RemoteTreeSlot does not allow ControlTreeExecution command "%s"'
+                    % request.command
+                ),
+            )
+        rospy.loginfo("Sending command %d to tree", request.command)
         res = self.tree_manager.control_execution(request)
-        rospy.loginfo('ControlTreeExec result: %s', res)
+        rospy.loginfo("ControlTreeExec result: %s", res)
         if not get_success(res):
             return res
 
         if request.command in [
-                ControlTreeExecutionRequest.TICK_ONCE,
-                ControlTreeExecutionRequest.TICK_UNTIL_RESULT]:
-            rospy.loginfo('started ticking loaded tree')
+            ControlTreeExecutionRequest.TICK_ONCE,
+            ControlTreeExecutionRequest.TICK_UNTIL_RESULT,
+        ]:
+            rospy.loginfo("started ticking loaded tree")
             self.slot_state.tree_running = True
         else:
             # combined with the if above, hitting this else means
@@ -221,15 +239,24 @@ class RemoteTreeSlot(object):
         accepting cancelling/other preemption)
 
         """
-        if self.run_tree_gh and self.run_tree_gh.get_goal_id() == goal_handle.get_goal_id():
-            rospy.logdebug('Received cancel request for current goal, '
-                           'stopping and clearing tree')
+        if (
+            self.run_tree_gh
+            and self.run_tree_gh.get_goal_id() == goal_handle.get_goal_id()
+        ):
+            rospy.logdebug(
+                "Received cancel request for current goal, "
+                "stopping and clearing tree"
+            )
 
-            stop_res = self.tree_manager.control_execution(ControlTreeExecutionRequest(
-                command=ControlTreeExecutionRequest.SHUTDOWN))
+            stop_res = self.tree_manager.control_execution(
+                ControlTreeExecutionRequest(
+                    command=ControlTreeExecutionRequest.SHUTDOWN
+                )
+            )
             if not get_success(stop_res):
-                raise Exception('Failed to stop tree in RemoteTreeSlot: %s'
-                                % get_success(stop_res))
+                raise Exception(
+                    "Failed to stop tree in RemoteTreeSlot: %s" % get_success(stop_res)
+                )
 
             self.tree_manager.clear(None)
 
@@ -240,7 +267,9 @@ class RemoteTreeSlot(object):
 
             with self._lock:
                 if self.latest_tree:
-                    goal_handle.set_canceled(result=RunTreeResult(final_tree=self.latest_tree))
+                    goal_handle.set_canceled(
+                        result=RunTreeResult(final_tree=self.latest_tree)
+                    )
                 else:
                     goal_handle.set_canceled()
             # Remove existing goal handle and empty latest_tree
@@ -257,9 +286,10 @@ class RemoteTreeSlot(object):
             for node in self.latest_tree.nodes:
                 if node.name == self.latest_tree.root_name:
                     if node.state in [
-                            NodeMsg.SUCCEEDED,
-                            NodeMsg.FAILED,
-                            NodeMsg.SHUTDOWN]:
+                        NodeMsg.SUCCEEDED,
+                        NodeMsg.FAILED,
+                        NodeMsg.SHUTDOWN,
+                    ]:
                         # We got a result, send it back
                         self.slot_state.tree_running = False
                         self.slot_state.tree_finished = True
@@ -271,8 +301,9 @@ class RemoteTreeSlot(object):
                         # the TreeManager. Is that okay, or do we need
                         # to figure out a way aruond that deadlock?
 
-                        self.run_tree_gh.set_succeeded(result=RunTreeResult(
-                            final_tree=self.latest_tree))
+                        self.run_tree_gh.set_succeeded(
+                            result=RunTreeResult(final_tree=self.latest_tree)
+                        )
                         self.run_tree_gh = None
                         self.latest_tree = None
 

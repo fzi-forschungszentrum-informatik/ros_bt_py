@@ -32,18 +32,26 @@ import unittest
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py.exceptions import BehaviorTreeException
 from ros_bt_py.testing_nodes.migrations_test_nodes import (
-    NodeWithoutVersion, NodeWithVersionButWithoutMigration, NodeWithoutMigrationFunction,
-    NodeWithoutMigrationToFirstVersion, NodeWithoutVersionAndWithFirstMigration,
-    NodeWithBrokenMigrationPath, NodeWithIdenticalVersions, NodeWithWorkingMigrations,
+    NodeWithoutVersion,
+    NodeWithVersionButWithoutMigration,
+    NodeWithoutMigrationFunction,
+    NodeWithoutMigrationToFirstVersion,
+    NodeWithoutVersionAndWithFirstMigration,
+    NodeWithBrokenMigrationPath,
+    NodeWithIdenticalVersions,
+    NodeWithWorkingMigrations,
     NodeWithWorkingMigrationsChangeType,
-    NodeWithWorkingMigrationsThatChangesTree, NodeWithGetOptionException,
-    NodeWithAddOptionException, NodeWithAddInputException, NodeWithAddOutputException,
-    NodeWithOptionrefException
+    NodeWithWorkingMigrationsThatChangesTree,
+    NodeWithGetOptionException,
+    NodeWithAddOptionException,
+    NodeWithAddInputException,
+    NodeWithAddOutputException,
+    NodeWithOptionrefException,
 )
 
 from ros_bt_py.testing_nodes.migrations_test_nodes_without_migrations import (
     NodeWithoutVersionAndWithoutMigrationsModule,
-    NodeWithVersionAndWithoutMigrationsModule
+    NodeWithVersionAndWithoutMigrationsModule,
 )
 
 
@@ -51,17 +59,22 @@ class TestMigrationsTestNodes(unittest.TestCase):
     def testTestNodes(self):
         # do the "standard" tests
         list_of_nodes = [
-            NodeWithoutVersion(), NodeWithVersionButWithoutMigration(),
-            NodeWithoutMigrationFunction(), NodeWithoutMigrationToFirstVersion(),
-            NodeWithoutVersionAndWithFirstMigration(), NodeWithBrokenMigrationPath(),
+            NodeWithoutVersion(),
+            NodeWithVersionButWithoutMigration(),
+            NodeWithoutMigrationFunction(),
+            NodeWithoutMigrationToFirstVersion(),
+            NodeWithoutVersionAndWithFirstMigration(),
+            NodeWithBrokenMigrationPath(),
             NodeWithIdenticalVersions(),
-            NodeWithWorkingMigrations({'valid_option': 42,
-                                       'type_option': int}),
-            NodeWithWorkingMigrationsThatChangesTree(), NodeWithGetOptionException(),
-            NodeWithAddOptionException({'valid_option': 42}), NodeWithAddInputException(),
-            NodeWithAddOutputException(), NodeWithOptionrefException(),
+            NodeWithWorkingMigrations({"valid_option": 42, "type_option": int}),
+            NodeWithWorkingMigrationsThatChangesTree(),
+            NodeWithGetOptionException(),
+            NodeWithAddOptionException({"valid_option": 42}),
+            NodeWithAddInputException(),
+            NodeWithAddOutputException(),
+            NodeWithOptionrefException(),
             NodeWithoutVersionAndWithoutMigrationsModule(),
-            NodeWithVersionAndWithoutMigrationsModule()
+            NodeWithVersionAndWithoutMigrationsModule(),
         ]
         for node in list_of_nodes:
             node.setup()
@@ -78,9 +91,9 @@ class TestMigrationsTestNodes(unittest.TestCase):
             self.assertEqual(node.state, NodeMsg.SHUTDOWN)
 
     def testTestNodeWithInput(self):
-        node = NodeWithWorkingMigrationsChangeType({'change_type': 'hi'})
+        node = NodeWithWorkingMigrationsChangeType({"change_type": "hi"})
         node.setup()
-        node.inputs['change_type'] = 'hi'
+        node.inputs["change_type"] = "hi"
         node.tick()
         self.assertEqual(node.state, NodeMsg.SUCCEEDED)
 

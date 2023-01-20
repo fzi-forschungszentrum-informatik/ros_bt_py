@@ -55,29 +55,32 @@ class TestDebugManager(unittest.TestCase):
         self.manager = DebugManager()
         self.manager._debug_settings_msg.collect_performance_data = True
 
-        node = PassthroughNode(name='foo',
-                               options={'passthrough_type': int})
+        node = PassthroughNode(name="foo", options={"passthrough_type": int})
         node.setup()
 
         starting_recursion_depth = len(inspect.stack())
         with self.manager.report_tick(node):
             time.sleep(0.01)
 
-        self.assertEqual(self.manager.get_debug_info_msg().max_recursion_depth,
-                         sys.getrecursionlimit())
+        self.assertEqual(
+            self.manager.get_debug_info_msg().max_recursion_depth,
+            sys.getrecursionlimit(),
+        )
         # Plus one for the context self.manager, and another one for the contextlib decorator
-        self.assertEqual(self.manager.get_debug_info_msg().current_recursion_depth,
-                         starting_recursion_depth + 2)
+        self.assertEqual(
+            self.manager.get_debug_info_msg().current_recursion_depth,
+            starting_recursion_depth + 2,
+        )
 
     def testStep(self):
         self.manager = DebugManager()
         self.manager._debug_settings_msg.single_step = True
 
-        self.node = PassthroughNode(name='foo',
-                                    options={'passthrough_type': int},
-                                    debug_manager=self.manager)
+        self.node = PassthroughNode(
+            name="foo", options={"passthrough_type": int}, debug_manager=self.manager
+        )
         self.node.setup()
-        self.node.inputs['in'] = 1
+        self.node.inputs["in"] = 1
 
         def do_stuff():
             self.node.tick()
@@ -88,14 +91,14 @@ class TestDebugManager(unittest.TestCase):
 
         # Thread should be blocked on first continue -> the output does not
         # have a value yet.
-        self.assertEqual(self.node.outputs['out'], None)
+        self.assertEqual(self.node.outputs["out"], None)
         self.assertEqual(self.node.state, NodeMsg.DEBUG_PRE_TICK)
         self.assertTrue(test_thread.isAlive())
         self.manager.continue_debug()
         time.sleep(0.05)
 
         # Now out should be changed
-        self.assertEqual(self.node.outputs['out'], 1)
+        self.assertEqual(self.node.outputs["out"], 1)
         self.assertEqual(self.node.state, NodeMsg.SUCCEEDED)
         # Should still be waiting for second continue -> join won't work
         test_thread.join(0.01)
@@ -122,7 +125,8 @@ class TestDebugManager(unittest.TestCase):
     def testPublishDebugSettings(self):
         self.assertIsNone(self.debug_settings_msg)
         manager = DebugManager(
-            debug_settings_publish_callback=self._publish_debug_settings_callback)
+            debug_settings_publish_callback=self._publish_debug_settings_callback
+        )
         manager.set_execution_mode(
             single_step=False,
             collect_performance_data=False,
@@ -135,12 +139,14 @@ class TestDebugManager(unittest.TestCase):
     def testModifyBreakpoints(self):
         self.assertIsNone(self.debug_settings_msg)
         manager = DebugManager(
-            debug_settings_publish_callback=self._publish_debug_settings_callback)
+            debug_settings_publish_callback=self._publish_debug_settings_callback
+        )
         self.assertEqual(manager.modify_breakpoints(), [])
         breakpoints = ["first", "second", "third", "fourth"]
         self.assertEqual(manager.modify_breakpoints(add=breakpoints), breakpoints)
-        self.assertEqual(manager.modify_breakpoints(
-            remove=["second", "third"]), ["first", "fourth"])
+        self.assertEqual(
+            manager.modify_breakpoints(remove=["second", "third"]), ["first", "fourth"]
+        )
         self.assertEqual(manager.modify_breakpoints(remove_all=True), [])
 
     def testReportWithBreakpoint(self):
@@ -148,15 +154,16 @@ class TestDebugManager(unittest.TestCase):
         self.assertIsNone(self.debug_info_msg)
         manager = DebugManager(
             debug_info_publish_callback=self._publish_debug_info_callback,
-            debug_settings_publish_callback=self._publish_debug_settings_callback)
+            debug_settings_publish_callback=self._publish_debug_settings_callback,
+        )
 
-        self.node = PassthroughNode(name='foo',
-                                    options={'passthrough_type': int},
-                                    debug_manager=manager)
+        self.node = PassthroughNode(
+            name="foo", options={"passthrough_type": int}, debug_manager=manager
+        )
         self.node.setup()
-        self.node.inputs['in'] = 1
+        self.node.inputs["in"] = 1
 
-        breakpoints = ['foo']
+        breakpoints = ["foo"]
         self.assertEqual(manager.modify_breakpoints(add=breakpoints), breakpoints)
         time.sleep(0.01)
         self.assertIsNotNone(self.debug_settings_msg)
@@ -171,14 +178,14 @@ class TestDebugManager(unittest.TestCase):
 
         # Thread should be blocked on first continue -> the output does not
         # have a value yet.
-        self.assertEqual(self.node.outputs['out'], None)
+        self.assertEqual(self.node.outputs["out"], None)
         self.assertEqual(self.node.state, NodeMsg.DEBUG_PRE_TICK)
         self.assertTrue(test_thread.isAlive())
         manager.continue_debug()
         time.sleep(0.05)
 
         # Now out should be changed
-        self.assertEqual(self.node.outputs['out'], 1)
+        self.assertEqual(self.node.outputs["out"], 1)
         self.assertEqual(self.node.state, NodeMsg.SUCCEEDED)
         # Should still be waiting for second continue -> join won't work
         test_thread.join(0.01)
@@ -202,25 +209,27 @@ class TestDebugManager(unittest.TestCase):
     def testAddSubtreeInfoWithoutPublishSubtrees(self):
         manager = DebugManager()
         mock_subtree_msg = NodeMsg()
-        mock_subtree_msg.name = 'foo'
+        mock_subtree_msg.name = "foo"
         self.assertRaises(
-            BehaviorTreeException,
-            manager.add_subtree_info,
-            'bar',
-            mock_subtree_msg)
+            BehaviorTreeException, manager.add_subtree_info, "bar", mock_subtree_msg
+        )
 
     def testDebugManagerAndSubtree(self):
         self.assertIsNone(self.debug_settings_msg)
         self.assertIsNone(self.debug_info_msg)
         debug_manager = DebugManager(
             debug_info_publish_callback=self._publish_debug_info_callback,
-            debug_settings_publish_callback=self._publish_debug_settings_callback)
-        debug_manager.set_execution_mode(single_step=False,
-                                         collect_performance_data=False, publish_subtrees=True,
-                                         collect_node_diagnostics=False)
+            debug_settings_publish_callback=self._publish_debug_settings_callback,
+        )
+        debug_manager.set_execution_mode(
+            single_step=False,
+            collect_performance_data=False,
+            publish_subtrees=True,
+            collect_node_diagnostics=False,
+        )
         subtree_options = {
-            'subtree_path': 'package://ros_bt_py/etc/trees/test.yaml',
-            'use_io_nodes': False
+            "subtree_path": "package://ros_bt_py/etc/trees/test.yaml",
+            "use_io_nodes": False,
         }
         subtree = Subtree(
             options=subtree_options,
@@ -230,7 +239,8 @@ class TestDebugManager(unittest.TestCase):
         subtree.setup()
         self.assertEqual(subtree.state, NodeMsg.IDLE)
         self.assertEqual(
-            subtree.debug_manager.subtrees['Subtree.Subtree'], subtree.manager.to_msg())
+            subtree.debug_manager.subtrees["Subtree.Subtree"], subtree.manager.to_msg()
+        )
 
         self.assertEqual(subtree.tick(), NodeMsg.SUCCEEDED)
         self.assertEqual(subtree.untick(), NodeMsg.IDLE)
@@ -257,9 +267,9 @@ class TestDebugManager(unittest.TestCase):
 
         seq = Sequence(debug_manager=manager)
 
-        node = PassthroughNode(name='foo',
-                               options={'passthrough_type': int},
-                               debug_manager=manager)
+        node = PassthroughNode(
+            name="foo", options={"passthrough_type": int}, debug_manager=manager
+        )
 
         seq.add_child(node)
         node.setup()
@@ -267,12 +277,12 @@ class TestDebugManager(unittest.TestCase):
         time.sleep(0.05)
 
         self.assertEqual(len(self.diagnostics_messages), 2)
-        self.assertEqual(self.diagnostics_messages[0].path, ['Sequence', 'foo'])
+        self.assertEqual(self.diagnostics_messages[0].path, ["Sequence", "foo"])
         node.shutdown()
         self.assertEqual(len(self.diagnostics_messages), 4)
 
         self.diagnostics_messages = []
-        node.inputs['in'] = 1
+        node.inputs["in"] = 1
         seq.setup()
         self.assertEqual(len(self.diagnostics_messages), 4)
         seq.tick()

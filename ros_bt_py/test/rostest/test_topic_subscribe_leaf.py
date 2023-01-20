@@ -29,6 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
 import unittest
+
 try:
     import mock
 except ImportError:
@@ -42,7 +43,7 @@ from ros_bt_py_msgs.msg import Node as NodeMsg, UtilityBounds
 from ros_bt_py.node_config import NodeConfig
 from ros_bt_py.nodes.topic import TopicSubscriber, TopicMemorySubscriber
 
-PKG = 'ros_bt_py'
+PKG = "ros_bt_py"
 
 
 class TestTopicSubscriberLeaf(unittest.TestCase):
@@ -50,104 +51,113 @@ class TestTopicSubscriberLeaf(unittest.TestCase):
     Test the topic subscriber nodes.
     We call the callbacks directly instead of playing with ros asynchronous communication.
     """
+
     def setUp(self):
-        self.subscriber_leaf = TopicSubscriber(options={
-            'topic_name': '/numbers_out',
-            'topic_type': Int32
-        })
+        self.subscriber_leaf = TopicSubscriber(
+            options={"topic_name": "/numbers_out", "topic_type": Int32}
+        )
         self.subscriber_leaf.setup()
-        rospy.wait_for_message('/ready', Int32)
+        rospy.wait_for_message("/ready", Int32)
 
     def tearDown(self):
         self.subscriber_leaf.shutdown()
 
     def testReceivesNumber(self):
-        self.assertIsNone(self.subscriber_leaf.outputs['message'])
+        self.assertIsNone(self.subscriber_leaf.outputs["message"])
 
         self.subscriber_leaf.tick()
         # Should not have received any messages yet
         self.assertEqual(self.subscriber_leaf.state, NodeMsg.RUNNING)
         self.assertIsNotNone(self.subscriber_leaf._subscriber)
-        self.assertEqual(self.subscriber_leaf._subscriber.callback,
-                         self.subscriber_leaf._callback)
+        self.assertEqual(
+            self.subscriber_leaf._subscriber.callback, self.subscriber_leaf._callback
+        )
 
         self.subscriber_leaf._callback(Int32(8))
         self.subscriber_leaf.tick()
         self.assertEqual(self.subscriber_leaf.state, NodeMsg.SUCCEEDED)
-        self.assertEqual(self.subscriber_leaf.outputs['message'].data, 8)
+        self.assertEqual(self.subscriber_leaf.outputs["message"].data, 8)
 
         self.assertEqual(self.subscriber_leaf.untick(), NodeMsg.IDLE)
 
         self.subscriber_leaf.reset()
         self.assertEqual(self.subscriber_leaf.state, NodeMsg.IDLE)
-        self.assertEqual(self.subscriber_leaf.outputs['message'], None)
+        self.assertEqual(self.subscriber_leaf.outputs["message"], None)
 
         self.subscriber_leaf._callback(Int32(9))
         self.subscriber_leaf.tick()
         # Same as before
         self.assertEqual(self.subscriber_leaf.state, NodeMsg.SUCCEEDED)
-        self.assertEqual(self.subscriber_leaf.outputs['message'].data, 9)
+        self.assertEqual(self.subscriber_leaf.outputs["message"].data, 9)
 
     def testCalculateUtility(self):
-        expected_bounds = UtilityBounds(can_execute=True,
-                                        has_lower_bound_success=True,
-                                        has_upper_bound_success=True,
-                                        has_lower_bound_failure=True,
-                                        has_upper_bound_failure=True)
+        expected_bounds = UtilityBounds(
+            can_execute=True,
+            has_lower_bound_success=True,
+            has_upper_bound_success=True,
+            has_lower_bound_failure=True,
+            has_upper_bound_failure=True,
+        )
 
         self.assertEqual(self.subscriber_leaf.calculate_utility(), expected_bounds)
 
     def testCalculateUtilityWithoutCorrectTopic(self):
-        expected_bounds = UtilityBounds(can_execute=False,
-                                        has_lower_bound_success=False,
-                                        has_upper_bound_success=False,
-                                        has_lower_bound_failure=False,
-                                        has_upper_bound_failure=False)
+        expected_bounds = UtilityBounds(
+            can_execute=False,
+            has_lower_bound_success=False,
+            has_upper_bound_success=False,
+            has_lower_bound_failure=False,
+            has_upper_bound_failure=False,
+        )
 
-        self.subscriber_leaf.options['topic_name'] = '/topic/does/not/exist'
+        self.subscriber_leaf.options["topic_name"] = "/topic/does/not/exist"
         self.assertEqual(self.subscriber_leaf.calculate_utility(), expected_bounds)
 
-    @mock.patch('ros_bt_py.nodes.topic.rospy.Time.now')
+    @mock.patch("ros_bt_py.nodes.topic.rospy.Time.now")
     def testMemorySubscriber(self, mock_time_now):
-        memory_subscriber_leaf = TopicMemorySubscriber(options={
-            'topic_name': '/numbers_out',
-            'topic_type': Int32,
-            'memory_delay': 100.
-        })
+        memory_subscriber_leaf = TopicMemorySubscriber(
+            options={
+                "topic_name": "/numbers_out",
+                "topic_type": Int32,
+                "memory_delay": 100.0,
+            }
+        )
         memory_subscriber_leaf.setup()
 
         self.assertEqual(memory_subscriber_leaf.state, NodeMsg.IDLE)
-        self.assertIsNone(memory_subscriber_leaf.outputs['message'])
+        self.assertIsNone(memory_subscriber_leaf.outputs["message"])
         self.assertIsNotNone(memory_subscriber_leaf._subscriber)
-        self.assertEqual(memory_subscriber_leaf._subscriber.callback,
-                         memory_subscriber_leaf._callback)
+        self.assertEqual(
+            memory_subscriber_leaf._subscriber.callback,
+            memory_subscriber_leaf._callback,
+        )
 
         memory_subscriber_leaf.tick()
         # Should not have received any messages yet
         self.assertEqual(memory_subscriber_leaf.state, NodeMsg.FAILED)
 
         # Should receive a message at time t=0 and tick 1 second later
-        mock_time_now.return_value = rospy.Time.from_seconds(0.)
+        mock_time_now.return_value = rospy.Time.from_seconds(0.0)
         memory_subscriber_leaf._callback(Int32(8))
-        mock_time_now.return_value = rospy.Time.from_seconds(1.)
+        mock_time_now.return_value = rospy.Time.from_seconds(1.0)
         memory_subscriber_leaf.tick()
 
         self.assertEqual(memory_subscriber_leaf.state, NodeMsg.SUCCEEDED)
-        self.assertEqual(memory_subscriber_leaf.outputs['message'].data, 8)
+        self.assertEqual(memory_subscriber_leaf.outputs["message"].data, 8)
 
         # Should succeed again with the same message
         memory_subscriber_leaf.tick()
         self.assertEqual(memory_subscriber_leaf.state, NodeMsg.SUCCEEDED)
-        self.assertEqual(memory_subscriber_leaf.outputs['message'].data, 8)
+        self.assertEqual(memory_subscriber_leaf.outputs["message"].data, 8)
 
         # Should succeed again with a new message
         memory_subscriber_leaf._callback(Int32(3))
         memory_subscriber_leaf.tick()
         self.assertEqual(memory_subscriber_leaf.state, NodeMsg.SUCCEEDED)
-        self.assertEqual(memory_subscriber_leaf.outputs['message'].data, 3)
+        self.assertEqual(memory_subscriber_leaf.outputs["message"].data, 3)
 
         # Should fail if the message is too old
-        mock_time_now.return_value = rospy.Time.from_seconds(105.)
+        mock_time_now.return_value = rospy.Time.from_seconds(105.0)
         memory_subscriber_leaf.tick()
         self.assertEqual(memory_subscriber_leaf.state, NodeMsg.FAILED)
 
@@ -156,7 +166,7 @@ class TestTopicSubscriberLeaf(unittest.TestCase):
         # Standard behavior
         memory_subscriber_leaf.reset()
         self.assertEqual(memory_subscriber_leaf.state, NodeMsg.IDLE)
-        self.assertEqual(memory_subscriber_leaf.outputs['message'], None)
+        self.assertEqual(memory_subscriber_leaf.outputs["message"], None)
 
         self.assertEqual(memory_subscriber_leaf.shutdown(), NodeMsg.SHUTDOWN)
 
@@ -173,37 +183,50 @@ class TestTopicSubscriberLeaf(unittest.TestCase):
         self.assertEqual(memory_subscriber_leaf.shutdown(), NodeMsg.SHUTDOWN)
 
     def testCalculateUtilityMemorySubscriber(self):
-        memory_subscriber_leaf = TopicMemorySubscriber(options={
-            'topic_name': '/numbers_out',
-            'topic_type': Int32,
-            'memory_delay': 100.
-        })
-        expected_bounds = UtilityBounds(can_execute=True,
-                                        has_lower_bound_success=True,
-                                        has_upper_bound_success=True,
-                                        has_lower_bound_failure=True,
-                                        has_upper_bound_failure=True)
+        memory_subscriber_leaf = TopicMemorySubscriber(
+            options={
+                "topic_name": "/numbers_out",
+                "topic_type": Int32,
+                "memory_delay": 100.0,
+            }
+        )
+        expected_bounds = UtilityBounds(
+            can_execute=True,
+            has_lower_bound_success=True,
+            has_upper_bound_success=True,
+            has_lower_bound_failure=True,
+            has_upper_bound_failure=True,
+        )
         self.assertEqual(memory_subscriber_leaf.calculate_utility(), expected_bounds)
 
     def testCalculateUtilityWithoutCorrectTopicMemorySubscriber(self):
-        memory_subscriber_leaf = TopicMemorySubscriber(options={
-            'topic_name': '/topic/does/not/exist',
-            'topic_type': Int32,
-            'memory_delay': 100.
-        })
-        expected_bounds = UtilityBounds(can_execute=False,
-                                        has_lower_bound_success=False,
-                                        has_upper_bound_success=False,
-                                        has_lower_bound_failure=False,
-                                        has_upper_bound_failure=False)
+        memory_subscriber_leaf = TopicMemorySubscriber(
+            options={
+                "topic_name": "/topic/does/not/exist",
+                "topic_type": Int32,
+                "memory_delay": 100.0,
+            }
+        )
+        expected_bounds = UtilityBounds(
+            can_execute=False,
+            has_lower_bound_success=False,
+            has_upper_bound_success=False,
+            has_lower_bound_failure=False,
+            has_upper_bound_failure=False,
+        )
         self.assertEqual(memory_subscriber_leaf.calculate_utility(), expected_bounds)
 
 
-if __name__ == '__main__':
-    rospy.init_node('test_topic_subscribe_leaf')
+if __name__ == "__main__":
+    rospy.init_node("test_topic_subscribe_leaf")
     import rostest
     import sys
     import os
-    os.environ['COVERAGE_FILE'] = '%s.%s.coverage' % (PKG, 'test_topic_subscribe_leaf')
-    rostest.rosrun(PKG, 'test_topic_subscribe_leaf', TestTopicSubscriberLeaf,
-                   sysargs=sys.argv + ['--cov'])
+
+    os.environ["COVERAGE_FILE"] = "%s.%s.coverage" % (PKG, "test_topic_subscribe_leaf")
+    rostest.rosrun(
+        PKG,
+        "test_topic_subscribe_leaf",
+        TestTopicSubscriberLeaf,
+        sysargs=sys.argv + ["--cov"],
+    )

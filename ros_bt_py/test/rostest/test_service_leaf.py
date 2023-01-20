@@ -39,27 +39,31 @@ from ros_bt_py_msgs.msg import Node as NodeMsg, UtilityBounds
 from ros_bt_py.node_config import NodeConfig
 from ros_bt_py.nodes.service import Service, WaitForService, ServiceInput
 
-PKG = 'ros_bt_py'
+PKG = "ros_bt_py"
 
 
 class TestServiceLeaf(unittest.TestCase):
     def setUp(self):
-        self.delay_service_leaf = Service(options={
-            'service_type': SetBool,
-            'request_type': SetBoolRequest,
-            'response_type': SetBoolResponse,
-            'service_name': 'delay_1s_if_true',
-            'wait_for_service_seconds': 0.5,
-            'wait_for_response_seconds': 1.5
-        })
+        self.delay_service_leaf = Service(
+            options={
+                "service_type": SetBool,
+                "request_type": SetBoolRequest,
+                "response_type": SetBoolResponse,
+                "service_name": "delay_1s_if_true",
+                "wait_for_service_seconds": 0.5,
+                "wait_for_response_seconds": 1.5,
+            }
+        )
         self.delay_service_leaf.setup()
 
-        self.delay_service_input_leaf = ServiceInput(options={
-            'service_type': SetBool,
-            'request_type': SetBoolRequest,
-            'response_type': SetBoolResponse,
-            'wait_for_response_seconds': 1.5
-        })
+        self.delay_service_input_leaf = ServiceInput(
+            options={
+                "service_type": SetBool,
+                "request_type": SetBoolRequest,
+                "response_type": SetBoolResponse,
+                "wait_for_response_seconds": 1.5,
+            }
+        )
         self.delay_service_input_leaf.setup()
 
     def tearDown(self):
@@ -67,11 +71,13 @@ class TestServiceLeaf(unittest.TestCase):
         self.delay_service_input_leaf.shutdown()
 
     def testWaitForService(self):
-        wait_for_service = WaitForService(options={
-            'service_type': SetBool,
-            'service_name': 'delay_1s_if_true',
-            'wait_for_service_seconds': 0.5,
-        })
+        wait_for_service = WaitForService(
+            options={
+                "service_type": SetBool,
+                "service_name": "delay_1s_if_true",
+                "wait_for_service_seconds": 0.5,
+            }
+        )
 
         wait_for_service.setup()
 
@@ -93,11 +99,13 @@ class TestServiceLeaf(unittest.TestCase):
         self.assertEqual(wait_for_service.state, NodeMsg.SHUTDOWN)
 
     def testWaitForServiceNotAvailable(self):
-        wait_for_service = WaitForService(options={
-            'service_type': SetBool,
-            'service_name': 'this_service_is_not_available',
-            'wait_for_service_seconds': 0.1,
-        })
+        wait_for_service = WaitForService(
+            options={
+                "service_type": SetBool,
+                "service_name": "this_service_is_not_available",
+                "wait_for_service_seconds": 0.1,
+            }
+        )
 
         wait_for_service.setup()
 
@@ -110,7 +118,7 @@ class TestServiceLeaf(unittest.TestCase):
         self.assertEqual(wait_for_service.state, NodeMsg.FAILED)
 
     def noDelayServiceCall(self, node):
-        node.inputs['request'] = SetBoolRequest(data=False)
+        node.inputs["request"] = SetBoolRequest(data=False)
         sleeps = 0
         while True:
             node.tick()
@@ -125,29 +133,31 @@ class TestServiceLeaf(unittest.TestCase):
 
         # Ticking again should start a new service call i.e. the Leaf should be
         # RUNNING again
-        node.inputs['request'] = SetBoolRequest(data=True)
+        node.inputs["request"] = SetBoolRequest(data=True)
         node.tick()
         self.assertEqual(node.state, NodeMsg.RUNNING)
 
         # no need to wait for the result here, we test that elsewhere
         node.untick()
 
-        expected_bounds = UtilityBounds(can_execute=True,
-                                        has_lower_bound_success=True,
-                                        has_upper_bound_success=True,
-                                        has_lower_bound_failure=True,
-                                        has_upper_bound_failure=True)
+        expected_bounds = UtilityBounds(
+            can_execute=True,
+            has_lower_bound_success=True,
+            has_upper_bound_success=True,
+            has_lower_bound_failure=True,
+            has_upper_bound_failure=True,
+        )
         self.assertEqual(node.calculate_utility(), expected_bounds)
 
     def testNoDelayServiceCall(self):
         # No delay
         self.noDelayServiceCall(self.delay_service_leaf)
 
-        self.delay_service_input_leaf.inputs['service_name'] = 'delay_1s_if_true'
+        self.delay_service_input_leaf.inputs["service_name"] = "delay_1s_if_true"
         self.noDelayServiceCall(self.delay_service_input_leaf)
 
     def delayServiceCall(self, node):
-        node.inputs['request'] = SetBoolRequest(data=True)
+        node.inputs["request"] = SetBoolRequest(data=True)
 
         node.tick()
         self.assertEqual(node.state, NodeMsg.RUNNING)
@@ -163,11 +173,11 @@ class TestServiceLeaf(unittest.TestCase):
     def testDelayServiceCall(self):
         self.delayServiceCall(self.delay_service_leaf)
 
-        self.delay_service_input_leaf.inputs['service_name'] = 'delay_1s_if_true'
+        self.delay_service_input_leaf.inputs["service_name"] = "delay_1s_if_true"
         self.delayServiceCall(self.delay_service_input_leaf)
 
     def crashServiceCall(self, node):
-        node.inputs['request'] = SetBoolRequest(data=True)
+        node.inputs["request"] = SetBoolRequest(data=True)
         node.tick()
         self.assertEqual(node.state, NodeMsg.RUNNING)
 
@@ -176,31 +186,35 @@ class TestServiceLeaf(unittest.TestCase):
         self.assertEqual(node.state, NodeMsg.FAILED)
 
     def testCrashServiceCall(self):
-        crash_service_leaf = Service(options={
-            'service_type': SetBool,
-            'request_type': SetBoolRequest,
-            'response_type': SetBoolResponse,
-            'service_name': 'crash',
-            'wait_for_service_seconds': 0.5,
-            'wait_for_response_seconds': 1.5
-        })
+        crash_service_leaf = Service(
+            options={
+                "service_type": SetBool,
+                "request_type": SetBoolRequest,
+                "response_type": SetBoolResponse,
+                "service_name": "crash",
+                "wait_for_service_seconds": 0.5,
+                "wait_for_response_seconds": 1.5,
+            }
+        )
         crash_service_leaf.setup()
 
-        crash_service_input_leaf = ServiceInput(options={
-            'service_type': SetBool,
-            'request_type': SetBoolRequest,
-            'response_type': SetBoolResponse,
-            'wait_for_response_seconds': 1.5
-        })
+        crash_service_input_leaf = ServiceInput(
+            options={
+                "service_type": SetBool,
+                "request_type": SetBoolRequest,
+                "response_type": SetBoolResponse,
+                "wait_for_response_seconds": 1.5,
+            }
+        )
         crash_service_input_leaf.setup()
 
-        crash_service_input_leaf.inputs['service_name'] = 'crash'
+        crash_service_input_leaf.inputs["service_name"] = "crash"
 
         self.crashServiceCall(crash_service_leaf)
         self.crashServiceCall(crash_service_input_leaf)
 
     def crashIfTrueServiceCall(self, node):
-        node.inputs['request'] = SetBoolRequest(data=True)
+        node.inputs["request"] = SetBoolRequest(data=True)
         node.tick()
         self.assertEqual(node.state, NodeMsg.RUNNING)
 
@@ -208,9 +222,9 @@ class TestServiceLeaf(unittest.TestCase):
         node.tick()
         self.assertEqual(node.state, NodeMsg.FAILED)
 
-        self.assertIsNone(node.outputs['response'])
+        self.assertIsNone(node.outputs["response"])
 
-        node.inputs['request'] = SetBoolRequest(data=False)
+        node.inputs["request"] = SetBoolRequest(data=False)
         node.tick()
         self.assertEqual(node.state, NodeMsg.RUNNING)
 
@@ -218,33 +232,37 @@ class TestServiceLeaf(unittest.TestCase):
         node.tick()
         self.assertEqual(node.state, NodeMsg.SUCCEEDED)
 
-        self.assertEqual(node.outputs['response'], SetBoolResponse(True, ''))
+        self.assertEqual(node.outputs["response"], SetBoolResponse(True, ""))
 
     def testCrashIfTrueServiceCall(self):
-        crash_if_true_service_leaf = Service(options={
-            'service_type': SetBool,
-            'request_type': SetBoolRequest,
-            'response_type': SetBoolResponse,
-            'service_name': 'crash_if_true',
-            'wait_for_service_seconds': 0.5,
-            'wait_for_response_seconds': 1.5
-        })
+        crash_if_true_service_leaf = Service(
+            options={
+                "service_type": SetBool,
+                "request_type": SetBoolRequest,
+                "response_type": SetBoolResponse,
+                "service_name": "crash_if_true",
+                "wait_for_service_seconds": 0.5,
+                "wait_for_response_seconds": 1.5,
+            }
+        )
         crash_if_true_service_leaf.setup()
 
-        crash_if_true_service_input_leaf = ServiceInput(options={
-            'service_type': SetBool,
-            'request_type': SetBoolRequest,
-            'response_type': SetBoolResponse,
-            'wait_for_response_seconds': 1.5
-        })
+        crash_if_true_service_input_leaf = ServiceInput(
+            options={
+                "service_type": SetBool,
+                "request_type": SetBoolRequest,
+                "response_type": SetBoolResponse,
+                "wait_for_response_seconds": 1.5,
+            }
+        )
         crash_if_true_service_input_leaf.setup()
-        crash_if_true_service_input_leaf.inputs['service_name'] = 'crash_if_true'
+        crash_if_true_service_input_leaf.inputs["service_name"] = "crash_if_true"
 
         self.crashIfTrueServiceCall(crash_if_true_service_leaf)
         self.crashIfTrueServiceCall(crash_if_true_service_input_leaf)
 
     def testReset(self):
-        self.delay_service_leaf.inputs['request'] = SetBoolRequest(data=True)
+        self.delay_service_leaf.inputs["request"] = SetBoolRequest(data=True)
 
         self.delay_service_leaf.tick()
         self.assertEqual(self.delay_service_leaf.state, NodeMsg.RUNNING)
@@ -252,8 +270,8 @@ class TestServiceLeaf(unittest.TestCase):
         self.delay_service_leaf.reset()
         self.assertEqual(self.delay_service_leaf.state, NodeMsg.IDLE)
 
-        self.delay_service_input_leaf.inputs['request'] = SetBoolRequest(data=True)
-        self.delay_service_input_leaf.inputs['service_name'] = 'delay_1s_if_true'
+        self.delay_service_input_leaf.inputs["request"] = SetBoolRequest(data=True)
+        self.delay_service_input_leaf.inputs["service_name"] = "delay_1s_if_true"
 
         self.delay_service_input_leaf.tick()
         self.assertEqual(self.delay_service_input_leaf.state, NodeMsg.RUNNING)
@@ -262,14 +280,16 @@ class TestServiceLeaf(unittest.TestCase):
         self.assertEqual(self.delay_service_input_leaf.state, NodeMsg.IDLE)
 
     def testShutdown(self):
-        delay_service = Service(options={
-            'service_type': SetBool,
-            'request_type': SetBoolRequest,
-            'response_type': SetBoolResponse,
-            'service_name': 'delay_1s_if_true',
-            'wait_for_service_seconds': 0.5,
-            'wait_for_response_seconds': 1.5
-        })
+        delay_service = Service(
+            options={
+                "service_type": SetBool,
+                "request_type": SetBoolRequest,
+                "response_type": SetBoolResponse,
+                "service_name": "delay_1s_if_true",
+                "wait_for_service_seconds": 0.5,
+                "wait_for_response_seconds": 1.5,
+            }
+        )
 
         self.assertEqual(delay_service.state, NodeMsg.UNINITIALIZED)
 
@@ -279,14 +299,16 @@ class TestServiceLeaf(unittest.TestCase):
         delay_service.shutdown()
         self.assertEqual(delay_service.state, NodeMsg.SHUTDOWN)
 
-        delay_input_service = ServiceInput(options={
-            'service_type': SetBool,
-            'request_type': SetBoolRequest,
-            'response_type': SetBoolResponse,
-            'wait_for_response_seconds': 1.5
-        })
+        delay_input_service = ServiceInput(
+            options={
+                "service_type": SetBool,
+                "request_type": SetBoolRequest,
+                "response_type": SetBoolResponse,
+                "wait_for_response_seconds": 1.5,
+            }
+        )
 
-        delay_input_service.inputs['service_name'] = 'delay_1s_if_true'
+        delay_input_service.inputs["service_name"] = "delay_1s_if_true"
 
         self.assertEqual(delay_input_service.state, NodeMsg.UNINITIALIZED)
 
@@ -297,7 +319,7 @@ class TestServiceLeaf(unittest.TestCase):
         self.assertEqual(delay_input_service.state, NodeMsg.SHUTDOWN)
 
     def untickTest(self, node):
-        node.inputs['request'] = SetBoolRequest(data=True)
+        node.inputs["request"] = SetBoolRequest(data=True)
 
         node.tick()
         self.assertEqual(node.state, NodeMsg.RUNNING)
@@ -307,7 +329,7 @@ class TestServiceLeaf(unittest.TestCase):
         self.assertEqual(node.state, NodeMsg.RUNNING)
 
         node.untick()
-        node.inputs['request'] = SetBoolRequest(data=False)
+        node.inputs["request"] = SetBoolRequest(data=False)
         node.tick()
         self.assertEqual(node.state, NodeMsg.RUNNING)
 
@@ -320,11 +342,11 @@ class TestServiceLeaf(unittest.TestCase):
     def testUntick(self):
         self.untickTest(self.delay_service_leaf)
 
-        self.delay_service_input_leaf.inputs['service_name'] = 'delay_1s_if_true'
+        self.delay_service_input_leaf.inputs["service_name"] = "delay_1s_if_true"
         self.untickTest(self.delay_service_input_leaf)
 
     def timeout(self, node):
-        node.inputs['request'] = SetBoolRequest(data=True)
+        node.inputs["request"] = SetBoolRequest(data=True)
 
         node.tick()
         self.assertEqual(node.state, NodeMsg.RUNNING)
@@ -335,44 +357,50 @@ class TestServiceLeaf(unittest.TestCase):
 
     def testTimeout(self):
         # Overwrite the leaf with one that has a shorter timeot
-        delay_service_leaf = Service(options={
-            'service_type': SetBool,
-            'request_type': SetBoolRequest,
-            'response_type': SetBoolResponse,
-            'service_name': 'delay_1s_if_true',
-            'wait_for_service_seconds': 0.5,
-            'wait_for_response_seconds': 0.5
-        })
+        delay_service_leaf = Service(
+            options={
+                "service_type": SetBool,
+                "request_type": SetBoolRequest,
+                "response_type": SetBoolResponse,
+                "service_name": "delay_1s_if_true",
+                "wait_for_service_seconds": 0.5,
+                "wait_for_response_seconds": 0.5,
+            }
+        )
         delay_service_leaf.setup()
 
-        delay_service_input_leaf = ServiceInput(options={
-            'service_type': SetBool,
-            'request_type': SetBoolRequest,
-            'response_type': SetBoolResponse,
-            'wait_for_response_seconds': 0.5
-        })
+        delay_service_input_leaf = ServiceInput(
+            options={
+                "service_type": SetBool,
+                "request_type": SetBoolRequest,
+                "response_type": SetBoolResponse,
+                "wait_for_response_seconds": 0.5,
+            }
+        )
         delay_service_input_leaf.setup()
 
-        delay_service_input_leaf.inputs['service_name'] = 'delay_1s_if_true'
+        delay_service_input_leaf.inputs["service_name"] = "delay_1s_if_true"
 
         self.timeout(delay_service_leaf)
         self.timeout(delay_service_input_leaf)
 
     def testFailIfNotAvailable(self):
-        service_leaf = Service(options={
-            'service_type': SetBool,
-            'request_type': SetBoolRequest,
-            'response_type': SetBoolResponse,
-            'service_name': 'this_service_is_not_available',
-            'wait_for_service_seconds': 0.5,
-            'wait_for_response_seconds': 1.5,
-            'fail_if_not_available': True
-        })
+        service_leaf = Service(
+            options={
+                "service_type": SetBool,
+                "request_type": SetBoolRequest,
+                "response_type": SetBoolResponse,
+                "service_name": "this_service_is_not_available",
+                "wait_for_service_seconds": 0.5,
+                "wait_for_response_seconds": 1.5,
+                "fail_if_not_available": True,
+            }
+        )
 
         service_leaf.setup()
         self.assertFalse(service_leaf._service_available)
 
-        service_leaf.inputs['request'] = SetBoolRequest(data=True)
+        service_leaf.inputs["request"] = SetBoolRequest(data=True)
 
         self.assertEqual(service_leaf.tick(), NodeMsg.FAILED)
 
@@ -380,15 +408,17 @@ class TestServiceLeaf(unittest.TestCase):
         self.assertEqual(service_leaf.calculate_utility(), expected_bounds)
 
     def testExceptionIfNotAvailable(self):
-        service_leaf = Service(options={
-            'service_type': SetBool,
-            'request_type': SetBoolRequest,
-            'response_type': SetBoolResponse,
-            'service_name': 'this_service_is_not_available',
-            'wait_for_service_seconds': 0.5,
-            'wait_for_response_seconds': 1.5,
-            'fail_if_not_available': False
-        })
+        service_leaf = Service(
+            options={
+                "service_type": SetBool,
+                "request_type": SetBoolRequest,
+                "response_type": SetBoolResponse,
+                "service_name": "this_service_is_not_available",
+                "wait_for_service_seconds": 0.5,
+                "wait_for_response_seconds": 1.5,
+                "fail_if_not_available": False,
+            }
+        )
 
         self.assertRaises(rospy.ROSException, service_leaf.setup)
 
@@ -396,35 +426,39 @@ class TestServiceLeaf(unittest.TestCase):
         self.assertEqual(service_leaf.calculate_utility(), expected_bounds)
 
     def testServiceInputUtility(self):
-        service_input_leaf = ServiceInput(options={
-            'service_type': SetBool,
-            'request_type': SetBoolRequest,
-            'response_type': SetBoolResponse,
-            'wait_for_response_seconds': 1.5,
-        })
+        service_input_leaf = ServiceInput(
+            options={
+                "service_type": SetBool,
+                "request_type": SetBoolRequest,
+                "response_type": SetBoolResponse,
+                "wait_for_response_seconds": 1.5,
+            }
+        )
 
-        service_input_leaf.inputs['service_name'] = 'this_service_is_not_available'
+        service_input_leaf.inputs["service_name"] = "this_service_is_not_available"
         expected_bounds = UtilityBounds()
         self.assertEqual(service_input_leaf.calculate_utility(), expected_bounds)
 
     def testChangeServiceNameBetweenTicks(self):
-        self.delay_service_input_leaf.inputs['service_name'] = 'delay_1s_if_true'
-        self.delay_service_input_leaf.inputs['request'] = SetBoolRequest(data=False)
+        self.delay_service_input_leaf.inputs["service_name"] = "delay_1s_if_true"
+        self.delay_service_input_leaf.inputs["request"] = SetBoolRequest(data=False)
 
         self.delay_service_input_leaf.tick()
         self.assertEqual(self.delay_service_input_leaf.state, NodeMsg.RUNNING)
 
-        self.delay_service_input_leaf.inputs['service_name'] = 'delay_1s'
+        self.delay_service_input_leaf.inputs["service_name"] = "delay_1s"
 
         self.delay_service_input_leaf.tick()
         self.assertEqual(self.delay_service_input_leaf.state, NodeMsg.RUNNING)
 
 
-if __name__ == '__main__':
-    rospy.init_node('test_service_leaf')
+if __name__ == "__main__":
+    rospy.init_node("test_service_leaf")
     import rostest
     import sys
     import os
-    os.environ['COVERAGE_FILE'] = '%s.%s.coverage' % (PKG, 'test_service_leaf')
-    rostest.rosrun(PKG, 'test_service_leaf', TestServiceLeaf,
-                   sysargs=sys.argv + ['--cov'])
+
+    os.environ["COVERAGE_FILE"] = "%s.%s.coverage" % (PKG, "test_service_leaf")
+    rostest.rosrun(
+        PKG, "test_service_leaf", TestServiceLeaf, sysargs=sys.argv + ["--cov"]
+    )

@@ -39,12 +39,15 @@ from ros_bt_py.node import FlowControl, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'needed_successes': int},
-    inputs={},
-    outputs={},
-    max_children=None))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={"needed_successes": int},
+        inputs={},
+        outputs={},
+        max_children=None,
+    )
+)
 class Parallel(FlowControl):
     """The Parallel ticks all of its children every tick
 
@@ -66,46 +69,45 @@ class Parallel(FlowControl):
     reached a result.
 
     """
+
     def _do_setup(self):
-        if len(self.children) < self.options['needed_successes']:
+        if len(self.children) < self.options["needed_successes"]:
             raise BehaviorTreeException(
-                ('Option value needed_successes (%d) cannot be larger than '
-                 'the number of children (%d)') % (
-                     self.options['needed_successes'],
-                     len(self.children)))
+                (
+                    "Option value needed_successes (%d) cannot be larger than "
+                    "the number of children (%d)"
+                )
+                % (self.options["needed_successes"], len(self.children))
+            )
         for child in self.children:
             child.setup()
 
     def _do_tick(self):
         # Just like Sequence and Fallback, reset after having returned
         # SUCCEEDED or FAILED once
-        if self.state in [NodeMsg.SUCCEEDED,
-                          NodeMsg.FAILED]:
+        if self.state in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
             for child in self.children:
                 child.reset()
 
         successes = 0
         failures = 0
         for child in self.children:
-            if child.state not in [NodeMsg.SUCCEEDED,
-                                   NodeMsg.FAILED]:
+            if child.state not in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
                 child.tick()
             if child.state == NodeMsg.SUCCEEDED:
                 successes += 1
             if child.state == NodeMsg.FAILED:
                 failures += 1
-        if successes >= self.options['needed_successes']:
+        if successes >= self.options["needed_successes"]:
             # untick all running children
             for child in self.children:
-                if child.state not in [NodeMsg.SUCCEEDED,
-                                       NodeMsg.FAILED]:
+                if child.state not in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
                     child.untick()
             return NodeMsg.SUCCEEDED
-        elif failures > len(self.children) - self.options['needed_successes']:
+        elif failures > len(self.children) - self.options["needed_successes"]:
             # untick all running children
             for child in self.children:
-                if child.state not in [NodeMsg.SUCCEEDED,
-                                       NodeMsg.FAILED]:
+                if child.state not in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
                     child.untick()
             return NodeMsg.FAILED
         return NodeMsg.RUNNING
@@ -125,12 +127,14 @@ class Parallel(FlowControl):
         return NodeMsg.IDLE
 
     def _do_calculate_utility(self):
-        if len(self.children) < self.options['needed_successes']:
+        if len(self.children) < self.options["needed_successes"]:
             raise BehaviorTreeException(
-                ('Option value needed_successes (%d) cannot be larger than '
-                 'the number of children (%d)') % (
-                     self.options['needed_successes'],
-                     len(self.children)))
+                (
+                    "Option value needed_successes (%d) cannot be larger than "
+                    "the number of children (%d)"
+                )
+                % (self.options["needed_successes"], len(self.children))
+            )
 
         # This calculation is fairly straightforward:
         #
@@ -153,23 +157,29 @@ class Parallel(FlowControl):
         if not bounds.can_execute:
             return bounds
 
-        success_threshold = self.options['needed_successes']
+        success_threshold = self.options["needed_successes"]
 
-        best_success_group = sorted(
-            child_bounds, key=lambda b: b.lower_bound_success)[:success_threshold]
+        best_success_group = sorted(child_bounds, key=lambda b: b.lower_bound_success)[
+            :success_threshold
+        ]
         bounds.has_lower_bound_success = all(
-            (b.has_lower_bound_success for b in best_success_group))
+            (b.has_lower_bound_success for b in best_success_group)
+        )
         if bounds.has_lower_bound_success:
             bounds.lower_bound_success = math.fsum(
-                (b.lower_bound_success for b in best_success_group))
+                (b.lower_bound_success for b in best_success_group)
+            )
 
         worst_success_group = sorted(
-            child_bounds, reverse=True, key=lambda b: b.upper_bound_success)[:success_threshold]
+            child_bounds, reverse=True, key=lambda b: b.upper_bound_success
+        )[:success_threshold]
         bounds.has_upper_bound_success = all(
-            (b.has_upper_bound_success for b in worst_success_group))
+            (b.has_upper_bound_success for b in worst_success_group)
+        )
         if bounds.has_upper_bound_success:
             bounds.upper_bound_success = math.fsum(
-                (b.upper_bound_success for b in worst_success_group))
+                (b.upper_bound_success for b in worst_success_group)
+            )
 
         # Now we do the same for the failures - the only difference
         # here is that failure_threshold is
@@ -182,33 +192,39 @@ class Parallel(FlowControl):
         # The minimum number of child failures for an overall Parallel failure
         failure_threshold = 1 + (len(self.children) - success_threshold)
 
-        best_failure_group = sorted(
-            child_bounds, key=lambda b: b.lower_bound_failure)[:failure_threshold]
+        best_failure_group = sorted(child_bounds, key=lambda b: b.lower_bound_failure)[
+            :failure_threshold
+        ]
         bounds.has_lower_bound_failure = all(
-            (b.has_lower_bound_failure for b in best_failure_group))
+            (b.has_lower_bound_failure for b in best_failure_group)
+        )
         if bounds.has_lower_bound_failure:
             bounds.lower_bound_failure = math.fsum(
-                (b.lower_bound_failure for b in best_failure_group))
+                (b.lower_bound_failure for b in best_failure_group)
+            )
 
         worst_failure_group = sorted(
-            child_bounds, reverse=True, key=lambda b: b.upper_bound_failure)[:failure_threshold]
+            child_bounds, reverse=True, key=lambda b: b.upper_bound_failure
+        )[:failure_threshold]
         bounds.has_upper_bound_failure = all(
-            (b.has_upper_bound_failure for b in worst_failure_group))
+            (b.has_upper_bound_failure for b in worst_failure_group)
+        )
         if bounds.has_upper_bound_failure:
             bounds.upper_bound_failure = math.fsum(
-                (b.upper_bound_failure for b in worst_failure_group))
+                (b.upper_bound_failure for b in worst_failure_group)
+            )
 
         return bounds
 
 
-@define_bt_node(NodeConfig(
-    options={
-        'needed_successes': int,
-        'tolerate_failures': int
-    },
-    inputs={},
-    outputs={},
-    max_children=None))
+@define_bt_node(
+    NodeConfig(
+        options={"needed_successes": int, "tolerate_failures": int},
+        inputs={},
+        outputs={},
+        max_children=None,
+    )
+)
 class ParallelFailureTolerance(FlowControl):
     """The ParallelFailureTolerance ticks all of its children every tick
 
@@ -226,46 +242,45 @@ class ParallelFailureTolerance(FlowControl):
     reached a result.
 
     """
+
     def _do_setup(self):
-        if len(self.children) < self.options['needed_successes']:
+        if len(self.children) < self.options["needed_successes"]:
             raise BehaviorTreeException(
-                ('Option value needed_successes (%d) cannot be larger than '
-                 'the number of children (%d)') % (
-                     self.options['needed_successes'],
-                     len(self.children)))
+                (
+                    "Option value needed_successes (%d) cannot be larger than "
+                    "the number of children (%d)"
+                )
+                % (self.options["needed_successes"], len(self.children))
+            )
         for child in self.children:
             child.setup()
 
     def _do_tick(self):
         # Just like Sequence and Fallback, reset after having returned
         # SUCCEEDED or FAILED once
-        if self.state in [NodeMsg.SUCCEEDED,
-                          NodeMsg.FAILED]:
+        if self.state in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
             for child in self.children:
                 child.reset()
 
         successes = 0
         failures = 0
         for child in self.children:
-            if child.state not in [NodeMsg.SUCCEEDED,
-                                   NodeMsg.FAILED]:
+            if child.state not in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
                 child.tick()
             if child.state == NodeMsg.SUCCEEDED:
                 successes += 1
             if child.state == NodeMsg.FAILED:
                 failures += 1
-        if successes >= self.options['needed_successes']:
+        if successes >= self.options["needed_successes"]:
             # untick all running children
             for child in self.children:
-                if child.state not in [NodeMsg.SUCCEEDED,
-                                       NodeMsg.FAILED]:
+                if child.state not in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
                     child.untick()
             return NodeMsg.SUCCEEDED
-        elif failures > self.options['tolerate_failures']:
+        elif failures > self.options["tolerate_failures"]:
             # untick all running children
             for child in self.children:
-                if child.state not in [NodeMsg.SUCCEEDED,
-                                       NodeMsg.FAILED]:
+                if child.state not in [NodeMsg.SUCCEEDED, NodeMsg.FAILED]:
                     child.untick()
             return NodeMsg.FAILED
         return NodeMsg.RUNNING
@@ -283,12 +298,14 @@ class ParallelFailureTolerance(FlowControl):
         return NodeMsg.IDLE
 
     def _do_calculate_utility(self):
-        if len(self.children) < self.options['needed_successes']:
+        if len(self.children) < self.options["needed_successes"]:
             raise BehaviorTreeException(
-                ('Option value needed_successes (%d) cannot be larger than '
-                 'the number of children (%d)') % (
-                     self.options['needed_successes'],
-                     len(self.children)))
+                (
+                    "Option value needed_successes (%d) cannot be larger than "
+                    "the number of children (%d)"
+                )
+                % (self.options["needed_successes"], len(self.children))
+            )
 
         # This calculation is fairly straightforward:
         #
@@ -311,23 +328,29 @@ class ParallelFailureTolerance(FlowControl):
         if not bounds.can_execute:
             return bounds
 
-        success_threshold = self.options['needed_successes']
+        success_threshold = self.options["needed_successes"]
 
-        best_success_group = sorted(
-            child_bounds, key=lambda b: b.lower_bound_success)[:success_threshold]
+        best_success_group = sorted(child_bounds, key=lambda b: b.lower_bound_success)[
+            :success_threshold
+        ]
         bounds.has_lower_bound_success = all(
-            (b.has_lower_bound_success for b in best_success_group))
+            (b.has_lower_bound_success for b in best_success_group)
+        )
         if bounds.has_lower_bound_success:
             bounds.lower_bound_success = math.fsum(
-                (b.lower_bound_success for b in best_success_group))
+                (b.lower_bound_success for b in best_success_group)
+            )
 
         worst_success_group = sorted(
-            child_bounds, reverse=True, key=lambda b: b.upper_bound_success)[:success_threshold]
+            child_bounds, reverse=True, key=lambda b: b.upper_bound_success
+        )[:success_threshold]
         bounds.has_upper_bound_success = all(
-            (b.has_upper_bound_success for b in worst_success_group))
+            (b.has_upper_bound_success for b in worst_success_group)
+        )
         if bounds.has_upper_bound_success:
             bounds.upper_bound_success = math.fsum(
-                (b.upper_bound_success for b in worst_success_group))
+                (b.upper_bound_success for b in worst_success_group)
+            )
 
         # Now we do the same for the failures - the only difference
         # here is that failure_threshold is
@@ -340,20 +363,26 @@ class ParallelFailureTolerance(FlowControl):
         # The minimum number of child failures for an overall Parallel failure
         failure_threshold = 1 + (len(self.children) - success_threshold)
 
-        best_failure_group = sorted(
-            child_bounds, key=lambda b: b.lower_bound_failure)[:failure_threshold]
+        best_failure_group = sorted(child_bounds, key=lambda b: b.lower_bound_failure)[
+            :failure_threshold
+        ]
         bounds.has_lower_bound_failure = all(
-            (b.has_lower_bound_failure for b in best_failure_group))
+            (b.has_lower_bound_failure for b in best_failure_group)
+        )
         if bounds.has_lower_bound_failure:
             bounds.lower_bound_failure = math.fsum(
-                (b.lower_bound_failure for b in best_failure_group))
+                (b.lower_bound_failure for b in best_failure_group)
+            )
 
         worst_failure_group = sorted(
-            child_bounds, reverse=True, key=lambda b: b.upper_bound_failure)[:failure_threshold]
+            child_bounds, reverse=True, key=lambda b: b.upper_bound_failure
+        )[:failure_threshold]
         bounds.has_upper_bound_failure = all(
-            (b.has_upper_bound_failure for b in worst_failure_group))
+            (b.has_upper_bound_failure for b in worst_failure_group)
+        )
         if bounds.has_upper_bound_failure:
             bounds.upper_bound_failure = math.fsum(
-                (b.upper_bound_failure for b in worst_failure_group))
+                (b.upper_bound_failure for b in worst_failure_group)
+            )
 
         return bounds

@@ -1,16 +1,16 @@
 name: ''
 path: ''
 root_name: "Sequence"
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.decorators"
     node_class: "Repeat"
     version: ''
     max_children: 1
     name: "Repeat"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "num_repeats"
         serialized_value: "0"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
@@ -18,7 +18,7 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.decorators"
     node_class: "UntilSuccess"
     version: ''
@@ -30,7 +30,7 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.decorators"
     node_class: "RepeatAlways"
     version: ''
@@ -42,7 +42,7 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     version: ''
@@ -55,15 +55,15 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.decorators"
     node_class: "Retry"
     version: ''
     max_children: 1
     name: "Retry"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "num_retries"
         serialized_value: "0"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
@@ -71,7 +71,7 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.decorators"
     node_class: "RepeatUntilFail"
     version: ''
@@ -83,7 +83,7 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.decorators"
     node_class: "Inverter"
     version: ''
@@ -95,7 +95,7 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.decorators"
     node_class: "IgnoreSuccess"
     version: ''
@@ -107,7 +107,7 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.decorators"
     node_class: "Optional"
     version: ''
@@ -119,7 +119,7 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.decorators"
     node_class: "IgnoreFailure"
     version: ''
@@ -131,15 +131,15 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.decorators"
     node_class: "ThrottleSuccess"
     version: ""
     max_children: 1
     name: "ThrottleSuccess"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "tick_interval"
         serialized_value: "1.2"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
@@ -147,15 +147,15 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.decorators"
     node_class: "Throttle"
     version: ""
     max_children: 1
     name: "Throttle"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "tick_interval"
         serialized_value: "1.2"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
@@ -163,15 +163,15 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.decorators"
     node_class: "IgnoreRunning"
     version: ""
     max_children: 1
     name: "IgnoreRunning"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "running_is_success"
         serialized_value: "true"
         serialized_type: "{\"py/type\": \"__builtin__.bool\"}"

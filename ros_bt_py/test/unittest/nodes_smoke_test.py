@@ -49,6 +49,6 @@ class TestNodeImport(unittest.TestCase):
         using define_bt_node.
         """
         import ros_bt_py.nodes
-        for _, name, _ in pkgutil.walk_packages(
-                ros_bt_py.nodes.__path__):
-            importlib.import_module(ros_bt_py.nodes.__name__ + '.' + name)
+
+        for _, name, _ in pkgutil.walk_packages(ros_bt_py.nodes.__path__):
+            importlib.import_module(ros_bt_py.nodes.__name__ + "." + name)

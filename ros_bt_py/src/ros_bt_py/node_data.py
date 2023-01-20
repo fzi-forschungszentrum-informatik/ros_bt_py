@@ -43,9 +43,9 @@ except NameError:  # pragma: no cover
 
 
 def from_string(data_type, string_value, static=False):
-    return NodeData(data_type=data_type,
-                    initial_value=data_type(string_value),
-                    static=static)
+    return NodeData(
+        data_type=data_type, initial_value=data_type(string_value), static=static
+    )
 
 
 class NodeData(object):
@@ -57,6 +57,7 @@ class NodeData(object):
     `NodeData` can also be static, in which case it will only accept one
     update (the initial value, if not empty, counts as an update!)
     """
+
     def __init__(self, data_type, initial_value=None, static=False):
         self.updated = False
         self._value = None
@@ -77,15 +78,19 @@ class NodeData(object):
             self.set(initial_value)
 
     def __repr__(self):
-        return '%s (%s) [%s]' % (self._value,
-                                 self.data_type.__name__,
-                                 ('#' if self.updated else ' '))
+        return "%s (%s) [%s]" % (
+            self._value,
+            self.data_type.__name__,
+            ("#" if self.updated else " "),
+        )
 
     def __eq__(self, other):
-        return (self.updated == other.updated
-                and self._static == other._static
-                and self._value == other._value
-                and self.data_type == other.data_type)
+        return (
+            self.updated == other.updated
+            and self._static == other._static
+            and self._value == other._value
+            and self.data_type == other.data_type
+        )
 
     def __ne__(self, other):
         return not self == other
@@ -114,7 +119,7 @@ class NodeData(object):
         :raises: Exception, TypeError
         """
         if self._static and self.updated:
-            raise Exception('Trying to overwrite data in static NodeData object')
+            raise Exception("Trying to overwrite data in static NodeData object")
         if not isinstance(new_value, self.data_type) and new_value is not None:
             # Silently convert ints to float
             if self.data_type == float and isinstance(new_value, int):
@@ -122,13 +127,20 @@ class NodeData(object):
             else:
                 if type(new_value) == dict and "py/type" in new_value:
                     raise TypeError(
-                        ('Expected data to be of type %s, got %s instead. '
-                         'Looks like failed jsonpickle decode, does type %s exist?') % (
-                             self.data_type.__name__,
-                             type(new_value).__name__,
-                             new_value['py/type']))
-                raise TypeError('Expected data to be of type %s, got %s instead' % (
-                    self.data_type.__name__, type(new_value).__name__))
+                        (
+                            "Expected data to be of type %s, got %s instead. "
+                            "Looks like failed jsonpickle decode, does type %s exist?"
+                        )
+                        % (
+                            self.data_type.__name__,
+                            type(new_value).__name__,
+                            new_value["py/type"],
+                        )
+                    )
+                raise TypeError(
+                    "Expected data to be of type %s, got %s instead"
+                    % (self.data_type.__name__, type(new_value).__name__)
+                )
         if self._serialized_value is not None and new_value != self._value:
             self._serialized_value = json_encode(new_value)
         self._value = new_value
@@ -173,12 +185,13 @@ class NodeDataMap(object):
     been added to the map. This is because the setters for values might
     be used as callbacks elsewhere, leading to unexpected breakage!
     """
-    def __init__(self, name='data'):
+
+    def __init__(self, name="data"):
         self.name = name
         self._map = {}
         self.callbacks = {}
 
-    def subscribe(self, key, callback, subscriber_name=''):
+    def subscribe(self, key, callback, subscriber_name=""):
         """Subscribe to changes in the value at `key`.
 
         :param str key: the key you want to subscribe to
@@ -194,8 +207,7 @@ class NodeDataMap(object):
         :raises KeyError: if `key` is not a valid key
         """
         if key not in self._map:
-            raise KeyError('%s is not a key of %s'
-                           % (key, self.name))
+            raise KeyError("%s is not a key of %s" % (key, self.name))
         if key not in self.callbacks:
             self.callbacks[key] = []
         if any([subscriber_name == name for _, name in self.callbacks[key]]):
@@ -213,13 +225,14 @@ class NodeDataMap(object):
         :raises KeyError: if `key` is not a valid key
         """
         if key not in self._map:
-            raise KeyError('%s is not a key of %s'
-                           % (key, self.name))
+            raise KeyError("%s is not a key of %s" % (key, self.name))
         if key not in self.callbacks:
             self.callbacks[key] = []
-            rospy.loginfo('Trying to remove callback for key with no callbacks at all (%s[%s])',
-                          self.name,
-                          key)
+            rospy.loginfo(
+                "Trying to remove callback for key with no callbacks at all (%s[%s])",
+                self.name,
+                key,
+            )
             return
 
         if callback:
@@ -230,17 +243,15 @@ class NodeDataMap(object):
                     index = i
             if index is not None:
                 callback_name = self.callbacks[key].pop(index)[1]
-                rospy.loginfo('Removed callback "%s" of key %s[%s]',
-                              callback_name,
-                              self.name, key)
+                rospy.loginfo(
+                    'Removed callback "%s" of key %s[%s]', callback_name, self.name, key
+                )
             else:
-                rospy.loginfo('Trying to remove unknown callback for key %s[%s]',
-                              self.name,
-                              key)
+                rospy.loginfo(
+                    "Trying to remove unknown callback for key %s[%s]", self.name, key
+                )
         else:
-            rospy.loginfo('Removing all callbacks for key %s[%s]',
-                          self.name,
-                          key)
+            rospy.loginfo("Removing all callbacks for key %s[%s]", self.name, key)
             self.callbacks[key] = []
 
     def handle_subscriptions(self):
@@ -256,8 +267,12 @@ class NodeDataMap(object):
                 if key in self.callbacks:
                     for callback, subscriber_name in self.callbacks[key]:
                         if debugging:
-                            rospy.logdebug('Forwarding value %s of key %s to subscriber %s',
-                                           str(self[key]), key, subscriber_name)
+                            rospy.logdebug(
+                                "Forwarding value %s of key %s to subscriber %s",
+                                str(self[key]),
+                                key,
+                                subscriber_name,
+                            )
                         callback(self[key])
 
     def add(self, key, value):
@@ -268,11 +283,11 @@ class NodeDataMap(object):
         :raises: TypeError, KeyError
         """
         if not isinstance(key, basestring):
-            raise TypeError('Key must be a string!')
+            raise TypeError("Key must be a string!")
         if not isinstance(value, NodeData):
-            raise TypeError('Value must be a NodeData object!')
+            raise TypeError("Value must be a NodeData object!")
         if key in self._map:
-            raise KeyError('Key %s is already taken!' % key)
+            raise KeyError("Key %s is already taken!" % key)
         self._map[key] = value
 
     def is_updated(self, key):
@@ -290,11 +305,10 @@ class NodeDataMap(object):
         if key in self._map:
             self._map[key].set_updated()
         else:
-            raise KeyError('No member named %s' % key)
+            raise KeyError("No member named %s" % key)
 
     def reset_updated(self):
-        """Reset the `updated` property of all data in this map.
-        """
+        """Reset the `updated` property of all data in this map."""
         for key in self._map:
             self._map[key].reset_updated()
 
@@ -307,7 +321,7 @@ class NodeDataMap(object):
         :raises: KeyError
         """
         if key not in self._map:
-            raise KeyError('No member named %s' % key)
+            raise KeyError("No member named %s" % key)
         return self._map[key].set
 
     def get_serialized(self, key):
@@ -315,7 +329,7 @@ class NodeDataMap(object):
         Return the jsonpickle'd value of the NodeData object at `key`
         """
         if key not in self._map:
-            raise KeyError('No member named %s' % key)
+            raise KeyError("No member named %s" % key)
         return self._map[key].get_serialized()
 
     def get_serialized_type(self, key):
@@ -323,7 +337,7 @@ class NodeDataMap(object):
         Return the jsonpickle'd type of the NodeData object at `key`
         """
         if key not in self._map:
-            raise KeyError('No member named %s' % key)
+            raise KeyError("No member named %s" % key)
         return self._map[key].get_serialized_type()
 
     def get_type(self, key):
@@ -331,7 +345,7 @@ class NodeDataMap(object):
         Return the type of the NodeData object at `key`
         """
         if key not in self._map:
-            raise KeyError('No member named %s' % key)
+            raise KeyError("No member named %s" % key)
         return self._map[key].data_type
 
     def compatible(self, key, new_val):
@@ -343,12 +357,12 @@ class NodeDataMap(object):
 
     def __getitem__(self, key):
         if key not in self._map:
-            raise KeyError('No member named %s' % key)
+            raise KeyError("No member named %s" % key)
         return self._map[key].get()
 
     def __setitem__(self, key, value):
         if key not in self._map:
-            raise KeyError('No member named %s' % key)
+            raise KeyError("No member named %s" % key)
         self._map[key].set(value)
 
     def __iter__(self):
@@ -358,17 +372,24 @@ class NodeDataMap(object):
         return key in self._map
 
     def __eq__(self, other):
-        return (self.name == other.name
-                and len(self) == len(other)
-                and all([key in other for key in self])
-                and all([other[key] == self[key] for key in self])
-                and len(self.callbacks) == len(other.callbacks)
-                and all([key in other.callbacks for key in self.callbacks])
-                and all([other.callbacks[key] == self.callbacks[key] for key in self.callbacks]))
+        return (
+            self.name == other.name
+            and len(self) == len(other)
+            and all([key in other for key in self])
+            and all([other[key] == self[key] for key in self])
+            and len(self.callbacks) == len(other.callbacks)
+            and all([key in other.callbacks for key in self.callbacks])
+            and all(
+                [other.callbacks[key] == self.callbacks[key] for key in self.callbacks]
+            )
+        )
 
     def __ne__(self, other):
         return not self == other
 
     def __repr__(self):
-        return 'NodeDataMap(name=%r), data:%r, callbacks:%r' % (
-            self.name, self._map, self.callbacks)
+        return "NodeDataMap(name=%r), data:%r, callbacks:%r" % (
+            self.name,
+            self._map,
+            self.callbacks,
+        )

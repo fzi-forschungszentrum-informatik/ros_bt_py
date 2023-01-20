@@ -37,22 +37,26 @@ from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'min': int,
-             'max': int},
-    inputs={},
-    outputs={'random_number': int},
-    max_children=0))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={"min": int, "max": int},
+        inputs={},
+        outputs={"random_number": int},
+        max_children=0,
+    )
+)
 class RandomInt(Leaf):
-    """Provides a pseudo-random integer in range min <= random_number < max
-    """
+    """Provides a pseudo-random integer in range min <= random_number < max"""
+
     def _do_setup(self):
-        validate_range(self.options['min'], self.options['max'])
+        validate_range(self.options["min"], self.options["max"])
 
     def _do_tick(self):
-        validate_range(self.options['min'], self.options['max'])
-        self.outputs['random_number'] = random.randrange(self.options['min'], self.options['max'])
+        validate_range(self.options["min"], self.options["max"])
+        self.outputs["random_number"] = random.randrange(
+            self.options["min"], self.options["max"]
+        )
         return NodeMsg.SUCCEEDED
 
     def _do_shutdown(self):
@@ -70,22 +74,26 @@ class RandomInt(Leaf):
     #     pass
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={'min': int,
-            'max': int},
-    outputs={'random_number': int},
-    max_children=0))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={},
+        inputs={"min": int, "max": int},
+        outputs={"random_number": int},
+        max_children=0,
+    )
+)
 class RandomIntInputs(Leaf):
-    """Provides a pseudo-random integer in range min <= random_number < max
-    """
+    """Provides a pseudo-random integer in range min <= random_number < max"""
+
     def _do_setup(self):
         pass
 
     def _do_tick(self):
-        validate_range(self.inputs['min'], self.inputs['max'])
-        self.outputs['random_number'] = random.randrange(self.inputs['min'], self.inputs['max'])
+        validate_range(self.inputs["min"], self.inputs["max"])
+        self.outputs["random_number"] = random.randrange(
+            self.inputs["min"], self.inputs["max"]
+        )
         return NodeMsg.SUCCEEDED
 
     def _do_shutdown(self):
@@ -107,7 +115,9 @@ def validate_range(minimum, maximum):
     """checks if `minimum` < `maximum` and raises a BehaviorTreeException if not"""
     if minimum == maximum:
         raise BehaviorTreeException(
-            'minimum (%s) cannot be equal to maximum (%s)' % (minimum, maximum))
+            "minimum (%s) cannot be equal to maximum (%s)" % (minimum, maximum)
+        )
     if minimum > maximum:
         raise BehaviorTreeException(
-            'minimum (%s) cannot be greater that maximum (%s)' % (minimum, maximum))
+            "minimum (%s) cannot be greater that maximum (%s)" % (minimum, maximum)
+        )

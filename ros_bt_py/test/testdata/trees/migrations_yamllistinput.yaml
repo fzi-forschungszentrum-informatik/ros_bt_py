@@ -1,8 +1,8 @@
 name: ''
 path: ''
 root_name: "Sequence"
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.file"
     node_class: "YamlListInput"
     version: ""
@@ -10,31 +10,31 @@ nodes:
     name: "YamlListInput"
     child_names: []
     options: []
-    inputs: 
-      - 
+    inputs:
+      -
         key: "file_path"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "load_success"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
-      - 
+      -
         key: "content"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "line_count"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "load_error_msg"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     version: "0.9.0"
@@ -46,67 +46,67 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "\"package://ros_bt_py/test/testdata/data/file_greetings.yaml\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.str\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-data_wirings: 
-  - 
-    source: 
+data_wirings:
+  -
+    source:
       node_name: "Constant"
       data_kind: "outputs"
       data_key: "constant"
-    target: 
+    target:
       node_name: "YamlListInput"
       data_kind: "inputs"
       data_key: "file_path"
 tick_frequency_hz: 10.0
 state: "EDITABLE"
-public_node_data: 
-  - 
+public_node_data:
+  -
     node_name: "Constant"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "YamlListInput"
     data_kind: "outputs"
     data_key: "load_success"
-  - 
+  -
     node_name: "YamlListInput"
     data_kind: "outputs"
     data_key: "content"
-  - 
+  -
     node_name: "YamlListInput"
     data_kind: "outputs"
     data_key: "line_count"
-  - 
+  -
     node_name: "YamlListInput"
     data_kind: "outputs"
     data_key: "load_error_msg"

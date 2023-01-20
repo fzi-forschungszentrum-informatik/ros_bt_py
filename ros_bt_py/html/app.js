@@ -680,7 +680,7 @@ class App extends Component
                 console.log('Failed to remove node ' + response.error_message);
               }
             }.bind(this));
-        }  
+        }
       }
     }.bind(this),false);
 
@@ -799,7 +799,7 @@ class App extends Component
         // do not execute onEditorSelectionChange and keep editing
         return;
       }
-    }    
+    }
 
     if (new_selected_node_name === null)
     {

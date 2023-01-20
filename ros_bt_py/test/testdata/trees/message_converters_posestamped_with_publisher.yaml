@@ -1,20 +1,20 @@
 name: ''
 path: ''
 root_name: "Sequence"
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.ros_nodes.message_converters"
     node_class: "MessageToFields"
     max_children: 0
     name: "MessageToFields"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "input_type"
         serialized_value: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "in"
         serialized_value: "{\"py/object\": \"geometry_msgs.msg._PoseStamped.PoseStamped\", \"py/state\": [{\"\
   py/object\": \"std_msgs.msg._Header.Header\", \"py/state\": [0, {\"py/object\":\
@@ -23,13 +23,13 @@ nodes:
   : [0, 0, 0]}, {\"py/object\": \"geometry_msgs.msg._Quaternion.Quaternion\", \"py/state\"\
   : [0, 0, 0, 0]}]}]}"
         serialized_type: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "header"
         serialized_value: "{\"py/object\": \"std_msgs.msg._Header.Header\", \"py/state\": [13, {\"py/object\"\
   : \"genpy.rostime.Time\", \"py/state\": [0, 0]}, \"\"]}"
         serialized_type: "{\"py/type\": \"std_msgs.msg._Header.Header\"}"
-      - 
+      -
         key: "pose"
         serialized_value: "{\"py/object\": \"geometry_msgs.msg._Pose.Pose\", \"py/state\": [{\"py/object\":\
   \ \"geometry_msgs.msg._Point.Point\", \"py/state\": [0, 0, 0]}, {\"py/object\":\
@@ -37,14 +37,14 @@ nodes:
         serialized_type: "{\"py/type\": \"geometry_msgs.msg._Pose.Pose\"}"
     option_wirings: []
     state: "SHUTDOWN"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     max_children: 0
     name: "Constant"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "{\"py/object\": \"geometry_msgs.msg._PoseStamped.PoseStamped\", \"py/state\": [{\"\
   py/object\": \"std_msgs.msg._Header.Header\", \"py/state\": [0, {\"py/object\":\
@@ -53,13 +53,13 @@ nodes:
   : [0, 0, 0]}, {\"py/object\": \"geometry_msgs.msg._Quaternion.Quaternion\", \"py/state\"\
   : [0, 0, 0, 0]}]}]}"
         serialized_type: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "{\"py/object\": \"geometry_msgs.msg._PoseStamped.PoseStamped\", \"py/state\": [{\"\
   py/object\": \"std_msgs.msg._Header.Header\", \"py/state\": [13, {\"py/object\"\
@@ -68,28 +68,28 @@ nodes:
   : [0, 0, 0]}, {\"py/object\": \"geometry_msgs.msg._Quaternion.Quaternion\", \"py/state\"\
   : [0, 0, 0, 0]}]}]}"
         serialized_type: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "SHUTDOWN"
-  - 
+  -
     module: "ros_bt_py.nodes.topic"
     node_class: "TopicPublisher"
     max_children: 0
     name: "TopicPublisher"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "topic_type"
         serialized_value: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "topic_name"
         serialized_value: "\"/foo\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "message"
         serialized_value: "{\"py/object\": \"geometry_msgs.msg._PoseStamped.PoseStamped\", \"py/state\": [{\"\
   py/object\": \"std_msgs.msg._Header.Header\", \"py/state\": [0, {\"py/object\":\
@@ -101,31 +101,31 @@ nodes:
     outputs: []
     option_wirings: []
     state: "SHUTDOWN"
-  - 
+  -
     module: "ros_bt_py.ros_nodes.message_converters"
     node_class: "FieldsToMessage"
     max_children: 0
     name: "FieldsToMessage"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "output_type"
         serialized_value: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "header"
         serialized_value: "{\"py/object\": \"std_msgs.msg._Header.Header\", \"py/state\": [0, {\"py/object\"\
   : \"genpy.rostime.Time\", \"py/state\": [0, 0]}, \"\"]}"
         serialized_type: "{\"py/type\": \"std_msgs.msg._Header.Header\"}"
-      - 
+      -
         key: "pose"
         serialized_value: "{\"py/object\": \"geometry_msgs.msg._Pose.Pose\", \"py/state\": [{\"py/object\":\
   \ \"geometry_msgs.msg._Point.Point\", \"py/state\": [0, 0, 0]}, {\"py/object\":\
   \ \"geometry_msgs.msg._Quaternion.Quaternion\", \"py/state\": [0, 0, 0, 0]}]}"
         serialized_type: "{\"py/type\": \"geometry_msgs.msg._Pose.Pose\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "out"
         serialized_value: "{\"py/object\": \"geometry_msgs.msg._PoseStamped.PoseStamped\", \"py/state\": [{\"\
   py/object\": \"std_msgs.msg._Header.Header\", \"py/state\": [13, {\"py/object\"\
@@ -136,7 +136,7 @@ nodes:
         serialized_type: "{\"py/type\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"}"
     option_wirings: []
     state: "SHUTDOWN"
-  - 
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     max_children: -1
@@ -147,40 +147,40 @@ nodes:
     outputs: []
     option_wirings: []
     state: "SHUTDOWN"
-data_wirings: 
-  - 
-    source: 
+data_wirings:
+  -
+    source:
       node_name: "Constant"
       data_kind: "outputs"
       data_key: "constant"
-    target: 
+    target:
       node_name: "MessageToFields"
       data_kind: "inputs"
       data_key: "in"
-  - 
-    source: 
+  -
+    source:
       node_name: "MessageToFields"
       data_kind: "outputs"
       data_key: "header"
-    target: 
+    target:
       node_name: "FieldsToMessage"
       data_kind: "inputs"
       data_key: "header"
-  - 
-    source: 
+  -
+    source:
       node_name: "MessageToFields"
       data_kind: "outputs"
       data_key: "pose"
-    target: 
+    target:
       node_name: "FieldsToMessage"
       data_kind: "inputs"
       data_key: "pose"
-  - 
-    source: 
+  -
+    source:
       node_name: "FieldsToMessage"
       data_kind: "outputs"
       data_key: "out"
-    target: 
+    target:
       node_name: "TopicPublisher"
       data_kind: "inputs"
       data_key: "message"

@@ -34,22 +34,21 @@ from ros_bt_py.node import FlowControl, define_bt_node
 from ros_bt_py.node_config import NodeConfig
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={'name': str},
-    outputs={},
-    max_children=None))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0", options={}, inputs={"name": str}, outputs={}, max_children=None
+    )
+)
 class NameSwitch(FlowControl):
     def _do_setup(self):
-        self.child_map = {child.name.split('.')[-1]: child for child in self.children}
+        self.child_map = {child.name.split(".")[-1]: child for child in self.children}
         for child in self.children:
             child.setup()
 
     def _do_tick(self):
-        name = self.inputs['name']
+        name = self.inputs["name"]
         if name not in self.child_map:
-            self.logwarn('Ticking without children. Is this really what you want?')
+            self.logwarn("Ticking without children. Is this really what you want?")
             return NodeMsg.FAILED
 
         # If we've previously succeeded or failed, untick all children
@@ -81,12 +80,9 @@ class NameSwitch(FlowControl):
         return calculate_utility_fallback(self.children)
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={},
-    outputs={},
-    max_children=None))
+@define_bt_node(
+    NodeConfig(version="0.9.0", options={}, inputs={}, outputs={}, max_children=None)
+)
 class Fallback(FlowControl):
     """Flow control node that succeeds when any one of its children succeeds.
 
@@ -115,13 +111,14 @@ class Fallback(FlowControl):
     If a Fallback has no children, its :meth:`tick` method will always
     return FAILED.
     """
+
     def _do_setup(self):
         for child in self.children:
             child.setup()
 
     def _do_tick(self):
         if not self.children:
-            self.logwarn('Ticking without children. Is this really what you want?')
+            self.logwarn("Ticking without children. Is this really what you want?")
             return NodeMsg.FAILED
 
         # If we've previously succeeded or failed, untick all children
@@ -136,7 +133,7 @@ class Fallback(FlowControl):
                 if result == NodeMsg.SUCCEEDED:
                     # untick all children after the one that triggered this
                     # condition
-                    for untick_child in self.children[index + 1:]:
+                    for untick_child in self.children[index + 1 :]:
                         untick_child.untick()
                 return result
         # If all children failed, we too fail
@@ -160,12 +157,9 @@ class Fallback(FlowControl):
         return calculate_utility_fallback(self.children)
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={},
-    outputs={},
-    max_children=None))
+@define_bt_node(
+    NodeConfig(version="0.9.0", options={}, inputs={}, outputs={}, max_children=None)
+)
 class MemoryFallback(FlowControl):
     """Flow control node that succeeds when any one of its children succeeds and has a memory.
 
@@ -201,6 +195,7 @@ class MemoryFallback(FlowControl):
     If a Fallback has no children, its :meth:`tick` method will always
     return FAILED.
     """
+
     def _do_setup(self):
         self.last_running_child = 0
         for child in self.children:
@@ -208,7 +203,7 @@ class MemoryFallback(FlowControl):
 
     def _do_tick(self):
         if not self.children:
-            self.logwarn('Ticking without children. Is this really what you want?')
+            self.logwarn("Ticking without children. Is this really what you want?")
             return NodeMsg.FAILED
 
         # If we've previously succeeded or failed, reset
@@ -229,7 +224,7 @@ class MemoryFallback(FlowControl):
                 elif result == NodeMsg.SUCCEEDED:
                     # untick all children after the one that triggered this
                     # condition
-                    for untick_child in self.children[index + 1:]:
+                    for untick_child in self.children[index + 1 :]:
                         untick_child.untick()
                 return result
         # If all children failed, we too fail
@@ -265,7 +260,8 @@ def calculate_utility_fallback(children):
         has_lower_bound_success=True,
         has_upper_bound_success=True,
         has_lower_bound_failure=True,
-        has_upper_bound_failure=True)
+        has_upper_bound_failure=True,
+    )
     if children:
         # To figure out the best and worst case cost for success and
         # failure, respectively, we need to figure out the cheapest and
@@ -288,13 +284,18 @@ def calculate_utility_fallback(children):
         # lower bounds: [A.lower_success, (A.lower_failure + B.lower_success)]
         # upper bounds: [A.upper_success, (A.upper_failure + B.upper_success)]
 
-        success_bounds = [UtilityBounds(has_lower_bound_success=True,
-                                        lower_bound_success=0,
-                                        has_upper_bound_success=True,
-                                        upper_bound_success=0)
-                          for _ in children]
-        for index, child_bounds in enumerate((child.calculate_utility()
-                                              for child in children)):
+        success_bounds = [
+            UtilityBounds(
+                has_lower_bound_success=True,
+                lower_bound_success=0,
+                has_upper_bound_success=True,
+                upper_bound_success=0,
+            )
+            for _ in children
+        ]
+        for index, child_bounds in enumerate(
+            (child.calculate_utility() for child in children)
+        ):
             # If any child cannot execute at all, the fallback cannot
             # execute and won't provide a utility estimate
             #
@@ -312,24 +313,46 @@ def calculate_utility_fallback(children):
             bounds.has_upper_bound_failure &= child_bounds.has_upper_bound_failure
             bounds.upper_bound_failure += child_bounds.upper_bound_failure
 
-            success_bounds[index].lower_bound_success += child_bounds.lower_bound_success
-            success_bounds[index].has_lower_bound_success &= child_bounds.has_lower_bound_success
-            success_bounds[index].upper_bound_success += child_bounds.upper_bound_success
-            success_bounds[index].has_upper_bound_success &= child_bounds.has_upper_bound_success
+            success_bounds[
+                index
+            ].lower_bound_success += child_bounds.lower_bound_success
+            success_bounds[
+                index
+            ].has_lower_bound_success &= child_bounds.has_lower_bound_success
+            success_bounds[
+                index
+            ].upper_bound_success += child_bounds.upper_bound_success
+            success_bounds[
+                index
+            ].has_upper_bound_success &= child_bounds.has_upper_bound_success
             # Range returns an empty range if the first parameter is larger
             # than the second, so no bounds checking necessary
             for i in range(index + 1, len(success_bounds)):
-                success_bounds[i].lower_bound_success += child_bounds.lower_bound_failure
-                success_bounds[i].has_lower_bound_success &= child_bounds.has_lower_bound_failure
-                success_bounds[i].upper_bound_success += child_bounds.upper_bound_failure
-                success_bounds[i].has_upper_bound_success &= child_bounds.has_upper_bound_failure
+                success_bounds[
+                    i
+                ].lower_bound_success += child_bounds.lower_bound_failure
+                success_bounds[
+                    i
+                ].has_lower_bound_success &= child_bounds.has_lower_bound_failure
+                success_bounds[
+                    i
+                ].upper_bound_success += child_bounds.upper_bound_failure
+                success_bounds[
+                    i
+                ].has_upper_bound_success &= child_bounds.has_upper_bound_failure
 
         # Select the minimum and maximum values to get the final bounds
-        bounds.lower_bound_success = min((x.lower_bound_success for x in success_bounds))
-        bounds.has_lower_bound_success &= all((b.has_lower_bound_success
-                                               for b in success_bounds))
+        bounds.lower_bound_success = min(
+            (x.lower_bound_success for x in success_bounds)
+        )
+        bounds.has_lower_bound_success &= all(
+            (b.has_lower_bound_success for b in success_bounds)
+        )
 
-        bounds.upper_bound_success = max((x.upper_bound_success for x in success_bounds))
-        bounds.has_upper_bound_success &= all((b.has_upper_bound_success
-                                               for b in success_bounds))
+        bounds.upper_bound_success = max(
+            (x.upper_bound_success for x in success_bounds)
+        )
+        bounds.has_upper_bound_success &= all(
+            (b.has_upper_bound_success for b in success_bounds)
+        )
     return bounds
