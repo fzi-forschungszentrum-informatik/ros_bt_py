@@ -1,26 +1,26 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.testing_nodes.migrations_test_nodes"
     node_class: "NodeWithWorkingMigrations"
     version: ""
     max_children: 0
     name: "NodeWithWorkingMigrations"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "valid_option"
         serialized_value: "0"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "valid_input"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "valid_output"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"

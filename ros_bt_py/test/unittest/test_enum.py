@@ -42,22 +42,25 @@ from ros_bt_py.ros_helpers import EnumValue
 class TestEnum(unittest.TestCase):
     def testNoROSMessage(self):
         self.assertRaises(
-            BehaviorTreeException, Enum, {'ros_message_type': int,
-                                          'constant_name': EnumValue('does_not_exist')})
+            BehaviorTreeException,
+            Enum,
+            {"ros_message_type": int, "constant_name": EnumValue("does_not_exist")},
+        )
 
     def testTreeMessageWrongField(self):
         self.assertRaises(
-            BehaviorTreeException, Enum, {'ros_message_type': Tree,
-                                          'constant_name': EnumValue('does_not_exist')})
+            BehaviorTreeException,
+            Enum,
+            {"ros_message_type": Tree, "constant_name": EnumValue("does_not_exist")},
+        )
 
     def testTreeMessage(self):
-        enum = Enum({'ros_message_type': Tree,
-                     'constant_name': EnumValue('IDLE')})
+        enum = Enum({"ros_message_type": Tree, "constant_name": EnumValue("IDLE")})
         enum.setup()
 
         enum.tick()
         self.assertEqual(enum.state, NodeMsg.SUCCEEDED)
-        self.assertEqual(enum.outputs['out'], 'IDLE')
+        self.assertEqual(enum.outputs["out"], "IDLE")
 
         enum.reset()
         self.assertEqual(enum.state, NodeMsg.IDLE)
@@ -70,24 +73,25 @@ class TestEnum(unittest.TestCase):
 
     def testHeaderMessage(self):
         self.assertRaises(
-            BehaviorTreeException, Enum, {'ros_message_type': Header,
-                                          'constant_name': EnumValue('does_not_exist')})
+            BehaviorTreeException,
+            Enum,
+            {"ros_message_type": Header, "constant_name": EnumValue("does_not_exist")},
+        )
 
 
 class TestEnumFields(unittest.TestCase):
     def testNoROSMessage(self):
-        self.assertRaises(
-            BehaviorTreeException, EnumFields, {'ros_message_type': int})
+        self.assertRaises(BehaviorTreeException, EnumFields, {"ros_message_type": int})
 
     def testTreeMessage(self):
-        enum = EnumFields({'ros_message_type': Tree})
+        enum = EnumFields({"ros_message_type": Tree})
         enum.setup()
 
         enum.tick()
         self.assertEqual(enum.state, NodeMsg.SUCCEEDED)
-        self.assertEqual(enum.outputs['IDLE'], 'IDLE')
-        self.assertEqual(enum.outputs['WAITING_FOR_TICK'], 'WAITING_FOR_TICK')
-        self.assertEqual(enum.outputs['ERROR'], 'ERROR')
+        self.assertEqual(enum.outputs["IDLE"], "IDLE")
+        self.assertEqual(enum.outputs["WAITING_FOR_TICK"], "WAITING_FOR_TICK")
+        self.assertEqual(enum.outputs["ERROR"], "ERROR")
 
         enum.reset()
         self.assertEqual(enum.state, NodeMsg.IDLE)
@@ -100,4 +104,5 @@ class TestEnumFields(unittest.TestCase):
 
     def testHeaderMessage(self):
         self.assertRaises(
-            BehaviorTreeException, EnumFields, {'ros_message_type': Header})
+            BehaviorTreeException, EnumFields, {"ros_message_type": Header}
+        )

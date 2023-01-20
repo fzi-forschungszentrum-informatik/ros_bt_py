@@ -1331,7 +1331,7 @@ class LoadSaveControls extends Component
       ros: this.props.ros,
       name: this.props.bt_namespace + 'save_tree',
       serviceType: 'ros_bt_py_msgs/SaveTree'
-    });   
+    });
 
     this.control_tree_execution_service = new ROSLIB.Service({
       ros: this.props.ros,
@@ -1977,7 +1977,7 @@ class D3BehaviorTreeEditor extends Component
           this.props.onSelectedEdgeChange(null);
         }
       });
-    
+
     // multi selection
     this.selection = false;
     this.mouse_moved = false;
@@ -1991,14 +1991,14 @@ class D3BehaviorTreeEditor extends Component
             .attr("height", 0)
             .attr("x", 0)
             .attr("y", 0);
-    
+
     // start the selection
     viewport
       .on("mousedown", () => {
         if (d3.event.shiftKey)
         {
           this.selection = true; // indicates a shift-mousedown enabled selection rectangle
-          
+
           var s = viewport.select( "rect.selection");
 
           if( !s.empty()) {
@@ -2009,7 +2009,7 @@ class D3BehaviorTreeEditor extends Component
           }
         }
       });
-    
+
     // show the selection rectangle on mousemove
     viewport
       .on("mousemove", () => {
@@ -2018,13 +2018,13 @@ class D3BehaviorTreeEditor extends Component
           this.mouse_moved = true;
 
           var s = viewport.select( "rect.selection");
-  
+
           if( !s.empty()) {
             var start_x = this.start_x;
             var start_y = this.start_y;
             var end_x = d3.event.pageX - viewport_x;
             var end_y = d3.event.pageY - viewport_y;
-  
+
             // flip the selection rectangle if the user moves in a negative direction from the start point
             if (d3.event.pageX - viewport_x < start_x)
             {
@@ -2032,24 +2032,24 @@ class D3BehaviorTreeEditor extends Component
               end_x = this.start_x;
               s.attr("x", start_x);
             }
-  
+
             if (d3.event.pageY - viewport_y < start_y)
             {
               start_y = d3.event.pageY - viewport_y;
               end_y = this.start_y;
               s.attr("y", start_y);
             }
-  
+
             s.attr("width", end_x - start_x)
             .attr("height", Math.abs(end_y - start_y));
-              
+
             viewport.selectAll( 'foreignObject').each( function( data, i) {
               var bbox = this.getBoundingClientRect();
               var x = bbox.x - viewport_x;
               var y = bbox.y - viewport_y;
-  
+
               if (x >= start_x && x + bbox.width <= end_x && y >= start_y && y + bbox.height <= end_y) {
-                d3.select(this).select("body").classed('node-selected', true);            
+                d3.select(this).select("body").classed('node-selected', true);
               } else {
                 d3.select(this).select("body").classed('node-selected', false);
               }
@@ -2057,7 +2057,7 @@ class D3BehaviorTreeEditor extends Component
           }
         }
       });
-    
+
     // detect the selected nodes on mouseup
     viewport
       .on("mouseup", () => {
@@ -2071,7 +2071,7 @@ class D3BehaviorTreeEditor extends Component
 
           var selected_nodes = new Set();
           var selected_node_names = new Set();
-    
+
           viewport.selectAll( 'foreignObject').each( function( data, i) {
             if(d3.select(this).select("body").classed('node-selected'))
             {
@@ -2081,8 +2081,8 @@ class D3BehaviorTreeEditor extends Component
           });
 
           this.props.onMultipleSelectionChange(Array.from(selected_node_names));
-        }        
-      });   
+        }
+      });
   }
 
   render()
@@ -4849,7 +4849,7 @@ class MultipleSelection extends Component
                              + response.error_message);
         }
       }.bind(this));
-    
+
   }
 
   onClickCreateCoordinatorTree(event)
@@ -4861,7 +4861,7 @@ class MultipleSelection extends Component
       function(response) {
         if (response.success) {
           console.log('Created coordinator tree!');
-          
+
           var capability = {};
           capability.capability = this.state.capability;
           capability.implementation = this.state.implementation;
@@ -5001,7 +5001,7 @@ class MultipleSelection extends Component
                                         if (response.success) {
                                           console.log("Removing old wirings successful!");
                                            // remove all selected nodes
-                                          for (var i = 0; i < remove_nodes.length; i++) {                                            
+                                          for (var i = 0; i < remove_nodes.length; i++) {
                                             // finally remove the node
                                             this.remove_node_service.callService(
                                               new ROSLIB.ServiceRequest({
@@ -5027,7 +5027,7 @@ class MultipleSelection extends Component
                                     {
                                       console.log('the new node is the root, so remove the old nodes anyway:', remove_nodes);
                                       // finally remove the nodes
-                                      for (var i = 0; i < remove_nodes.length; i++) { 
+                                      for (var i = 0; i < remove_nodes.length; i++) {
                                         this.remove_node_service.callService(
                                           new ROSLIB.ServiceRequest({
                                             node_name: remove_nodes[i],
@@ -5258,7 +5258,7 @@ class MultipleSelection extends Component
                    onChange={this.setTarget}/>
           </div>
         </div>
-      ); 
+      );
     } else {
       // show createsubtree
       return (
@@ -5765,7 +5765,7 @@ class EditableNode extends Component
   }
 
   renderSearchResults(results, key, onNewValue)
-  {    
+  {
     if(results.length > 0 && this.state.results_at_key === key)
     {
       var result_rows = results.map(x => {
@@ -6675,7 +6675,7 @@ class ImplementationTypeInput extends Component
       description: '',
       cm_available: false,
     };
-    
+
     this.options = {
       shouldSort: true,
       threshold: 0.6,
@@ -7230,7 +7230,7 @@ class JSONInput extends Component
       } else {
         this.props.onNewValue(json);
       }
-      
+
       this.props.onValidityChange(true);
     } catch (e) {
       this.setState({is_valid: false});

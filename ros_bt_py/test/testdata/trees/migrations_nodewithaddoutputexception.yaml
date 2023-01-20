@@ -1,8 +1,8 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.testing_nodes.migrations_test_nodes"
     node_class: "NodeWithAddOutputException"
     version: ""
@@ -11,8 +11,8 @@ nodes:
     child_names: []
     options: []
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "valid_output"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"

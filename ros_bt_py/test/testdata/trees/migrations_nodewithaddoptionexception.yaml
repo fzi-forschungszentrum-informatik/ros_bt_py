@@ -1,16 +1,16 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.testing_nodes.migrations_test_nodes"
     node_class: "NodeWithAddOptionException"
     version: ""
     max_children: 0
     name: "NodeWithAddOptionException"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "valid_option"
         serialized_value: "0"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"

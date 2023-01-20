@@ -36,7 +36,7 @@ from ros_bt_py.nodes.wait import Wait, WaitInput
 
 class TestWait(unittest.TestCase):
     def testPositive(self):
-        wait = Wait({'seconds_to_wait': 1})
+        wait = Wait({"seconds_to_wait": 1})
         self.assertEqual(wait.state, NodeMsg.UNINITIALIZED)
         wait.setup()
         self.assertEqual(wait.state, NodeMsg.IDLE)
@@ -49,14 +49,14 @@ class TestWait(unittest.TestCase):
         self.assertEqual(wait.shutdown(), NodeMsg.SHUTDOWN)
 
     def testZero(self):
-        wait = Wait({'seconds_to_wait': 0})
+        wait = Wait({"seconds_to_wait": 0})
         self.assertEqual(wait.state, NodeMsg.UNINITIALIZED)
         wait.setup()
         self.assertEqual(wait.state, NodeMsg.IDLE)
         self.assertEqual(wait.tick(), NodeMsg.SUCCESS)
 
     def testNegative(self):
-        wait = Wait({'seconds_to_wait': -1})
+        wait = Wait({"seconds_to_wait": -1})
         self.assertEqual(wait.state, NodeMsg.UNINITIALIZED)
         wait.setup()
         self.assertEqual(wait.state, NodeMsg.IDLE)
@@ -66,7 +66,7 @@ class TestWait(unittest.TestCase):
 class TestWaitInput(unittest.TestCase):
     def testPositive(self):
         wait = WaitInput()
-        wait.inputs['seconds_to_wait'] = 1
+        wait.inputs["seconds_to_wait"] = 1
         self.assertEqual(wait.state, NodeMsg.UNINITIALIZED)
         wait.setup()
         self.assertEqual(wait.state, NodeMsg.IDLE)
@@ -80,7 +80,7 @@ class TestWaitInput(unittest.TestCase):
 
     def testZero(self):
         wait = WaitInput()
-        wait.inputs['seconds_to_wait'] = 0
+        wait.inputs["seconds_to_wait"] = 0
         self.assertEqual(wait.state, NodeMsg.UNINITIALIZED)
         wait.setup()
         self.assertEqual(wait.state, NodeMsg.IDLE)
@@ -88,7 +88,7 @@ class TestWaitInput(unittest.TestCase):
 
     def testNegative(self):
         wait = WaitInput()
-        wait.inputs['seconds_to_wait'] = -1
+        wait.inputs["seconds_to_wait"] = -1
         self.assertEqual(wait.state, NodeMsg.UNINITIALIZED)
         wait.setup()
         self.assertEqual(wait.state, NodeMsg.IDLE)

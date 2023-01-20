@@ -39,19 +39,24 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 from ros_bt_py.ros_helpers import AsyncServiceProxy
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'service_type': type,
-             'request_type': type,
-             'response_type': type,
-             'service_name': str,
-             'wait_for_service_seconds': float,
-             'wait_for_response_seconds': float,
-             'fail_if_not_available': bool},
-    inputs={'request': OptionRef('request_type')},
-    outputs={'response': OptionRef('response_type')},
-    max_children=0,
-    optional_options=['fail_if_not_available']))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={
+            "service_type": type,
+            "request_type": type,
+            "response_type": type,
+            "service_name": str,
+            "wait_for_service_seconds": float,
+            "wait_for_response_seconds": float,
+            "fail_if_not_available": bool,
+        },
+        inputs={"request": OptionRef("request_type")},
+        outputs={"response": OptionRef("response_type")},
+        max_children=0,
+        optional_options=["fail_if_not_available"],
+    )
+)
 class Service(Leaf):
     """Calls a ROS service with the provided Request data.
 
@@ -72,20 +77,25 @@ class Service(Leaf):
         self._service_available = True
         # throws if service is not available
         try:
-            rospy.wait_for_service(self.options['service_name'],
-                                   self.options['wait_for_service_seconds'])
+            rospy.wait_for_service(
+                self.options["service_name"], self.options["wait_for_service_seconds"]
+            )
         except rospy.ROSException as e:
-            if 'fail_if_not_available' in self.options and self.options['fail_if_not_available']:
+            if (
+                "fail_if_not_available" in self.options
+                and self.options["fail_if_not_available"]
+            ):
                 self._service_available = False
             else:
                 raise e
 
-        self._service_proxy = AsyncServiceProxy(self.options['service_name'],
-                                                self.options['service_type'])
+        self._service_proxy = AsyncServiceProxy(
+            self.options["service_name"], self.options["service_type"]
+        )
         self._last_service_call_time = None
         self._last_request = None
         self._reported_result = False
-        self.outputs['response'] = None
+        self.outputs["response"] = None
 
         return NodeMsg.IDLE
 
@@ -94,7 +104,7 @@ class Service(Leaf):
         self._last_service_call_time = None
         self._last_request = None
         self._reported_result = False
-        self.outputs['response'] = None
+        self.outputs["response"] = None
 
         return NodeMsg.IDLE
 
@@ -103,11 +113,13 @@ class Service(Leaf):
             return NodeMsg.FAILED
         # If theres' no service call in-flight, and we have already reported
         # the result (see below), start a new call and save the request
-        if self._reported_result or \
-            self._service_proxy.get_state() == AsyncServiceProxy.IDLE or \
-                self._service_proxy.get_state() == AsyncServiceProxy.ABORTED:
+        if (
+            self._reported_result
+            or self._service_proxy.get_state() == AsyncServiceProxy.IDLE
+            or self._service_proxy.get_state() == AsyncServiceProxy.ABORTED
+        ):
             self._last_service_call_time = rospy.Time.now()
-            self._last_request = self.inputs['request']
+            self._last_request = self.inputs["request"]
             self._reported_result = False
             self._service_proxy.call_service(self._last_request)
 
@@ -115,10 +127,13 @@ class Service(Leaf):
             # If the call takes longer than the specified timeout, abort the
             # call and return FAILED
             seconds_since_call = (
-                rospy.Time.now() - self._last_service_call_time).to_sec()
-            if seconds_since_call > self.options['wait_for_response_seconds']:
-                self.logerr('Service call to %s with request %s timed out' % (
-                    self.options['service_name'], self._last_request))
+                rospy.Time.now() - self._last_service_call_time
+            ).to_sec()
+            if seconds_since_call > self.options["wait_for_response_seconds"]:
+                self.logerr(
+                    "Service call to %s with request %s timed out"
+                    % (self.options["service_name"], self._last_request)
+                )
                 self._service_proxy.stop_call()
                 return NodeMsg.FAILED
 
@@ -126,7 +141,7 @@ class Service(Leaf):
         else:
             new_state = NodeMsg.SUCCEEDED
             if self._service_proxy.get_state() == AsyncServiceProxy.RESPONSE_READY:
-                self.outputs['response'] = self._service_proxy.get_response()
+                self.outputs["response"] = self._service_proxy.get_response()
                 self._service_proxy.stop_call()
             if self._service_proxy.get_state() == AsyncServiceProxy.ERROR:
                 # TODO(nberg): Leave old response or set to None?
@@ -144,45 +159,58 @@ class Service(Leaf):
         self._service_proxy.shutdown()
 
     def _do_calculate_utility(self):
-        resolved_service = rospy.resolve_name(self.options['service_name'])
+        resolved_service = rospy.resolve_name(self.options["service_name"])
 
         try:
             service_type_name = rosservice.get_service_type(resolved_service)
         except rosservice.ROSServiceIOException as exc:
             # Defaults to no bounds set, dragging down the utility
             # score
-            self.loginfo('Unable to check for service %s: %s' %
-                         (resolved_service, str(exc)))
+            self.loginfo(
+                "Unable to check for service %s: %s" % (resolved_service, str(exc))
+            )
             return UtilityBounds()
 
         if service_type_name:
             service_type = get_service_class(service_type_name)
 
-            if service_type == self.options['service_type']:
-                self.loginfo(('Found service %s with correct type, returning '
-                              'filled out UtilityBounds') % resolved_service)
-                return UtilityBounds(can_execute=True,
-                                     has_lower_bound_success=True,
-                                     has_upper_bound_success=True,
-                                     has_lower_bound_failure=True,
-                                     has_upper_bound_failure=True)
+            if service_type == self.options["service_type"]:
+                self.loginfo(
+                    (
+                        "Found service %s with correct type, returning "
+                        "filled out UtilityBounds"
+                    )
+                    % resolved_service
+                )
+                return UtilityBounds(
+                    can_execute=True,
+                    has_lower_bound_success=True,
+                    has_upper_bound_success=True,
+                    has_lower_bound_failure=True,
+                    has_upper_bound_failure=True,
+                )
 
-        self.loginfo('Service %s is unavailable or has wrong type.' %
-                     resolved_service)
+        self.loginfo("Service %s is unavailable or has wrong type." % resolved_service)
         return UtilityBounds()
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'service_type': type,
-             'request_type': type,
-             'response_type': type,
-             'wait_for_response_seconds': float},
-    inputs={'request': OptionRef('request_type'),
-            'service_name': str,
-            },
-    outputs={'response': OptionRef('response_type')},
-    max_children=0))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={
+            "service_type": type,
+            "request_type": type,
+            "response_type": type,
+            "wait_for_response_seconds": float,
+        },
+        inputs={
+            "request": OptionRef("request_type"),
+            "service_name": str,
+        },
+        outputs={"response": OptionRef("response_type")},
+        max_children=0,
+    )
+)
 class ServiceInput(Leaf):
     """Calls a ROS service with the provided Request data.
 
@@ -204,7 +232,7 @@ class ServiceInput(Leaf):
         self._last_service_call_time = None
         self._last_request = None
         self._reported_result = False
-        self.outputs['response'] = None
+        self.outputs["response"] = None
 
         return NodeMsg.IDLE
 
@@ -215,25 +243,28 @@ class ServiceInput(Leaf):
         self._last_service_call_time = None
         self._last_request = None
         self._reported_result = False
-        self.outputs['response'] = None
+        self.outputs["response"] = None
 
         return NodeMsg.IDLE
 
     def _do_tick(self):
         # If the service name changed
-        if self.inputs.is_updated('service_name'):
+        if self.inputs.is_updated("service_name"):
             if self._service_proxy is not None:
                 self._do_reset()
         if self._service_proxy is None:
-            self._service_proxy = AsyncServiceProxy(self.inputs['service_name'],
-                                                    self.options['service_type'])
+            self._service_proxy = AsyncServiceProxy(
+                self.inputs["service_name"], self.options["service_type"]
+            )
         # If theres' no service call in-flight, and we have already reported
         # the result (see below), start a new call and save the request
-        if self._reported_result or \
-            self._service_proxy.get_state() == AsyncServiceProxy.IDLE or \
-                self._service_proxy.get_state() == AsyncServiceProxy.ABORTED:
+        if (
+            self._reported_result
+            or self._service_proxy.get_state() == AsyncServiceProxy.IDLE
+            or self._service_proxy.get_state() == AsyncServiceProxy.ABORTED
+        ):
             self._last_service_call_time = rospy.Time.now()
-            self._last_request = self.inputs['request']
+            self._last_request = self.inputs["request"]
             self._reported_result = False
             self._service_proxy.call_service(self._last_request)
 
@@ -241,10 +272,13 @@ class ServiceInput(Leaf):
             # If the call takes longer than the specified timeout, abort the
             # call and return FAILED
             seconds_since_call = (
-                rospy.Time.now() - self._last_service_call_time).to_sec()
-            if seconds_since_call > self.options['wait_for_response_seconds']:
-                self.logerr('Service call to %s with request %s timed out' % (
-                    self.inputs['service_name'], self._last_request))
+                rospy.Time.now() - self._last_service_call_time
+            ).to_sec()
+            if seconds_since_call > self.options["wait_for_response_seconds"]:
+                self.logerr(
+                    "Service call to %s with request %s timed out"
+                    % (self.inputs["service_name"], self._last_request)
+                )
                 self._service_proxy.stop_call()
                 return NodeMsg.FAILED
 
@@ -252,7 +286,7 @@ class ServiceInput(Leaf):
         else:
             new_state = NodeMsg.SUCCEEDED
             if self._service_proxy.get_state() == AsyncServiceProxy.RESPONSE_READY:
-                self.outputs['response'] = self._service_proxy.get_response()
+                self.outputs["response"] = self._service_proxy.get_response()
             if self._service_proxy.get_state() == AsyncServiceProxy.ERROR:
                 # TODO(nberg): Leave old response or set to None?
                 self._service_proxy.stop_call()
@@ -271,57 +305,72 @@ class ServiceInput(Leaf):
             self._service_proxy.shutdown()
 
     def _do_calculate_utility(self):
-        resolved_service = rospy.resolve_name(self.inputs['service_name'])
+        resolved_service = rospy.resolve_name(self.inputs["service_name"])
 
         try:
             service_type_name = rosservice.get_service_type(resolved_service)
         except rosservice.ROSServiceIOException as exc:
             # Defaults to no bounds set, dragging down the utility
             # score
-            self.loginfo('Unable to check for service %s: %s' %
-                         (resolved_service, str(exc)))
+            self.loginfo(
+                "Unable to check for service %s: %s" % (resolved_service, str(exc))
+            )
             return UtilityBounds()
 
         if service_type_name:
             service_type = get_service_class(service_type_name)
 
-            if service_type == self.options['service_type']:
-                self.loginfo(('Found service %s with correct type, returning '
-                              'filled out UtilityBounds') % resolved_service)
-                return UtilityBounds(can_execute=True,
-                                     has_lower_bound_success=True,
-                                     has_upper_bound_success=True,
-                                     has_lower_bound_failure=True,
-                                     has_upper_bound_failure=True)
+            if service_type == self.options["service_type"]:
+                self.loginfo(
+                    (
+                        "Found service %s with correct type, returning "
+                        "filled out UtilityBounds"
+                    )
+                    % resolved_service
+                )
+                return UtilityBounds(
+                    can_execute=True,
+                    has_lower_bound_success=True,
+                    has_upper_bound_success=True,
+                    has_lower_bound_failure=True,
+                    has_upper_bound_failure=True,
+                )
 
-        self.loginfo('Service %s is unavailable or has wrong type.' %
-                     resolved_service)
+        self.loginfo("Service %s is unavailable or has wrong type." % resolved_service)
         return UtilityBounds()
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'service_type': type,
-             'service_name': str,
-             'wait_for_service_seconds': float},
-    inputs={},
-    outputs={},
-    max_children=0,
-    optional_options=[]))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={
+            "service_type": type,
+            "service_name": str,
+            "wait_for_service_seconds": float,
+        },
+        inputs={},
+        outputs={},
+        max_children=0,
+        optional_options=[],
+    )
+)
 class WaitForService(Leaf):
-    """Waits for a service to be available, fails if this wait times out
-    """
+    """Waits for a service to be available, fails if this wait times out"""
 
     def _do_setup(self):
-        self._service_proxy = AsyncServiceProxy(self.options['service_name'],
-                                                self.options['service_type'])
+        self._service_proxy = AsyncServiceProxy(
+            self.options["service_name"], self.options["service_type"]
+        )
 
     def _do_tick(self):
-        if (self._service_proxy.get_state() == AsyncServiceProxy.IDLE
-                or self._service_proxy.get_state() == AsyncServiceProxy.ABORTED):
+        if (
+            self._service_proxy.get_state() == AsyncServiceProxy.IDLE
+            or self._service_proxy.get_state() == AsyncServiceProxy.ABORTED
+        ):
             self._last_service_call_time = rospy.Time.now()
             self._service_proxy.wait_for_service(
-                self.options['wait_for_service_seconds'])
+                self.options["wait_for_service_seconds"]
+            )
         if self._service_proxy.get_state() == AsyncServiceProxy.WAITING:
             return NodeMsg.RUNNING
         if self._service_proxy.get_state() == AsyncServiceProxy.SERVICE_AVAILABLE:

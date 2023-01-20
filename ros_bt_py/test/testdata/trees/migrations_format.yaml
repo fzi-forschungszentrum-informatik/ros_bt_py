@@ -1,8 +1,8 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.format"
     node_class: "FormatInputNode"
     version: ''
@@ -10,47 +10,47 @@ nodes:
     name: "FormatInputNode"
     child_names: []
     options: []
-    inputs: 
-      - 
+    inputs:
+      -
         key: "format_string"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-      - 
+      -
         key: "dict"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.dict\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "formatted_string"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.format"
     node_class: "FormatOptionNode"
     version: ''
     max_children: 0
     name: "FormatOptionNode"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "format_string"
         serialized_value: "\"foo\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "dict"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.dict\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "formatted_string"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     version: ''
@@ -65,24 +65,24 @@ nodes:
 data_wirings: []
 tick_frequency_hz: 10.0
 state: "EDITABLE"
-public_node_data: 
-  - 
+public_node_data:
+  -
     node_name: "FormatInputNode"
     data_kind: "inputs"
     data_key: "format_string"
-  - 
+  -
     node_name: "FormatInputNode"
     data_kind: "inputs"
     data_key: "dict"
-  - 
+  -
     node_name: "FormatInputNode"
     data_kind: "outputs"
     data_key: "formatted_string"
-  - 
+  -
     node_name: "FormatOptionNode"
     data_kind: "inputs"
     data_key: "dict"
-  - 
+  -
     node_name: "FormatOptionNode"
     data_kind: "outputs"
     data_key: "formatted_string"

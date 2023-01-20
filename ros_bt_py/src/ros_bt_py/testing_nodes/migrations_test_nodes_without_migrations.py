@@ -33,12 +33,9 @@ from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
-@define_bt_node(NodeConfig(
-    version='',
-    options={},
-    inputs={},
-    outputs={},
-    max_children=0))
+@define_bt_node(
+    NodeConfig(version="", options={}, inputs={}, outputs={}, max_children=0)
+)
 class NodeWithoutVersionAndWithoutMigrationsModule(Leaf):
     def _do_setup(self):
         pass
@@ -56,12 +53,9 @@ class NodeWithoutVersionAndWithoutMigrationsModule(Leaf):
         return NodeMsg.IDLE
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={},
-    outputs={},
-    max_children=0))
+@define_bt_node(
+    NodeConfig(version="0.9.0", options={}, inputs={}, outputs={}, max_children=0)
+)
 class NodeWithVersionAndWithoutMigrationsModule(Leaf):
     def _do_setup(self):
         pass

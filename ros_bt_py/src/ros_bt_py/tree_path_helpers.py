@@ -27,11 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
-CONTROL_CHARACTERS = {
-    '/': 'path_separator',
-    '[': 'index_start',
-    ']': 'index_end'
-}
+CONTROL_CHARACTERS = {"/": "path_separator", "[": "index_start", "]": "index_end"}
 
 
 def increment_child_name(name):

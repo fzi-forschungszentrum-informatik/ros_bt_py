@@ -1,2708 +1,2708 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_80"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_81"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_82"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_83"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_84"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_85"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_86"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_87"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_88"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_89"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_39"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_38"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_35"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_34"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_37"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_36"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_31"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_30"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_33"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_32"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_22"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_23"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_20"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_21"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_26"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_27"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_24"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_25"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_28"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_29"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_9"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_8"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_3"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_2"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "0"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_7"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_6"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_5"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_4"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_57"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_56"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_55"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_54"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_53"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_52"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_51"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_50"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_59"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_58"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_44"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_45"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_46"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_47"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_40"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_41"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_42"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_43"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_48"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_49"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_79"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_78"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_71"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_70"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_73"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_72"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_75"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_74"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_77"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_76"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_68"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_69"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_66"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_67"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_64"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_65"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_62"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_63"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_60"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_61"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_93"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_92"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_91"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_90"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_97"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_96"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_95"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_94"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_100"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_99"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_98"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_19"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_18"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_13"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_12"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_11"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_10"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_17"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_16"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_15"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant_14"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "[1, 2, 3]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.list\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "0"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     version: "0.9.0"
@@ -2731,404 +2731,404 @@ nodes:
 data_wirings: []
 tick_frequency_hz: 10.0
 state: "EDITABLE"
-public_node_data: 
-  - 
+public_node_data:
+  -
     node_name: "Constant"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_2"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_3"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_4"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_5"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_6"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_7"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_8"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_9"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_10"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_11"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_12"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_13"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_14"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_15"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_16"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_17"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_18"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_19"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_20"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_21"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_22"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_23"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_24"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_25"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_26"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_27"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_28"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_29"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_30"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_31"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_32"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_33"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_34"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_35"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_36"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_37"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_38"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_39"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_40"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_41"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_42"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_43"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_44"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_45"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_46"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_47"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_48"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_49"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_50"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_51"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_52"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_53"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_54"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_55"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_56"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_57"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_58"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_59"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_60"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_61"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_62"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_63"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_64"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_65"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_66"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_67"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_68"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_69"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_70"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_71"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_72"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_73"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_74"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_75"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_76"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_77"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_78"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_79"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_80"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_81"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_82"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_83"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_84"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_85"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_86"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_87"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_88"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_89"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_90"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_91"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_92"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_93"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_94"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_95"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_96"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_97"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_98"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_99"
     data_kind: "outputs"
     data_key: "constant"
-  - 
+  -
     node_name: "Constant_100"
     data_kind: "outputs"
     data_key: "constant"

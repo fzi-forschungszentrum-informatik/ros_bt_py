@@ -41,21 +41,24 @@ class FindBestExecutorServer(object):
     def __init__(self):
         self.tree_manager = TreeManager()
         self._as = SimpleActionServer(
-            'find_best_executor',
+            "find_best_executor",
             FindBestExecutorAction,
             execute_cb=self.execute_cb,
-            auto_start=False)
+            auto_start=False,
+        )
 
         self._as.start()
 
     def execute_cb(self, goal):
-        eval_services = rosservice_find('ros_bt_py_msgs/EvaluateUtility')
-        rospy.loginfo('Found these eval services: %s', eval_services)
+        eval_services = rosservice_find("ros_bt_py_msgs/EvaluateUtility")
+        rospy.loginfo("Found these eval services: %s", eval_services)
 
         bounds = []
         res = self.tree_manager.load_tree(LoadTreeRequest(tree=goal.tree))
         if res.success:
-            bounds.append(('__local', self.tree_manager.find_root().calculate_utility()))
+            bounds.append(
+                ("__local", self.tree_manager.find_root().calculate_utility())
+            )
 
         for srv_name in eval_services:
             if self._as.is_preempt_requested():
@@ -63,20 +66,22 @@ class FindBestExecutorServer(object):
                 self._as.set_preempted()
                 return
 
-            service_client = rospy.ServiceProxy(srv_name,
-                                                EvaluateUtility)
+            service_client = rospy.ServiceProxy(srv_name, EvaluateUtility)
             service_client.wait_for_service(1.0)
             # Cut off the service name to get just the namespace
             #
             # The second paramater to rsplit limits it to one split,
             # which neatly separates the service name from the
             # namespace. The namespace is element 0 of the resulting array
-            srv_namespace = srv_name.rsplit('/', 1)[0]
-            bounds.append((srv_namespace,
-                           service_client(
-                               EvaluateUtilityRequest(tree=goal.tree)).utility))
+            srv_namespace = srv_name.rsplit("/", 1)[0]
+            bounds.append(
+                (
+                    srv_namespace,
+                    service_client(EvaluateUtilityRequest(tree=goal.tree)).utility,
+                )
+            )
 
-        rospy.loginfo('Utility bounds by service namespace: %s', bounds)
+        rospy.loginfo("Utility bounds by service namespace: %s", bounds)
         if not bounds:
             self._as.set_aborted(result=None, text="")
 
@@ -101,10 +106,11 @@ class FindBestExecutorServer(object):
         # Otherwise, extract the best executor
         best_name, best_bounds = bounds[0]
 
-        rospy.loginfo('Executor "%s" has the best bounds:\n%s',
-                      best_name, str(best_bounds))
+        rospy.loginfo(
+            'Executor "%s" has the best bounds:\n%s', best_name, str(best_bounds)
+        )
 
-        if best_name == '__local':
+        if best_name == "__local":
             result.local_is_best = True
         else:
             result.local_is_best = False

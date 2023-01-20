@@ -1,26 +1,26 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.list"
     node_class: "IterateList"
     version: ""
     max_children: 1
     name: "IterateList"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "item_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "list"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "list_item"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
@@ -29,12 +29,12 @@ nodes:
 data_wirings: []
 tick_frequency_hz: 10.0
 state: "EDITABLE"
-public_node_data: 
-  - 
+public_node_data:
+  -
     node_name: "IterateList"
     data_kind: "inputs"
     data_key: "list"
-  - 
+  -
     node_name: "IterateList"
     data_kind: "outputs"
     data_key: "list_item"

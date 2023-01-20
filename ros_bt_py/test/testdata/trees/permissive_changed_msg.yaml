@@ -1,40 +1,40 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "{\"py/object\": \"ros_bt_py_msgs.msg._TreeNotReally.TreeNotReally\", \"py/state\": [\"\", \"\", \"\"\
   , [], [], 0, \"\", []]}"
         serialized_type: "{\"py/type\": \"ros_bt_py_msgs.msg._TreeNotReally.TreeNotReally\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"ros_bt_py_msgs.msg._TreeNotReally.TreeNotReally\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"ros_bt_py_msgs.msg._TreeNotReally.TreeNotReally\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
 data_wirings: []
 tick_frequency_hz: 10.0
 state: "EDITABLE"
-public_node_data: 
-  - 
+public_node_data:
+  -
     node_name: "Constant"
     data_kind: "outputs"
     data_key: "constant"

@@ -46,55 +46,55 @@ class TestDownloadImage(unittest.TestCase):
         self.get_success = mock.MagicMock(status_code=200, raw=self.image_raw())
         self.get_failure = mock.MagicMock(status_code=404)
 
-    @mock.patch('ros_bt_py.nodes.web.requests.get')
+    @mock.patch("ros_bt_py.nodes.web.requests.get")
     def testDownloadAndSaveImage(self, mock_get):
         mock_get.return_value = self.get_success
-        dl = DownloadImage({'cache_folder': 'file:///toto'})
+        dl = DownloadImage({"cache_folder": "file:///toto"})
         dl.setup()
-        dl.inputs['image_url'] = 'www.foobar.com/picture.png'
-        with mock.patch('ros_bt_py.nodes.web.open', mock.mock_open()) as mocked_file:
+        dl.inputs["image_url"] = "www.foobar.com/picture.png"
+        with mock.patch("ros_bt_py.nodes.web.open", mock.mock_open()) as mocked_file:
             self.assertEqual(dl.tick(), Node.SUCCEEDED)
             assert mocked_file.call_count == 1
             # test caching
-            with mock.patch('os.path.exists') as mocked_exists:
+            with mock.patch("os.path.exists") as mocked_exists:
                 mocked_exists.return_value = True
                 self.assertEqual(dl.tick(), Node.SUCCEEDED)
                 assert mocked_exists.call_count == 1
 
-        self.assertEqual(dl.outputs['download_error_msg'], '')
-        self.assertTrue(dl.outputs['download_success'])
-        self.assertTrue(dl.outputs['filepath'].startswith('/toto'))
-        self.assertTrue(dl.outputs['filepath'].endswith('.png'))
+        self.assertEqual(dl.outputs["download_error_msg"], "")
+        self.assertTrue(dl.outputs["download_success"])
+        self.assertTrue(dl.outputs["filepath"].startswith("/toto"))
+        self.assertTrue(dl.outputs["filepath"].endswith(".png"))
 
         self.assertEqual(dl.untick(), Node.IDLE)
         self.assertEqual(dl.reset(), Node.IDLE)
         self.assertEqual(dl.shutdown(), Node.SHUTDOWN)
 
-    @mock.patch('ros_bt_py.nodes.web.requests.get')
+    @mock.patch("ros_bt_py.nodes.web.requests.get")
     def testDownloadFail(self, mock_get):
         mock_get.return_value = self.get_failure
-        dl = DownloadImage({'cache_folder': 'file:///toto'})
+        dl = DownloadImage({"cache_folder": "file:///toto"})
         dl.setup()
-        dl.inputs['image_url'] = 'www.foobar.com/picture.png'
-        with mock.patch('ros_bt_py.nodes.web.open', mock.mock_open()) as mocked_file:
+        dl.inputs["image_url"] = "www.foobar.com/picture.png"
+        with mock.patch("ros_bt_py.nodes.web.open", mock.mock_open()) as mocked_file:
             self.assertEqual(dl.tick(), Node.FAILED)
             assert mocked_file.call_count == 0
 
-        self.assertNotEqual(dl.outputs['download_error_msg'], '')
-        self.assertFalse(dl.outputs['download_success'])
-        self.assertEqual(dl.outputs['filepath'], '')
+        self.assertNotEqual(dl.outputs["download_error_msg"], "")
+        self.assertFalse(dl.outputs["download_success"])
+        self.assertEqual(dl.outputs["filepath"], "")
 
         self.assertEqual(dl.untick(), Node.IDLE)
         self.assertEqual(dl.reset(), Node.IDLE)
         self.assertEqual(dl.shutdown(), Node.SHUTDOWN)
 
     def testMalformedCacheFolder(self):
-        dl = DownloadImage({'cache_folder': '/notareal.file'})
+        dl = DownloadImage({"cache_folder": "/notareal.file"})
         dl.setup()
-        self.assertFalse(dl.outputs['download_success'])
-        dl.inputs['image_url'] = 'www.foobar.com/picture.png'
+        self.assertFalse(dl.outputs["download_success"])
+        dl.inputs["image_url"] = "www.foobar.com/picture.png"
         self.assertEqual(dl.tick(), Node.FAILED)
 
     def testPackageCacheFolder(self):
-        dl = DownloadImage({'cache_folder': 'package://ros_bt_py/cache'})
+        dl = DownloadImage({"cache_folder": "package://ros_bt_py/cache"})
         dl.setup()

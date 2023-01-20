@@ -1,8 +1,8 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "MemorySequence"
     version: ""
@@ -14,7 +14,7 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     version: ""

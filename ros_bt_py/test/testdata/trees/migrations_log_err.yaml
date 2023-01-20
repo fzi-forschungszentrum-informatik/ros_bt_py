@@ -1,55 +1,55 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "\"hello there\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.str\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.log"
     node_class: "Log"
     version: ''
     max_children: 0
     name: "Log"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "logger_level"
         serialized_value: "\"err\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "in"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     version: ''
@@ -61,20 +61,20 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-data_wirings: 
-  - 
-    source: 
+data_wirings:
+  -
+    source:
       node_name: "Constant"
       data_kind: "outputs"
       data_key: "constant"
-    target: 
+    target:
       node_name: "Log"
       data_kind: "inputs"
       data_key: "in"
 tick_frequency_hz: 10.0
 state: "EDITABLE"
-public_node_data: 
-  - 
+public_node_data:
+  -
     node_name: "Log"
     data_kind: "inputs"
     data_key: "in"

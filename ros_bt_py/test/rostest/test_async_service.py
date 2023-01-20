@@ -29,6 +29,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
 import unittest
+
 try:
     import unittest.mock as mock
 except ImportError:
@@ -40,14 +41,18 @@ import signal
 import rospy
 from std_srvs.srv import SetBool, SetBoolRequest, SetBoolResponse
 
-from ros_bt_py.ros_helpers import AsyncServiceProxy, _call_service_impl, _wait_for_service_impl
+from ros_bt_py.ros_helpers import (
+    AsyncServiceProxy,
+    _call_service_impl,
+    _wait_for_service_impl,
+)
 
-PKG = 'ros_bt_py'
+PKG = "ros_bt_py"
 
 
 class TestAsyncService(unittest.TestCase):
     def setUp(self):
-        self.async_proxy = AsyncServiceProxy('delay_1s_if_true', SetBool)
+        self.async_proxy = AsyncServiceProxy("delay_1s_if_true", SetBool)
 
     def testServiceCall(self):
         # The service returns immediately if data is False
@@ -116,10 +121,10 @@ class TestAsyncService(unittest.TestCase):
                 self.assertTrue(self.async_proxy.get_response().success)
                 return
 
-        raise Exception('Received no response after 1 second')
+        raise Exception("Received no response after 1 second")
 
     def testCrashingService(self):
-        crash_proxy = AsyncServiceProxy('crash', SetBool)
+        crash_proxy = AsyncServiceProxy("crash", SetBool)
 
         crash_proxy.call_service(SetBoolRequest())
 
@@ -134,7 +139,7 @@ class TestAsyncService(unittest.TestCase):
         self.assertEqual(crash_proxy.get_state(), AsyncServiceProxy.ERROR)
 
     def testCrashIfTrueService(self):
-        crash_proxy = AsyncServiceProxy('crash_if_true', SetBool)
+        crash_proxy = AsyncServiceProxy("crash_if_true", SetBool)
 
         crash_proxy.call_service(SetBoolRequest(data=True))
 
@@ -152,7 +157,9 @@ class TestAsyncService(unittest.TestCase):
         for _ in range(10):
             rospy.sleep(0.1)
             if crash_proxy.get_state() != AsyncServiceProxy.RUNNING:
-                self.assertEqual(crash_proxy.get_state(), AsyncServiceProxy.RESPONSE_READY)
+                self.assertEqual(
+                    crash_proxy.get_state(), AsyncServiceProxy.RESPONSE_READY
+                )
                 break
 
         _call_service_impl(crash_proxy._data)
@@ -160,23 +167,25 @@ class TestAsyncService(unittest.TestCase):
         self.assertEqual(crash_proxy.get_state(), AsyncServiceProxy.RESPONSE_READY)
 
     def testCallServiceImpl(self):
-        self.async_proxy._data['req'] = SetBoolRequest()
+        self.async_proxy._data["req"] = SetBoolRequest()
         _call_service_impl(self.async_proxy._data)
 
         self.assertEqual(self.async_proxy.get_state(), AsyncServiceProxy.RESPONSE_READY)
 
-        self.async_proxy._data['proxy'] = None
+        self.async_proxy._data["proxy"] = None
         _call_service_impl(self.async_proxy._data)
 
         self.assertEqual(self.async_proxy.get_state(), AsyncServiceProxy.ERROR)
 
     def testWaitForServiceImpl(self):
-        self.async_proxy._data['req'] = SetBoolRequest()
+        self.async_proxy._data["req"] = SetBoolRequest()
         _wait_for_service_impl(self.async_proxy._data)
 
-        self.assertEqual(self.async_proxy.get_state(), AsyncServiceProxy.SERVICE_AVAILABLE)
+        self.assertEqual(
+            self.async_proxy.get_state(), AsyncServiceProxy.SERVICE_AVAILABLE
+        )
 
-        self.async_proxy._data['proxy'] = None
+        self.async_proxy._data["proxy"] = None
         _wait_for_service_impl(self.async_proxy._data)
 
         self.assertEqual(self.async_proxy.get_state(), AsyncServiceProxy.ERROR)
@@ -197,7 +206,7 @@ class TestAsyncService(unittest.TestCase):
         self.async_proxy.call_service(SetBoolRequest(data=True))
         self.assertEqual(self.async_proxy.get_state(), AsyncServiceProxy.RUNNING)
 
-    @mock.patch('os.kill')
+    @mock.patch("os.kill")
     def testOSErrorOnStop(self, mock_os_kill):
         mock_os_kill.side_effect = OSError()
         # This request will return after a second
@@ -211,31 +220,35 @@ class TestAsyncService(unittest.TestCase):
             def __init__(self):
                 self.wait_for_service = None
                 self.call = None
+
         data = dict()
-        data['timeout'] = None
-        data['req'] = None
-        data['proxy'] = Proxy()
-        data['proxy'].wait_for_service = mock.MagicMock()
-        data['proxy'].wait_for_service.side_effect = rospy.exceptions.ROSInterruptException()
+        data["timeout"] = None
+        data["req"] = None
+        data["proxy"] = Proxy()
+        data["proxy"].wait_for_service = mock.MagicMock()
+        data[
+            "proxy"
+        ].wait_for_service.side_effect = rospy.exceptions.ROSInterruptException()
         _wait_for_service_impl(data)
 
-        data['proxy'].wait_for_service.side_effect = rospy.exceptions.ROSException()
+        data["proxy"].wait_for_service.side_effect = rospy.exceptions.ROSException()
         _wait_for_service_impl(data)
 
-        data['proxy'].wait_for_service.side_effect = Exception()
+        data["proxy"].wait_for_service.side_effect = Exception()
         _wait_for_service_impl(data)
 
-        data['proxy'].call = mock.MagicMock()
-        data['proxy'].call.side_effect = rospy.exceptions.ROSInterruptException()
+        data["proxy"].call = mock.MagicMock()
+        data["proxy"].call.side_effect = rospy.exceptions.ROSInterruptException()
 
         _call_service_impl(data)
 
 
-if __name__ == '__main__':
-    rospy.init_node('test_async_service')
+if __name__ == "__main__":
+    rospy.init_node("test_async_service")
     import rostest
     import sys
-    import os
-    os.environ['COVERAGE_FILE'] = '%s.%s.coverage' % (PKG, 'test_async_service')
-    rostest.rosrun(PKG, 'test_async_service', TestAsyncService,
-                   sysargs=sys.argv + ['--cov'])
+
+    os.environ["COVERAGE_FILE"] = "%s.%s.coverage" % (PKG, "test_async_service")
+    rostest.rosrun(
+        PKG, "test_async_service", TestAsyncService, sysargs=sys.argv + ["--cov"]
+    )

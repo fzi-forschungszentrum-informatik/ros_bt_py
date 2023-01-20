@@ -57,33 +57,38 @@ def main():
     slot.
 
     """
-    rospy.init_node('remote_tree_slot')
+    rospy.init_node("remote_tree_slot")
 
-    slot_state_pub = rospy.Publisher('~slot_state',
-                                     RemoteSlotState,
-                                     latch=True,
-                                     queue_size=1)
+    slot_state_pub = rospy.Publisher(
+        "~slot_state", RemoteSlotState, latch=True, queue_size=1
+    )
     remote_slot = RemoteTreeSlot(publish_slot_state=slot_state_pub.publish)
 
     # Connect the action server's callbacks to the RemoteTreeSlot
-    action_server = ActionServer('~run_tree',
-                                 RunTreeAction,
-                                 goal_cb=remote_slot.run_tree_handler,
-                                 cancel_cb=remote_slot.cancel_run_tree_handler,
-                                 auto_start=False)
+    action_server = ActionServer(
+        "~run_tree",
+        RunTreeAction,
+        goal_cb=remote_slot.run_tree_handler,
+        cancel_cb=remote_slot.cancel_run_tree_handler,
+        auto_start=False,
+    )
 
     # Set up the service servers using the RemoteTreeSlot's handlers
-    rospy.Service('~control_slot_execution',
-                  ControlTreeExecution,
-                  handler=remote_slot.control_tree_execution_handler)
-    rospy.Service('~evaluate_utility',
-                  EvaluateUtility,
-                  handler=remote_slot.evaluate_utility_handler)
+    rospy.Service(
+        "~control_slot_execution",
+        ControlTreeExecution,
+        handler=remote_slot.control_tree_execution_handler,
+    )
+    rospy.Service(
+        "~evaluate_utility",
+        EvaluateUtility,
+        handler=remote_slot.evaluate_utility_handler,
+    )
 
     # And go!
     action_server.start()
     rospy.spin()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

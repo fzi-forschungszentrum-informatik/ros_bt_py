@@ -42,13 +42,15 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
 from ros_bt_py.ros_helpers import AsyncServiceProxy
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'slot_namespace': str,
-             'wait_for_service_seconds': float},
-    inputs={},
-    outputs={},
-    max_children=0))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={"slot_namespace": str, "wait_for_service_seconds": float},
+        inputs={},
+        outputs={},
+        max_children=0,
+    )
+)
 class RemoteSlot(Leaf):
     """This node controls a :class:`ros_bt_py.remote_tree_slot.RemoteTreeSlot`
 
@@ -68,13 +70,17 @@ class RemoteSlot(Leaf):
     it can also stop the slot at any time, of course.
 
     """
+
     def _do_setup(self):
-        rospy.wait_for_service(self.options['slot_namespace'] + '/control_slot_execution',
-                               self.options['wait_for_service_seconds'])
+        rospy.wait_for_service(
+            self.options["slot_namespace"] + "/control_slot_execution",
+            self.options["wait_for_service_seconds"],
+        )
 
         self._service_proxy = AsyncServiceProxy(
-            self.options['slot_namespace'] + '/control_slot_execution',
-            ControlTreeExecution)
+            self.options["slot_namespace"] + "/control_slot_execution",
+            ControlTreeExecution,
+        )
 
         self._lock = Lock()
         # We're only interested in the tree_finished member of
@@ -85,9 +91,10 @@ class RemoteSlot(Leaf):
         self._tree_loaded = False
         self._run_command_sent = False
         self._slot_state_sub = rospy.Subscriber(
-            self.options['slot_namespace'] + '/slot_state',
+            self.options["slot_namespace"] + "/slot_state",
             RemoteSlotState,
-            callback=self._slot_state_cb)
+            callback=self._slot_state_cb,
+        )
 
     def _slot_state_cb(self, msg):
         with self._lock:
@@ -132,13 +139,18 @@ class RemoteSlot(Leaf):
             proxy_state = self._service_proxy.get_state()
 
         if not self._run_command_sent and self._tree_loaded:
-            if proxy_state in [AsyncServiceProxy.IDLE,
-                               AsyncServiceProxy.RESPONSE_READY,
-                               AsyncServiceProxy.ABORTED]:
+            if proxy_state in [
+                AsyncServiceProxy.IDLE,
+                AsyncServiceProxy.RESPONSE_READY,
+                AsyncServiceProxy.ABORTED,
+            ]:
                 # Send a TICK_PERIODICALLY request without frequency,
                 # so the slot can decide for itself
-                self._service_proxy.call_service(ControlTreeExecutionRequest(
-                    command=ControlTreeExecutionRequest.TICK_UNTIL_RESULT))
+                self._service_proxy.call_service(
+                    ControlTreeExecutionRequest(
+                        command=ControlTreeExecutionRequest.TICK_UNTIL_RESULT
+                    )
+                )
                 self._run_command_sent = True
         # else:
         #     self.loginfo('Not sending request. command_sent: ' +
@@ -153,8 +165,9 @@ class RemoteSlot(Leaf):
             self._service_proxy.stop_call()
         self._run_command_sent = True
 
-        self._service_proxy.call_service(ControlTreeExecutionRequest(
-            command=ControlTreeExecutionRequest.SHUTDOWN))
+        self._service_proxy.call_service(
+            ControlTreeExecutionRequest(command=ControlTreeExecutionRequest.SHUTDOWN)
+        )
 
     def _do_reset(self):
         with self._lock:
@@ -165,42 +178,54 @@ class RemoteSlot(Leaf):
         if self._service_proxy.get_state() == AsyncServiceProxy.RUNNING:
             self._service_proxy.stop_call()
 
-        self._service_proxy.call_service(ControlTreeExecutionRequest(
-            command=ControlTreeExecutionRequest.SHUTDOWN))
+        self._service_proxy.call_service(
+            ControlTreeExecutionRequest(command=ControlTreeExecutionRequest.SHUTDOWN)
+        )
         return NodeMsg.IDLE
 
     def _do_untick(self):
         if self._service_proxy.get_state() == AsyncServiceProxy.RUNNING:
             self._service_proxy.stop_call()
 
-        self._service_proxy.call_service(ControlTreeExecutionRequest(
-            command=ControlTreeExecutionRequest.STOP))
+        self._service_proxy.call_service(
+            ControlTreeExecutionRequest(command=ControlTreeExecutionRequest.STOP)
+        )
         self._run_command_sent = False
 
         return NodeMsg.IDLE
 
     def _do_calculate_utility(self):
-        resolved_service = rospy.resolve_name(self.options['slot_namespace']
-                                              + '/control_slot_execution')
+        resolved_service = rospy.resolve_name(
+            self.options["slot_namespace"] + "/control_slot_execution"
+        )
 
         try:
             service_type_name = rosservice.get_service_type(resolved_service)
         except rosservice.ROSServiceIOException as exc:
             # Defaults to no bounds set, dragging down the utility
             # score
-            self.loginfo('Unable to check for service %s: %s' % (resolved_service, str(exc)))
+            self.loginfo(
+                "Unable to check for service %s: %s" % (resolved_service, str(exc))
+            )
             return UtilityBounds()
 
         if service_type_name:
             service_type = get_service_class(service_type_name)
 
             if service_type == ControlTreeExecution:
-                self.loginfo(('Found service %s with correct type, returning '
-                              'filled out UtilityBounds') % resolved_service)
-                return UtilityBounds(has_lower_bound_success=True,
-                                     has_upper_bound_success=True,
-                                     has_lower_bound_failure=True,
-                                     has_upper_bound_failure=True)
+                self.loginfo(
+                    (
+                        "Found service %s with correct type, returning "
+                        "filled out UtilityBounds"
+                    )
+                    % resolved_service
+                )
+                return UtilityBounds(
+                    has_lower_bound_success=True,
+                    has_upper_bound_success=True,
+                    has_lower_bound_failure=True,
+                    has_upper_bound_failure=True,
+                )
 
-        self.loginfo('Service %s is unavailable or has wrong type.' % resolved_service)
+        self.loginfo("Service %s is unavailable or has wrong type." % resolved_service)
         return UtilityBounds()

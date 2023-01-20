@@ -39,76 +39,102 @@ from ros_bt_py.nodes.parallel import Parallel, ParallelFailureTolerance
 
 
 def make_parallel(needed_successes):
-    return Parallel(options={'needed_successes': needed_successes})
+    return Parallel(options={"needed_successes": needed_successes})
 
 
 def make_parallel_failure_tolerance(needed_successes, tolerate_failures):
-    return ParallelFailureTolerance(options={
-        'needed_successes': needed_successes,
-        'tolerate_failures': tolerate_failures
-    })
+    return ParallelFailureTolerance(
+        options={
+            "needed_successes": needed_successes,
+            "tolerate_failures": tolerate_failures,
+        }
+    )
 
 
 class TestParallel(unittest.TestCase):
     def setUp(self):
-        self.succeeder = MockLeaf(name='succeeder',
-                                  options={'output_type': int,
-                                           'state_values': [Node.SUCCEEDED],
-                                           'output_values': [1]})
-        self.failer = MockLeaf(name='failer',
-                               options={'output_type': int,
-                                        'state_values': [Node.FAILED],
-                                        'output_values': [1]})
-        self.run_then_succeed = MockLeaf(name='run_then_succeed',
-                                         options={'output_type': int,
-                                                  'state_values': [Node.RUNNING, Node.SUCCEEDED],
-                                                  'output_values': [1, 1]})
-        self.run_then_fail = MockLeaf(name='run_then_fail',
-                                      options={'output_type': int,
-                                               'state_values': [Node.RUNNING, Node.FAILED],
-                                               'output_values': [1, 1]})
-        self.runner = MockLeaf(name='runner',
-                               options={'output_type': int,
-                                        'state_values': [Node.RUNNING],
-                                        'output_values': [1]})
+        self.succeeder = MockLeaf(
+            name="succeeder",
+            options={
+                "output_type": int,
+                "state_values": [Node.SUCCEEDED],
+                "output_values": [1],
+            },
+        )
+        self.failer = MockLeaf(
+            name="failer",
+            options={
+                "output_type": int,
+                "state_values": [Node.FAILED],
+                "output_values": [1],
+            },
+        )
+        self.run_then_succeed = MockLeaf(
+            name="run_then_succeed",
+            options={
+                "output_type": int,
+                "state_values": [Node.RUNNING, Node.SUCCEEDED],
+                "output_values": [1, 1],
+            },
+        )
+        self.run_then_fail = MockLeaf(
+            name="run_then_fail",
+            options={
+                "output_type": int,
+                "state_values": [Node.RUNNING, Node.FAILED],
+                "output_values": [1, 1],
+            },
+        )
+        self.runner = MockLeaf(
+            name="runner",
+            options={
+                "output_type": int,
+                "state_values": [Node.RUNNING],
+                "output_values": [1],
+            },
+        )
 
         self.cheap_fail = MockUtilityLeaf(
-            name='cheap_fail',
+            name="cheap_fail",
             options={
-                'can_execute': True,
-                'utility_lower_bound_success': 5.0,
-                'utility_upper_bound_success': 10.0,
-                'utility_lower_bound_failure': 1.0,
-                'utility_upper_bound_failure': 2.0})
+                "can_execute": True,
+                "utility_lower_bound_success": 5.0,
+                "utility_upper_bound_success": 10.0,
+                "utility_lower_bound_failure": 1.0,
+                "utility_upper_bound_failure": 2.0,
+            },
+        )
         self.cheap_success = MockUtilityLeaf(
-            name='cheap_success',
+            name="cheap_success",
             options={
-                'can_execute': True,
-                'utility_lower_bound_success': 1.0,
-                'utility_upper_bound_success': 2.0,
-                'utility_lower_bound_failure': 5.0,
-                'utility_upper_bound_failure': 10.0})
+                "can_execute": True,
+                "utility_lower_bound_success": 1.0,
+                "utility_upper_bound_success": 2.0,
+                "utility_lower_bound_failure": 5.0,
+                "utility_upper_bound_failure": 10.0,
+            },
+        )
         self.can_not_execute = MockUtilityLeaf(
-            name='can_not_execute',
+            name="can_not_execute",
             options={
-                'can_execute': False,
-                'utility_lower_bound_success': 0.0,
-                'utility_upper_bound_success': 0.0,
-                'utility_lower_bound_failure': 0.0,
-                'utility_upper_bound_failure': 0.0})
+                "can_execute": False,
+                "utility_lower_bound_success": 0.0,
+                "utility_upper_bound_success": 0.0,
+                "utility_lower_bound_failure": 0.0,
+                "utility_upper_bound_failure": 0.0,
+            },
+        )
 
     def testSuccessesException(self):
-        par = make_parallel(3)\
-            .add_child(self.succeeder)\
-            .add_child(self.run_then_succeed)
+        par = (
+            make_parallel(3).add_child(self.succeeder).add_child(self.run_then_succeed)
+        )
 
         self.assertRaises(BehaviorTreeException, par.setup)
         self.assertRaises(BehaviorTreeException, par.calculate_utility)
 
     def testWithRunningChildren(self):
-        par = make_parallel(2)\
-            .add_child(self.failer)\
-            .add_child(self.runner)
+        par = make_parallel(2).add_child(self.failer).add_child(self.runner)
 
         par.setup()
         self.assertEqual(par.tick(), Node.FAILED)
@@ -117,9 +143,9 @@ class TestParallel(unittest.TestCase):
         self.assertEqual(par.shutdown(), Node.SHUTDOWN)
 
     def testBarrierSuccess(self):
-        par = make_parallel(2)\
-            .add_child(self.succeeder)\
-            .add_child(self.run_then_succeed)
+        par = (
+            make_parallel(2).add_child(self.succeeder).add_child(self.run_then_succeed)
+        )
 
         par.setup()
 
@@ -147,9 +173,7 @@ class TestParallel(unittest.TestCase):
         par.shutdown()
 
     def testBarrierFailure(self):
-        par = make_parallel(2)\
-            .add_child(self.succeeder)\
-            .add_child(self.run_then_fail)
+        par = make_parallel(2).add_child(self.succeeder).add_child(self.run_then_fail)
 
         par.setup()
 
@@ -179,9 +203,7 @@ class TestParallel(unittest.TestCase):
     def testHeurekaSuccess(self):
         """The "Heureka" configuration returns SUCCEEDED with just a single succeeding child"""
 
-        par = make_parallel(1)\
-            .add_child(self.succeeder)\
-            .add_child(self.run_then_fail)
+        par = make_parallel(1).add_child(self.succeeder).add_child(self.run_then_fail)
 
         par.setup()
 
@@ -202,9 +224,7 @@ class TestParallel(unittest.TestCase):
     def testHeurekaFailure(self):
         """The "Heureka" configuration returns FAILED only when all children fail"""
 
-        par = make_parallel(1)\
-            .add_child(self.failer)\
-            .add_child(self.run_then_fail)
+        par = make_parallel(1).add_child(self.failer).add_child(self.run_then_fail)
 
         par.setup()
 
@@ -230,16 +250,15 @@ class TestParallel(unittest.TestCase):
         par.shutdown()
 
     def testParallelUtilityCalculation(self):
-        par = make_parallel(1)\
-            .add_child(self.cheap_success)\
-            .add_child(self.cheap_fail)
+        par = make_parallel(1).add_child(self.cheap_success).add_child(self.cheap_fail)
 
         expected_bounds = UtilityBounds(
             can_execute=True,
             has_lower_bound_success=True,
             has_upper_bound_success=True,
             has_lower_bound_failure=True,
-            has_upper_bound_failure=True)
+            has_upper_bound_failure=True,
+        )
 
         cheap_success_bounds = self.cheap_success.calculate_utility()
         cheap_fail_bounds = self.cheap_fail.calculate_utility()
@@ -247,93 +266,127 @@ class TestParallel(unittest.TestCase):
         expected_bounds.lower_bound_success = cheap_success_bounds.lower_bound_success
         expected_bounds.upper_bound_success = cheap_fail_bounds.upper_bound_success
 
-        expected_bounds.lower_bound_failure = (cheap_success_bounds.lower_bound_failure
-                                               + cheap_fail_bounds.lower_bound_failure)
-        expected_bounds.upper_bound_failure = (cheap_success_bounds.upper_bound_failure
-                                               + cheap_fail_bounds.upper_bound_failure)
+        expected_bounds.lower_bound_failure = (
+            cheap_success_bounds.lower_bound_failure
+            + cheap_fail_bounds.lower_bound_failure
+        )
+        expected_bounds.upper_bound_failure = (
+            cheap_success_bounds.upper_bound_failure
+            + cheap_fail_bounds.upper_bound_failure
+        )
         self.assertEqual(par.calculate_utility(), expected_bounds)
 
-        par = make_parallel(2)\
-            .add_child(self.cheap_success)\
-            .add_child(self.cheap_fail)
+        par = make_parallel(2).add_child(self.cheap_success).add_child(self.cheap_fail)
 
         # Now that we need two successes, success and failure are
         # basically swapped
-        expected_bounds.lower_bound_success = (cheap_success_bounds.lower_bound_success
-                                               + cheap_fail_bounds.lower_bound_success)
-        expected_bounds.upper_bound_success = (cheap_success_bounds.upper_bound_success
-                                               + cheap_fail_bounds.upper_bound_success)
+        expected_bounds.lower_bound_success = (
+            cheap_success_bounds.lower_bound_success
+            + cheap_fail_bounds.lower_bound_success
+        )
+        expected_bounds.upper_bound_success = (
+            cheap_success_bounds.upper_bound_success
+            + cheap_fail_bounds.upper_bound_success
+        )
 
         expected_bounds.lower_bound_failure = cheap_fail_bounds.lower_bound_failure
         expected_bounds.upper_bound_failure = cheap_success_bounds.upper_bound_failure
         self.assertEqual(par.calculate_utility(), expected_bounds)
 
     def testParallelUtilityCalculationCanNotExecute(self):
-        par = make_parallel(1)\
-            .add_child(self.can_not_execute)
+        par = make_parallel(1).add_child(self.can_not_execute)
 
         expected_bounds = UtilityBounds(
             can_execute=False,
             has_lower_bound_success=False,
             has_upper_bound_success=False,
             has_lower_bound_failure=False,
-            has_upper_bound_failure=False)
+            has_upper_bound_failure=False,
+        )
 
         self.assertEqual(par.calculate_utility(), expected_bounds)
 
 
 class TestParallelFailureTolerance(unittest.TestCase):
     def setUp(self):
-        self.succeeder = MockLeaf(name='succeeder',
-                                  options={'output_type': int,
-                                           'state_values': [Node.SUCCEEDED],
-                                           'output_values': [1]})
-        self.failer = MockLeaf(name='failer',
-                               options={'output_type': int,
-                                        'state_values': [Node.FAILED],
-                                        'output_values': [1]})
-        self.run_then_succeed = MockLeaf(name='run_then_succeed',
-                                         options={'output_type': int,
-                                                  'state_values': [Node.RUNNING, Node.SUCCEEDED],
-                                                  'output_values': [1, 1]})
-        self.run_then_fail = MockLeaf(name='run_then_fail',
-                                      options={'output_type': int,
-                                               'state_values': [Node.RUNNING, Node.FAILED],
-                                               'output_values': [1, 1]})
-        self.runner = MockLeaf(name='runner',
-                               options={'output_type': int,
-                                        'state_values': [Node.RUNNING],
-                                        'output_values': [1]})
+        self.succeeder = MockLeaf(
+            name="succeeder",
+            options={
+                "output_type": int,
+                "state_values": [Node.SUCCEEDED],
+                "output_values": [1],
+            },
+        )
+        self.failer = MockLeaf(
+            name="failer",
+            options={
+                "output_type": int,
+                "state_values": [Node.FAILED],
+                "output_values": [1],
+            },
+        )
+        self.run_then_succeed = MockLeaf(
+            name="run_then_succeed",
+            options={
+                "output_type": int,
+                "state_values": [Node.RUNNING, Node.SUCCEEDED],
+                "output_values": [1, 1],
+            },
+        )
+        self.run_then_fail = MockLeaf(
+            name="run_then_fail",
+            options={
+                "output_type": int,
+                "state_values": [Node.RUNNING, Node.FAILED],
+                "output_values": [1, 1],
+            },
+        )
+        self.runner = MockLeaf(
+            name="runner",
+            options={
+                "output_type": int,
+                "state_values": [Node.RUNNING],
+                "output_values": [1],
+            },
+        )
 
         self.cheap_fail = MockUtilityLeaf(
-            name='cheap_fail',
+            name="cheap_fail",
             options={
-                'can_execute': True,
-                'utility_lower_bound_success': 5.0,
-                'utility_upper_bound_success': 10.0,
-                'utility_lower_bound_failure': 1.0,
-                'utility_upper_bound_failure': 2.0})
+                "can_execute": True,
+                "utility_lower_bound_success": 5.0,
+                "utility_upper_bound_success": 10.0,
+                "utility_lower_bound_failure": 1.0,
+                "utility_upper_bound_failure": 2.0,
+            },
+        )
         self.cheap_success = MockUtilityLeaf(
-            name='cheap_success',
+            name="cheap_success",
             options={
-                'can_execute': True,
-                'utility_lower_bound_success': 1.0,
-                'utility_upper_bound_success': 2.0,
-                'utility_lower_bound_failure': 5.0,
-                'utility_upper_bound_failure': 10.0})
+                "can_execute": True,
+                "utility_lower_bound_success": 1.0,
+                "utility_upper_bound_success": 2.0,
+                "utility_lower_bound_failure": 5.0,
+                "utility_upper_bound_failure": 10.0,
+            },
+        )
         self.can_not_execute = MockUtilityLeaf(
-            name='can_not_execute',
+            name="can_not_execute",
             options={
-                'can_execute': False,
-                'utility_lower_bound_success': 0.0,
-                'utility_upper_bound_success': 0.0,
-                'utility_lower_bound_failure': 0.0,
-                'utility_upper_bound_failure': 0.0})
+                "can_execute": False,
+                "utility_lower_bound_success": 0.0,
+                "utility_upper_bound_success": 0.0,
+                "utility_lower_bound_failure": 0.0,
+                "utility_upper_bound_failure": 0.0,
+            },
+        )
 
     def testSuccessesException(self):
-        par = make_parallel_failure_tolerance(3, 3)\
-            .add_child(self.succeeder)\
+        par = (
+            make_parallel_failure_tolerance(3, 3)
+            .add_child(self.succeeder)
             .add_child(self.run_then_succeed)
+        )
 
         self.assertRaises(BehaviorTreeException, par.setup)
         self.assertRaises(BehaviorTreeException, par.calculate_utility)
@@ -341,9 +394,11 @@ class TestParallelFailureTolerance(unittest.TestCase):
     def testOverlyOptimistic(self):
         """Fail if two failures are received"""
 
-        par = make_parallel_failure_tolerance(2, 2)\
-            .add_child(self.failer)\
+        par = (
+            make_parallel_failure_tolerance(2, 2)
+            .add_child(self.failer)
             .add_child(self.runner)
+        )
 
         par.setup()
         # the node tolerates 2 failures,
@@ -361,9 +416,11 @@ class TestParallelFailureTolerance(unittest.TestCase):
     def testOverlyPessimistic(self):
         """Fail after first failure is received"""
 
-        par = make_parallel_failure_tolerance(1, 0)\
-            .add_child(self.failer)\
+        par = (
+            make_parallel_failure_tolerance(1, 0)
+            .add_child(self.failer)
             .add_child(self.run_then_fail)
+        )
 
         par.setup()
 
@@ -377,9 +434,11 @@ class TestParallelFailureTolerance(unittest.TestCase):
         par.shutdown()
 
     def testBarrierSuccess(self):
-        par = make_parallel_failure_tolerance(2, 2)\
-            .add_child(self.succeeder)\
+        par = (
+            make_parallel_failure_tolerance(2, 2)
+            .add_child(self.succeeder)
             .add_child(self.run_then_succeed)
+        )
 
         par.setup()
 
@@ -407,9 +466,11 @@ class TestParallelFailureTolerance(unittest.TestCase):
         par.shutdown()
 
     def testBarrierFailure(self):
-        par = make_parallel_failure_tolerance(2, 0)\
-            .add_child(self.succeeder)\
+        par = (
+            make_parallel_failure_tolerance(2, 0)
+            .add_child(self.succeeder)
             .add_child(self.run_then_fail)
+        )
 
         par.setup()
 
@@ -439,9 +500,11 @@ class TestParallelFailureTolerance(unittest.TestCase):
     def testHeurekaSuccess(self):
         """The "Heureka" configuration returns SUCCEEDED with just a single succeeding child"""
 
-        par = make_parallel_failure_tolerance(1, 1)\
-            .add_child(self.succeeder)\
+        par = (
+            make_parallel_failure_tolerance(1, 1)
+            .add_child(self.succeeder)
             .add_child(self.run_then_fail)
+        )
 
         par.setup()
 
@@ -462,9 +525,11 @@ class TestParallelFailureTolerance(unittest.TestCase):
     def testHeurekaFailure(self):
         """The "Heureka" configuration returns FAILED only when all children fail"""
 
-        par = make_parallel_failure_tolerance(1, 1)\
-            .add_child(self.failer)\
+        par = (
+            make_parallel_failure_tolerance(1, 1)
+            .add_child(self.failer)
             .add_child(self.run_then_fail)
+        )
 
         par.setup()
 
@@ -490,16 +555,19 @@ class TestParallelFailureTolerance(unittest.TestCase):
         par.shutdown()
 
     def testParallelUtilityCalculation(self):
-        par = make_parallel_failure_tolerance(1, 1)\
-            .add_child(self.cheap_success)\
+        par = (
+            make_parallel_failure_tolerance(1, 1)
+            .add_child(self.cheap_success)
             .add_child(self.cheap_fail)
+        )
 
         expected_bounds = UtilityBounds(
             can_execute=True,
             has_lower_bound_success=True,
             has_upper_bound_success=True,
             has_lower_bound_failure=True,
-            has_upper_bound_failure=True)
+            has_upper_bound_failure=True,
+        )
 
         cheap_success_bounds = self.cheap_success.calculate_utility()
         cheap_fail_bounds = self.cheap_fail.calculate_utility()
@@ -507,36 +575,46 @@ class TestParallelFailureTolerance(unittest.TestCase):
         expected_bounds.lower_bound_success = cheap_success_bounds.lower_bound_success
         expected_bounds.upper_bound_success = cheap_fail_bounds.upper_bound_success
 
-        expected_bounds.lower_bound_failure = (cheap_success_bounds.lower_bound_failure
-                                               + cheap_fail_bounds.lower_bound_failure)
-        expected_bounds.upper_bound_failure = (cheap_success_bounds.upper_bound_failure
-                                               + cheap_fail_bounds.upper_bound_failure)
+        expected_bounds.lower_bound_failure = (
+            cheap_success_bounds.lower_bound_failure
+            + cheap_fail_bounds.lower_bound_failure
+        )
+        expected_bounds.upper_bound_failure = (
+            cheap_success_bounds.upper_bound_failure
+            + cheap_fail_bounds.upper_bound_failure
+        )
         self.assertEqual(par.calculate_utility(), expected_bounds)
 
-        par = make_parallel_failure_tolerance(2, 0)\
-            .add_child(self.cheap_success)\
+        par = (
+            make_parallel_failure_tolerance(2, 0)
+            .add_child(self.cheap_success)
             .add_child(self.cheap_fail)
+        )
 
         # Now that we need two successes, success and failure are
         # basically swapped
-        expected_bounds.lower_bound_success = (cheap_success_bounds.lower_bound_success
-                                               + cheap_fail_bounds.lower_bound_success)
-        expected_bounds.upper_bound_success = (cheap_success_bounds.upper_bound_success
-                                               + cheap_fail_bounds.upper_bound_success)
+        expected_bounds.lower_bound_success = (
+            cheap_success_bounds.lower_bound_success
+            + cheap_fail_bounds.lower_bound_success
+        )
+        expected_bounds.upper_bound_success = (
+            cheap_success_bounds.upper_bound_success
+            + cheap_fail_bounds.upper_bound_success
+        )
 
         expected_bounds.lower_bound_failure = cheap_fail_bounds.lower_bound_failure
         expected_bounds.upper_bound_failure = cheap_success_bounds.upper_bound_failure
         self.assertEqual(par.calculate_utility(), expected_bounds)
 
     def testParallelUtilityCalculationCanNotExecute(self):
-        par = make_parallel_failure_tolerance(1, 0)\
-            .add_child(self.can_not_execute)
+        par = make_parallel_failure_tolerance(1, 0).add_child(self.can_not_execute)
 
         expected_bounds = UtilityBounds(
             can_execute=False,
             has_lower_bound_success=False,
             has_upper_bound_success=False,
             has_lower_bound_failure=False,
-            has_upper_bound_failure=False)
+            has_upper_bound_failure=False,
+        )
 
         self.assertEqual(par.calculate_utility(), expected_bounds)

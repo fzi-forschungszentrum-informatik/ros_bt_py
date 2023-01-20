@@ -1,40 +1,40 @@
 name: ''
 path: ''
 root_name: "Sequence"
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.file"
     node_class: "YamlListOption"
     version: ""
     max_children: 0
     name: "YamlListOption"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "file_path"
         serialized_value: "\"package://ros_bt_py/test/testdata/data/file_greetings.yaml\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "load_success"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
-      - 
+      -
         key: "content"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "line_count"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "load_error_msg"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     version: "0.9.0"
@@ -49,20 +49,20 @@ nodes:
 data_wirings: []
 tick_frequency_hz: 10.0
 state: "EDITABLE"
-public_node_data: 
-  - 
+public_node_data:
+  -
     node_name: "YamlListOption"
     data_kind: "outputs"
     data_key: "load_success"
-  - 
+  -
     node_name: "YamlListOption"
     data_kind: "outputs"
     data_key: "content"
-  - 
+  -
     node_name: "YamlListOption"
     data_kind: "outputs"
     data_key: "line_count"
-  - 
+  -
     node_name: "YamlListOption"
     data_kind: "outputs"
     data_key: "load_error_msg"

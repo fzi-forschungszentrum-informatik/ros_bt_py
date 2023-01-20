@@ -37,10 +37,10 @@ from ros_bt_py.nodes.compare import ALessThanB, LessThanConstant
 
 class TestCompare(unittest.TestCase):
     def setUp(self):
-        self.compare = Compare({'compare_type': int})
+        self.compare = Compare({"compare_type": int})
         self.compare.setup()
-        self.compare.inputs['a'] = 42
-        self.compare.inputs['b'] = 42
+        self.compare.inputs["a"] = 42
+        self.compare.inputs["b"] = 42
 
     def testResult(self):
         # Both inputs are set, we should have an output
@@ -51,7 +51,7 @@ class TestCompare(unittest.TestCase):
         self.compare.tick()
         self.assertEqual(self.compare.state, NodeMsg.SUCCEEDED)
 
-        self.compare.inputs['b'] = 41
+        self.compare.inputs["b"] = 41
 
         # 'in' changed, so we get a different result, FAILED
         self.compare.tick()
@@ -69,8 +69,8 @@ class TestCompare(unittest.TestCase):
         self.assertEqual(self.compare.state, NodeMsg.FAILED)
 
         # If we update the inputs, the result changes to SUCCEEDED
-        self.compare.inputs['a'] = 42
-        self.compare.inputs['b'] = 42
+        self.compare.inputs["a"] = 42
+        self.compare.inputs["b"] = 42
         self.compare.tick()
         self.assertEqual(self.compare.state, NodeMsg.SUCCEEDED)
 
@@ -85,10 +85,10 @@ class TestCompare(unittest.TestCase):
 
 class TestCompareNewOnly(unittest.TestCase):
     def setUp(self):
-        self.compare = CompareNewOnly({'compare_type': int})
+        self.compare = CompareNewOnly({"compare_type": int})
         self.compare.setup()
-        self.compare.inputs['a'] = 42
-        self.compare.inputs['b'] = 42
+        self.compare.inputs["a"] = 42
+        self.compare.inputs["b"] = 42
 
     def testResult(self):
         # Both inputs are set, we should have an output
@@ -99,7 +99,7 @@ class TestCompareNewOnly(unittest.TestCase):
         self.compare.tick()
         self.assertEqual(self.compare.state, NodeMsg.RUNNING)
 
-        self.compare.inputs['b'] = 41
+        self.compare.inputs["b"] = 41
         # 'in' changed, so we get a different result, FAILED
         self.compare.tick()
         self.assertEqual(self.compare.state, NodeMsg.FAILED)
@@ -117,8 +117,8 @@ class TestCompareNewOnly(unittest.TestCase):
         self.assertEqual(self.compare.state, NodeMsg.RUNNING)
 
         # If we update the inputs, the result changes to SUCCEEDED
-        self.compare.inputs['a'] = 42
-        self.compare.inputs['b'] = 42
+        self.compare.inputs["a"] = 42
+        self.compare.inputs["b"] = 42
         self.compare.tick()
         self.assertEqual(self.compare.state, NodeMsg.SUCCEEDED)
 
@@ -133,10 +133,9 @@ class TestCompareNewOnly(unittest.TestCase):
 
 class TestCompareConstant(unittest.TestCase):
     def setUp(self):
-        self.compare = CompareConstant({'compare_type': int,
-                                        'expected': 5})
+        self.compare = CompareConstant({"compare_type": int, "expected": 5})
         self.compare.setup()
-        self.compare.inputs['in'] = 5
+        self.compare.inputs["in"] = 5
 
     def testResult(self):
         # Both inputs are set, we should have an output
@@ -147,7 +146,7 @@ class TestCompareConstant(unittest.TestCase):
         self.compare.tick()
         self.assertEqual(self.compare.state, NodeMsg.SUCCEEDED)
 
-        self.compare.inputs['in'] = 41
+        self.compare.inputs["in"] = 41
 
         # 'in' changed, so we get a different result, FAILED
         self.compare.tick()
@@ -165,7 +164,7 @@ class TestCompareConstant(unittest.TestCase):
         self.assertEqual(self.compare.state, NodeMsg.FAILED)
 
         # If we update the input, the result changes to SUCCEEDED
-        self.compare.inputs['in'] = 5
+        self.compare.inputs["in"] = 5
         self.compare.tick()
         self.assertEqual(self.compare.state, NodeMsg.SUCCEEDED)
 
@@ -186,15 +185,15 @@ class TestLessThan(unittest.TestCase):
         with self.assertRaises(ValueError):
             less_than.tick()
 
-        less_than.inputs['a'] = 42
-        less_than.inputs['b'] = 42
+        less_than.inputs["a"] = 42
+        less_than.inputs["b"] = 42
 
         self.assertEqual(less_than.tick(), NodeMsg.FAILED)
 
-        less_than.inputs['a'] = 100
+        less_than.inputs["a"] = 100
         self.assertEqual(less_than.tick(), NodeMsg.FAILED)
 
-        less_than.inputs['a'] = 1
+        less_than.inputs["a"] = 1
         self.assertEqual(less_than.tick(), NodeMsg.SUCCEEDED)
 
         less_than.reset()
@@ -204,8 +203,8 @@ class TestLessThan(unittest.TestCase):
         self.assertEqual(less_than.state, NodeMsg.FAILED)
 
         # If we update the inputs, the result changes to SUCCEEDED
-        less_than.inputs['a'] = 1
-        less_than.inputs['b'] = 42
+        less_than.inputs["a"] = 1
+        less_than.inputs["b"] = 42
         less_than.tick()
         self.assertEqual(less_than.state, NodeMsg.SUCCEEDED)
 
@@ -216,20 +215,20 @@ class TestLessThan(unittest.TestCase):
         self.assertEqual(less_than.state, NodeMsg.SHUTDOWN)
 
     def testLessThanConstant(self):
-        less_than = LessThanConstant({'target': 42})
+        less_than = LessThanConstant({"target": 42})
         less_than.setup()
 
         with self.assertRaises(ValueError):
             less_than.tick()
 
-        less_than.inputs['a'] = 42
+        less_than.inputs["a"] = 42
 
         self.assertEqual(less_than.tick(), NodeMsg.FAILED)
 
-        less_than.inputs['a'] = 100
+        less_than.inputs["a"] = 100
         self.assertEqual(less_than.tick(), NodeMsg.FAILED)
 
-        less_than.inputs['a'] = 1
+        less_than.inputs["a"] = 1
         self.assertEqual(less_than.tick(), NodeMsg.SUCCEEDED)
 
         less_than.reset()
@@ -239,7 +238,7 @@ class TestLessThan(unittest.TestCase):
         self.assertEqual(less_than.state, NodeMsg.FAILED)
 
         # If we update the inputs, the result changes to SUCCEEDED
-        less_than.inputs['a'] = 1
+        less_than.inputs["a"] = 1
         less_than.tick()
         self.assertEqual(less_than.state, NodeMsg.SUCCEEDED)
 

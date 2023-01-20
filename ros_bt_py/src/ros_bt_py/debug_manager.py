@@ -40,10 +40,12 @@ from ros_bt_py_msgs.msg import DebugInfo, DebugSettings, Node, NodeDiagnostics
 
 
 class DebugManager(object):
-    def __init__(self,
-                 debug_info_publish_callback=None,
-                 debug_settings_publish_callback=None,
-                 node_diagnostics_publish_callback=None):
+    def __init__(
+        self,
+        debug_info_publish_callback=None,
+        debug_settings_publish_callback=None,
+        node_diagnostics_publish_callback=None,
+    ):
         # TODO(nberg): Ensure this is set at least once on shutdown
         self.continue_event = Event()
         self._lock = Lock()
@@ -55,14 +57,22 @@ class DebugManager(object):
         self.subtrees = dict()
 
         self.diagnostics_state = dict()
-        self.diagnostics_state['SETUP'] = (NodeDiagnostics.PRE_SETUP,
-                                           NodeDiagnostics.POST_SETUP)
-        self.diagnostics_state['UNTICK'] = (NodeDiagnostics.PRE_UNTICK,
-                                            NodeDiagnostics.POST_UNTICK)
-        self.diagnostics_state['RESET'] = (NodeDiagnostics.PRE_RESET,
-                                           NodeDiagnostics.POST_RESET)
-        self.diagnostics_state['SHUTDOWN'] = (NodeDiagnostics.PRE_SHUTDOWN,
-                                              NodeDiagnostics.POST_SHUTDOWN)
+        self.diagnostics_state["SETUP"] = (
+            NodeDiagnostics.PRE_SETUP,
+            NodeDiagnostics.POST_SETUP,
+        )
+        self.diagnostics_state["UNTICK"] = (
+            NodeDiagnostics.PRE_UNTICK,
+            NodeDiagnostics.POST_UNTICK,
+        )
+        self.diagnostics_state["RESET"] = (
+            NodeDiagnostics.PRE_RESET,
+            NodeDiagnostics.POST_RESET,
+        )
+        self.diagnostics_state["SHUTDOWN"] = (
+            NodeDiagnostics.PRE_SHUTDOWN,
+            NodeDiagnostics.POST_SHUTDOWN,
+        )
 
         # TODO(nberg): Check performance, maybe hold dict of TickTime objects
         # instead of just using the list in DebugInfo to reduce time spent
@@ -78,10 +88,16 @@ class DebugManager(object):
             # Don't publish subtree states by default
             publish_subtrees=False,
             # if True, wait for a continue request before and after every tick
-            single_step=False)
+            single_step=False,
+        )
 
-    def set_execution_mode(self, single_step, collect_performance_data, publish_subtrees,
-                           collect_node_diagnostics):
+    def set_execution_mode(
+        self,
+        single_step,
+        collect_performance_data,
+        publish_subtrees,
+        collect_node_diagnostics,
+    ):
         was_debugging = self.is_debugging()
         with self._lock:
             self._debug_settings_msg.single_step = single_step
@@ -119,8 +135,10 @@ class DebugManager(object):
 
     def is_debugging(self):
         with self._lock:
-            return (self._debug_settings_msg.breakpoint_names
-                    or self._debug_settings_msg.single_step)
+            return (
+                self._debug_settings_msg.breakpoint_names
+                or self._debug_settings_msg.single_step
+            )
 
     @contextmanager
     def report_state(self, node_instance, state):
@@ -137,11 +155,13 @@ class DebugManager(object):
         """
         diagnostics_message = None
         if self._debug_settings_msg.collect_node_diagnostics:
-            diagnostics_message = NodeDiagnostics(stamp=rospy.Time.now(),
-                                                  module=type(node_instance).__module__,
-                                                  node_class=type(node_instance).__name__,
-                                                  name=node_instance.name,
-                                                  state=self.diagnostics_state[state][0])
+            diagnostics_message = NodeDiagnostics(
+                stamp=rospy.Time.now(),
+                module=type(node_instance).__module__,
+                node_class=type(node_instance).__name__,
+                name=node_instance.name,
+                state=self.diagnostics_state[state][0],
+            )
             node = node_instance
             while node is not None:
                 diagnostics_message.path.append(node.name)
@@ -177,11 +197,13 @@ class DebugManager(object):
         """
         diagnostics_message = None
         if self._debug_settings_msg.collect_node_diagnostics:
-            diagnostics_message = NodeDiagnostics(stamp=rospy.Time.now(),
-                                                  module=type(node_instance).__module__,
-                                                  node_class=type(node_instance).__name__,
-                                                  name=node_instance.name,
-                                                  state=NodeDiagnostics.PRE_TICK)
+            diagnostics_message = NodeDiagnostics(
+                stamp=rospy.Time.now(),
+                module=type(node_instance).__module__,
+                node_class=type(node_instance).__name__,
+                name=node_instance.name,
+                state=NodeDiagnostics.PRE_TICK,
+            )
             node = node_instance
             while node is not None:
                 diagnostics_message.path.append(node.name)
@@ -255,13 +277,16 @@ class DebugManager(object):
 
         If this method is called when `publish_subtrees` is `False`.
         """
-        subtree_name = '%s.%s' % (node_name, subtree_msg.name)
+        subtree_name = "%s.%s" % (node_name, subtree_msg.name)
         with self._lock:
             if not self._debug_settings_msg.publish_subtrees:
                 raise BehaviorTreeException(
-                    'Trying to add subtree info when subtree publishing is disabled!')
+                    "Trying to add subtree info when subtree publishing is disabled!"
+                )
             self.subtrees[subtree_name] = subtree_msg
-            self._debug_info_msg.subtree_states = [msg for msg in self.subtrees.values()]
+            self._debug_info_msg.subtree_states = [
+                msg for msg in self.subtrees.values()
+            ]
 
     def clear_subtrees(self):
         with self._lock:

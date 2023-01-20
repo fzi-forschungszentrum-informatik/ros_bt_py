@@ -36,18 +36,16 @@ from ros_bt_py.node import Decorator, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={},
-    outputs={},
-    max_children=1))
+@define_bt_node(
+    NodeConfig(version="0.9.0", options={}, inputs={}, outputs={}, max_children=1)
+)
 class IgnoreFailure(Decorator):
     """Return SUCCEEDED regardless of whether the child actually succeeded
 
     RUNNING is forwarded
 
     """
+
     def _do_setup(self):
         for child in self.children:
             child.setup()
@@ -82,20 +80,22 @@ class IgnoreFailure(Decorator):
     #     pass
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'running_is_success': bool},
-    inputs={},
-    outputs={},
-    max_children=1))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={"running_is_success": bool},
+        inputs={},
+        outputs={},
+        max_children=1,
+    )
+)
 class IgnoreRunning(Decorator):
-    """Return SUCCESS or FAILURE when the child returns RUNNING
+    """Return SUCCESS or FAILURE when the child returns RUNNING"""
 
-    """
     def _do_setup(self):
         for child in self.children:
             child.setup()
-        if self.options['running_is_success']:
+        if self.options["running_is_success"]:
             self.result = NodeMsg.SUCCEEDED
         else:
             self.result = NodeMsg.FAILED
@@ -125,18 +125,16 @@ class IgnoreRunning(Decorator):
         return NodeMsg.IDLE
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={},
-    outputs={},
-    max_children=1))
+@define_bt_node(
+    NodeConfig(version="0.9.0", options={}, inputs={}, outputs={}, max_children=1)
+)
 class IgnoreSuccess(Decorator):
     """Return FAILURE regardless of whether the child actually failed
 
     RUNNING is forwarded
 
     """
+
     def _do_setup(self):
         for child in self.children:
             child.setup()
@@ -166,12 +164,9 @@ class IgnoreSuccess(Decorator):
         return NodeMsg.IDLE
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={},
-    outputs={},
-    max_children=1))
+@define_bt_node(
+    NodeConfig(version="0.9.0", options={}, inputs={}, outputs={}, max_children=1)
+)
 class UntilSuccess(Decorator):
     """Return RUNNING until the child node returns SUCCEEDED
 
@@ -180,6 +175,7 @@ class UntilSuccess(Decorator):
     will be translated into RUNNING!
 
     """
+
     def _do_setup(self):
         for child in self.children:
             child.setup()
@@ -214,12 +210,9 @@ class UntilSuccess(Decorator):
     #     pass
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={},
-    outputs={},
-    max_children=1))
+@define_bt_node(
+    NodeConfig(version="0.9.0", options={}, inputs={}, outputs={}, max_children=1)
+)
 class Inverter(Decorator):
     """Inverts the result of the child.
     Return SUCCEEDED if the child returned FAILED,
@@ -228,6 +221,7 @@ class Inverter(Decorator):
     RUNNING is forwarded
 
     """
+
     def _do_setup(self):
         for child in self.children:
             child.setup()
@@ -264,12 +258,15 @@ class Inverter(Decorator):
     #     pass
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'num_retries': int},
-    inputs={},
-    outputs={},
-    max_children=1))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={"num_retries": int},
+        inputs={},
+        outputs={},
+        max_children=1,
+    )
+)
 class Retry(Decorator):
     """Retry the child `num_retries` times
 
@@ -277,6 +274,7 @@ class Retry(Decorator):
     reporting it as RUNNING instead and resetting it.
 
     """
+
     def _do_setup(self):
         self._retry_count = 0
         for child in self.children:
@@ -286,7 +284,7 @@ class Retry(Decorator):
         for child in self.children:
             result = child.tick()
             if result == NodeMsg.FAILED:
-                if self._retry_count < self.options['num_retries']:
+                if self._retry_count < self.options["num_retries"]:
                     self._retry_count += 1
                     child.reset()
                     return NodeMsg.RUNNING
@@ -319,12 +317,15 @@ class Retry(Decorator):
     #     pass
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'num_repeats': int},
-    inputs={},
-    outputs={},
-    max_children=1))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={"num_repeats": int},
+        inputs={},
+        outputs={},
+        max_children=1,
+    )
+)
 class Repeat(Decorator):
     """Repeat the child `num_repeat` times
 
@@ -334,6 +335,7 @@ class Repeat(Decorator):
     returns FAILED when the child fails.
 
     """
+
     def _do_setup(self):
         self._repeat_count = 0
         for child in self.children:
@@ -345,7 +347,7 @@ class Repeat(Decorator):
             if result == NodeMsg.FAILED:
                 return NodeMsg.FAILED
             elif result == NodeMsg.SUCCEEDED:
-                if self._repeat_count < self.options['num_repeats']:
+                if self._repeat_count < self.options["num_repeats"]:
                     self._repeat_count += 1
                     child.reset()
                     return NodeMsg.RUNNING
@@ -377,13 +379,16 @@ class Repeat(Decorator):
     #     pass
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={'reset': bool},
-    outputs={},
-    optional_options={'reset'},
-    max_children=1))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={},
+        inputs={"reset": bool},
+        outputs={},
+        optional_options={"reset"},
+        max_children=1,
+    )
+)
 class RepeatNoAutoReset(Repeat):
     """Repeat the child `num_repeat` times but does not reset
 
@@ -397,25 +402,26 @@ class RepeatNoAutoReset(Repeat):
     the tree. This can be used to "reset" the execution of parts of the tree if certain conditions
     have been met.
     """
+
     def _do_setup(self):
         self._received_in = False
         super(RepeatNoAutoReset, self)._do_setup()
 
     def _do_tick(self):
         # TODO GH : Figure out why the is_update functionality does not really work
-        if (self.inputs['reset'] is not None and self.inputs['reset']):
-            self.logwarn('Ressetting!')
+        if self.inputs["reset"] is not None and self.inputs["reset"]:
+            self.logwarn("Ressetting!")
             self._repeat_count = 0
-            self.inputs['reset'] = False
+            self.inputs["reset"] = False
 
         # Only TICK the children
-        if self._repeat_count < self.options['num_repeats']:
+        if self._repeat_count < self.options["num_repeats"]:
             for child in self.children:
                 result = child.tick()
                 if result == NodeMsg.FAILED:
                     return NodeMsg.FAILED
                 elif result == NodeMsg.SUCCEEDED:
-                    if self._repeat_count < self.options['num_repeats']:
+                    if self._repeat_count < self.options["num_repeats"]:
                         self._repeat_count += 1
                         child.reset()
                         return NodeMsg.RUNNING
@@ -429,18 +435,15 @@ class RepeatNoAutoReset(Repeat):
     def _do_reset(self):
         self._received_in = False
         # Only reset childs if we havent reached our goal
-        if self._repeat_count < self.options['num_repeats']:
+        if self._repeat_count < self.options["num_repeats"]:
             for child in self.children:
                 return child.reset()
         return NodeMsg.IDLE
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={},
-    outputs={},
-    max_children=1))
+@define_bt_node(
+    NodeConfig(version="0.9.0", options={}, inputs={}, outputs={}, max_children=1)
+)
 class RepeatAlways(Decorator):
     """Repeats the child an infinite number of times,
 
@@ -449,6 +452,7 @@ class RepeatAlways(Decorator):
     returns SUCCEEDED if there is no child.
 
     """
+
     def _do_setup(self):
         for child in self.children:
             child.setup()
@@ -483,12 +487,9 @@ class RepeatAlways(Decorator):
     #     pass
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={},
-    outputs={},
-    max_children=1))
+@define_bt_node(
+    NodeConfig(version="0.9.0", options={}, inputs={}, outputs={}, max_children=1)
+)
 class RepeatUntilFail(Decorator):
     """Repeats the child an infinite number of times until it returns FAILED.
 
@@ -498,6 +499,7 @@ class RepeatUntilFail(Decorator):
     returns SUCCEEDED if there is no child.
 
     """
+
     def _do_setup(self):
         for child in self.children:
             child.setup()
@@ -534,12 +536,9 @@ class RepeatUntilFail(Decorator):
     #     pass
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={},
-    outputs={},
-    max_children=1))
+@define_bt_node(
+    NodeConfig(version="0.9.0", options={}, inputs={}, outputs={}, max_children=1)
+)
 class RepeatIfFail(Decorator):
     """Repeats the child an infinite number of times if it returns FAILED.
 
@@ -549,6 +548,7 @@ class RepeatIfFail(Decorator):
     returns SUCCEEDED if the child SUCCEEDED or if there is no child.
 
     """
+
     def _do_setup(self):
         for child in self.children:
             child.setup()
@@ -580,12 +580,15 @@ class RepeatIfFail(Decorator):
         return NodeMsg.IDLE
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'tick_interval': float},
-    inputs={},
-    outputs={},
-    max_children=1))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={"tick_interval": float},
+        inputs={},
+        outputs={},
+        max_children=1,
+    )
+)
 class Throttle(Decorator):
     """Wraps a child that stores its success and failures for tick_interval seconds
 
@@ -593,6 +596,7 @@ class Throttle(Decorator):
     This decorator will return the last result until tick_interval seconds elapsed.
 
     """
+
     def _do_setup(self):
         self._last_tick = None
         self._last_result = NodeMsg.FAILED
@@ -601,8 +605,10 @@ class Throttle(Decorator):
 
     def _do_tick(self):
         current_time = rospy.Time.now()
-        if (self._last_tick is None
-                or (current_time - self._last_tick).to_sec() > self.options['tick_interval']):
+        if (
+            self._last_tick is None
+            or (current_time - self._last_tick).to_sec() > self.options["tick_interval"]
+        ):
             for child in self.children:
                 result = child.tick()
                 if result == NodeMsg.RUNNING:
@@ -627,12 +633,15 @@ class Throttle(Decorator):
         return NodeMsg.IDLE
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'tick_interval': float},
-    inputs={},
-    outputs={},
-    max_children=1))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={"tick_interval": float},
+        inputs={},
+        outputs={},
+        max_children=1,
+    )
+)
 class ThrottleSuccess(Decorator):
     """Wraps a child that is prevented to SUCCEEDED multiple times in tick_interval seconds
 
@@ -640,6 +649,7 @@ class ThrottleSuccess(Decorator):
     This decorator will return SUCCEEDED once then FAILED until tick_interval seconds elapsed.
 
     """
+
     def _do_setup(self):
         self._last_success_tick = None
         for child in self.children:
@@ -647,9 +657,11 @@ class ThrottleSuccess(Decorator):
 
     def _do_tick(self):
         current_time = rospy.Time.now()
-        if (self._last_success_tick is None
-                or (current_time - self._last_success_tick).to_sec()
-                > self.options['tick_interval']):
+        if (
+            self._last_success_tick is None
+            or (current_time - self._last_success_tick).to_sec()
+            > self.options["tick_interval"]
+        ):
             for child in self.children:
                 result = child.tick()
                 if result == NodeMsg.RUNNING:
@@ -675,12 +687,9 @@ class ThrottleSuccess(Decorator):
         return NodeMsg.IDLE
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={},
-    outputs={},
-    max_children=1))
+@define_bt_node(
+    NodeConfig(version="0.9.0", options={}, inputs={}, outputs={}, max_children=1)
+)
 class Optional(Decorator):
     """Wraps a child that may not be able to execute
 
@@ -691,6 +700,7 @@ class Optional(Decorator):
     events.
 
     """
+
     def _do_setup(self):
         self.execute_child = False
         for child in self.children:
@@ -734,16 +744,14 @@ class Optional(Decorator):
         return UtilityBounds(can_execute=True)
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={'watch': str},
-    outputs={},
-    max_children=1))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0", options={}, inputs={"watch": str}, outputs={}, max_children=1
+    )
+)
 class Watch(Decorator):
-    """Untick child if watch string changed
+    """Untick child if watch string changed"""
 
-    """
     def _do_setup(self):
         self.previous_watch = float("NaN")
         for child in self.children:
@@ -754,9 +762,9 @@ class Watch(Decorator):
             return NodeMsg.SUCCEEDED
 
         child = self.children[0]
-        if self.previous_watch != self.inputs['watch']:
+        if self.previous_watch != self.inputs["watch"]:
             child.untick()
-            self.previous_watch = self.inputs['watch']
+            self.previous_watch = self.inputs["watch"]
 
         return self.children[0].tick()
 

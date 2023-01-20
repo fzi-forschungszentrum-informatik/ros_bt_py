@@ -35,12 +35,15 @@ from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={'seconds_to_wait': int},
-    inputs={},
-    outputs={},
-    max_children=0))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={"seconds_to_wait": int},
+        inputs={},
+        outputs={},
+        max_children=0,
+    )
+)
 class Wait(Leaf):
     """Returns "RUNNING" until at least the specified amount of seconds are elapsed
     from the first received tick.
@@ -48,6 +51,7 @@ class Wait(Leaf):
 
     If `seconds_to_wait` is 0 or negative, the node will immediately succeed
     """
+
     def _do_setup(self):
         self.first_tick = True
         return NodeMsg.IDLE
@@ -56,7 +60,7 @@ class Wait(Leaf):
         now = time()
         if self.first_tick:
             self.start_time = now
-            self.end_time = self.start_time + float(self.options['seconds_to_wait'])
+            self.end_time = self.start_time + float(self.options["seconds_to_wait"])
             self.first_tick = False
         if now >= self.end_time:
             return NodeMsg.SUCCESS
@@ -79,12 +83,15 @@ class Wait(Leaf):
     #     pass
 
 
-@define_bt_node(NodeConfig(
-    version='0.9.0',
-    options={},
-    inputs={'seconds_to_wait': int},
-    outputs={},
-    max_children=0))
+@define_bt_node(
+    NodeConfig(
+        version="0.9.0",
+        options={},
+        inputs={"seconds_to_wait": int},
+        outputs={},
+        max_children=0,
+    )
+)
 class WaitInput(Leaf):
     """Returns "RUNNING" until at least the specified amount of seconds are elapsed
     from the first received tick.
@@ -92,6 +99,7 @@ class WaitInput(Leaf):
 
     If `seconds_to_wait` is 0 or negative, the node will immediately succeed
     """
+
     def _do_setup(self):
         self.first_tick = True
         return NodeMsg.IDLE
@@ -100,7 +108,7 @@ class WaitInput(Leaf):
         now = time()
         if self.first_tick:
             self.start_time = now
-            self.end_time = self.start_time + float(self.inputs['seconds_to_wait'])
+            self.end_time = self.start_time + float(self.inputs["seconds_to_wait"])
             self.first_tick = False
         if now >= self.end_time:
             return NodeMsg.SUCCESS

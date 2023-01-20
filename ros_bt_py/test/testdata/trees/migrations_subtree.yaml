@@ -1,8 +1,8 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     version: ''
@@ -14,29 +14,29 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.subtree"
     node_class: "Subtree"
     version: ''
     max_children: 0
     name: "Subtree"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "subtree_path"
         serialized_value: "\"foo\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-      - 
+      -
         key: "use_io_nodes"
         serialized_value: "true"
         serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "load_success"
         serialized_value: "false"
         serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
-      - 
+      -
         key: "load_error_msg"
         serialized_value: "\"Tree path \\\"foo\\\" is malformed. It needs to start with either \\\"file://\\\
   \" or \\\"package://\\\"\""
@@ -46,12 +46,12 @@ nodes:
 data_wirings: []
 tick_frequency_hz: 10.0
 state: "EDITABLE"
-public_node_data: 
-  - 
+public_node_data:
+  -
     node_name: "Subtree"
     data_kind: "outputs"
     data_key: "load_success"
-  - 
+  -
     node_name: "Subtree"
     data_kind: "outputs"
     data_key: "load_error_msg"
