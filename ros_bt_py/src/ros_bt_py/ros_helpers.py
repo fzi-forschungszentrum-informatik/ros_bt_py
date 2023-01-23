@@ -225,7 +225,6 @@ class AsyncServiceProxy:
         """Async implementation of rospy.wait_for_service to be used in tick() methods."""
         proxy_record = self._get_claimed_service_proxy()
         proxy_record.wait_for_service(timeout=timeout)
-        self._unclaim_service_proxy()
 
     def shutdown(self):
         proxy_record = self._get_claimed_service_proxy()
@@ -243,7 +242,10 @@ class AsyncServiceProxy:
 
     def get_response(self):
         proxy_record = self._get_claimed_service_proxy()
-        return proxy_record.get_response()
+        resp = proxy_record.get_response()
+        if proxy_record.get_state() == self.IDLE:
+            self._unclaim_service_proxy()
+        return resp
 
     def get_state(self):
         proxy_record = self._get_claimed_service_proxy()
