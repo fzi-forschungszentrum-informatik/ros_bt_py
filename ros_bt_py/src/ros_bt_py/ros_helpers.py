@@ -32,6 +32,8 @@ import os
 import signal
 
 import inspect
+from threading import Lock
+from typing import Dict, Optional
 
 import genpy
 
@@ -40,7 +42,9 @@ import rospy
 from ros_bt_py.exceptions import BehaviorTreeException
 
 
-class AsyncServiceProxy(object):
+class AsyncServiceProxy:
+    """Implementation of an asynchronous service proxy for ROS services."""
+
     # define call states
     IDLE = 0
     RUNNING = 1
@@ -51,81 +55,199 @@ class AsyncServiceProxy(object):
     TIMEOUT = 6
     SERVICE_AVAILABLE = 7
 
-    def __init__(self, service_name, service_type):
-        self._process = None
-        self._service_name = service_name
-        self._service_proxy = rospy.ServiceProxy(service_name, service_type)
-
-        self._manager = Manager()
-        # TODO(nberg): Check if this is really safe to access without a Lock
-        self._data = self._manager.dict()
-        self._data["state"] = self.IDLE
-        self._data["req"] = None
-        self._data["res"] = None
-        self._data["proxy"] = self._service_proxy
-        self._data["timeout"] = None
-
-    def wait_for_service(self, timeout=None):
-        """Async implementation of rospy.wait_for_service to be used in tick() methods"""
-        if self._data["state"] == self.WAITING:
-            rospy.logwarn("Already waiting on %s", self._service_name)
-            return
-        if self._process is not None:
-            # try to join the process, if that doesn't work, KILL IT WITH FIRE
-            self._process.join(0)
-            if self._process.is_alive():
-                self.stop_call()
+    class AsyncSerivceProxyInstance:
+        def __init__(self, service_name: str, service_type: str):
+            self._claimed = False
             self._process = None
-        if self._process is None:
-            self._data["state"] = self.WAITING
-            self._data["timeout"] = timeout
-            self._process = Process(target=_wait_for_service_impl, args=(self._data,))
-            self._process.start()
+            self._service_name = service_name
+            self._service_proxy = rospy.ServiceProxy(service_name, service_type)
 
-    def shutdown(self):
-        self.stop_call()
-        if self._data["proxy"] is not None:
-            self._data["proxy"].close()
-        self._data["proxy"] = None
-
-    def stop_call(self):
-        if self._process is not None:
-            # kill -9 the stuck process - not clean, but reliable
-            # Fire...
-            try:
-                os.kill(self._process.pid, signal.SIGKILL)
-            except OSError:
-                pass
-            # and forget!
-            self._process = None
-            self._data["state"] = AsyncServiceProxy.ABORTED
+            self._manager = Manager()
+            self._data = self._manager.dict()
+            self._data["state"] = AsyncServiceProxy.IDLE
+            self._data["req"] = None
+            self._data["res"] = None
+            self._data["proxy"] = self._service_proxy
             self._data["timeout"] = None
 
-    def call_service(self, req):
-        if self._data["state"] == self.RUNNING:
-            rospy.logwarn("Aborting previous call to %s", self._service_name)
-            self.stop_call()
-        if self._process is not None:
-            # try to join the process, if that doesn't work, KILL IT WITH FIRE
-            self._process.join(0)
-            if self._process.is_alive():
-                self.stop_call()
-            self._process = None
-        if self._process is None:
-            self._data["req"] = req
-            self._data["res"] = None
-            self._data["state"] = self.RUNNING
+        @property
+        def claimed(self) -> bool:
+            return self._claimed
 
-            self._process = Process(target=_call_service_impl, args=(self._data,))
-            self._process.start()
+        @claimed.setter
+        def claimed(self, new: bool):
+            self._claimed = new
+
+        def wait_for_service(self, timeout=None):
+            """Async implementation of rospy.wait_for_service to be used in tick() methods"""
+
+            if self._data["state"] == AsyncServiceProxy.WAITING:
+                rospy.logwarn("Already waiting on %s", self._service_name)
+                return
+            if self._process is not None:
+                # try to join the process, if that doesn't work, KILL IT WITH FIRE
+                self._process.join(0)
+                if self._process.is_alive():
+                    self.stop_call()
+                self._process = None
+            if self._process is None:
+                self._data["state"] = AsyncServiceProxy.WAITING
+                self._data["timeout"] = timeout
+                self._process = Process(
+                    target=_wait_for_service_impl, args=(self._data,)
+                )
+                self._process.start()
+
+        def shutdown(self):
+            self.stop_call()
+            if self._data["proxy"] is not None:
+                self._data["proxy"].close()
+            self._data["proxy"] = None
+
+        def stop_call(self):
+            if self._process is not None:
+                # kill -9 the stuck process - not clean, but reliable
+                # Fire...
+                try:
+                    os.kill(self._process.pid, signal.SIGKILL)
+                except OSError:
+                    pass
+                # and forget!
+                self._process = None
+                self._data["state"] = AsyncServiceProxy.ABORTED
+                self._data["timeout"] = None
+
+        def call_service(self, req):
+            if self._data["state"] == AsyncServiceProxy.RUNNING:
+                rospy.logwarn("Aborting previous call to %s", self._service_name)
+                self.stop_call()
+            if self._process is not None:
+                # try to join the process, if that doesn't work, KILL IT WITH FIRE
+                self._process.join(0)
+                if self._process.is_alive():
+                    self.stop_call()
+                self._process = None
+            if self._process is None:
+                self._data["req"] = req
+                self._data["res"] = None
+                self._data["state"] = AsyncServiceProxy.RUNNING
+
+                self._process = Process(target=_call_service_impl, args=(self._data,))
+                self._process.start()
+
+        def get_response(self):
+            if self._data["state"] == AsyncServiceProxy.RESPONSE_READY:
+                self._data["state"] = AsyncServiceProxy.IDLE
+            return self._data["res"]
+
+        def get_state(self):
+            return self._data["state"]
+
+    _shared_state = {}
+
+    def __new__(cls, *args, **kwargs):
+        obj = super(AsyncServiceProxy, cls).__new__(cls)
+        obj.__dict__ = cls._shared_state
+        if not hasattr(obj, "service_proxies"):
+            obj.service_proxies: Dict[
+                str, Dict[int, cls.AsyncSerivceProxyInstance]
+            ] = {}
+        if not hasattr(obj, "singleton_lock"):
+            obj.singleton_lock = Lock()
+        if not hasattr(obj, "id_counter"):
+            obj.id_counter = 0
+        return obj
+
+    def __init__(self, service_name, service_type):
+        with self.singleton_lock:
+            if service_name not in self.service_proxies:
+                rospy.loginfo(
+                    f"AsyncServiceProxy for service :'{service_name}' created!"
+                )
+                proxy_record = self.AsyncSerivceProxyInstance(
+                    service_name=service_name, service_type=service_type
+                )
+                self.service_proxies[service_name] = {self.id_counter: proxy_record}
+                self.id_counter += 1
+            else:
+                rospy.logdebug(
+                    f"AsyncServiceProxy for service :'{service_name}' already exists!"
+                )
+
+        self._service_name: str = service_name
+        self._service_type: str = service_type
+        self._current_proxy_id: Optional[int] = None
+
+    def _get_claimed_service_proxy(self) -> AsyncSerivceProxyInstance:
+        """Get the currently claimed service proxy or claim a new service proxy.
+
+        :return: Return a service proxy for this service that is only used by this instance.
+        :rtype: AsyncSerivceProxyInstance
+        """
+        with self.singleton_lock:
+            if self._current_proxy_id is None:
+                try:
+                    free_id: int = next(
+                        filter(
+                            lambda x: {
+                                not self.service_proxies[self._service_name][x].claimed
+                            },
+                            self.service_proxies[self._service_name],
+                        )
+                    )
+                    self._current_proxy_id = free_id
+                except StopIteration:
+                    rospy.logwarn("No free service handler found, allocating new one!")
+                    proxy_record = self.AsyncSerivceProxyInstance(
+                        service_name=self._service_name, service_type=self._service_type
+                    )
+                    proxy_record.claimed = True
+                    self.service_proxies[self._service_name] = {
+                        self.id_counter: proxy_record
+                    }
+                    self._current_proxy_id = self.id_counter
+                    self.id_counter += 1
+            self.service_proxies[self._service_name][
+                self._current_proxy_id
+            ].claimed = True
+            return self.service_proxies[self._service_name][self._current_proxy_id]
+
+    def _unclaim_service_proxy(self):
+        """Unclaim the currently claimed service proxy."""
+        if self._current_proxy_id is not None:
+            with self.singleton_lock:
+                self.service_proxies[self._service_name][
+                    self._current_proxy_id
+                ].claimed = False
+            self._current_proxy_id = None
+
+    def wait_for_service(self, timeout=None):
+        """Async implementation of rospy.wait_for_service to be used in tick() methods."""
+        proxy_record = self._get_claimed_service_proxy()
+        proxy_record.wait_for_service(timeout=timeout)
+        self._unclaim_service_proxy()
+
+    def shutdown(self):
+        proxy_record = self._get_claimed_service_proxy()
+        proxy_record.shutdown()
+        self._unclaim_service_proxy()
+
+    def stop_call(self):
+        proxy_record = self._get_claimed_service_proxy()
+        proxy_record.stop_call()
+        self._unclaim_service_proxy()
+
+    def call_service(self, req):
+        proxy_record = self._get_claimed_service_proxy()
+        proxy_record.call_service(req=req)
 
     def get_response(self):
-        if self._data["state"] == self.RESPONSE_READY:
-            self._data["state"] = self.IDLE
-        return self._data["res"]
+        proxy_record = self._get_claimed_service_proxy()
+        return proxy_record.get_response()
 
     def get_state(self):
-        return self._data["state"]
+        proxy_record = self._get_claimed_service_proxy()
+        return proxy_record.get_state()
 
 
 def _wait_for_service_impl(data):
