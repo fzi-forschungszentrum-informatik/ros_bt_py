@@ -72,19 +72,11 @@ class AsyncServiceProxy:
         def service_proxy(self) -> rospy.ServiceProxy:
             return self._service_proxy
 
-    _shared_state = {}
+    _shared_state = {"service_proxies": {}, "singleton_lock": Lock(), "id_counter": 0}
 
     def __new__(cls, *args, **kwargs):
         obj = super(AsyncServiceProxy, cls).__new__(cls)
         obj.__dict__ = cls._shared_state
-        if not hasattr(obj, "service_proxies"):
-            obj.service_proxies: Dict[
-                str, Dict[int, cls.AsyncSerivceProxyInstance]
-            ] = {}
-        if not hasattr(obj, "singleton_lock"):
-            obj.singleton_lock = Lock()
-        if not hasattr(obj, "id_counter"):
-            obj.id_counter = 0
         return obj
 
     def __init__(self, service_name, service_type):
@@ -108,19 +100,38 @@ class AsyncServiceProxy:
         :return: Return a service proxy for this service that is only used by this instance.
         :rtype: AsyncSerivceProxyInstance
         """
+        rospy.logfatal(f"Pre-Claim: {self.service_proxies}")
         with self.singleton_lock:
             if self._data["proxy_id"] is None:
                 try:
                     service_proxies = self.service_proxies[
                         (self._service_name, self._service_type)
                     ]
-                    free_id: int = next(
-                        filter(
-                            lambda x: {not service_proxies[x].claimed},
-                            service_proxies,
+                    try:
+                        free_id: int = next(
+                            filter(
+                                lambda x: {not service_proxies[x].claimed},
+                                service_proxies,
+                            )
                         )
-                    )
-                    self._data["proxy_id"] = free_id
+                        self._data["proxy_id"] = free_id
+
+                    except StopIteration:
+                        rospy.logwarn(
+                            "No free service handler found, allocating new one!"
+                        )
+                        proxy_record = self.AsyncSerivceProxyInstance(
+                            service_name=self._service_name,
+                            service_type=self._service_type,
+                        )
+                        proxy_record.claimed = True
+                        self.service_proxies[(self._service_name, self._service_type)][
+                            self.id_counter
+                        ] = proxy_record
+
+                        self._data["proxy_id"] = self.id_counter
+                        self.id_counter += 1
+
                 except KeyError:
                     rospy.logwarn("Allocating initial service handler!")
                     proxy_record = self.AsyncSerivceProxyInstance(
@@ -133,25 +144,13 @@ class AsyncServiceProxy:
                     self._data["proxy_id"] = self.id_counter
                     self.id_counter += 1
 
-                except StopIteration:
-                    rospy.logwarn("No free service handler found, allocating new one!")
-                    proxy_record = self.AsyncSerivceProxyInstance(
-                        service_name=self._service_name, service_type=self._service_type
-                    )
-                    proxy_record.claimed = True
-                    self.service_proxies[(self._service_name, self._service_type)][
-                        self.id_counter
-                    ] = proxy_record
-
-                    self._data["proxy_id"] = self.id_counter
-                    self.id_counter += 1
             self.service_proxies[(self._service_name, self._service_type)][
                 self._data["proxy_id"]
             ].claimed = True
             self._data["proxy"] = self.service_proxies[
                 (self._service_name, self._service_type)
             ][self._data["proxy_id"]].service_proxy
-            rospy.logfatal(f"{self.service_proxies}")
+            rospy.logfatal(f"Post-Claim: {self.service_proxies}")
 
     def _unclaim_service_proxy(self):
         """Unclaim the currently claimed service proxy."""
