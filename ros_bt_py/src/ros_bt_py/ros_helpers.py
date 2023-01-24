@@ -88,22 +88,8 @@ class AsyncServiceProxy:
         return obj
 
     def __init__(self, service_name, service_type):
-        with self.singleton_lock:
-            if service_name not in self.service_proxies:
-                rospy.loginfo(
-                    f"AsyncServiceProxy for service :'{service_name}' created!"
-                )
-                proxy_record = self.AsyncSerivceProxyInstance(
-                    service_name=service_name, service_type=service_type
-                )
-                self.service_proxies[service_name] = {self.id_counter: proxy_record}
-                self.id_counter += 1
-            else:
-                rospy.logdebug(
-                    f"AsyncServiceProxy for service :'{service_name}' already exists!"
-                )
 
-        self._service_name: str = service_name
+        self._service_name: str = rospy.resolve_name(service_name)
         self._service_type: str = service_type
         self._process: Optional[Process] = None
 
@@ -125,12 +111,13 @@ class AsyncServiceProxy:
         with self.singleton_lock:
             if self._data["proxy_id"] is None:
                 try:
+                    service_proxies = self.service_proxies[
+                        (self._service_name, self._service_type)
+                    ]
                     free_id: int = next(
                         filter(
-                            lambda x: {
-                                not self.service_proxies[self._service_name][x].claimed
-                            },
-                            self.service_proxies[self._service_name],
+                            lambda x: {not service_proxies[x].claimed},
+                            service_proxies,
                         )
                     )
                     self._data["proxy_id"] = free_id
@@ -140,7 +127,7 @@ class AsyncServiceProxy:
                         service_name=self._service_name, service_type=self._service_type
                     )
                     proxy_record.claimed = True
-                    self.service_proxies[self._service_name] = {
+                    self.service_proxies[(self._service_name, self._service_type)] = {
                         self.id_counter: proxy_record
                     }
                     self._data["proxy_id"] = self.id_counter
@@ -152,24 +139,25 @@ class AsyncServiceProxy:
                         service_name=self._service_name, service_type=self._service_type
                     )
                     proxy_record.claimed = True
-                    self.service_proxies[self._service_name][
+                    self.service_proxies[(self._service_name, self._service_type)][
                         self.id_counter
                     ] = proxy_record
 
                     self._data["proxy_id"] = self.id_counter
                     self.id_counter += 1
-            self.service_proxies[self._service_name][
+            self.service_proxies[(self._service_name, self._service_type)][
                 self._data["proxy_id"]
             ].claimed = True
-            self._data["proxy"] = self.service_proxies[self._service_name][
-                self._data["proxy_id"]
-            ].service_proxy
+            self._data["proxy"] = self.service_proxies[
+                (self._service_name, self._service_type)
+            ][self._data["proxy_id"]].service_proxy
+            rospy.logfatal(f"{self.service_proxies}")
 
     def _unclaim_service_proxy(self):
         """Unclaim the currently claimed service proxy."""
         if self._data["proxy_id"] is not None:
             with self.singleton_lock:
-                self.service_proxies[self._service_name][
+                self.service_proxies[(self._service_name, self._service_type)][
                     self._data["proxy_id"]
                 ].claimed = False
 
@@ -255,7 +243,6 @@ class AsyncServiceProxy:
 
 def _wait_for_service_impl(data, claim_cb, unclaim_cb):
     claim_cb()
-    rospy.logfatal(f"Proxy: {data['proxy']}; Id: {data['proxy_id']}")
     try:
         data["proxy"].wait_for_service(data["timeout"])
         data["timeout"] = None
@@ -276,7 +263,6 @@ def _wait_for_service_impl(data, claim_cb, unclaim_cb):
 
 def _call_service_impl(data, claim_cb, unclaim_cb):
     claim_cb()
-    rospy.logfatal(f"Proxy: {data['proxy']}; Id: {data['proxy_id']}")
     try:
         res = data["proxy"].call(data["req"])
         data["res"] = res
