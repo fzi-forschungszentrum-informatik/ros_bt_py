@@ -72,11 +72,15 @@ class AsyncServiceProxy:
         def service_proxy(self) -> rospy.ServiceProxy:
             return self._service_proxy
 
-    _shared_state = {"service_proxies": {}, "singleton_lock": Lock(), "id_counter": 0}
+    _service_proxies = {}
+    _singleton_lock = Lock()
+    _id_counter = 0
 
     def __new__(cls, *args, **kwargs):
         obj = super(AsyncServiceProxy, cls).__new__(cls)
-        obj.__dict__ = cls._shared_state
+        obj.service_proxies = cls._service_proxies
+        obj.singleton_lock = cls._singleton_lock
+        obj.id_counter = cls._id_counter
         return obj
 
     def __init__(self, service_name, service_type):
