@@ -196,8 +196,8 @@ class AsyncServiceProxy:
                         )
                     )
                     self._current_proxy_id = free_id
-                except StopIteration:
-                    rospy.logwarn("No free service handler found, allocating new one!")
+                except KeyError:
+                    rospy.logwarn("Allocating initial service handler!")
                     proxy_record = self.AsyncSerivceProxyInstance(
                         service_name=self._service_name, service_type=self._service_type
                     )
@@ -205,6 +205,17 @@ class AsyncServiceProxy:
                     self.service_proxies[self._service_name] = {
                         self.id_counter: proxy_record
                     }
+                    self._current_proxy_id = self.id_counter
+                    self.id_counter += 1
+                except StopIteration:
+                    rospy.logwarn("No free service handler found, allocating new one!")
+                    proxy_record = self.AsyncSerivceProxyInstance(
+                        service_name=self._service_name, service_type=self._service_type
+                    )
+                    proxy_record.claimed = True
+                    self.service_proxies[self._service_name][
+                        self.id_counter
+                    ] = proxy_record
                     self._current_proxy_id = self.id_counter
                     self.id_counter += 1
             self.service_proxies[self._service_name][
@@ -219,6 +230,9 @@ class AsyncServiceProxy:
                 self.service_proxies[self._service_name][
                     self._current_proxy_id
                 ].claimed = False
+                self.service_proxies[self._service_name][
+                    self._current_proxy_id
+                ].shutdown()
             self._current_proxy_id = None
 
     def wait_for_service(self, timeout=None):
@@ -234,7 +248,6 @@ class AsyncServiceProxy:
     def stop_call(self):
         proxy_record = self._get_claimed_service_proxy()
         proxy_record.stop_call()
-        self._unclaim_service_proxy()
 
     def call_service(self, req):
         proxy_record = self._get_claimed_service_proxy()
