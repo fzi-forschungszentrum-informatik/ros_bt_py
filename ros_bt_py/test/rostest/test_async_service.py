@@ -82,10 +82,6 @@ class TestAsyncService(unittest.TestCase):
         self.assertEqual(self.async_proxy.get_state(), AsyncServiceProxy.RESPONSE_READY)
         self.assertTrue(self.async_proxy.get_response().success)
 
-    @unittest.skip(
-        "Due to the singleton architecture"
-        "we cannot interact with the proxy after stop_call"
-    )
     def testAbortCall(self):
         self.assertEqual(self.async_proxy.get_state(), AsyncServiceProxy.IDLE)
         # aborting with no active call shouldn't do anything
@@ -127,10 +123,6 @@ class TestAsyncService(unittest.TestCase):
 
         raise Exception("Received no response after 1 second")
 
-    @unittest.skip(
-        "Due to the singleton architecture"
-        "we cannot interact with the proxy data directly"
-    )
     def testCrashingService(self):
         crash_proxy = AsyncServiceProxy("crash", SetBool)
 
@@ -142,14 +134,14 @@ class TestAsyncService(unittest.TestCase):
                 self.assertEqual(crash_proxy.get_state(), AsyncServiceProxy.ERROR)
                 break
 
-        _call_service_impl(crash_proxy._data)
+        _call_service_impl(
+            crash_proxy._data,
+            claim_cb=crash_proxy._claim_service_proxy,
+            unclaim_cb=crash_proxy._unclaim_service_proxy,
+        )
 
         self.assertEqual(crash_proxy.get_state(), AsyncServiceProxy.ERROR)
 
-    @unittest.skip(
-        "Due to the singleton architecture"
-        "we cannot interact with the proxy data directly"
-    )
     def testCrashIfTrueService(self):
         crash_proxy = AsyncServiceProxy("crash_if_true", SetBool)
 
@@ -161,7 +153,11 @@ class TestAsyncService(unittest.TestCase):
                 self.assertEqual(crash_proxy.get_state(), AsyncServiceProxy.ERROR)
                 break
 
-        _call_service_impl(crash_proxy._data)
+        _call_service_impl(
+            crash_proxy._data,
+            claim_cb=crash_proxy._claim_service_proxy,
+            unclaim_cb=crash_proxy._unclaim_service_proxy,
+        )
 
         self.assertEqual(crash_proxy.get_state(), AsyncServiceProxy.ERROR)
 
@@ -174,39 +170,47 @@ class TestAsyncService(unittest.TestCase):
                 )
                 break
 
-        _call_service_impl(crash_proxy._data)
+        _call_service_impl(
+            crash_proxy._data,
+            claim_cb=crash_proxy._claim_service_proxy,
+            unclaim_cb=crash_proxy._unclaim_service_proxy,
+        )
 
         self.assertEqual(crash_proxy.get_state(), AsyncServiceProxy.RESPONSE_READY)
 
-    @unittest.skip(
-        "Due to the singleton architecture"
-        "we cannot interact with the proxy data directly"
-    )
     def testCallServiceImpl(self):
+        rospy.logfatal("Ping")
         self.async_proxy._data["req"] = SetBoolRequest()
-        _call_service_impl(self.async_proxy._data)
+
+        _call_service_impl(
+            self.async_proxy._data,
+            claim_cb=self.async_proxy._claim_service_proxy,
+            unclaim_cb=self.async_proxy._unclaim_service_proxy,
+        )
 
         self.assertEqual(self.async_proxy.get_state(), AsyncServiceProxy.RESPONSE_READY)
 
-        self.async_proxy._data["proxy"] = None
-        _call_service_impl(self.async_proxy._data)
+        rospy.logfatal("Pong")
 
-        self.assertEqual(self.async_proxy.get_state(), AsyncServiceProxy.ERROR)
-
-    @unittest.skip(
-        "Due to the singleton architecture"
-        "we cannot interact with the proxy data directly"
-    )
     def testWaitForServiceImpl(self):
         self.async_proxy._data["req"] = SetBoolRequest()
-        _wait_for_service_impl(self.async_proxy._data)
+        _wait_for_service_impl(
+            self.async_proxy._data,
+            claim_cb=self.async_proxy._claim_service_proxy,
+            unclaim_cb=self.async_proxy._unclaim_service_proxy,
+        )
 
         self.assertEqual(
             self.async_proxy.get_state(), AsyncServiceProxy.SERVICE_AVAILABLE
         )
 
         self.async_proxy._data["proxy"] = None
-        _wait_for_service_impl(self.async_proxy._data)
+        claim_cb = mock.MagicMock()
+        unclaim_cb = mock.MagicMock()
+        _wait_for_service_impl(
+            self.async_proxy._data, claim_cb=claim_cb, unclaim_cb=unclaim_cb
+        )
+        claim_cb.assert_called_once()
 
         self.assertEqual(self.async_proxy.get_state(), AsyncServiceProxy.ERROR)
 
@@ -245,22 +249,27 @@ class TestAsyncService(unittest.TestCase):
         data["timeout"] = None
         data["req"] = None
         data["proxy"] = Proxy()
+        data["proxy_id"] = 0
         data["proxy"].wait_for_service = mock.MagicMock()
         data[
             "proxy"
         ].wait_for_service.side_effect = rospy.exceptions.ROSInterruptException()
-        _wait_for_service_impl(data)
+
+        claim_cb = mock.MagicMock()
+        unclaim_cb = mock.MagicMock()
+
+        _wait_for_service_impl(data, claim_cb, unclaim_cb)
 
         data["proxy"].wait_for_service.side_effect = rospy.exceptions.ROSException()
-        _wait_for_service_impl(data)
+        _wait_for_service_impl(data, claim_cb, unclaim_cb)
 
         data["proxy"].wait_for_service.side_effect = Exception()
-        _wait_for_service_impl(data)
+        _wait_for_service_impl(data, claim_cb, unclaim_cb)
 
         data["proxy"].call = mock.MagicMock()
         data["proxy"].call.side_effect = rospy.exceptions.ROSInterruptException()
 
-        _call_service_impl(data)
+        _call_service_impl(data, claim_cb, unclaim_cb)
 
 
 if __name__ == "__main__":
