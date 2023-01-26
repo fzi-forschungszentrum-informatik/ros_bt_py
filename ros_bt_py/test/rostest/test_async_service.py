@@ -43,8 +43,6 @@ from std_srvs.srv import SetBool, SetBoolRequest, SetBoolResponse
 
 from ros_bt_py.ros_helpers import (
     AsyncServiceProxy,
-    _call_service_impl,
-    _wait_for_service_impl,
 )
 
 PKG = "ros_bt_py"
@@ -95,7 +93,7 @@ class TestAsyncService(unittest.TestCase):
         self.assertEqual(self.async_proxy.get_state(), AsyncServiceProxy.RUNNING)
         self.assertIsNone(self.async_proxy.get_response())
         self.async_proxy.stop_call()
-        self.assertIsNone(self.async_proxy._process)
+        self.assertIsNone(self.async_proxy._thread)
         self.assertEqual(self.async_proxy.get_state(), AsyncServiceProxy.ABORTED)
 
         rospy.sleep(1.0)
@@ -134,8 +132,10 @@ class TestAsyncService(unittest.TestCase):
                 self.assertEqual(crash_proxy.get_state(), AsyncServiceProxy.ERROR)
                 break
 
-        _call_service_impl(
+        AsyncServiceProxy._call_service_impl(
             crash_proxy._data,
+            lock=crash_proxy._data_lock,
+            abort=crash_proxy._abort,
             claim_cb=crash_proxy._claim_service_proxy,
             unclaim_cb=crash_proxy._unclaim_service_proxy,
         )
@@ -153,8 +153,10 @@ class TestAsyncService(unittest.TestCase):
                 self.assertEqual(crash_proxy.get_state(), AsyncServiceProxy.ERROR)
                 break
 
-        _call_service_impl(
+        AsyncServiceProxy._call_service_impl(
             crash_proxy._data,
+            lock=crash_proxy._data_lock,
+            abort=crash_proxy._abort,
             claim_cb=crash_proxy._claim_service_proxy,
             unclaim_cb=crash_proxy._unclaim_service_proxy,
         )
@@ -170,8 +172,10 @@ class TestAsyncService(unittest.TestCase):
                 )
                 break
 
-        _call_service_impl(
+        AsyncServiceProxy._call_service_impl(
             crash_proxy._data,
+            lock=crash_proxy._data_lock,
+            abort=crash_proxy._abort,
             claim_cb=crash_proxy._claim_service_proxy,
             unclaim_cb=crash_proxy._unclaim_service_proxy,
         )
@@ -182,8 +186,10 @@ class TestAsyncService(unittest.TestCase):
         rospy.logfatal("Ping")
         self.async_proxy._data["req"] = SetBoolRequest()
 
-        _call_service_impl(
+        AsyncServiceProxy._call_service_impl(
             self.async_proxy._data,
+            lock=self.async_proxy._data_lock,
+            abort=self.async_proxy._abort,
             claim_cb=self.async_proxy._claim_service_proxy,
             unclaim_cb=self.async_proxy._unclaim_service_proxy,
         )
@@ -194,8 +200,10 @@ class TestAsyncService(unittest.TestCase):
 
     def testWaitForServiceImpl(self):
         self.async_proxy._data["req"] = SetBoolRequest()
-        _wait_for_service_impl(
+        AsyncServiceProxy._wait_for_service_impl(
             self.async_proxy._data,
+            lock=self.async_proxy._data_lock,
+            abort=self.async_proxy._abort,
             claim_cb=self.async_proxy._claim_service_proxy,
             unclaim_cb=self.async_proxy._unclaim_service_proxy,
         )
@@ -207,8 +215,12 @@ class TestAsyncService(unittest.TestCase):
         self.async_proxy._data["proxy"] = None
         claim_cb = mock.MagicMock()
         unclaim_cb = mock.MagicMock()
-        _wait_for_service_impl(
-            self.async_proxy._data, claim_cb=claim_cb, unclaim_cb=unclaim_cb
+        AsyncServiceProxy._wait_for_service_impl(
+            self.async_proxy._data,
+            lock=self.async_proxy._data_lock,
+            abort=self.async_proxy._abort,
+            claim_cb=claim_cb,
+            unclaim_cb=unclaim_cb,
         )
         claim_cb.assert_called_once()
 
@@ -257,19 +269,27 @@ class TestAsyncService(unittest.TestCase):
 
         claim_cb = mock.MagicMock()
         unclaim_cb = mock.MagicMock()
+        lock = mock.MagicMock()
+        abort = mock.MagicMock()
 
-        _wait_for_service_impl(data, claim_cb, unclaim_cb)
+        AsyncServiceProxy._wait_for_service_impl(
+            data, lock, abort, claim_cb, unclaim_cb
+        )
 
         data["proxy"].wait_for_service.side_effect = rospy.exceptions.ROSException()
-        _wait_for_service_impl(data, claim_cb, unclaim_cb)
+        AsyncServiceProxy._wait_for_service_impl(
+            data, lock, abort, claim_cb, unclaim_cb
+        )
 
         data["proxy"].wait_for_service.side_effect = Exception()
-        _wait_for_service_impl(data, claim_cb, unclaim_cb)
+        AsyncServiceProxy._wait_for_service_impl(
+            data, lock, abort, claim_cb, unclaim_cb
+        )
 
         data["proxy"].call = mock.MagicMock()
         data["proxy"].call.side_effect = rospy.exceptions.ROSInterruptException()
 
-        _call_service_impl(data, claim_cb, unclaim_cb)
+        AsyncServiceProxy._call_service_impl(data, lock, abort, claim_cb, unclaim_cb)
 
 
 if __name__ == "__main__":
