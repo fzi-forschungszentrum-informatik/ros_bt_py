@@ -166,27 +166,33 @@ class Action(Leaf):
 
                 return NodeMsg.FAILED
 
+        if current_state is GoalStatus.SUCCEEDED:
+            result = self._ac.get_result()
+            if self._ac.get_result() is None:
+                return NodeMsg.RUNNING
+            self.outputs["result"] = result
+            # cancel goal to be sure, then stop tracking it so get_state()
+            # returns LOST again
+            self._active_goal = None
+
+            # Fail if final goal status was not SUCCEEDED
+            self.logerr("Succeeding")
+            return NodeMsg.SUCCEEDED
+
         if current_state in [
             GoalStatus.PREEMPTED,
-            GoalStatus.SUCCEEDED,
             GoalStatus.ABORTED,
             GoalStatus.REJECTED,
             GoalStatus.RECALLED,
             GoalStatus.LOST,
         ]:
-            # we're done, one way or the other
-            self.outputs["result"] = self._ac.get_result()
             # cancel goal to be sure, then stop tracking it so get_state()
             # returns LOST again
             self._ac.cancel_goal()
             self._ac.stop_tracking_goal()
             self._active_goal = None
 
-            # Fail if final goal status was not SUCCEEDED
-            if current_state == GoalStatus.SUCCEEDED:
-                return NodeMsg.SUCCEEDED
-            else:
-                return NodeMsg.FAILED
+            return NodeMsg.FAILED
 
         return NodeMsg.RUNNING
 
