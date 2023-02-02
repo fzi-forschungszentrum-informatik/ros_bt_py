@@ -38,6 +38,7 @@ import os
 import genpy
 import rospy
 import rospkg
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 
 from ros_bt_py_msgs.srv import LoadTreeRequest, LoadTreeResponse
 from ros_bt_py_msgs.srv import LoadTreeFromPathResponse, MigrateTreeResponse
@@ -142,6 +143,8 @@ class TreeManager(object):
         publish_debug_info_callback=None,
         publish_debug_settings_callback=None,
         publish_node_diagnostics_callback=None,
+        publish_diagnostic_callback=None,
+        diagnostics_frequency=1.0,
         show_traceback_on_exception=False,
     ):
         self.name = name
@@ -160,6 +163,10 @@ class TreeManager(object):
         self.publish_node_diagnostics = publish_node_diagnostics_callback
         if self.publish_node_diagnostics is None:
             rospy.loginfo("No callback for publishing node diagnostics data provided.")
+        
+        self.publish_diagnostic = publish_diagnostic_callback
+        if self.publish_diagnostic is None:
+            rospy.loginfo("No callback for publishing node diagnostics provided")         
 
         self.debug_manager = debug_manager
         if not self.debug_manager:
@@ -198,6 +205,10 @@ class TreeManager(object):
         self.tree_msg.tick_frequency_hz = tick_frequency_hz
         self.rate = rospy.Rate(hz=self.tree_msg.tick_frequency_hz)
 
+        self.diagnostic_array = DiagnosticArray()
+        self.diagnostic_status = DiagnosticStatus()
+        self.diagnostic_array.status = [self.diagnostic_status]
+
         self._last_error = None
         with self._state_lock:
             self.tree_msg.state = Tree.EDITABLE
@@ -211,9 +222,44 @@ class TreeManager(object):
 
         self.publish_info(self.debug_manager.get_debug_info_msg())
 
+        if self.publish_diagnostic is not None:
+            rospy.Timer(rospy.Duration(1.0 / diagnostics_frequency), self.diagnostic_callback)
+
     def get_state(self):
         with self._state_lock:
             return self.tree_msg.state
+    
+    def set_diagnostics_name(self):
+        """Sets the tree name for ROS diagnostics.
+
+        If the BT has a name, this name will published in diagnostics. Otherwise, the root name of the tree is used.
+        """
+        if self.tree_msg.name:
+            self.diagnostic_status.name = os.path.splitext(self.tree_msg.name)[0]  # Save tree name without data type
+        elif self.tree_msg.root_name:
+            self.diagnostic_status.name = self.tree_msg.root_name
+            rospy.logwarn(f"No tree name was found. Diagnostics data from the behavior tree will be published under the name of the root_node: {self.tree_msg.root_name}")
+        else:
+            self.diagnostic_status.name = ""
+            rospy.logwarn("Neither a tree name nor the name from the root_node was found. Diagnostics data from the behavior tree will be published without further name specifications")
+
+    def clear_diagnostics_name(self):
+        """Clears the name for ROS diagnostics"""
+        self.diagnostic_status.name = ''
+
+    def diagnostic_callback(self, event=None):
+        if self.get_state() == Tree.TICKING:
+            self.diagnostic_status.level = 0
+            self.diagnostic_status.message = 'Ticking'
+            #self.tick_stat.values = [KeyValue(key = 'Ticking', value = 'True')]
+        elif self.get_state() in (Tree.EDITABLE, Tree.IDLE, Tree.WAITING_FOR_TICK, Tree.STOP_REQUESTED):
+            self.diagnostic_status.level = 1
+            self.diagnostic_status.message = 'Not ticking'
+            #self.tick_stat.values = [KeyValue(key = 'Ticking', value = 'False')]
+        elif self.get_state() == Tree.ERROR:
+            self.diagnostic_status.level = 2
+            self.diagnostic_status.message = 'Error in Behavior Tree'
+        self.publish_diagnostic(self.diagnostic_array)
 
     def publish_info(self, debug_info_msg=None, ticked=False):
         """Publish the current tree state using the callback supplied to the constructor
@@ -399,7 +445,7 @@ class TreeManager(object):
             )
 
         self.publish_info(self.debug_manager.get_debug_info_msg())
-
+        self.clear_diagnostics_name()
         return response
 
     @is_edit_service
@@ -497,6 +543,7 @@ class TreeManager(object):
                 return response
             with tree_file:
                 file_name = os.path.basename(tree_file.name)
+
                 tree_yaml = tree_file.read()
                 try:
                     response = self.parse_tree_yaml(tree_yaml=tree_yaml)
@@ -520,11 +567,10 @@ class TreeManager(object):
                     )
                 # remove input and output values from nodes
                 tree = remove_input_output_values(tree=response.tree)
-
         tree.name = file_name
-
         response.success = True
         response.tree = tree
+
         return response
 
     @is_edit_service
@@ -554,6 +600,7 @@ class TreeManager(object):
         response = LoadTreeResponse()
 
         load_response = self.load_tree_from_file(request)
+        
         if not load_response.success:
             response.error_message = load_response.error_message
             return response
@@ -561,7 +608,6 @@ class TreeManager(object):
         tree = load_response.tree
 
         # we should have a tree message with all the info we need now
-
         # prefix all the node names, if prefix is not the empty string
         if prefix != "":
             tree.name = prefix + tree.name
@@ -650,6 +696,8 @@ class TreeManager(object):
         response.success = True
         self.publish_info(self.debug_manager.get_debug_info_msg())
         rospy.loginfo("Successfully loaded tree")
+        if self.publish_diagnostic is None:
+            self.set_diagnostics_name()
         return response
 
     def set_execution_mode(self, request):
@@ -2103,6 +2151,7 @@ class TreeManager(object):
                 publish_tree_callback=lambda *args: None,
                 publish_debug_info_callback=lambda *args: None,
                 publish_debug_settings_callback=lambda *args: None,
+                publish_diagnostic_callback=lambda *args: None,
                 debug_manager=DebugManager(),
             )
 
