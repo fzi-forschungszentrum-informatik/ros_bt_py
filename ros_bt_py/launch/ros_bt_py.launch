@@ -57,6 +57,7 @@
   <arg name="load_default_tree_permissive" default="false" />
   <arg name="default_tree_path" default="package://ros_bt_py/etc/trees/examples/file_example.yaml" />
   <arg name="default_tree_tick_frequency_hz" default="1" />
+  <arg name="default_tree_diagnostics_frequency_hz" default="1" />
   <!-- available commands are:
     DO_NOTHING = 0
     TICK_ONCE = 1
@@ -70,6 +71,7 @@
   <arg name="load_default_dual_tree_permissive" default="false" />
   <arg name="default_dual_tree_path" default="package://ros_bt_py/etc/trees/examples/file_example.yaml" />
   <arg name="default_dual_tree_tick_frequency_hz" default="1" />
+  <arg name="default_dual_tree_diagnostics_frequency_hz" default="1" />
   <!-- available commands are:
     DO_NOTHING = 0
     TICK_ONCE = 1
@@ -117,6 +119,7 @@
     <param name="default_tree_path" value="$(arg default_tree_path)" />
     <param name="default_tree_tick_frequency_hz" value="$(arg default_tree_tick_frequency_hz)" />
     <param name="default_tree_control_command" value="$(arg default_tree_control_command)" />
+    <param name="default_tree_diagnostics_frequency_hz" value="$(arg default_tree_diagnostics_frequency_hz)" />
   </node>
 
 
@@ -136,6 +139,7 @@
     <param name="default_tree_path" value="$(arg default_dual_tree_path)" />
     <param name="default_tree_tick_frequency_hz" value="$(arg default_dual_tree_tick_frequency_hz)" />
     <param name="default_tree_control_command" value="$(arg default_dual_tree_control_command)" />
+    <param name="default_tree_diagnostics_frequency_hz" value="$(arg default_dual_tree_diagnostics_frequency_hz)" />
   </node>
 
   <group if="$(arg web_interface)">
