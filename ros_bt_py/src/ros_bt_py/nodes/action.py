@@ -216,6 +216,16 @@ class ActionForSetType(ABC, Leaf):
                 self._active_goal = None
 
                 return NodeMsg.FAILED
+        if current_state is GoalStatus.SUCCEEDED:
+            result = self._ac.get_result()
+            if self._ac.get_result() is None:
+                return NodeMsg.RUNNING
+            self.outputs["result"] = result
+            # cancel goal to be sure, then stop tracking it so get_state()
+            # returns LOST again
+            self._active_goal = None
+
+            return NodeMsg.SUCCEEDED
 
         if current_state is GoalStatus.SUCCEEDED:
             result = self._ac.get_result()
