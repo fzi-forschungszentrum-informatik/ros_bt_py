@@ -127,10 +127,7 @@ class TestTreeNodeOverWebsocket(unittest.TestCase):
 if __name__ == "__main__":
     rospy.init_node("test_websocket_interface")
     import rostest
-    import sys
-    import os
 
-    os.environ["COVERAGE_FILE"] = "%s.%s.coverage" % (PKG, "test_websocket_interface")
     while (
         not rospy.is_shutdown()
         and not rospy.has_param("/rosbridge_websocket/actual_port")
@@ -141,5 +138,4 @@ if __name__ == "__main__":
         PKG,
         "test_websocket_interface",
         TestTreeNodeOverWebsocket,
-        sysargs=sys.argv + ["--cov"],
     )

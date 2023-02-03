@@ -142,10 +142,8 @@ if __name__ == "__main__":
     import sys
     import os
 
-    os.environ["COVERAGE_FILE"] = "%s.%s.coverage" % (PKG, "test_parallel_if_remote")
     rostest.rosrun(
         PKG,
         "test_parallel_if_remote",
         TestParallelIfRemote,
-        sysargs=sys.argv + ["--cov"],
     )

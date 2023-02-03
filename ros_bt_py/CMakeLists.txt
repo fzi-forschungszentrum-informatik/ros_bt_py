@@ -38,6 +38,12 @@ catkin_package(
 #  DEPENDS system_lib
 )
 
+if(CATKIN_ENABLE_TESTING AND ENABLE_COVERAGE_TESTING)
+  find_package(code_coverage REQUIRED)
+  # Add compiler flags for coverage instrumentation before defining any targets
+  APPEND_COVERAGE_COMPILER_FLAGS()
+endif()
+
 ###########
 ## Build ##
 ###########
@@ -98,14 +104,22 @@ if (CATKIN_ENABLE_TESTING)
   catkin_add_nosetests(test/unittest)
 
   find_package(rostest REQUIRED)
-  add_rostest(test/rostest/async_service.test)
-  add_rostest(test/rostest/parallel_if_remote.test)
-  add_rostest(test/rostest/package_manager.test)
-  add_rostest(test/rostest/ros_header.test)
-  add_rostest(test/rostest/ros_leaf_utility.test)
-  add_rostest(test/rostest/ros_leaves.test)
-  add_rostest(test/rostest/ros_param.test)
-  add_rostest(test/rostest/shovable.test)
-  add_rostest(test/rostest/shove_tree.test)
-  add_rostest(test/rostest/websocket_interface.test)
+  add_rostest(test/rostest/async_service.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
+  add_rostest(test/rostest/parallel_if_remote.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
+  add_rostest(test/rostest/package_manager.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
+  add_rostest(test/rostest/ros_header.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
+  add_rostest(test/rostest/ros_leaf_utility.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
+  add_rostest(test/rostest/ros_leaves.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
+  add_rostest(test/rostest/ros_param.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
+  add_rostest(test/rostest/shovable.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
+  add_rostest(test/rostest/shove_tree.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
+  add_rostest(test/rostest/websocket_interface.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
+
+  if(ENABLE_COVERAGE_TESTING)
+    set(COVERAGE_EXCLUDES "*/${PROJECT_NAME}/test*,*/${PROJECT_NAME}/html*")
+    add_code_coverage(
+      NAME ${PROJECT_NAME}_coverage_report
+      DEPENDENCIES tests
+    )
+  endif()
 endif()

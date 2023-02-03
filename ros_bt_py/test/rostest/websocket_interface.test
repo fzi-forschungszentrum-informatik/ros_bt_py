@@ -1,4 +1,10 @@
 <launch>
+  <!-- Add an argument to the launch file to turn on coverage -->
+  <arg name="coverage" default="false"/>
+
+  <!-- This fancy line forces nodes to generate coverage -->
+  <arg name="pythontest_launch_prefix" value="$(eval 'python3-coverage run -p' if arg('coverage') else '')"/>
+
   <!-- An attempt to create some low-hanging fruit end-to-end tests.
 
        This will start the relevant nodes from launch/ros_bt_py.launch
@@ -25,8 +31,13 @@
   </include> -->
 
   <!-- behavior tree backend, responsible for executing the tree -->
-  <node name="tree_node" pkg="ros_bt_py" type="tree_node.py" output="screen"
-        respawn="false">
+  <node
+    name="tree_node"
+    pkg="ros_bt_py"
+    type="tree_node.py"
+    output="screen"
+    respawn="false"
+    launch-prefix="$(arg pythontest_launch_prefix)" >
     <!-- a list of modules that are availble in the editor web interface -->
     <rosparam param="node_modules" subst_value="True">
       [
@@ -44,5 +55,6 @@
   <test test-name="test_websocket_interface"
         pkg="ros_bt_py"
         type="test_websocket_interface.py"
-        time-limit="100.0" />
+        time-limit="100.0"
+        launch-prefix="$(arg pythontest_launch_prefix)" />
 </launch>

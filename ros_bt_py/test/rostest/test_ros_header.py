@@ -91,10 +91,5 @@ class TestGetStdHeader(unittest.TestCase):
 if __name__ == "__main__":
     rospy.init_node("test_ros_header")
     import rostest
-    import sys
-    import os
 
-    os.environ["COVERAGE_FILE"] = "%s.%s.coverage" % (PKG, "test_ros_header")
-    rostest.rosrun(
-        PKG, "test_ros_header", TestGetStdHeader, sysargs=sys.argv + ["--cov"]
-    )
+    rostest.rosrun(PKG, "test_ros_header", TestGetStdHeader)

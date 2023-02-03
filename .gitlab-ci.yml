@@ -1,21 +1,28 @@
 variables:
-  CI_SCRIPTS_BRANCH: master
+  CI_SCRIPTS_BRANCH: dev
   DOCS_SOURCE: "ros_bt_py/doc/source"
 
-
-catkin_pipelines:
-  trigger:
-    include:
-      - project: 'continuous_integration/ci_scripts'
-        ref: $CI_SCRIPTS_BRANCH
-        file: '/gitlab-ci-yml/catkin_pipeline_v2.yml'
-    strategy: depend
+.build_matrix:
   parallel:
     matrix:
       - ROS_DISTRO: noetic
         CI_IMAGE: ids-git.fzi.de:5555/continuous_integration/ci_docker_images/ubuntu_20.04_ros
 
+stages:
+  - check
+  - build
+  - upload
+  - deploy
+
 include:
   - project: 'continuous_integration/ci_scripts'
-    ref: docs
+    ref: dev
+    file: '/gitlab-ci-yml/catkin_pipeline_v3.yml'
+  - project: 'continuous_integration/ci_scripts'
+    ref: dev
     file: '/gitlab-ci-yml/doc_sphinx.yml'
+
+clang-tidy-check:
+  allow_failure: true
+
+
