@@ -1,4 +1,18 @@
 <launch>
-  <node name="test_services" pkg="ros_bt_py" type="test_service_node.py" />
-  <test test-name="test_async_service" pkg="ros_bt_py" type="test_async_service.py" />
+  <!-- Add an argument to the launch file to turn on coverage -->
+  <arg name="coverage" default="false"/>
+
+  <!-- This fancy line forces nodes to generate coverage -->
+  <arg name="pythontest_launch_prefix" value="$(eval 'python3-coverage run -p' if arg('coverage') else '')"/>
+
+  <node
+    name="test_services"
+    pkg="ros_bt_py"
+    type="test_service_node.py"
+    launch-prefix="$(arg pythontest_launch_prefix)" />
+  <test
+    test-name="test_async_service"
+    pkg="ros_bt_py"
+    type="test_async_service.py"
+    launch-prefix="$(arg pythontest_launch_prefix)" />
 </launch>

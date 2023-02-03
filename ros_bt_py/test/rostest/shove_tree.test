@@ -1,8 +1,23 @@
 <launch>
-  <node name="tree_node" pkg="ros_bt_py" type="tree_node.py" output="screen">
+  <!-- Add an argument to the launch file to turn on coverage -->
+  <arg name="coverage" default="false"/>
+
+  <!-- This fancy line forces nodes to generate coverage -->
+  <arg name="pythontest_launch_prefix" value="$(eval 'python3-coverage run -p' if arg('coverage') else '')"/>
+
+  <node
+    name="tree_node"
+    pkg="ros_bt_py"
+    type="tree_node.py"
+    output="screen"
+    launch-prefix="$(arg pythontest_launch_prefix)" >
     <param name="target_tick_frequency_hz" value="10.0" />
   </node>
-  <node name="find_best_executor" pkg="ros_bt_py" type="find_best_executor_node.py" />
+  <node
+    name="find_best_executor"
+    pkg="ros_bt_py"
+    type="find_best_executor_node.py"
+    launch-prefix="$(arg pythontest_launch_prefix)" />
 
   <!-- foo is a topic only available in the remote_slot namespace.
 
@@ -12,14 +27,22 @@
        "true" value.
   -->
   <group ns="remote_slot">
-    <node name="remote_slot" pkg="ros_bt_py" type="remote_tree_slot_node.py" />
+    <node
+      name="remote_slot"
+      pkg="ros_bt_py"
+      type="remote_tree_slot_node.py"
+      launch-prefix="$(arg pythontest_launch_prefix)" />
 
-    <node name="pub_remote" pkg="rostopic" type="rostopic"
-          args="pub -l foo std_msgs/Bool 'data: true'" />
+    <node
+      name="pub_remote"
+      pkg="rostopic"
+      type="rostopic"
+      args="pub -l foo std_msgs/Bool 'data: true'" />
   </group>
 
   <test test-name="test_shove_tree"
         pkg="ros_bt_py"
         type="test_shove_tree.py"
-        time-limit="100.0" />
+        time-limit="100.0"
+        launch-prefix="$(arg pythontest_launch_prefix)" />
 </launch>

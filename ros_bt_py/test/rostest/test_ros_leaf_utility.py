@@ -141,10 +141,5 @@ def node_to_goal(node):
 if __name__ == "__main__":
     rospy.init_node("test_action_leaf")
     import rostest
-    import sys
-    import os
 
-    os.environ["COVERAGE_FILE"] = "%s.%s.coverage" % (PKG, "test_ros_leaf_utility")
-    rostest.rosrun(
-        PKG, "test_action_leaf", TestRosLeafUtility, sysargs=sys.argv + ["--cov"]
-    )
+    rostest.rosrun(PKG, "test_action_leaf", TestRosLeafUtility)
