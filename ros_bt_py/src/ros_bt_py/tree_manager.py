@@ -378,6 +378,8 @@ class TreeManager:
         if tick_frequency_hz == 0.0:
             tick_frequency_hz = 10.0
 
+        self.tick_sliding_window = [tick_frequency_hz] * 10
+
         self.debug_manager.publish_debug_info = self.publish_info
         self.debug_manager.publish_debug_settings = self.publish_debug_settings
         self.debug_manager.publish_node_diagnostics = self.publish_node_diagnostics
@@ -581,11 +583,21 @@ class TreeManager:
                     self.tree_msg.state = Tree.WAITING_FOR_TICK
                 return
 
-            if self.rate.remaining().to_nsec() < 0:
+            leftover = self.rate.remaining().to_sec()
+
+            if leftover < 0:
+                tick_rate = self.tree_msg.tick_frequency_hz + 1 / leftover
                 rospy.logwarn(
                     "Tick took longer than set period, cannot tick at "
                     f"{self.tree_msg.tick_frequency_hz:.2f} Hz"
                 )
+
+            rospy.logerr(tick_rate, leftover)
+            self.tick_sliding_window.pop(0)
+            self.tick_sliding_window.append(tick_rate)
+            average = sum(self.tick_sliding_window) / len(self.tick_sliding_window)
+            rospy.logerr(self.tick_sliding_window, average)
+
             self.rate.sleep()
 
         with self._state_lock:
