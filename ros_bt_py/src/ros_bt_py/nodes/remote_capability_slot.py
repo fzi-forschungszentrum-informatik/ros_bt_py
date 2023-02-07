@@ -45,6 +45,7 @@ from ros_bt_py_msgs.msg import (
     RemoteCapabilitySlotStatus,
     CapabilityExecutionStatus,
     CapabilityInterface,
+    PingMsg,
 )
 from ros_bt_py_msgs.srv import (
     LoadTreeRequest,
@@ -58,12 +59,12 @@ from ros_bt_py_msgs.srv import (
     CancelRemoteCapabilitySlot,
 )
 
-from ros_bt_py.capability import set_capability_io_bridge_topics
 from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.exceptions import BehaviorTreeException
 from ros_bt_py.node import Node, define_bt_node
 from ros_bt_py.node_config import NodeConfig
 from ros_bt_py.tree_manager import TreeManager
+from ros_bt_py.capability import set_capability_io_bridge_id
 
 
 @define_bt_node(
@@ -108,6 +109,7 @@ class RemoteCapabilitySlot(Node):
         )
         self._tree_root: Optional[Node] = None
         self._ping_publisher: Optional[Publisher] = None
+        self.node_id: Optional[str] = None
 
         self._run_remote_capability_service: Optional[Service] = None
         self._cancel_remote_capability_service: Optional[Service] = None
@@ -142,11 +144,10 @@ class RemoteCapabilitySlot(Node):
             self._canceled_event.clear()
 
             self.capability_interface = req.interface
-
-            self._ping_publisher = Publisher(
-                req.ping_topic, data_class=std_msgs.msg.Time, queue_size=1
+            self.node_id = req.node_id
+            self._ping_publisher.publish(
+                PingMsg(node_id=self.node_id, timestamp=rospy.Time.now())
             )
-            self._ping_publisher.publish(std_msgs.msg.Time(rospy.Time.now()))
 
             if self._tree_loaded_event.is_set():
                 self._tree_root.shutdown()
@@ -171,11 +172,10 @@ class RemoteCapabilitySlot(Node):
                 )
                 return response
 
-            set_capability_io_bridge_topics(
+            set_capability_io_bridge_id(
                 tree_manager=self._tree_manager,
                 interface=req.interface,
-                input_topic=req.input_topic,
-                output_topic=req.output_topic,
+                io_bridge_id=req.node_id,
             )
 
             self._tree_root = self._tree_manager.find_root()
@@ -241,6 +241,10 @@ class RemoteCapabilitySlot(Node):
 
         remote_capability_slot_status_topic = rospy.resolve_name(
             f"{rospy.get_namespace()}/mission_control/remote_slot_status"
+        )
+
+        self._ping_publisher = Publisher(
+            "~/capabilities/ping", data_class=PingMsg, queue_size=1
         )
 
         self._run_remote_capability_service = Service(
@@ -396,9 +400,11 @@ class RemoteCapabilitySlot(Node):
 
             return NodeMsg.RUNNING
 
-        if self._ping_publisher is not None and self._ping_publisher:
+        if self._ping_publisher is not None and self.node_id is not None:
             try:
-                self._ping_publisher.publish(std_msgs.msg.Time(rospy.Time.now()))
+                self._ping_publisher.publish(
+                    PingMsg(node_id=self.node_id, timestamp=rospy.Time.now())
+                )
             except ROSException as exc:
                 self.logwarn(f"Exception when publishing ping: {exc}")
 
@@ -485,6 +491,4 @@ class RemoteCapabilitySlot(Node):
         self._tree_manager.clear(request=ClearTreeRequest())
         self._tree_loaded_event.clear()
 
-        if self._ping_publisher is not None:
-            self._ping_publisher.unregister()
-        self._ping_publisher = None
+        self.node_id = None

@@ -42,7 +42,6 @@ from abc import ABC
 from typing import Optional, List, Type, Dict
 
 import rospy
-import std_msgs.msg
 from actionlib import SimpleActionClient
 from actionlib_msgs.msg import GoalStatus
 from rospy import ROSSerializationException, ROSException, Publisher, Subscriber
@@ -59,6 +58,7 @@ from ros_bt_py_msgs.msg import (
     ExecuteRemoteCapabilityResult,
     NodeData as NodeDataMsg,
     UtilityBounds,
+    PingMsg,
 )
 from ros_bt_py_msgs.srv import (
     PrepareLocalImplementation,
@@ -83,12 +83,6 @@ from ros_bt_py.node import define_bt_node, Leaf, Node
 from ros_bt_py.node_config import NodeConfig
 from ros_bt_py.ros_helpers import AsyncServiceProxy
 from ros_bt_py.tree_manager import TreeManager
-
-WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS = 2
-WAIT_FOR_IMPLEMENTATION_ASSIGNMENT_TIMEOUT_SECONDS = 2
-
-WAIT_FOR_REMOTE_MISSION_CONTROL_TRIES = 3
-WAIT_FOR_OUTPUTS_TIMEOUT_SECONDS = 1
 
 
 class CapabilityDataBridge(ABC, Leaf):
@@ -118,26 +112,29 @@ class CapabilityDataBridge(ABC, Leaf):
             simulate_tick=simulate_tick,
             succeed_always=succeed_always,
         )
-        self._source_capability_bridge_topic: Optional[str] = None
+        self._io_bridge_id: Optional[str] = None
+        self.capability_io_topic: str = rospy.get_param(
+            "capability_io_topic", "~/capabilities/io"
+        )
 
     @property
-    def capability_bridge_topic(self) -> str:
+    def capability_bridge_id(self) -> str:
         """
-        The topic to use for communication with the capability.
+        Unique id used to identify the information relevant for this IO bridge.
 
         :return: string containing the topic
         """
-        return self._source_capability_bridge_topic
+        return self._io_bridge_id
 
-    @capability_bridge_topic.setter
-    def capability_bridge_topic(self, new_topic: str):
+    @capability_bridge_id.setter
+    def capability_bridge_id(self, new_id: str):
         """
-        Set the topic used for communication with the capability.
+        Set the unique id used to identify the information relevant for this IO bridge.
 
         :param new_topic: The new topic to use.
         :return: None
         """
-        self._source_capability_bridge_topic = new_topic
+        self._io_bridge_id = new_id
 
 
 class CapabilityInputDataBridge(CapabilityDataBridge):
@@ -168,24 +165,28 @@ class CapabilityInputDataBridge(CapabilityDataBridge):
     def _publish_inputs_cb(self, msg: CapabilityIOBridgeData):
         """
         Callback to store the received input message internally to be processed on the next tick.
+
         :param msg: The received message.
         :return: None
         """
         with self._message_lock:
-            self._current_received_msg = msg
+            if (msg.node_id == self.capability_bridge_id) and (
+                msg.type == CapabilityIOBridgeData.INPUT
+            ):
+                rospy.logdebug("Recieved msg relevant to this input bridge!")
+                self._current_received_msg = msg
 
     def _do_setup(self):
         with self._lock:
-            if self.capability_bridge_topic is None:
-                raise BehaviorTreeException(f"{self.name}: No input topic set!")
+
             self._source_capability_inputs_subscriber = rospy.Subscriber(
-                self.capability_bridge_topic,
+                self.capability_io_topic,
                 CapabilityIOBridgeData,
                 callback=self._publish_inputs_cb,
             )
             try:
                 rospy.wait_for_message(
-                    self.capability_bridge_topic,
+                    self.capability_io_topic,
                     CapabilityIOBridgeData,
                     timeout=rospy.Duration.from_sec(10),
                 )
@@ -289,11 +290,8 @@ class CapabilityOutputDataBridge(CapabilityDataBridge):
 
     def _do_setup(self):
         with self._lock:
-            if self.capability_bridge_topic is None:
-                raise BehaviorTreeException(f"{self.name}: No input topic set!")
-
             self._source_capability_outputs_publisher = rospy.Publisher(
-                self.capability_bridge_topic, CapabilityIOBridgeData, queue_size=1000
+                self.capability_io_topic, CapabilityIOBridgeData, queue_size=10
             )
 
     def _do_tick(self):
@@ -314,7 +312,10 @@ class CapabilityOutputDataBridge(CapabilityDataBridge):
 
                     self._source_capability_outputs_publisher.publish(
                         CapabilityIOBridgeData(
-                            bridge_data=outputs, timestamp=rospy.Time.now()
+                            node_id=self.capability_bridge_id,
+                            type=CapabilityIOBridgeData.OUTPUT,
+                            bridge_data=outputs,
+                            timestamp=rospy.Time.now(),
                         )
                     )
                     return NodeMsg.SUCCEEDED
@@ -372,6 +373,22 @@ class Capability(ABC, Leaf):
             simulate_tick=simulate_tick,
         )
 
+        self.capability_io_topic: str = rospy.get_param(
+            "capability_io_topic", "~/capabilities/io"
+        )
+        self.wait_for_local_mission_control_timeout_sec: int = rospy.get_param(
+            "wait_for_local_mission_control_timeout_sec", 2
+        )
+        self.wait_for_implementation_assignment_timeout_sec: int = rospy.get_param(
+            "wait_for_implementation_assignment_timeout_sec", 2
+        )
+        self.wait_for_remote_mission_control_tries: str = rospy.get_param(
+            "wait_for_remote_mission_control_tries", 3
+        )
+        self.wait_for_outputs_timeout_sec: str = rospy.get_param(
+            "wait_for_outputs_timeout_sec", 1
+        )
+
         if hasattr(self, "__capability_interface"):
             self.capability_interface = getattr(self, "__capability_interface")
         else:
@@ -420,14 +437,12 @@ class Capability(ABC, Leaf):
         self._capability_execution_status_publisher: Optional[Publisher] = None
 
         # Input and output data bridge information
-        self._input_bridge_topic: Optional[str] = None
-        self._input_bridge_publisher: Optional[rospy.Publisher] = None
-        self._output_bridge_topic: Optional[str] = None
-        self._output_bridge_subscriber: Optional[rospy.Subscriber] = None
+        self._io_bridge_id: Optional[str] = None
+        self._io_publisher: Optional[rospy.Publisher] = None
+        self._io_subscriber: Optional[rospy.Subscriber] = None
         self._last_received_outputs: Optional[CapabilityIOBridgeData] = None
 
         # Ping used to indicate that a remote capability is still running!
-        self._ping_topic: Optional[str] = None
         self._ping_subscriber: Optional[Subscriber] = None
         self._last_ping_timestamp: Optional[rospy.Time] = None
 
@@ -454,7 +469,7 @@ class Capability(ABC, Leaf):
         )
 
     def _do_calculate_utility(self):
-        if self._input_bridge_publisher is not None:
+        if self._io_publisher is not None:
             input_data = []
             for key in self.inputs:
                 input_data_msg = NodeDataMsg()
@@ -466,9 +481,12 @@ class Capability(ABC, Leaf):
                 input_data.append(input_data_msg)
 
             try:
-                self._input_bridge_publisher.publish(
+                self._io_publisher.publish(
                     CapabilityIOBridgeData(
-                        bridge_data=input_data, timestamp=rospy.Time.now()
+                        node_id=self._io_bridge_id,
+                        type=CapabilityIOBridgeData.INPUT,
+                        bridge_data=input_data,
+                        timestamp=rospy.Time.now(),
                     )
                 )
             except ROSSerializationException as exc:
@@ -482,9 +500,7 @@ class Capability(ABC, Leaf):
 
         response: GetLocalBidResponse = self.__get_local_bid_service.call(
             GetLocalBidRequest(
-                interface=self.capability_interface,
-                inputs_topic=self._input_bridge_topic,
-                outputs_topic=self._output_bridge_topic,
+                interface=self.capability_interface, node_id=self._io_bridge_id
             )
         )
         if not response.success:
@@ -592,8 +608,12 @@ class Capability(ABC, Leaf):
         :param msg: The received output values.
         :return:None
         """
-        with self._capability_lock:
-            self._last_received_outputs = msg
+        if (
+            msg.type == CapabilityIOBridgeData.OUTPUT
+            and msg.node_id == self._io_bridge_id
+        ):
+            with self._capability_lock:
+                self._last_received_outputs = msg
 
     def _do_setup(self):
         try:
@@ -604,13 +624,13 @@ class Capability(ABC, Leaf):
             rospy.wait_for_service(
                 prepare_local_implementation_name,
                 timeout=rospy.Duration(
-                    secs=WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS
+                    secs=self.wait_for_local_mission_control_timeout_sec
                 ),
             )
         except rospy.ROSException as exc:
             raise BehaviorTreeException(
                 f'Service "{self.local_mc_topic}/prepare_local_implementation" not available'
-                f" after waiting f{WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS} seconds!"
+                f" after waiting f{self.wait_for_local_mission_control_timeout_sec} seconds!"
             ) from exc
 
         self._prepare_local_implementation_service_proxy = AsyncServiceProxy(
@@ -625,34 +645,29 @@ class Capability(ABC, Leaf):
         try:
             self._request_capability_execution_service_proxy.wait_for_service(
                 timeout=rospy.Duration(
-                    secs=WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS
+                    secs=self.wait_for_local_mission_control_timeout_sec
                 )
             )
         except rospy.ROSException as exc:
             raise BehaviorTreeException(
                 f'Service "{self.local_mc_topic}/execute_capability" not available'
-                f" after waiting f{WAIT_FOR_LOCAL_MISSION_CONTROL_TIMEOUT_SECONDS} seconds!"
+                f" after waiting f{self.wait_for_local_mission_control_timeout_sec} seconds!"
             ) from exc
 
-        capability_topic_prefix = rospy.resolve_name(
-            f"~/capabilities/{self.name}_{secrets.randbelow(100000)}"
-        )
+        self._io_bridge_id = f"{self.name}_{secrets.randbelow(100000)}"
 
-        self._input_bridge_topic = f"{capability_topic_prefix}/inputs"
-        self._output_bridge_topic = f"{capability_topic_prefix}/outputs"
-        self._input_bridge_publisher = rospy.Publisher(
-            self._input_bridge_topic, CapabilityIOBridgeData, queue_size=1, latch=True
+        self._io_publisher = rospy.Publisher(
+            self.capability_io_topic, CapabilityIOBridgeData, queue_size=1, latch=True
         )
         self._output_bridge_subscriber = rospy.Subscriber(
-            self._output_bridge_topic,
+            self.capability_io_topic,
             CapabilityIOBridgeData,
             callback=self._publish_outputs_cb,
         )
 
-        self._ping_topic = f"{capability_topic_prefix}/ping"
         self._ping_subscriber = rospy.Subscriber(
-            self._ping_topic,
-            std_msgs.msg.Time,
+            "~/capabilities/ping",
+            PingMsg,
             self._update_remote_exec_ping,
             queue_size=1,
         )
@@ -667,9 +682,10 @@ class Capability(ABC, Leaf):
             queue_size=1,
         )
 
-    def _update_remote_exec_ping(self, msg: std_msgs.msg.Time):
-        with self._capability_lock:
-            self._last_ping_timestamp = msg.data
+    def _update_remote_exec_ping(self, msg: PingMsg):
+        if self._io_bridge_id == msg.node_id:
+            with self._capability_lock:
+                self._last_ping_timestamp = msg.timestamp
 
     def _tick_unassigned(self) -> str:
         """
@@ -686,8 +702,7 @@ class Capability(ABC, Leaf):
             self._request_capability_execution_service_proxy.call_service(
                 RequestCapabilityExecutionRequest(
                     capability=self.capability_interface,
-                    inputs_topic=self._input_bridge_topic,
-                    outputs_topic=self._output_bridge_topic,
+                    node_id=self._io_bridge_id,
                     require_local_execution=require_local_execution,
                 )
             )
@@ -772,11 +787,10 @@ class Capability(ABC, Leaf):
                 self._setup_local_implementation_tree_status = NodeMsg.FAILED
                 return
 
-            set_capability_io_bridge_topics(
+            set_capability_io_bridge_id(
                 tree_manager=self.tree_manager,
                 interface=self.capability_interface,
-                input_topic=self._input_bridge_topic,
-                output_topic=self._output_bridge_topic,
+                io_bridge_id=self._io_bridge_id,
             )
 
             try:
@@ -890,9 +904,7 @@ class Capability(ABC, Leaf):
             ExecuteRemoteCapabilityGoal(
                 interface=self.capability_interface,
                 implementation_name=self._implementation_name,
-                input_topic=self._input_bridge_topic,
-                output_topic=self._output_bridge_topic,
-                ping_topic=self._ping_topic,
+                node_id=self._io_bridge_id,
             )
         )
         with self._capability_lock:
@@ -1012,7 +1024,7 @@ class Capability(ABC, Leaf):
                 return self._result_status
 
             if rospy.Time.now() - self._result_timestamp > rospy.Duration(
-                secs=WAIT_FOR_OUTPUTS_TIMEOUT_SECONDS
+                secs=self.wait_for_outputs_timeout_sec
             ):
                 self.logwarn(
                     "Timed out while waiting for results! Check if the implementation contains a"
@@ -1035,7 +1047,7 @@ class Capability(ABC, Leaf):
         return new_state
 
     def _do_tick(self):
-        if self._input_bridge_publisher is not None:
+        if self._io_publisher is not None:
             input_data = []
             for key in self.inputs:
                 input_data_msg = NodeDataMsg()
@@ -1046,9 +1058,12 @@ class Capability(ABC, Leaf):
                 )
                 input_data.append(input_data_msg)
             try:
-                self._input_bridge_publisher.publish(
+                self._io_publisher.publish(
                     CapabilityIOBridgeData(
-                        bridge_data=input_data, timestamp=rospy.Time.now()
+                        node_id=self._io_bridge_id,
+                        type=CapabilityIOBridgeData.INPUT,
+                        bridge_data=input_data,
+                        timestamp=rospy.Time.now(),
                     )
                 )
             except ROSSerializationException as exc:
@@ -1150,8 +1165,8 @@ class Capability(ABC, Leaf):
         self._cleanup()
 
         self._ping_subscriber = None
-        self._output_bridge_subscriber = None
-        self._input_bridge_publisher = None
+        self._io_subscriber = None
+        self._io_publisher = None
 
         self._request_capability_execution_service_proxy = None
         self._prepare_local_implementation_service_proxy = None
@@ -1164,13 +1179,13 @@ class Capability(ABC, Leaf):
         Helper method that unregisters all the io bridge publishers if not none.
         :return: None
         """
-        if self._output_bridge_subscriber is not None:
-            self._output_bridge_subscriber.unregister()
-            del self._output_bridge_subscriber
+        if self._io_subscriber is not None:
+            self._io_subscriber.unregister()
+            del self._io_subscriber
 
-        if self._input_bridge_publisher is not None:
-            self._input_bridge_publisher.unregister()
-            del self._input_bridge_publisher
+        if self._io_publisher is not None:
+            self._io_publisher.unregister()
+            del self._io_publisher
 
     def _stop_calls_action_clients_async_service_clients(self):
         """
@@ -1305,7 +1320,11 @@ def capability_node_class_from_capability_interface(
 
     return define_bt_node(
         NodeConfig(
-            options={"require_local_execution": bool, "execution_timeout_sec": float},
+            options={
+                "require_local_execution": bool,
+                "execution_timeout_sec": float,
+                "attributes_required_for_assignment": list,
+            },
             inputs=inputs_dict,
             outputs=outputs_dict,
             max_children=0,
@@ -1407,19 +1426,15 @@ def capability_node_class_from_capability_interface_callback(msg: Time, args: Li
         capability_output_data_bridge_from_interface(interface)
 
 
-def set_capability_io_bridge_topics(
-    tree_manager: TreeManager,
-    interface: CapabilityInterface,
-    input_topic: str,
-    output_topic: str,
+def set_capability_io_bridge_id(
+    tree_manager: TreeManager, interface: CapabilityInterface, io_bridge_id: str
 ) -> None:
     """
-    Sets the input and output bridge topics given a tree in a tree manger to the specified values.
+    Set the input and output bridge topic id to a specific value.
 
     :param tree_manager: The tree manager where the tree is stored
     :param interface: The interface for which the input and output bridge values should be set.
-    :param input_topic: The topic used to bridge input values into the tree.
-    :param output_topic: The topic used to bridge output values out of the tree.
+    :param io_bridge_id: The unique id that should be used for communication.
     :return: None
     """
     for node in tree_manager.nodes.values():
@@ -1428,7 +1443,7 @@ def set_capability_io_bridge_topics(
             and getattr(node, "__capability_interface") == interface
         ):
             if isinstance(node, CapabilityInputDataBridge):
-                node.capability_bridge_topic = input_topic
+                node.capability_bridge_id = io_bridge_id
                 continue
             if isinstance(node, CapabilityOutputDataBridge):
-                node.capability_bridge_topic = output_topic
+                node.capability_bridge_id = io_bridge_id

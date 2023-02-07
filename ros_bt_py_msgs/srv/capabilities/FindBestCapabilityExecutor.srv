@@ -1,6 +1,5 @@
 CapabilityInterface capability
-string inputs_topic
-string outputs_topic
+string node_id
 string mission_control_name
 ---
 # result

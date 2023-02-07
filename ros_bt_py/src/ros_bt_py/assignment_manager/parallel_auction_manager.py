@@ -301,11 +301,7 @@ class ParallelAuctionManager(AssignmentManager):
         with self.__local_bid_service_lock:
             try:
                 bid_response: GetLocalBidResponse = self.__local_bid_service.call(
-                    GetLocalBidRequest(
-                        interface=msg.interface,
-                        inputs_topic=msg.inputs_topic,
-                        outputs_topic=msg.outputs_topic,
-                    )
+                    GetLocalBidRequest(interface=msg.interface, node_id=msg.node_id)
                 )
                 if not bid_response.success:
                     rospy.logwarn(
@@ -588,8 +584,7 @@ class ParallelAuctionManager(AssignmentManager):
                 sender_id=self.__local_topic_prefix,
                 message_type=AuctionMessage.ANNOUNCEMENT,
                 interface=goal.capability,
-                inputs_topic=goal.inputs_topic,
-                outputs_topic=goal.outputs_topic,
+                node_id=goal.node_id,
                 deadline=current_deadline,
             )
         )

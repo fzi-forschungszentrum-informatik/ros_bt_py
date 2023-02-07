@@ -13,9 +13,7 @@ string RESULT=RESULT
 time deadline
 
 CapabilityInterface interface
-string inputs_topic
-string outputs_topic
-
+string node_id
 float64 bid
 int64 number_of_executors
 string implementation_name

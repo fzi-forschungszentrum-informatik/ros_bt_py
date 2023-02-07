@@ -1,8 +1,8 @@
 
 CapabilityInterface capability
-string inputs_topic
-string outputs_topic
+string node_id
 bool require_local_execution
+string relevant_parameter_values
 ---
 bool success
 string error_message

@@ -75,7 +75,7 @@ from ros_bt_py_msgs.srv import (
 
 from ros_bt_py.exceptions import BehaviorTreeException
 from ros_bt_py.nodes.sequence import Sequence
-from ros_bt_py.capability import set_capability_io_bridge_topics
+from ros_bt_py.capability import set_capability_io_bridge_id
 from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.helpers import HashableCapabilityInterface
 from ros_bt_py.migration import MigrationManager, check_node_versions
@@ -327,10 +327,10 @@ class MissionControl:
         # pylint: disable=too-many-statements,too-many-locals, too-many-return-statements
         service_response = GetLocalBidResponse()
 
-        if request.inputs_topic == "" or request.outputs_topic == "":
+        if request.node_id == "":
             service_response.success = False
             service_response.error_message = (
-                "GetLocalBid failed as the input topics are not populated!"
+                "GetLocalBid failed as the node_id is not populated!"
             )
             rospy.logerr(service_response.error_message)
             return service_response
@@ -413,11 +413,10 @@ class MissionControl:
                 continue
 
             try:
-                set_capability_io_bridge_topics(
+                set_capability_io_bridge_id(
                     tree_manager=get_local_bid_tree_manager,
                     interface=request.interface,
-                    input_topic=request.inputs_topic,
-                    output_topic=request.inputs_topic,
+                    io_bridge_id=request.node_id,
                 )
 
                 get_local_bid_tree_manager.find_root().setup()
@@ -659,9 +658,7 @@ class MissionControl:
             RunRemoteCapabilitySlotRequest(
                 implementation_tree=response.implementation_subtree,
                 interface=goal.interface,
-                input_topic=goal.input_topic,
-                output_topic=goal.output_topic,
-                ping_topic=goal.ping_topic,
+                node_id=goal.node_id,
             )
         )
         try:
@@ -680,11 +677,7 @@ class MissionControl:
         expended_costs = 0
 
         local_bid_response = self.get_local_bid(
-            GetLocalBidRequest(
-                interface=goal.interface,
-                inputs_topic=goal.input_topic,
-                outputs_topic=goal.output_topic,
-            )
+            GetLocalBidRequest(interface=goal.interface, node_id=goal.node_id)
         )
         if local_bid_response.success:
             previous_cost_projection = local_bid_response.bid
@@ -696,11 +689,7 @@ class MissionControl:
         while response is None:
 
             local_bid_response = self.get_local_bid(
-                GetLocalBidRequest(
-                    interface=goal.interface,
-                    inputs_topic=goal.input_topic,
-                    outputs_topic=goal.output_topic,
-                )
+                GetLocalBidRequest(interface=goal.interface, node_id=goal.node_id)
             )
             if local_bid_response.success:
                 expended_costs += abs(previous_cost_projection - local_bid_response.bid)
@@ -930,8 +919,7 @@ class MissionControl:
                 find_best_executor_response = find_best_executor_service.call(
                     FindBestCapabilityExecutorRequest(
                         capability=request.capability,
-                        inputs_topic=request.inputs_topic,
-                        outputs_topic=request.outputs_topic,
+                        node_id=request.node_id,
                         mission_control_name=rospy.get_name(),
                     )
                 )
@@ -960,11 +948,7 @@ class MissionControl:
             rospy.loginfo("Local execution required!")
 
         local_bid_response = self.get_local_bid(
-            GetLocalBidRequest(
-                interface=request.capability,
-                inputs_topic=request.inputs_topic,
-                outputs_topic=request.outputs_topic,
-            )
+            GetLocalBidRequest(interface=request.capability, node_id=request.node_id)
         )
 
         if local_bid_response.success:

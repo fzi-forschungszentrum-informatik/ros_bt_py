@@ -26,6 +26,7 @@ add_message_files(FILES
      NodeDiagnostics.msg
      Package.msg
      Packages.msg
+     PingMsg.msg
      Precondition.msg
      RemoteCapabilitySlotStatus.msg
      RemoteSlotState.msg

@@ -1,8 +1,6 @@
 CapabilityInterface interface
 Tree implementation_tree
-string input_topic
-string output_topic
-string ping_topic
+string node_id
 ---
 bool success
 string error_message
