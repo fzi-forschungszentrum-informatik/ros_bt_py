@@ -1,26 +1,60 @@
 <launch>
+  <!-- Add an argument to the launch file to turn on coverage -->
+  <arg name="coverage" default="false"/>
+
+  <!-- This fancy line forces nodes to generate coverage -->
+  <arg name="pythontest_launch_prefix" value="$(eval 'python3-coverage run -p' if arg('coverage') else '')"/>
+
   <group ns="has_stuff">
     <!-- offers delay_1s_if_true (std_srvs/SetBool) service -->
-    <node name="test_services" pkg="ros_bt_py" type="test_service_node.py" />
+    <node
+      name="test_services"
+      pkg="ros_bt_py"
+      type="test_service_node.py"
+      launch-prefix="$(arg pythontest_launch_prefix)" />
     <!-- Publishes numbers_out (std_msgs/Int32), Subscribes to numbers_in (std_msgs/Int32) -->
-    <node name="test_topics" pkg="ros_bt_py" type="test_topics_node.py" />
+    <node
+      name="test_topics"
+      pkg="ros_bt_py"
+      type="test_topics_node.py"
+      launch-prefix="$(arg pythontest_launch_prefix)" />
     <!-- offers an ActionServer at fibonacci (actionlib_tutorials/FibonacciAction) -->
-    <node name="fib" pkg="actionlib_tutorials" type="fibonacci_server" />
+    <node
+      name="fib"
+      pkg="actionlib_tutorials"
+      type="fibonacci_server" />
 
     <!-- has EvaluateUtility at good_slot/evaluate_utility -->
-    <node name="good_slot" pkg="ros_bt_py" type="remote_tree_slot_node.py" />
+    <node
+      name="good_slot"
+      pkg="ros_bt_py"
+      type="remote_tree_slot_node.py"
+      launch-prefix="$(arg pythontest_launch_prefix)" />
   </group>
 
   <group ns="no_stuff">
     <!-- has EvaluateUtility at good_slot/evaluate_utility -->
-    <node name="pub_int" pkg="rostopic" type="rostopic"
-          args="pub -l foo std_msgs/Int32 'data: 1.0'" />
-    <node name="bad_slot" pkg="ros_bt_py" type="remote_tree_slot_node.py" />
+    <node
+      name="pub_int"
+      pkg="rostopic"
+      type="rostopic"
+      args="pub -l foo std_msgs/Int32 'data: 1.0'"
+      launch-prefix="$(arg pythontest_launch_prefix)" />
+    <node
+      name="bad_slot"
+      pkg="ros_bt_py"
+      type="remote_tree_slot_node.py"
+      launch-prefix="$(arg pythontest_launch_prefix)" />
   </group>
 
-  <node name="find_best_exec" pkg="ros_bt_py" type="find_best_executor_node.py" />
+  <node
+    name="find_best_exec"
+    pkg="ros_bt_py"
+    type="find_best_executor_node.py"
+    launch-prefix="$(arg pythontest_launch_prefix)" />
 
   <test test-name="test_ros_leaf_utility"
         pkg="ros_bt_py"
-        type="test_ros_leaf_utility.py" />
+        type="test_ros_leaf_utility.py"
+        launch-prefix="$(arg pythontest_launch_prefix)" />
 </launch>

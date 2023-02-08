@@ -1,5 +1,19 @@
 <launch>
-  <test test-name="test_parallel_if_remote" pkg="ros_bt_py" type="test_parallel_if_remote.py" />
+  <!-- Add an argument to the launch file to turn on coverage -->
+  <arg name="coverage" default="false"/>
 
-  <node name="remote_tree" pkg="ros_bt_py" type="dummy_remote_tree.py" />
+  <!-- This fancy line forces nodes to generate coverage -->
+  <arg name="pythontest_launch_prefix" value="$(eval 'python3-coverage run -p' if arg('coverage') else '')"/>
+
+  <test
+    test-name="test_parallel_if_remote"
+    pkg="ros_bt_py"
+    type="test_parallel_if_remote.py"
+    launch-prefix="$(arg pythontest_launch_prefix)" />
+
+  <node
+    name="remote_tree"
+    pkg="ros_bt_py"
+    type="dummy_remote_tree.py"
+    launch-prefix="$(arg pythontest_launch_prefix)" />
 </launch>

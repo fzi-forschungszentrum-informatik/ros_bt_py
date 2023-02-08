@@ -42,6 +42,7 @@
   <exec_depend>rqt_console</exec_depend>
   <exec_depend>catkin</exec_depend>
 
+  <test_depend>code_coverage</test_depend>
   <test_depend>rostest</test_depend>
   <test_depend>std_msgs</test_depend>
   <test_depend>std_srvs</test_depend>
