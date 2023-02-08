@@ -1,0 +1,16 @@
+[run]
+branch=True
+omit=
+  */usr*
+  */opt*
+  */devel*
+  *test/*
+  *tests/*
+  */.local*
+  */install*
+
+[paths]
+source=
+  ros_bt_py/
+  /root/target_ws/src/ros_bt_py/ros_bt_py
+  /builds/*/ros_bt_py/ros_bt_py

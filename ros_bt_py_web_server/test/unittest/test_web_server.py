@@ -1,5 +1,5 @@
 #  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2022-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -30,6 +30,9 @@
 import unittest
 from socket import error
 import errno
+
+import threading
+from time import sleep
 
 from tornado.testing import AsyncTestCase, gen_test, bind_unused_port
 from tornado.httpclient import AsyncHTTPClient

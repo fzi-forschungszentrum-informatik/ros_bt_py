@@ -246,7 +246,6 @@ class AsyncServiceProxy:
             self._thread.start()
 
     def shutdown(self):
-        """Shutdown the service proxy forfitting the result."""
         self.stop_call()
         self._unclaim_service_proxy()
 

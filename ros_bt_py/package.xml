@@ -4,9 +4,6 @@
   <version>1.0.0</version>
   <description>A type-safe Behavior Tree library (until the wheels fall off)</description>
 
-  <!-- One maintainer tag required, multiple allowed, one person per tag -->
-  <!-- Example:  -->
-  <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
   <maintainer email="heppner@fzi.de">Georg Heppner</maintainer>
 
   <license>BSD-3-Clause</license>
@@ -14,9 +11,6 @@
   <url type="website">https://github.com/fzi-forschungszentrum-informatik/ros_bt_py</url>
 
 
-  <!-- Author tags are optional, multiple are allowed, one per tag -->
-  <!-- Authors do not have to be maintainers, but could be -->
-  <!-- Example: -->
   <author>Nils Berg</author>
   <author>Kai-Uwe Hermann</author>
   <author email="oberacker@fzi.de">David Oberacker</author>
@@ -55,11 +49,8 @@
 
   <test_depend condition="$ROS_PYTHON_VERSION == 2">python-autobahn</test_depend>
   <test_depend condition="$ROS_PYTHON_VERSION == 3">python3-autobahn</test_depend>
-  <!-- twisted really needed? -->
   <test_depend condition="$ROS_PYTHON_VERSION == 2">python-twisted-core</test_depend>
   <test_depend condition="$ROS_PYTHON_VERSION == 3">python3-twisted</test_depend>
-  <!-- The export tag contains other, unspecified, tags -->
   <export>
-    <!-- Other tools can request additional information be placed here -->
   </export>
 </package>

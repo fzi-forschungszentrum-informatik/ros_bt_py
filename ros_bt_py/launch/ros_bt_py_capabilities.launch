@@ -71,7 +71,6 @@
   -->
   <arg name="default_tree_control_command" default="0" />
 
-  <!-- -->
   <arg name="show_traceback_on_exception" default="false" />
 
   <group ns="$(arg robot_namespace)">

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2022-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -54,7 +54,7 @@ from ros_bt_py.ros_helpers import AsyncServiceProxy
 PKG = "ros_bt_py"
 
 
-@unittest.skip("Shovables are not working as of now!")
+@unittest.skip("Testcase fails at random times.")
 class TestShoveTree(unittest.TestCase):
     def setUp(self):
         self.load_tree_proxy = rospy.ServiceProxy("/tree_node/load_tree", LoadTree)
@@ -639,8 +639,5 @@ def get_option(node_msg, key):
 if __name__ == "__main__":
     rospy.init_node("test_shove_tree")
     import rostest
-    import sys
-    import os
 
-    os.environ["COVERAGE_FILE"] = "%s.%s.coverage" % (PKG, "test_shove_tree")
-    rostest.rosrun(PKG, "test_shove_tree", TestShoveTree, sysargs=sys.argv + ["--cov"])
+    rostest.rosrun(PKG, "test_shove_tree", TestShoveTree)

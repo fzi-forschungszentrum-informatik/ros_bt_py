@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2022-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -53,7 +53,6 @@ from ros_bt_py.tree_manager import TreeManager
 PKG = "ros_bt_py"
 
 
-@unittest.skip("Timeout of occurs as tests take over 60 sec.")
 class TestPackageManager(unittest.TestCase):
     def setUp(self):
         self.message_list_msg = None

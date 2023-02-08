@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 2.8.12)
 project(ros_bt_py)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-#add_compile_options(-std=c++17)
+# add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -117,12 +117,7 @@ if (CATKIN_ENABLE_TESTING)
   add_rostest(test/rostest/shovable.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
   add_rostest(test/rostest/shove_tree.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
   add_rostest(test/rostest/websocket_interface.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
+  add_rostest(test/rostest/capabilities.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
+  add_rostest(test/rostest/capabilities_no_auction.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
 
-  if(ENABLE_COVERAGE_TESTING)
-    set(COVERAGE_EXCLUDES "*/${PROJECT_NAME}/test*,*/${PROJECT_NAME}/html*")
-    add_code_coverage(
-      NAME ${PROJECT_NAME}_coverage_report
-      DEPENDENCIES tests
-    )
-  endif()
 endif()

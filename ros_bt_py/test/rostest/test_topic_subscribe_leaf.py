@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2022-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -220,13 +220,9 @@ class TestTopicSubscriberLeaf(unittest.TestCase):
 if __name__ == "__main__":
     rospy.init_node("test_topic_subscribe_leaf")
     import rostest
-    import sys
-    import os
 
-    os.environ["COVERAGE_FILE"] = "%s.%s.coverage" % (PKG, "test_topic_subscribe_leaf")
     rostest.rosrun(
         PKG,
         "test_topic_subscribe_leaf",
         TestTopicSubscriberLeaf,
-        sysargs=sys.argv + ["--cov"],
     )

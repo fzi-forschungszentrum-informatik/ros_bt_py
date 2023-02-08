@@ -1,5 +1,5 @@
 #  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2022-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -27,7 +27,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
-"""Web server for the ros_bt_py BT library."""
 import rospy
 import rospkg
 from socket import error
@@ -116,7 +115,7 @@ class PackageListRequestHandler(RequestHandler):
 
 
 class WebServer(object):
-    """Provides a simple tornado based web server."""
+    """Provides a simple tornado based web server"""
 
     def __init__(
         self,
