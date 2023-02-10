@@ -119,5 +119,6 @@ if (CATKIN_ENABLE_TESTING)
   add_rostest(test/rostest/websocket_interface.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
   add_rostest(test/rostest/capabilities.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
   add_rostest(test/rostest/capabilities_no_auction.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
+  add_rostest(test/rostest/capability_repository.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
 
 endif()

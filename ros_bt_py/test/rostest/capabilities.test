@@ -130,5 +130,4 @@
         pkg="ros_bt_py"
         type="test_capabilities_remote.py"
         launch-prefix="$(arg pythontest_launch_prefix)" />
-
 </launch>
