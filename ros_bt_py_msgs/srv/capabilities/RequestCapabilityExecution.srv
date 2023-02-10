@@ -1,4 +1,3 @@
-
 CapabilityInterface capability
 string node_id
 bool require_local_execution

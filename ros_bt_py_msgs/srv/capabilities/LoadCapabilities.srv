@@ -1,4 +1,4 @@
-# Load capability interfaces from a specific path.
+# Load capability interfaces from a the capabilities folder in a specific package.
 string package
 ---
 bool success

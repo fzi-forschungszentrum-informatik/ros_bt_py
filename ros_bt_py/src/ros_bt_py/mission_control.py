@@ -1144,7 +1144,7 @@ class MissionControl:
 
             for precondition in reversed(implementation.preconditions):
 
-                if precondition.kind == Precondition.REMOTE:
+                if precondition.type == Precondition.REMOTE:
                     available_services = rosservice_find("CheckPreconditionStatus")
 
                     for service_name in available_services:

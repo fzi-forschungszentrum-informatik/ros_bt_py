@@ -55,7 +55,6 @@ add_service_files(FILES
   capabilities/ReserveRemoteCapabilitySlot.srv
   capabilities/RunRemoteCapabilitySlot.srv
   capabilities/SaveCapabilities.srv
-  capabilities/UpdateCapabilityInterfaces.srv
   ChangeTreeName.srv
   ClearTree.srv
   Continue.srv

@@ -1,5 +1,5 @@
 <launch>
-    <arg name="robot_namespace" default="/" />
+  <arg name="robot_namespace" default="/" />
   <!-- start rqt_console by default -->
   <arg name="rqt_console" default="false" />
   <arg name="dual" default="false" />
@@ -73,53 +73,9 @@
 
   <arg name="show_traceback_on_exception" default="false" />
 
+  <include file="$(find ros_bt_py)/launch/ros_bt_py.launch" pass_all_args="true"/>
+
   <group ns="$(arg robot_namespace)">
-
-      <group if="$(arg web_interface)">
-        <!-- rosbridge that provides the websocket connection for the web interface -->
-        <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch">
-          <arg name="services_glob" default="[*/rosapi/*, */tree_node/*, */tree_node_dual/* ,  */capabilities/*]" />
-          <!--arg unless="$(arg dual)" name="services_glob" default="[*/rosapi/*, */tree_node/*, */capability_manager/*]" /-->
-          <!--arg name="services_glob" default="[*/rosapi/*, */tree_node/*, */capability_manager/*]" /-->
-        </include>
-
-        <!-- webserver -->
-        <include file="$(find ros_bt_py_web_server)/launch/web_server.launch">
-          <arg name="port" value="$(arg port)" />
-          <arg name="cache_static_files" value="false" />
-          <arg name="packages" value="[
-              {
-                  package: ros_bt_py,
-                  directory: html
-              }
-            ]" />
-        </include>
-      </group>
-
-      <!-- behavior tree backend, responsible for executing the tree -->
-      <node name="tree_node" pkg="ros_bt_py" type="tree_node.py" output="log"
-            respawn="true">
-        <!-- a list of modules that are availble in the editor web interface -->
-        <rosparam param="node_modules" subst_value="True">
-          [
-          $(arg default_node_modules)
-          $(arg additional_node_modules)
-          ]
-        </rosparam>
-        <param name="show_traceback_on_exception" value="$(arg show_traceback_on_exception)" />
-        <param name="load_default_tree" value="$(arg load_default_tree)" />
-        <param name="load_default_tree_permissive" value="$(arg load_default_tree_permissive)" />
-        <param name="default_tree_path" value="$(arg default_tree_path)" />
-        <param name="default_tree_tick_frequency_hz" value="$(arg default_tree_tick_frequency_hz)" />
-        <param name="default_tree_control_command" value="$(arg default_tree_control_command)" />
-      </node>
-
-      <group if="$(arg web_interface)">
-        <!-- helper node that prints the url of the editor web interface for convenience -->
-        <node name="print_editor_url" pkg="ros_bt_py" type="print_editor_url.py" output="screen">
-          <param name="port" value="$(arg port)" />
-        </node>
-      </group>
       <node name="capability_repository" pkg="ros_bt_py" type="capability_repository_node.py" output="log" respawn="true" />
       <node name="assignment_manager" pkg="ros_bt_py" type="assignment_manager_node.py" output="log" respawn="true" />
       <node name="mission_control" pkg="ros_bt_py" type="mission_control_node.py" output="log" respawn="true" />

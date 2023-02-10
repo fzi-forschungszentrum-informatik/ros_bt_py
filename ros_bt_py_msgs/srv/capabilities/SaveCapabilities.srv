@@ -1,4 +1,4 @@
-# Saves capability interfaces to a specific path. All other files in the folder are removed.
+# Saves capability interfaces to a specific package. All other files in the capabilities folder in the top level of the pacakge are removed.
 string package
 ---
 bool success

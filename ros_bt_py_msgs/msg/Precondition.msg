@@ -1,4 +1,4 @@
-string kind
+string type
 CapabilityInterface capability
 
 string LOCAL=LOCAL

@@ -1,4 +1,4 @@
-# Receives capability interfaces from a remote host and adds them to the local collection.
+# Put the provided interfaces into the local repository of this node.
 CapabilityInterface[] capabilities
 ---
 bool success
