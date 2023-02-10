@@ -176,7 +176,6 @@ class Action(Leaf):
             self._active_goal = None
 
             # Fail if final goal status was not SUCCEEDED
-            self.logerr("Succeeding")
             return NodeMsg.SUCCEEDED
 
         if current_state in [
