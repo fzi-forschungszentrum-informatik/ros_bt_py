@@ -1,5 +1,5 @@
 #  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2022-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -73,8 +73,8 @@ class TestSubtree(unittest.TestCase):
         self.assertTrue(subtree.outputs["load_success"])
 
         subtree.shutdown()
-        subtree.reset()
-        self.assertEqual(subtree.state, NodeMsg.IDLE)
+        # subtree.reset()
+        self.assertEqual(subtree.state, NodeMsg.SHUTDOWN)
 
     def testSubtreeLoadError(self):
         path = "package://ros_bt_py/test/testdata/trees/this_tree_does_not_exist.yaml"

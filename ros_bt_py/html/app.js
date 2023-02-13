@@ -29,7 +29,7 @@ class App extends Component
 
     this.state = {
       bt_namespace: '',
-      cm_namespace: 'capability_manager/',
+      cm_namespace: '/capabilities/',
       ros_uri: ros_uri,
       selected_tree: {
         is_subtree: false,
@@ -39,9 +39,11 @@ class App extends Component
       error_history_sorting_asc: false,
       selected_edge: null,
       available_nodes: [],
-      available_capabilities: [],
+      available_capability_interfaces: [],
+      available_capability_implementations: [],
       filtered_nodes: [],
-      filtered_capabilities: [],
+      filtered_capability_interfaces: [],
+      filtered_capability_implementations: [],
       subtree_names: [],
       selected_node: null, // FIXME
       selected_node_names: [],
@@ -78,12 +80,12 @@ class App extends Component
     this.nodes_fuse = null;
     this.capabilities_fuse = null;
 
-    ros.on("connection", function(e) {
+    ros.on("connection", function(_) {
       console.log("Connected to websocket");
       this.setState({connected: true});
     }.bind(this));
 
-    ros.on("close", function(e) {
+    ros.on("close", function(_) {
       this.setState({connected: false,
                      cm_available: false,
                      packages_available: false,
@@ -144,20 +146,52 @@ class App extends Component
       serviceType: 'ros_bt_py_msgs/SetExecutionMode'
     });
 
-    // topic needed for capability functionality
-    this.capabilities_topic = null;
+    this.get_capability_interfaces_service = null;
+    this.save_capability_interfaces_service = null;
+    this.load_capability_interfaces_service = null;
+    this.submit_capability_interfaces_service = null;
+    this.delete_capability_interfaces_service = null;
+    this.get_capability_implementations_service = null;
 
-    this.state.ros.getTopics(function(result) {
-      if (result.topics.includes(this.state.cm_namespace + 'capabilities'))
+    // This is to check that the capabilities node is up an running before we performs capability related operations.
+    this.state.ros.getServices(function(result) {
+      if (result.includes('/capabilities/interfaces/get'))
       {
-        this.capabilities_topic = new ROSLIB.Topic({
-          ros : this.state.ros,
-          name : this.state.cm_namespace + 'capabilities',
-          messageType : 'bt_capabilities_msgs/Capabilities'
+        this.get_capability_interfaces_service = new ROSLIB.Service({
+          ros: this.state.ros,
+          name: this.state.cm_namespace + 'interfaces/get',
+          serviceType: 'ros_bt_py_msgs/GetCapabilityInterfaces'
         });
-        this.capabilities_topic.subscribe(this.onCapabilitiesUpdate);
+        this.save_capability_interfaces_service = new ROSLIB.Service({
+          ros: this.state.ros,
+          name: this.state.cm_namespace + 'interfaces/save',
+          serviceType: 'ros_bt_py_msgs/SaveCapabilityInterfaces'
+        });
+        this.load_capability_interfaces_service = new ROSLIB.Service({
+          ros: this.state.ros,
+          name: this.state.cm_namespace + 'interfaces/load',
+          serviceType: 'ros_bt_py_msgs/LoadCapabilityInterfaces'
+        });
+        this.submit_capability_interfaces_service = new ROSLIB.Service({
+          ros: this.state.ros,
+          name: this.state.cm_namespace + 'interfaces/submit',
+          serviceType: 'ros_bt_py_msgs/SubmitCapabilityInterfaces'
+        });
+        this.delete_capability_interfaces_service = new ROSLIB.Service({
+          ros: this.state.ros,
+          name: this.state.cm_namespace + 'interfaces/delete',
+          serviceType: 'ros_bt_py_msgs/DeleteCapabilityInterface'
+        });
+
+        this.get_capability_implementations_service = new ROSLIB.Service({
+          ros: this.state.ros,
+          name: this.state.cm_namespace + 'implementations/get',
+          serviceType: 'ros_bt_py_msgs/GetCapabilityImplementations'
+        });
       }
-    }.bind(this));
+    }.bind(this)
+    );
+
 
     this.packages_topic = new ROSLIB.Topic({
       ros : this.state.ros,
@@ -171,6 +205,7 @@ class App extends Component
 
     // Bind these here so this works as expected in callbacks
     this.getNodes = this.getNodes.bind(this);
+    this.getCapabilityInterfaces = this.getCapabilityInterfaces.bind(this);
     this.onError = this.onError.bind(this);
     this.onClearErrors = this.onClearErrors.bind(this);
     this.onChangeErrorHistorySorting = this.onChangeErrorHistorySorting.bind(this);
@@ -207,15 +242,15 @@ class App extends Component
     if (this.state.publishing_subtrees && this.last_received_tree_msg && this.last_received_tree_msg.nodes)
     {
       var setup_and_shutdown = false;
-      if (this.last_received_tree_msg.nodes.length != msg.nodes.length)
+      if (this.last_received_tree_msg.nodes.length !== msg.nodes.length)
       {
         setup_and_shutdown = true;
       } else {
         for (var i = 0; i < msg.nodes.length; i++)
         {
-          if (msg.nodes[i].module != this.last_received_tree_msg.nodes[i].module
-              || msg.nodes[i].node_class != this.last_received_tree_msg.nodes[i].node_class
-              || msg.nodes[i].name != this.last_received_tree_msg.nodes[i].name)
+          if (msg.nodes[i].module !== this.last_received_tree_msg.nodes[i].module
+              || msg.nodes[i].node_class !== this.last_received_tree_msg.nodes[i].node_class
+              || msg.nodes[i].name !== this.last_received_tree_msg.nodes[i].name)
           {
             setup_and_shutdown = true;
           }
@@ -263,7 +298,7 @@ class App extends Component
     this.messages = [];
     for (var i = 0; i < msg.messages.length; i++) {
       var components = msg.messages[i].msg.split("/");
-      if (components.length == 2) {
+      if (components.length === 2) {
         if (msg.messages[i].service)
         {
           this.messages.push({msg:components[0] + ".srv._" + components[1] + "." + components[1],
@@ -315,8 +350,30 @@ class App extends Component
     this.setState({packages_available: true});
   }
 
+  getCapabilityInterfaces()
+  {
+    if (this.get_capability_interfaces_service !== null)
+    {
+      this.get_capability_interfaces_service.callService(
+          new ROSLIB.ServiceRequest(),
+          function(response) {
+            this.setState({available_capability_interfaces: response.capabilities})
+          }.bind(this)
+      )
+
+      if (this.get_capability_implementations_service !== null) {
+        this.get_capability_implementations_service.callService(
+          new ROSLIB.ServiceRequest(),
+            function(response) {
+              this.setState({available_capability_implementations: response.implementations});
+            }.bind(this))
+      }
+    }
+  }
+
   onCapabilitiesUpdate(msg)
   {
+    //TODO: This might be an interesting callback to check.
     console.log("received list of capabilities");
     this.last_received_capabilities_msg = msg;
     this.capabilities = [];
@@ -345,7 +402,7 @@ class App extends Component
     };
     this.capabilities_fuse = new Fuse(this.capabilities, options);
 
-    this.setState({cm_available: true, available_capabilities: this.capabilities});
+    this.setState({cm_available: true, available_capability_interfaces: this.capabilities});
   }
 
   changeSkin(skin)
@@ -401,7 +458,7 @@ class App extends Component
   {
     // Find the correct tree message (if any) to set for the new
     // selected tree
-    var tree_msg = undefined;
+    var tree_msg;
     if (is_subtree)
     {
       tree_msg = this.last_received_debug_msg.subtree_states.find(x => x.name === name);
@@ -433,22 +490,24 @@ class App extends Component
     }
   }
 
+  /**
+   * Change namespace used for connection to available services.
+   * This will also reconnect all previously connected services in the new namespace.
+   *
+   * @param namespace The new namespace to use.
+   */
   onNamespaceChange(namespace)
   {
     console.log('Namespace changed to: ', namespace);
     if (namespace !== this.state.bt_namespace)
     {
-      this.setState({cm_namespace: namespace.replace('tree_node/', '') + 'capability_manager/'});
+      this.setState({cm_namespace: namespace.replace('tree_node/', '') + 'capability_repository/'});
 
       // Unsubscribe, then replace, topics
       this.tree_topic.unsubscribe(this.onTreeUpdate);
       this.debug_topic.unsubscribe(this.onDebugUpdate);
       this.messages_topic.unsubscribe(this.onMessagesUpdate);
       this.packages_topic.unsubscribe(this.onPackagesUpdate);
-      if (this.capabilities_topic !== null)
-      {
-        this.capabilities_topic.unsubscribe(this.onCapabilitiesUpdate);
-      }
 
       this.tree_topic = new ROSLIB.Topic({
         ros : this.state.ros,
@@ -474,20 +533,6 @@ class App extends Component
         messageType : 'ros_bt_py_msgs/Packages'
       });
 
-      // topic needed for capability functionality
-      this.capabilities_topic = null;
-
-      this.state.ros.getTopics(function(result) {
-        if (result.topics.includes(this.state.cm_namespace + 'capabilities'))
-        {
-          this.capabilities_topic = new ROSLIB.Topic({
-            ros : this.state.ros,
-            name : this.state.cm_namespace + 'capabilities',
-            messageType : 'bt_capabilities_msgs/Capabilities'
-          });
-          this.capabilities_topic.subscribe(this.onCapabilitiesUpdate);
-        }
-      }.bind(this));
 
       // Subscribe again
       this.tree_topic.subscribe(this.onTreeUpdate);
@@ -527,6 +572,37 @@ class App extends Component
         name: namespace + 'debug/set_execution_mode',
         serviceType: 'ros_bt_py_msgs/SetExecutionMode'
       });
+
+       this.state.ros.getServices(function(result) {
+        if (result.includes('/capabilities/interfaces/get'))
+        {
+          this.get_capability_interfaces_service = new ROSLIB.Service({
+            ros: this.state.ros,
+            name: this.state.cm_namespace + 'interfaces/get',
+            serviceType: 'ros_bt_py_msgs/GetCapabilityInterfaces'
+          });
+          this.save_capability_interfaces_service = new ROSLIB.Service({
+            ros: this.state.ros,
+            name: this.state.cm_namespace + 'interfaces/save',
+            serviceType: 'ros_bt_py_msgs/SaveCapabilityInterfaces'
+          });
+          this.load_capability_interfaces_service = new ROSLIB.Service({
+            ros: this.state.ros,
+            name: this.state.cm_namespace + 'interfaces/load',
+            serviceType: 'ros_bt_py_msgs/LoadCapabilityInterfaces'
+          });
+          this.submit_capability_interfaces_service = new ROSLIB.Service({
+            ros: this.state.ros,
+            name: this.state.cm_namespace + 'interfaces/submit',
+            serviceType: 'ros_bt_py_msgs/SubmitCapabilityInterfaces'
+          });
+          this.delete_capability_interfaces_service = new ROSLIB.Service({
+            ros: this.state.ros,
+            name: this.state.cm_namespace + 'interfaces/delete',
+            serviceType: 'ros_bt_py_msgs/DeleteCapabilityInterface'
+          });
+        }
+      }.bind(this));
 
       this.setState({bt_namespace: namespace});
     }
@@ -606,18 +682,18 @@ class App extends Component
     this.packages_topic.subscribe(this.onPackagesUpdate);
 
     document.body.addEventListener("keydown",function(e){
-      if ( this.state.show_file_modal && e.keyCode == 27) // 27 = ESC
+      if ( this.state.show_file_modal && e.keyCode === 27) // 27 = ESC
       {
         this.setState({show_file_modal: null});
       }
-      if ( this.state.copy_node && e.keyCode == 67 && (e.ctrlKey || e.metaKey) ) { // 67 = KeyC
+      if ( this.state.copy_node && e.keyCode === 67 && (e.ctrlKey || e.metaKey) ) { // 67 = KeyC
         if (this.state.selected_node_names.length > 1)
         {
           console.log("COPY/PASTE FOR MULTIPLE SELECTION NOT IMPLEMENTED YET");
           return;
         }
         this.setState({copied_node: this.state.selected_node});
-      } else if ( this.state.copy_node && e.keyCode == 86 && (e.ctrlKey || e.metaKey) ) { // 86 = KeyV
+      } else if ( this.state.copy_node && e.keyCode === 86 && (e.ctrlKey || e.metaKey) ) { // 86 = KeyV
         if (this.state.selected_node_names.length > 1)
         {
           console.log("COPY/PASTE FOR MULTIPLE SELECTION NOT IMPLEMENTED YET");
@@ -626,7 +702,7 @@ class App extends Component
         var parent = '';
         for (var i = 0; i < this.state.last_tree_msg.nodes.length; i++) {
           for (var j = 0; j < this.state.last_tree_msg.nodes[i].child_names.length; j++) {
-            if(this.state.copied_node.name == this.state.last_tree_msg.nodes[i].child_names[j]) {
+            if(this.state.copied_node.name === this.state.last_tree_msg.nodes[i].child_names[j]) {
               parent = this.state.last_tree_msg.nodes[i].name;
               break;
             }
@@ -649,7 +725,7 @@ class App extends Component
             }
           }.bind(this));
       }
-      if (this.state.copy_node && this.state.selected_node && e.keyCode == 46) { // 46 = Delete
+      if (this.state.copy_node && this.state.selected_node && e.keyCode === 46) { // 46 = Delete
         if (this.state.selected_node_names.length > 1)
         {
           console.log("DELETE FOR MULTIPLE SELECTION NOT IMPLEMENTED YET");
@@ -693,10 +769,6 @@ class App extends Component
     this.debug_topic.unsubscribe(this.onDebugUpdate);
     this.messages_topic.unsubscribe(this.onMessagesUpdate);
     this.packages_topic.unsubscribe(this.onPackagesUpdate);
-    if (this.capabilities_topic !== null)
-    {
-      this.capabilities_topic.unsubscribe(this.onCapabilitiesUpdate);
-    }
   }
 
   onError(error_message)
@@ -777,19 +849,17 @@ class App extends Component
           selected_node_names: new_selected_node_names,
           last_selection_source: 'multiple',
         });
-      return;
     }
   }
 
   onSelectedPackageChange(new_selected_package_name)
   {
     this.setState({last_selected_package: new_selected_package_name});
-    return;
   }
 
   onEditorSelectionChange(new_selected_node_name)
   {
-    if (this.state.node_changed && (new_selected_node_name === null || new_selected_node_name != this.state.selected_node_name))
+    if (this.state.node_changed && (new_selected_node_name === null || new_selected_node_name !== this.state.selected_node_name))
     {
       if(window.confirm("Are you sure you wish to discard all changes to the currently edited node?"))
       {
@@ -825,7 +895,7 @@ class App extends Component
       return;
     }
 
-    this.setState((prevState, props) => (
+    this.setState((prevState, _) => (
       {
         copy_node: true,
         selected_node: new_selected_node,
@@ -853,14 +923,14 @@ class App extends Component
   {
     if (this.nodes_fuse)
     {
-      var results = this.nodes_fuse.search(e.target.value);
-      this.setState({filtered_nodes: results});
+      var nodes_results = this.nodes_fuse.search(e.target.value);
+      this.setState({filtered_nodes: nodes_results});
     }
 
     if (this.capabilities_fuse)
     {
-      var results = this.capabilities_fuse.search(e.target.value);
-      this.setState({filtered_capabilities: results});
+      var capabilities_results = this.capabilities_fuse.search(e.target.value);
+      this.setState({filtered_capabilities: capabilities_results});
     }
 
     this.setState({node_and_capability_search: e.target.value});
@@ -892,7 +962,7 @@ class App extends Component
 
   handleNodeAndCapabilitySearchClear(e)
   {
-    if (e.keyCode == 27) // ESC
+    if (e.keyCode === 27) // ESC
     {
       this.setState({node_and_capability_search: '', filtered_nodes: null, filtered_capabilities: null});
     }
@@ -949,7 +1019,7 @@ class App extends Component
           parents={this.findPossibleParents()}
           messagesFuse={this.messagesFuse}
           capabilitiesFuse={this.capabilities_fuse}
-          available_capabilities={this.state.available_capabilities}
+          available_capability_interfaces={this.state.available_capability_interfaces}
           onError={this.onError}
           onNodeChanged={this.onNodeChanged}
           changeCopyMode={this.changeCopyMode}
@@ -973,7 +1043,7 @@ class App extends Component
           availableNodes={this.state.available_nodes}
           messagesFuse={this.messagesFuse}
           capabilitiesFuse={this.capabilities_fuse}
-          available_capabilities={this.state.available_capabilities}
+          available_capability_interfaces={this.state.available_capability_interfaces}
           onError={this.onError}
           onNodeChanged={this.onNodeChanged}
           changeCopyMode={this.changeCopyMode}
@@ -998,7 +1068,7 @@ class App extends Component
                   title="Hide nodelist"
                   onClick={function() {
                     this.setState(
-                      (prevstate, props) => ({nodelist_visible: false})
+                      () => ({nodelist_visible: false})
                     );
                   }.bind(this)}
                   >
@@ -1006,7 +1076,9 @@ class App extends Component
           </button>
           <div className="available-nodes m-1">
             <PackageLoader key={this.state.bt_namespace}
-                          getNodes={this.getNodes}/>
+                          getNodes={this.getNodes}
+                           getCapabilityInterfaces={this.getCapabilityInterfaces}
+            />
             <div className="border rounded mb-2">
               <div className="form-group row mt-2 mb-2 ml-1 mr-1">
                 <label for="nodelist_search" className="col-sm-2 col-form-label">Search:</label>
@@ -1029,12 +1101,14 @@ class App extends Component
                     dragging_node_list_item={this.state.dragging_node_list_item}
                     onSelectionChange={this.onNodeListSelectionChange}
                     onNodeListDragging={this.onNodeListDragging}/>
-          <CapabilityList key={this.state.cm_namespace}
-                          capability_list_collapsed={!this.state.cm_available}
-                          availableCapabilities={this.state.available_capabilities}
-                          filtered_capabilities={this.state.filtered_capabilities}
-                          dragging_capability_list_item={this.state.dragging_capability_list_item}
-                          onCapabilityDragging={this.onCapabilityDragging}/>
+          <CapabilityInterfaceList
+              key={this.state.cm_namespace}
+              capabilityListCollapsed={!this.state.cm_available}
+              availableCapabilityInterfaces={this.state.available_capability_interfaces}
+              availableCapabilityImplementations={this.state.available_capability_implementations}
+              filteredCapabilityInterfaces={this.state.filtered_capabilities}
+              draggingCapabilityInterfaceListItem={this.state.dragging_capability_list_item}
+              onCapabilityInterfaceDragging={this.onCapabilityDragging}/>
         </div>
       );
       main_col = 'col-9 scroll-col';
@@ -1044,7 +1118,7 @@ class App extends Component
               title="Show nodelist"
               onClick={function() {
                 this.setState(
-                  (prevstate, props) => ({nodelist_visible: true})
+                  () => ({nodelist_visible: true})
                 );
               }.bind(this)}
               >

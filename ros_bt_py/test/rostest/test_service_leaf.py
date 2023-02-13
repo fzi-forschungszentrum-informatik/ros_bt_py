@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2022-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -437,7 +437,45 @@ class TestServiceLeaf(unittest.TestCase):
 
         service_input_leaf.inputs["service_name"] = "this_service_is_not_available"
         expected_bounds = UtilityBounds()
-        self.assertEqual(service_input_leaf.calculate_utility(), expected_bounds)
+        expected_bounds.can_execute = True
+        self.assertEqual(
+            service_input_leaf.calculate_utility().can_execute,
+            expected_bounds.can_execute,
+        )
+        self.assertEqual(
+            service_input_leaf.calculate_utility().has_lower_bound_failure,
+            expected_bounds.has_lower_bound_failure,
+        )
+        self.assertEqual(
+            service_input_leaf.calculate_utility().has_lower_bound_success,
+            expected_bounds.has_lower_bound_success,
+        )
+        self.assertEqual(
+            service_input_leaf.calculate_utility().has_upper_bound_failure,
+            expected_bounds.has_lower_bound_failure,
+        )
+        self.assertEqual(
+            service_input_leaf.calculate_utility().has_upper_bound_success,
+            expected_bounds.has_upper_bound_success,
+        )
+
+        self.assertEqual(
+            service_input_leaf.calculate_utility().lower_bound_failure,
+            expected_bounds.lower_bound_failure,
+        )
+        self.assertEqual(
+            service_input_leaf.calculate_utility().lower_bound_success,
+            expected_bounds.lower_bound_success,
+        )
+
+        self.assertEqual(
+            service_input_leaf.calculate_utility().upper_bound_failure,
+            expected_bounds.upper_bound_failure,
+        )
+        self.assertEqual(
+            service_input_leaf.calculate_utility().upper_bound_success,
+            expected_bounds.upper_bound_success,
+        )
 
     def testChangeServiceNameBetweenTicks(self):
         self.delay_service_input_leaf.inputs["service_name"] = "delay_1s_if_true"
@@ -455,10 +493,5 @@ class TestServiceLeaf(unittest.TestCase):
 if __name__ == "__main__":
     rospy.init_node("test_service_leaf")
     import rostest
-    import sys
-    import os
 
-    os.environ["COVERAGE_FILE"] = "%s.%s.coverage" % (PKG, "test_service_leaf")
-    rostest.rosrun(
-        PKG, "test_service_leaf", TestServiceLeaf, sysargs=sys.argv + ["--cov"]
-    )
+    rostest.rosrun(PKG, "test_service_leaf", TestServiceLeaf)

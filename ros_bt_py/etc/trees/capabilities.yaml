@@ -1,0 +1,310 @@
+name: "lol_test.yaml"
+path: ''
+root_name: "Sequence"
+nodes:
+  -
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    version: "0.9.0"
+    max_children: -1
+    name: "Sequence"
+    child_names:
+      - Constant
+      - Parallel
+      - Log
+      - Log_2
+      - StringConcatenation
+      - StringConcatenation_2
+      - Log_3
+    options: []
+    inputs: []
+    outputs: []
+    state: "SHUTDOWN"
+  -
+    module: "ros_bt_py.nodes.constant"
+    node_class: "Constant"
+    version: "0.9.0"
+    max_children: 0
+    name: "Constant"
+    child_names: []
+    options:
+      -
+        key: "constant_type"
+        serialized_value: "{\"py/type\": \"__builtin__.str\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      -
+        key: "constant_value"
+        serialized_value: "\"tests\""
+        serialized_type: "{\"py/type\": \"__builtin__.str\"}"
+    inputs: []
+    outputs:
+      -
+        key: "constant"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.str\"}"
+    state: "SHUTDOWN"
+  -
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    version: "0.9.0"
+    max_children: -1
+    name: "Parallel"
+    child_names:
+      - TestCapability3
+      - TestCapability3_2
+      - TestCapabability
+    options: []
+    inputs: []
+    outputs: []
+    state: "SHUTDOWN"
+  -
+    module: "ros_bt_py.capability"
+    node_class: "TestCapability3"
+    version: ''
+    max_children: 0
+    name: "TestCapability3"
+    child_names: []
+    options: []
+    inputs:
+      -
+        key: "in1"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.str\"}"
+    outputs:
+      -
+        key: "out1"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.str\"}"
+    state: "SHUTDOWN"
+  -
+    module: "ros_bt_py.capability"
+    node_class: "TestCapability3"
+    version: ''
+    max_children: 0
+    name: "TestCapability3_2"
+    child_names: []
+    options: []
+    inputs:
+      -
+        key: "in1"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.str\"}"
+    outputs:
+      -
+        key: "out1"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.str\"}"
+    state: "SHUTDOWN"
+  -
+    module: "ros_bt_py.capability"
+    node_class: "TestCapabability"
+    version: ''
+    max_children: 0
+    name: "TestCapabability"
+    child_names: []
+    options: []
+    inputs: []
+    outputs: []
+    state: "SHUTDOWN"
+  -
+    module: "ros_bt_py.nodes.log"
+    node_class: "Log"
+    version: "2.0.0"
+    max_children: 0
+    name: "Log"
+    child_names: []
+    options:
+      -
+        key: "logger_level"
+        serialized_value: "{\"py/object\": \"ros_bt_py.ros_helpers.LoggerLevel\", \"logger_level\": \"error\"\
+  }"
+        serialized_type: "{\"py/type\": \"ros_bt_py.ros_helpers.LoggerLevel\"}"
+      -
+        key: "log_type"
+        serialized_value: "{\"py/type\": \"__builtin__.str\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs:
+      -
+        key: "in"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.str\"}"
+    outputs: []
+    state: "SHUTDOWN"
+  -
+    module: "ros_bt_py.nodes.log"
+    node_class: "Log"
+    version: "2.0.0"
+    max_children: 0
+    name: "Log_2"
+    child_names: []
+    options:
+      -
+        key: "logger_level"
+        serialized_value: "{\"py/object\": \"ros_bt_py.ros_helpers.LoggerLevel\", \"logger_level\": \"error\"\
+  }"
+        serialized_type: "{\"py/type\": \"ros_bt_py.ros_helpers.LoggerLevel\"}"
+      -
+        key: "log_type"
+        serialized_value: "{\"py/type\": \"__builtin__.str\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs:
+      -
+        key: "in"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.str\"}"
+    outputs: []
+    state: "SHUTDOWN"
+  -
+    module: "ros_bt_py.nodes.format"
+    node_class: "StringConcatenation"
+    version: "0.9.0"
+    max_children: 0
+    name: "StringConcatenation"
+    child_names: []
+    options: []
+    inputs:
+      -
+        key: "a"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.str\"}"
+      -
+        key: "b"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.str\"}"
+    outputs:
+      -
+        key: "formatted_string"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.str\"}"
+    state: "SHUTDOWN"
+  -
+    module: "ros_bt_py.nodes.format"
+    node_class: "StringConcatenation"
+    version: "0.9.0"
+    max_children: 0
+    name: "StringConcatenation_2"
+    child_names: []
+    options: []
+    inputs:
+      -
+        key: "a"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.str\"}"
+      -
+        key: "b"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.str\"}"
+    outputs:
+      -
+        key: "formatted_string"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.str\"}"
+    state: "SHUTDOWN"
+  -
+    module: "ros_bt_py.nodes.log"
+    node_class: "Log"
+    version: "2.0.0"
+    max_children: 0
+    name: "Log_3"
+    child_names: []
+    options:
+      -
+        key: "logger_level"
+        serialized_value: "{\"py/object\": \"ros_bt_py.ros_helpers.LoggerLevel\", \"logger_level\": 1}"
+        serialized_type: "{\"py/type\": \"ros_bt_py.ros_helpers.LoggerLevel\"}"
+      -
+        key: "log_type"
+        serialized_value: "{\"py/type\": \"__builtin__.str\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs:
+      -
+        key: "in"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.str\"}"
+    outputs: []
+    state: "SHUTDOWN"
+data_wirings:
+  -
+    source:
+      node_name: "Constant"
+      data_kind: "outputs"
+      data_key: "constant"
+    target:
+      node_name: "TestCapability3"
+      data_kind: "inputs"
+      data_key: "in1"
+  -
+    source:
+      node_name: "TestCapability3"
+      data_kind: "outputs"
+      data_key: "out1"
+    target:
+      node_name: "Log"
+      data_kind: "inputs"
+      data_key: "in"
+  -
+    source:
+      node_name: "Constant"
+      data_kind: "outputs"
+      data_key: "constant"
+    target:
+      node_name: "TestCapability3_2"
+      data_kind: "inputs"
+      data_key: "in1"
+  -
+    source:
+      node_name: "TestCapability3_2"
+      data_kind: "outputs"
+      data_key: "out1"
+    target:
+      node_name: "Log_2"
+      data_kind: "inputs"
+      data_key: "in"
+  -
+    source:
+      node_name: "TestCapability3"
+      data_kind: "outputs"
+      data_key: "out1"
+    target:
+      node_name: "StringConcatenation"
+      data_kind: "inputs"
+      data_key: "a"
+  -
+    source:
+      node_name: "TestCapability3_2"
+      data_kind: "outputs"
+      data_key: "out1"
+    target:
+      node_name: "StringConcatenation"
+      data_kind: "inputs"
+      data_key: "b"
+  -
+    source:
+      node_name: "Constant"
+      data_kind: "outputs"
+      data_key: "constant"
+    target:
+      node_name: "StringConcatenation_2"
+      data_kind: "inputs"
+      data_key: "a"
+  -
+    source:
+      node_name: "StringConcatenation"
+      data_kind: "outputs"
+      data_key: "formatted_string"
+    target:
+      node_name: "StringConcatenation_2"
+      data_kind: "inputs"
+      data_key: "b"
+  -
+    source:
+      node_name: "StringConcatenation_2"
+      data_kind: "outputs"
+      data_key: "formatted_string"
+    target:
+      node_name: "Log_3"
+      data_kind: "inputs"
+      data_key: "in"
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: []

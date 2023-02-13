@@ -223,6 +223,7 @@ class Parallel(FlowControl):
         inputs={},
         outputs={},
         max_children=None,
+        version="0.9.0",
     )
 )
 class ParallelFailureTolerance(FlowControl):

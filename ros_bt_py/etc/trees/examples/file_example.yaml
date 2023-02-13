@@ -1,56 +1,56 @@
 name: ''
 path: ''
 root_name: "Sequence"
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.constant"
     node_class: "Constant"
     version: "0.9.0"
     max_children: 0
     name: "Constant"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "0"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    option_wirings: 
-      - 
+    option_wirings:
+      -
         source: "constant_type"
         target: "constant_value"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.log"
     node_class: "Log"
     version: "1.0.0"
     max_children: 0
     name: "Log"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "logger_level"
         serialized_value: "{\"py/object\": \"ros_bt_py.ros_helpers.LoggerLevel\", \"logger_level\": \"warning\"\
   }"
         serialized_type: "{\"py/type\": \"ros_bt_py.ros_helpers.LoggerLevel\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "in"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     version: "0.9.0"
@@ -62,7 +62,7 @@ nodes:
     outputs: []
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.random_number"
     node_class: "RandomIntInputs"
     version: "0.9.0"
@@ -70,140 +70,140 @@ nodes:
     name: "RandomIntInputs"
     child_names: []
     options: []
-    inputs: 
-      - 
+    inputs:
+      -
         key: "max"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "min"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "random_number"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.getters"
     node_class: "GetListItem"
     version: "0.9.0"
     max_children: 1
     name: "GetListItem"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "succeed_on_stale_data"
         serialized_value: "true"
         serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
-      - 
+      -
         key: "list_type"
         serialized_value: "{\"py/type\": \"__builtin__.str\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "index"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "list"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "item"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
     option_wirings: []
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.file"
     node_class: "File"
     version: "0.9.0"
     max_children: 0
     name: "File"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "file_path"
         serialized_value: "\"package://ros_bt_py/etc/data/greetings.yaml\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "load_success"
         serialized_value: "true"
         serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
-      - 
+      -
         key: "content"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
-      - 
+      -
         key: "line_count"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "load_error_msg"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
     option_wirings: []
     state: "UNINITIALIZED"
-data_wirings: 
-  - 
-    source: 
+data_wirings:
+  -
+    source:
       node_name: "File"
       data_kind: "outputs"
       data_key: "content"
-    target: 
+    target:
       node_name: "GetListItem"
       data_kind: "inputs"
       data_key: "list"
-  - 
-    source: 
+  -
+    source:
       node_name: "Constant"
       data_kind: "outputs"
       data_key: "constant"
-    target: 
+    target:
       node_name: "RandomIntInputs"
       data_kind: "inputs"
       data_key: "min"
-  - 
-    source: 
+  -
+    source:
       node_name: "File"
       data_kind: "outputs"
       data_key: "line_count"
-    target: 
+    target:
       node_name: "RandomIntInputs"
       data_kind: "inputs"
       data_key: "max"
-  - 
-    source: 
+  -
+    source:
       node_name: "RandomIntInputs"
       data_kind: "outputs"
       data_key: "random_number"
-    target: 
+    target:
       node_name: "GetListItem"
       data_kind: "inputs"
       data_key: "index"
-  - 
-    source: 
+  -
+    source:
       node_name: "GetListItem"
       data_kind: "outputs"
       data_key: "item"
-    target: 
+    target:
       node_name: "Log"
       data_kind: "inputs"
       data_key: "in"
 tick_frequency_hz: 10.0
 state: "EDITABLE"
-public_node_data: 
-  - 
+public_node_data:
+  -
     node_name: "File"
     data_kind: "outputs"
     data_key: "load_success"
-  - 
+  -
     node_name: "File"
     data_kind: "outputs"
     data_key: "load_error_msg"

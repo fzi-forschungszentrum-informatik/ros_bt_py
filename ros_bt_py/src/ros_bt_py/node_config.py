@@ -27,6 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
+from typing import Dict, Optional, List
 
 
 class OptionRef(object):
@@ -40,7 +41,7 @@ class OptionRef(object):
         self.option_key = option_key
 
     def __repr__(self):
-        return "OptionRef(option_key=%r)" % self.option_key
+        return f"OptionRef(option_key={self.option_key!r})"
 
     def __eq__(self, other):
         return self.option_key == other.option_key
@@ -49,33 +50,36 @@ class OptionRef(object):
         return not self == other
 
     def __name__(self):
-        return "OptionRef(option_key=%r)" % self.option_key
+        return f"OptionRef(option_key={self.option_key!r})"
 
 
 class NodeConfig(object):
     def __init__(
         self,
-        options,
-        inputs,
-        outputs,
-        max_children,
-        optional_options=[],
-        version="",
-        tags=[],
+        options: Dict[str, type],
+        inputs: Dict[str, type],
+        outputs: Dict[str, type],
+        max_children: Optional[int],
+        optional_options: Optional[List[str]] = None,
+        version: str = "",
+        tags: Optional[List[str]] = None,
     ):
         """Describes the interface of a :class:ros_bt_py.node.Node
 
-        :param dict(str, type) options
+        :type options Dict[str, type]
+        :param options
 
         Map from option names to their types. Note that unlike `inputs`
         and `outputs`, option types can **not** use :class:OptionRef !
 
-        :param dict(str, type) inputs:
+        :type inputs Dict[str, type]
+        :param inputs:
 
         Map from input names to their types, or an :class:OptionRef
         object that points to the option key to take the type from.
 
-        :param dict(str, type) outputs:
+        :type outputs Dict[str, type]
+        :param outputs:
 
         Map from output names to their types, or an :class:OptionRef
         object that points to the option key to take the type from.
@@ -91,8 +95,14 @@ class NodeConfig(object):
         self.outputs = outputs
         self.options = options
         self.max_children = max_children
+
+        if optional_options is None:
+            optional_options = []
         self.optional_options = optional_options
         self.version = version
+
+        if tags is None:
+            tags = []
         self.tags = tags
 
     def __repr__(self):
@@ -132,8 +142,7 @@ class NodeConfig(object):
         """
         if self.max_children != other.max_children:
             raise ValueError(
-                "Mismatch in max_children: %s vs %s"
-                % (self.max_children, other.max_children)
+                f"Mismatch in max_children: {self.max_children} vs {other.max_children}"
             )
         duplicate_inputs = []
         for key in other.inputs:
@@ -158,10 +167,10 @@ class NodeConfig(object):
             msg = "Duplicate keys: "
             keys_strings = []
             if duplicate_inputs:
-                keys_strings.append("inputs: %s" % str(duplicate_inputs))
+                keys_strings.append(f"inputs: {str(duplicate_inputs)}")
             if duplicate_outputs:
-                keys_strings.append("outputs: %s" % str(duplicate_outputs))
+                keys_strings.append(f"outputs: {str(duplicate_outputs)}")
             if duplicate_options:
-                keys_strings.append("options: %s" % str(duplicate_options))
+                keys_strings.append(f"options: {str(duplicate_options)}")
             msg += ", ".join(keys_strings)
             raise KeyError(msg)

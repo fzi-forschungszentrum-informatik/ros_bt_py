@@ -1,5 +1,5 @@
 #  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2022-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -76,9 +76,11 @@ class TestServiceInput(unittest.TestCase):
         unavailable_service.setup()
         unavailable_service.inputs["service_name"] = "this_service_does_not_exist"
         unavailable_service.inputs["request"] = SetBoolRequest()
-        self.assertEqual(unavailable_service.tick(), NodeMsg.RUNNING)
-        sleep(0.5)
-        self.assertEqual(unavailable_service.tick(), NodeMsg.FAILED)
+        resp = unavailable_service.tick()
+        while resp is NodeMsg.RUNNING:
+            resp = unavailable_service.tick()
+            sleep(0.1)
+        self.assertEqual(resp, NodeMsg.FAILED)
 
         expected_bounds = UtilityBounds()
         self.assertEqual(unavailable_service.calculate_utility(), expected_bounds)

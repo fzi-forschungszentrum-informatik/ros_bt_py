@@ -1,90 +1,90 @@
 name: ''
 path: ''
 root_name: ''
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.passthrough_node"
     node_class: "PassthroughNode"
     max_children: 0
     name: "PassthroughNode"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "passthrough_type"
         serialized_value: "{\"py/type\": \"std_msgs.msg._Bool.Bool\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "in"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"std_msgs.msg._Bool.Bool\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "out"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"std_msgs.msg._Bool.Bool\"}"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.topic"
     node_class: "TopicSubscriber"
     max_children: 0
     name: "TopicSubscriber"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "topic_type"
         serialized_value: "{\"py/type\": \"std_msgs.msg._Bool.Bool\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "topic_name"
         serialized_value: "\"foo\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "message"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"std_msgs.msg._Bool.Bool\"}"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.shovable"
     node_class: "Shovable"
     max_children: 1
     name: "Shovable"
     child_names: [TopicSubscriber]
-    options: 
-      - 
+    options:
+      -
         key: "find_best_executor_timeout_seconds"
         serialized_value: "2.0"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
-      - 
+      -
         key: "remote_tick_frequency_hz"
         serialized_value: "10.0"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
-      - 
+      -
         key: "wait_for_find_best_executor_seconds"
         serialized_value: "2.0"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
-      - 
+      -
         key: "wait_for_run_tree_seconds"
         serialized_value: "2.0"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
-      - 
+      -
         key: "find_best_executor_action"
         serialized_value: "\"find_best_executor\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-      - 
+      -
         key: "run_tree_action_timeout_seconds"
         serialized_value: "5.0"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "running_remotely"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
     state: "UNINITIALIZED"
-  - 
+  -
     module: "ros_bt_py.nodes.sequence"
     node_class: "Sequence"
     max_children: -1
@@ -94,13 +94,13 @@ nodes:
     inputs: []
     outputs: []
     state: "UNINITIALIZED"
-data_wirings: 
-  - 
-    source: 
+data_wirings:
+  -
+    source:
       node_name: "TopicSubscriber"
       data_kind: "outputs"
       data_key: "message"
-    target: 
+    target:
       node_name: "PassthroughNode"
       data_kind: "inputs"
       data_key: "in"

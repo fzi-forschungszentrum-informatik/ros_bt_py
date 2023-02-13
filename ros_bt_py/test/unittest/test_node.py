@@ -1,5 +1,5 @@
 #  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2022-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -427,8 +427,8 @@ class TestPassthroughNode(unittest.TestCase):
         self.assertTrue(
             PassthroughNode.__name__ in Node.node_classes[PassthroughNode.__module__]
         )
-        self.assertEqual(
-            PassthroughNode,
+        self.assertListEqual(
+            [PassthroughNode],
             Node.node_classes[PassthroughNode.__module__][PassthroughNode.__name__],
         )
 
@@ -583,8 +583,8 @@ class TestPassthroughNode(unittest.TestCase):
         node_class = type(instance)
         self.assertTrue(node_class.__module__ in Node.node_classes)
         self.assertTrue(node_class.__name__ in Node.node_classes[node_class.__module__])
-        self.assertEqual(
-            node_class, Node.node_classes[node_class.__module__][node_class.__name__]
+        self.assertListEqual(
+            [node_class], Node.node_classes[node_class.__module__][node_class.__name__]
         )
 
         self.assertEqual(instance.options["passthrough_type"], int)

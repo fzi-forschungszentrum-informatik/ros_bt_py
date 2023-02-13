@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2022-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -69,7 +69,46 @@ class TestGetStdHeader(unittest.TestCase):
             has_upper_bound_failure=True,
         )
 
-        self.assertEqual(ros_header.calculate_utility(), expected_bounds)
+        ros_header_utility = ros_header.calculate_utility()
+
+        self.assertEqual(
+            ros_header_utility.can_execute,
+            expected_bounds.can_execute,
+        )
+        self.assertEqual(
+            ros_header_utility.has_lower_bound_failure,
+            expected_bounds.has_lower_bound_failure,
+        )
+        self.assertEqual(
+            ros_header_utility.has_lower_bound_success,
+            expected_bounds.has_lower_bound_success,
+        )
+        self.assertEqual(
+            ros_header_utility.has_upper_bound_failure,
+            expected_bounds.has_lower_bound_failure,
+        )
+        self.assertEqual(
+            ros_header_utility.has_upper_bound_success,
+            expected_bounds.has_upper_bound_success,
+        )
+
+        self.assertEqual(
+            ros_header_utility.lower_bound_failure,
+            expected_bounds.lower_bound_failure,
+        )
+        self.assertEqual(
+            ros_header_utility.lower_bound_success,
+            expected_bounds.lower_bound_success,
+        )
+
+        self.assertEqual(
+            ros_header_utility.upper_bound_failure,
+            expected_bounds.upper_bound_failure,
+        )
+        self.assertEqual(
+            ros_header_utility.upper_bound_success,
+            expected_bounds.upper_bound_success,
+        )
 
         self.assertEqual(ros_header.untick(), NodeMsg.IDLE)
         self.assertEqual(ros_header.reset(), NodeMsg.IDLE)

@@ -109,6 +109,13 @@ class Service(Leaf):
         return NodeMsg.IDLE
 
     def _do_tick(self):
+        if self.simulate_tick:
+            self.logdebug(f"Simulating tick. {self.name} is not executing!")
+            if self.succeed_always:
+                return NodeMsg.SUCCEEDED
+
+            return NodeMsg.RUNNING
+
         if not self._service_available:
             return NodeMsg.FAILED
         # If theres' no service call in-flight, and we have already reported
@@ -166,9 +173,7 @@ class Service(Leaf):
         except rosservice.ROSServiceIOException as exc:
             # Defaults to no bounds set, dragging down the utility
             # score
-            self.loginfo(
-                "Unable to check for service %s: %s" % (resolved_service, str(exc))
-            )
+            self.loginfo(f"Unable to check for service {resolved_service}: {str(exc)}")
             return UtilityBounds()
 
         if service_type_name:
@@ -190,7 +195,7 @@ class Service(Leaf):
                     has_upper_bound_failure=True,
                 )
 
-        self.loginfo("Service %s is unavailable or has wrong type." % resolved_service)
+        self.loginfo(f"Service {resolved_service} is unavailable or has wrong type.")
         return UtilityBounds()
 
 
@@ -248,6 +253,13 @@ class ServiceInput(Leaf):
         return NodeMsg.IDLE
 
     def _do_tick(self):
+        if self.simulate_tick:
+            self.logdebug(f"Simulating tick. {self.name} is not executing!")
+            if self.succeed_always:
+                return NodeMsg.SUCCEEDED
+
+            return NodeMsg.RUNNING
+
         # If the service name changed
         if self.inputs.is_updated("service_name"):
             if self._service_proxy is not None:
@@ -312,9 +324,7 @@ class ServiceInput(Leaf):
         except rosservice.ROSServiceIOException as exc:
             # Defaults to no bounds set, dragging down the utility
             # score
-            self.loginfo(
-                "Unable to check for service %s: %s" % (resolved_service, str(exc))
-            )
+            self.loginfo(f"Unable to check for service {resolved_service}: {str(exc)}")
             return UtilityBounds()
 
         if service_type_name:
@@ -336,9 +346,68 @@ class ServiceInput(Leaf):
                     has_upper_bound_failure=True,
                 )
 
-        self.loginfo("Service %s is unavailable or has wrong type." % resolved_service)
-        return UtilityBounds()
+        self.loginfo(f"Service {resolved_service} is unavailable or has wrong type.")
+        return UtilityBounds(can_execute=True)
 
+
+@define_bt_node(
+    NodeConfig(
+        version="0.1.0",
+        options={"service_type": type, "wait_for_service_seconds": float},
+        inputs={"service_name": str},
+        outputs={},
+        max_children=0,
+        optional_options=[],
+    )
+)
+class WaitForServiceInput(Leaf):
+    """Waits for a service to be available, fails if this wait times out"""
+
+    def _do_setup(self):
+        self._service_proxy = None
+
+    def _do_tick(self):
+        if self.simulate_tick:
+            self.logdebug(f"Simulating tick. {self.name} is not executing!")
+            if self.succeed_always:
+                return NodeMsg.SUCCEEDED
+
+            return NodeMsg.RUNNING
+
+        if self._service_proxy is None:
+            self._service_proxy = AsyncServiceProxy(
+                self.inputs["service_name"], self.options["service_type"]
+            )
+
+        if (
+            self._service_proxy.get_state() == AsyncServiceProxy.IDLE
+            or self._service_proxy.get_state() == AsyncServiceProxy.ABORTED
+        ):
+            self._service_proxy.wait_for_service(
+                self.options["wait_for_service_seconds"]
+            )
+        if self._service_proxy.get_state() == AsyncServiceProxy.WAITING:
+            return NodeMsg.RUNNING
+        if self._service_proxy.get_state() == AsyncServiceProxy.SERVICE_AVAILABLE:
+            self._do_reset()
+            return NodeMsg.SUCCEEDED
+        self._do_reset()
+        return NodeMsg.FAILED
+
+    def _do_untick(self):
+        if self._service_proxy is not None:
+            self._service_proxy.stop_call()
+        return NodeMsg.IDLE
+
+    def _do_reset(self):
+        if self._service_proxy is not None:
+            self._service_proxy.stop_call()
+            self._service_proxy.shutdown()
+        self._service_proxy = None
+        return NodeMsg.IDLE
+
+    def _do_shutdown(self):
+        self._do_reset()
 
 @define_bt_node(
     NodeConfig(
@@ -363,6 +432,13 @@ class WaitForService(Leaf):
         )
 
     def _do_tick(self):
+        if self.simulate_tick:
+            self.logdebug(f"Simulating tick. {self.name} is not executing!")
+            if self.succeed_always:
+                return NodeMsg.SUCCEEDED
+
+            return NodeMsg.RUNNING
+
         if (
             self._service_proxy.get_state() == AsyncServiceProxy.IDLE
             or self._service_proxy.get_state() == AsyncServiceProxy.ABORTED

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2022-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -28,10 +28,15 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
+"""Module containing the main node for a ros_bt_py instance running the BT."""
 
 import rospy
 from diagnostic_msgs.msg import DiagnosticArray
-from ros_bt_py_msgs.msg import Tree, DebugInfo, DebugSettings, NodeDiagnostics, Messages, Packages
+import std_msgs.msg
+
+from ros_bt_py_msgs.msg import Messages, Packages
+
+from ros_bt_py_msgs.msg import Tree, DebugInfo, DebugSettings, NodeDiagnostics
 from ros_bt_py_msgs.srv import (
     AddNode,
     AddNodeAtIndex,
@@ -52,6 +57,7 @@ from ros_bt_py_msgs.srv import (
     MorphNode,
     SaveTree,
     FixYaml,
+    GetCapabilityInterfaces,
 )
 from ros_bt_py_msgs.srv import (
     LoadTreeRequest,
@@ -63,23 +69,30 @@ from ros_bt_py_msgs.srv import (
     ReloadTree,
     ChangeTreeName,
 )
-from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message
+
+from ros_bt_py.capability import (
+    capability_node_class_from_capability_interface_callback,
+)
+from ros_bt_py.tree_manager import (
+    TreeManager,
+    get_success,
+    get_error_message,
+    get_available_nodes,
+)
 from ros_bt_py.debug_manager import DebugManager
-from ros_bt_py.migration import MigrationManager
+from ros_bt_py.migration import MigrationManager, check_node_versions
 from ros_bt_py.package_manager import PackageManager
 from ros_bt_py.helpers import fix_yaml
 
-try:
-    basestring
-except NameError:
-    basestring = str
-
 
 class TreeNode(object):
+    """ROS node running a single behavior tree."""
+
     def __init__(self):
+        """Create a new Behavior Tree Node with all required publishers and subscribers."""
         rospy.loginfo("initializing tree node...")
         node_module_names = rospy.get_param("~node_modules", default=[])
-        if isinstance(node_module_names, basestring):
+        if isinstance(node_module_names, str):
             if "," in node_module_names:
                 # Try to parse comma-separated list of modules
                 node_module_names = [
@@ -90,8 +103,7 @@ class TreeNode(object):
                 node_module_names = node_module_names.split()
         if not isinstance(node_module_names, list):
             raise TypeError(
-                "node_modules must be a list, but is a %s"
-                % type(node_module_names.__name__)
+                f"node_modules must be a list, but is a {type(node_module_names.__name__)}"
             )
 
         show_traceback_on_exception = rospy.get_param(
@@ -112,6 +124,32 @@ class TreeNode(object):
             "~default_tree_control_command", default=2
         )
 
+        local_mc_prefix = f"{rospy.get_namespace()}/mission_control"
+
+        get_capability_interfaces_topic = rospy.resolve_name(
+            f"{rospy.get_namespace()}/capability_repository/capabilities/interfaces/get"
+        )
+
+        self.get_capability_interface_service = rospy.ServiceProxy(
+            name=get_capability_interfaces_topic,
+            service_class=GetCapabilityInterfaces,
+            persistent=True,
+        )
+
+        interfaces_announcement_topic = rospy.resolve_name(
+            f"{rospy.get_namespace()}/capability_repository/capabilities/interfaces"
+        )
+
+        self.capability_interface_subscription = rospy.Subscriber(
+            name=interfaces_announcement_topic,
+            data_class=std_msgs.msg.Time,
+            callback=capability_node_class_from_capability_interface_callback,
+            callback_args=(
+                local_mc_prefix,
+                self.get_capability_interface_service,
+            ),
+        )
+
         self.tree_pub = rospy.Publisher("~tree", Tree, latch=True, queue_size=1)
         self.debug_info_pub = rospy.Publisher(
             "~debug/debug_info", DebugInfo, latch=True, queue_size=1
@@ -123,10 +161,15 @@ class TreeNode(object):
             "~debug/node_diagnostics", NodeDiagnostics, latch=True, queue_size=10
         )
 
-        node_in_namespace = rospy.get_namespace().strip('/')
-        namespace = rospy.get_namespace() if node_in_namespace else ''
+        self.node_diagnostics_pub = rospy.Publisher(
+            "~debug/node_diagnostics", NodeDiagnostics, latch=True, queue_size=10
+        )
+
+        node_in_namespace = rospy.get_namespace().strip("/")
+        namespace = rospy.get_namespace() if node_in_namespace else ""
         self.ros_diagnostics_pub = rospy.Publisher(
-            f"/diagnostics/{namespace}", DiagnosticArray, queue_size=1)
+            f"/diagnostics/{namespace}", DiagnosticArray, queue_size=1
+        )
 
         self.debug_manager = DebugManager()
         self.tree_manager = TreeManager(
@@ -172,9 +215,7 @@ class TreeNode(object):
         )
 
         self.get_available_nodes_service = rospy.Service(
-            "~get_available_nodes",
-            GetAvailableNodes,
-            self.tree_manager.get_available_nodes,
+            "~get_available_nodes", GetAvailableNodes, get_available_nodes
         )
 
         self.get_subtree_service = rospy.Service(
@@ -232,7 +273,7 @@ class TreeNode(object):
         rospy.loginfo("initialized tree manager")
 
         if load_default_tree:
-            rospy.logwarn("loading default tree: %s" % default_tree_path)
+            rospy.logwarn(f"loading default tree: {default_tree_path}")
             tree = Tree(path=default_tree_path)
             load_tree_request = LoadTreeRequest(
                 tree=tree, permissive=load_default_tree_permissive
@@ -240,7 +281,7 @@ class TreeNode(object):
             load_tree_response = self.tree_manager.load_tree(load_tree_request)
             if not load_tree_response.success:
                 rospy.logerr(
-                    "could not load default tree: %s" % load_tree_response.error_message
+                    f"could not load default tree: {load_tree_response.error_message}"
                 )
             else:
                 control_tree_execution_request = ControlTreeExecutionRequest(
@@ -252,17 +293,15 @@ class TreeNode(object):
                 )
                 if not control_tree_execution_response.success:
                     rospy.logerr(
-                        "could not execute default tree: %s"
-                        % control_tree_execution_response.error_message
+                        f"could not execute default tree: "
+                        f"{control_tree_execution_response.error_message}"
                     )
 
         rospy.loginfo("initializing migration manger ...")
         self.migration_manager = MigrationManager(tree_manager=self.tree_manager)
 
         self.check_node_versions_service = rospy.Service(
-            "~check_node_versions",
-            MigrateTree,
-            self.migration_manager.check_node_versions,
+            "~check_node_versions", MigrateTree, check_node_versions
         )
 
         self.migrate_tree_service = rospy.Service(
@@ -311,6 +350,7 @@ class TreeNode(object):
         rospy.loginfo("initialized tree node")
 
     def shutdown(self):
+        """Shut down tree node in a safe way."""
         if self.tree_manager.get_state() not in [Tree.IDLE, Tree.EDITABLE, Tree.ERROR]:
             rospy.loginfo("Shutting down Behavior Tree")
             response = self.tree_manager.control_execution(

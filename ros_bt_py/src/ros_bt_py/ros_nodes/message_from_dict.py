@@ -27,6 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #  -------- END LICENSE BLOCK --------
+"""BT nodes to convert Dicts to ROS messages of a specific type."""
 from rosbridge_library.internal.message_conversion import populate_instance
 from rosbridge_library.internal.message_conversion import (
     InvalidMessageException,
@@ -49,7 +50,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
     )
 )
 class MessageFromDict(Leaf):
-    """Fill a ROS message with the values from `dict`"""
+    """Fill a ROS message with the values from `dict`."""
 
     def _do_setup(self):
         pass
@@ -66,8 +67,8 @@ class MessageFromDict(Leaf):
                 FieldTypeMismatchException,
             ) as ex:
                 self.logerr(
-                    "Error populating message of type %s: %s"
-                    % (self.options["message_type"].__name__, str(ex))
+                    f"Error populating message of type {self.options['message_type'].__name__}: "
+                    f"{str(ex)}"
                 )
                 return NodeMsg.FAILED
         return NodeMsg.SUCCEEDED
@@ -92,7 +93,7 @@ class MessageFromDict(Leaf):
     )
 )
 class MessageFromConstDict(Leaf):
-    """Fill a ROS message with the values from `dict`"""
+    """Fill a ROS message with the values from `dict`."""
 
     def _do_setup(self):
         pass
@@ -108,8 +109,8 @@ class MessageFromConstDict(Leaf):
             FieldTypeMismatchException,
         ) as ex:
             self.logerr(
-                "Error populating message of type %s: %s"
-                % (self.options["message_type"].__name__, str(ex))
+                f"Error populating message of type {self.options['message_type'].__name__}: "
+                f"{str(ex)}"
             )
             return NodeMsg.FAILED
         return NodeMsg.SUCCEEDED

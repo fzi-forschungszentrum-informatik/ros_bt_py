@@ -1,23 +1,23 @@
 name: 'io_test'
 path: ''
 root_name: 'passthrough'
-nodes: 
-  - 
+nodes:
+  -
     module: "ros_bt_py.nodes.passthrough_node"
     node_class: "PassthroughNode"
     max_children: 0
     name: "passthrough"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "passthrough_type"
         serialized_value: "{\"py/type\": \"__builtin__.str\"}"
     inputs:
-      - 
+      -
         key: "in"
         serialized_value: "null"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "out"
         serialized_value: "null"
     state: "UNINITIALIZED"

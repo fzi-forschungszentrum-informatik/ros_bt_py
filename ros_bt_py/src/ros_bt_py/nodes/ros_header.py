@@ -1,5 +1,5 @@
 #  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -26,16 +26,49 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#  -------- END LICENSE BLOCK --------
+#  -------- END LICENSE BLOCK -------
 import rospy
+import std_msgs
 
-import std_msgs.msg
-
-from ros_bt_py_msgs.msg import Node as NodeMsg
-from ros_bt_py_msgs.msg import UtilityBounds
-
+from std_msgs.msg import Header
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
+from ros_bt_py_msgs.msg import Node as NodeMsg
+
+
+@define_bt_node(
+    NodeConfig(
+        options={"frame_id": str},
+        inputs={},
+        outputs={"header": Header},
+        version="1.0.0",
+        max_children=0,
+    )
+)
+class CreateStampedRosHeader(Leaf):
+    seq = 0
+
+    def _do_setup(self):
+        self.seq = 0
+        self.outputs["header"] = Header(
+            seq=self.seq, stamp=rospy.Time.now(), frame_id=self.options["frame_id"]
+        )
+
+    def _do_tick(self):
+        self.outputs["header"] = Header(
+            seq=self.seq, stamp=rospy.Time.now(), frame_id=self.options["frame_id"]
+        )
+        self.seq += 1
+        return NodeMsg.SUCCEEDED
+
+    def _do_shutdown(self):
+        pass
+
+    def _do_reset(self):
+        return NodeMsg.IDLE
+
+    def _do_untick(self):
+        return NodeMsg.IDLE
 
 
 @define_bt_node(
@@ -44,6 +77,7 @@ from ros_bt_py.node_config import NodeConfig, OptionRef
         inputs={},
         outputs={"header": OptionRef("header_type")},
         max_children=0,
+        version="0.9.0",
     )
 )
 class GetStdHeader(Leaf):

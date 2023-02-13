@@ -288,12 +288,14 @@ class AsyncServiceProxy:
             self._thread.start()
 
     def get_response(self):
+        """Get the service response if it was already recieved."""
         if self._data["state"] == self.RESPONSE_READY:
             with self._data_lock:
                 self._data["state"] = self.IDLE
         return self._data["res"]
 
     def get_state(self):
+        """Get the current state of the service proxy."""
         return self._data["state"]
 
     @staticmethod
@@ -398,17 +400,23 @@ class AsyncServiceProxy:
 
 
 class LoggerLevel(object):
+    """Data class containing a logging level."""
+
     def __init__(self, logger_level="info"):
+        """Initialize a new LoggerLevel class."""
         self.logger_level = logger_level
 
 
 class EnumValue(object):
+    """Data class containing an enum value."""
+
     def __init__(self, enum_value=""):
+        """Initialize a new EnumValue class."""
         self.enum_value = enum_value
 
 
 def get_message_constant_fields(message_class):
-    """Returns all constant fields of a message as a list"""
+    """Return all constant fields of a message as a list."""
     if (
         inspect.isclass(message_class)
         and genpy.message.Message in message_class.__mro__
@@ -438,4 +446,4 @@ def get_message_constant_fields(message_class):
         ]
         return constants
     else:
-        raise BehaviorTreeException("%s is not a ROS Message" % (message_class))
+        raise BehaviorTreeException(f"{message_class} is not a ROS Message")

@@ -29,10 +29,11 @@
 #  -------- END LICENSE BLOCK --------
 import operator
 import math
-
+from typing import Optional, Dict
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
 
+from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.exceptions import BehaviorTreeException
 
 from ros_bt_py.node import Leaf, define_bt_node
@@ -57,8 +58,21 @@ class Convert(Leaf):
 
     Useful in many cases indeed."""
 
-    def __init__(self, options=None, debug_manager=None, name=None):
-        super(Convert, self).__init__(options, debug_manager, name)
+    def __init__(
+        self,
+        options: Optional[Dict] = None,
+        debug_manager: Optional[DebugManager] = None,
+        name: str = None,
+        succeed_always: bool = False,
+        simulate_tick: bool = False,
+    ):
+        super(Convert, self).__init__(
+            options=options,
+            debug_manager=debug_manager,
+            name=name,
+            succeed_always=succeed_always,
+            simulate_tick=simulate_tick,
+        )
         # check the possible conversions here
 
         if self.options["input_type"] is self.options["output_type"]:
@@ -159,8 +173,21 @@ class Convert(Leaf):
 class Operation(Leaf):
     """Performs the desired binary operation on the inputs a and b."""
 
-    def __init__(self, options=None, debug_manager=None, name=None):
-        super(Operation, self).__init__(options, debug_manager, name)
+    def __init__(
+        self,
+        options: Optional[Dict] = None,
+        debug_manager: Optional[DebugManager] = None,
+        name: str = None,
+        succeed_always: bool = False,
+        simulate_tick: bool = False,
+    ):
+        super(Operation, self).__init__(
+            options=options,
+            debug_manager=debug_manager,
+            name=name,
+            succeed_always=succeed_always,
+            simulate_tick=simulate_tick,
+        )
         self.operators = dict()
         self.operators["add"] = operator.add
         self.operators["+"] = operator.add
@@ -190,7 +217,7 @@ class Operation(Leaf):
 
         if self.options["operator"].operator not in self.operators:
             raise BehaviorTreeException(
-                "Operator %s is not recognized." % self.options["operator"].operator
+                f"Operator {self.options['operator'].operator} is not recognized."
             )
 
         self.operand_type = None
@@ -276,8 +303,21 @@ class Operation(Leaf):
 class UnaryOperation(Leaf):
     """Performs the desired unary operation on the inputs a and b."""
 
-    def __init__(self, options=None, debug_manager=None, name=None):
-        super(UnaryOperation, self).__init__(options, debug_manager, name)
+    def __init__(
+        self,
+        options: Optional[Dict] = None,
+        debug_manager: Optional[DebugManager] = None,
+        name: str = None,
+        succeed_always: bool = False,
+        simulate_tick: bool = False,
+    ):
+        super(UnaryOperation, self).__init__(
+            options=options,
+            debug_manager=debug_manager,
+            name=name,
+            succeed_always=succeed_always,
+            simulate_tick=simulate_tick,
+        )
         self.operators = dict()
         self.operators["not"] = operator.not_
         self.operators["inv"] = operator.inv
@@ -317,7 +357,7 @@ class UnaryOperation(Leaf):
 
         if self.options["operator"].operator not in self.operators:
             raise BehaviorTreeException(
-                "Operator %s is not recognized." % self.options["operator"].operator
+                f"Operator {self.options['operator'].operator} is not recognized."
             )
 
         self.operand_type = None

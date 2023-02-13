@@ -113,7 +113,7 @@ class RosParamInput(Leaf):
         return NodeMsg.IDLE
 
     def _do_calculate_utility(self):
-        return UtilityBounds()
+        return UtilityBounds(can_execute=True)
 
 
 @define_bt_node(
@@ -168,6 +168,6 @@ class RosParamOption(Leaf):
             )
 
         self.loginfo(
-            "Parameter %s is not available or has wrong type" % resolved_param_name
+            f"Parameter {resolved_param_name} is not available or has wrong type"
         )
         return UtilityBounds()

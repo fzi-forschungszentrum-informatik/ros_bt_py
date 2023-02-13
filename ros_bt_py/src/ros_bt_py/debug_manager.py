@@ -277,7 +277,7 @@ class DebugManager(object):
 
         If this method is called when `publish_subtrees` is `False`.
         """
-        subtree_name = "%s.%s" % (node_name, subtree_msg.name)
+        subtree_name = f"{node_name}.{subtree_msg.name}"
         with self._lock:
             if not self._debug_settings_msg.publish_subtrees:
                 raise BehaviorTreeException(

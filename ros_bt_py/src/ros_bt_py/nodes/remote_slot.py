@@ -73,12 +73,12 @@ class RemoteSlot(Leaf):
 
     def _do_setup(self):
         rospy.wait_for_service(
-            self.options["slot_namespace"] + "/control_slot_execution",
+            f"{self.options['slot_namespace']}/control_slot_execution",
             self.options["wait_for_service_seconds"],
         )
 
         self._service_proxy = AsyncServiceProxy(
-            self.options["slot_namespace"] + "/control_slot_execution",
+            f"{self.options['slot_namespace']}/control_slot_execution",
             ControlTreeExecution,
         )
 
@@ -91,7 +91,7 @@ class RemoteSlot(Leaf):
         self._tree_loaded = False
         self._run_command_sent = False
         self._slot_state_sub = rospy.Subscriber(
-            self.options["slot_namespace"] + "/slot_state",
+            f"{self.options['slot_namespace']}/slot_state",
             RemoteSlotState,
             callback=self._slot_state_cb,
         )
@@ -196,7 +196,7 @@ class RemoteSlot(Leaf):
 
     def _do_calculate_utility(self):
         resolved_service = rospy.resolve_name(
-            self.options["slot_namespace"] + "/control_slot_execution"
+            f"{self.options['slot_namespace']}/control_slot_execution"
         )
 
         try:
@@ -204,9 +204,7 @@ class RemoteSlot(Leaf):
         except rosservice.ROSServiceIOException as exc:
             # Defaults to no bounds set, dragging down the utility
             # score
-            self.loginfo(
-                "Unable to check for service %s: %s" % (resolved_service, str(exc))
-            )
+            self.loginfo(f"Unable to check for service {resolved_service}: {str(exc)}")
             return UtilityBounds()
 
         if service_type_name:
@@ -227,5 +225,5 @@ class RemoteSlot(Leaf):
                     has_upper_bound_failure=True,
                 )
 
-        self.loginfo("Service %s is unavailable or has wrong type." % resolved_service)
+        self.loginfo(f"Service {resolved_service} is unavailable or has wrong type.")
         return UtilityBounds()

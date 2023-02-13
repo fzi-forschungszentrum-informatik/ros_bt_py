@@ -35,7 +35,7 @@ repos:
       - id: catkin_lint
       - id: roslint-python
   - repo: https://github.com/Lucas-C/pre-commit-hooks
-    rev: v1.3.1
+    rev: v1.4.2
     hooks:
       - id: insert-license
         files: \.py$
@@ -43,3 +43,4 @@ repos:
           - --license-filepath
           - LICENCE
           - --fuzzy-match-generates-todo
+          - --use-current-year
