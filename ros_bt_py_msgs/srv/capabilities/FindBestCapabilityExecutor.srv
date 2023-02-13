@@ -1,6 +1,7 @@
 CapabilityInterface capability
 string node_id
 string mission_control_name
+string implementation_tags_dict
 ---
 # result
 bool success
