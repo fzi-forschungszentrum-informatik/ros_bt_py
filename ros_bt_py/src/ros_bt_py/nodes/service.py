@@ -1,5 +1,5 @@
 #  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2022-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -408,6 +408,7 @@ class WaitForServiceInput(Leaf):
 
     def _do_shutdown(self):
         self._do_reset()
+
 
 @define_bt_node(
     NodeConfig(

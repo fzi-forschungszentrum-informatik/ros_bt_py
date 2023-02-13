@@ -80,7 +80,7 @@ nodes:
         serialized_value: "1.2"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
       -
-        key: "attributes_required_for_assignment"
+        key: "inputs_names_for_implementation_tags"
         serialized_value: "[]"
         serialized_type: "{\"py/type\": \"__builtin__.list\"}"
     inputs:
