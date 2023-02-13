@@ -1,5 +1,5 @@
 #  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2022-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -108,6 +108,8 @@ from ros_bt_py.helpers import (
 )
 from ros_bt_py.node import Node, load_node_module, increment_name
 from ros_bt_py.node_config import OptionRef
+
+from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
 
 
 def is_edit_service(func):
@@ -319,6 +321,8 @@ class TreeManager:
         publish_debug_info_callback=None,
         publish_debug_settings_callback=None,
         publish_node_diagnostics_callback=None,
+        publish_diagnostic_callback=None,
+        diagnostics_frequency=1.0,
         show_traceback_on_exception=False,
         capability_interfaces_callback=None,
         simulate_tick=False,
@@ -340,10 +344,10 @@ class TreeManager:
         self.publish_node_diagnostics = publish_node_diagnostics_callback
         if self.publish_node_diagnostics is None:
             rospy.loginfo("No callback for publishing node diagnostics data provided.")
-        
+
         self.publish_diagnostic = publish_diagnostic_callback
         if self.publish_diagnostic is None:
-            rospy.loginfo("No callback for publishing node diagnostics provided")         
+            rospy.loginfo("No callback for publishing node diagnostics provided")
 
         self.debug_manager = debug_manager
         if not self.debug_manager:
@@ -413,42 +417,57 @@ class TreeManager:
         self.publish_info(self.debug_manager.get_debug_info_msg())
 
         if self.publish_diagnostic is not None:
-            rospy.Timer(rospy.Duration(1.0 / diagnostics_frequency), self.diagnostic_callback)
+            rospy.Timer(
+                rospy.Duration(1.0 / diagnostics_frequency), self.diagnostic_callback
+            )
 
     def get_state(self):
         with self._state_lock:
             return self.tree_msg.state
-    
+
     def set_diagnostics_name(self):
         """Sets the tree name for ROS diagnostics.
 
-        If the BT has a name, this name will published in diagnostics. Otherwise, the root name of the tree is used.
+        If the BT has a name, this name will published in diagnostics.
+        Otherwise, the root name of the tree is used.
         """
         if self.tree_msg.name:
-            self.diagnostic_status.name = os.path.splitext(self.tree_msg.name)[0]  # Save tree name without data type
+            self.diagnostic_status.name = os.path.splitext(self.tree_msg.name)[0]
         elif self.tree_msg.root_name:
             self.diagnostic_status.name = self.tree_msg.root_name
-            rospy.logwarn(f"No tree name was found. Diagnostics data from the behavior tree will be published under the name of the root_node: {self.tree_msg.root_name}")
+            rospy.logwarn(
+                "No tree name was found. Diagnostics data from the behavior tree will be"
+                f"published under the name of the root_node: {self.tree_msg.root_name}"
+            )
         else:
             self.diagnostic_status.name = ""
-            rospy.logwarn("Neither a tree name nor the name from the root_node was found. Diagnostics data from the behavior tree will be published without further name specifications")
+            rospy.logwarn(
+                "Neither a tree name nor the name from the root_node was found."
+                "Diagnostics data from the behavior tree will be "
+                "published without further name specifications"
+            )
 
     def clear_diagnostics_name(self):
         """Clears the name for ROS diagnostics"""
-        self.diagnostic_status.name = ''
+        self.diagnostic_status.name = ""
 
     def diagnostic_callback(self, event=None):
         if self.get_state() == Tree.TICKING:
             self.diagnostic_status.level = 0
-            self.diagnostic_status.message = 'Ticking'
-            #self.tick_stat.values = [KeyValue(key = 'Ticking', value = 'True')]
-        elif self.get_state() in (Tree.EDITABLE, Tree.IDLE, Tree.WAITING_FOR_TICK, Tree.STOP_REQUESTED):
+            self.diagnostic_status.message = "Ticking"
+            # self.tick_stat.values = [KeyValue(key = 'Ticking', value = 'True')]
+        elif self.get_state() in (
+            Tree.EDITABLE,
+            Tree.IDLE,
+            Tree.WAITING_FOR_TICK,
+            Tree.STOP_REQUESTED,
+        ):
             self.diagnostic_status.level = 1
-            self.diagnostic_status.message = 'Not ticking'
-            #self.tick_stat.values = [KeyValue(key = 'Ticking', value = 'False')]
+            self.diagnostic_status.message = "Not ticking"
+            # self.tick_stat.values = [KeyValue(key = 'Ticking', value = 'False')]
         elif self.get_state() == Tree.ERROR:
             self.diagnostic_status.level = 2
-            self.diagnostic_status.message = 'Error in Behavior Tree'
+            self.diagnostic_status.message = "Error in Behavior Tree"
         self.publish_diagnostic(self.diagnostic_array)
 
     def publish_info(self, debug_info_msg=None, ticked=False):

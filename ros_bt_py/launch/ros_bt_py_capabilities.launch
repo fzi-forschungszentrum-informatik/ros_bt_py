@@ -30,14 +30,11 @@
       ros_bt_py.nodes.maths,
       ros_bt_py.nodes.remote_capability_slot,
       ros_bt_py.ros_nodes.message_converters,
-      ros_bt_py.ros_nodes.move_base_action,
       ros_bt_py.ros_nodes.message_from_dict,
       ros_bt_py.ros_nodes.ros_header,
       ros_bt_py.ros_nodes.pose_distance,
       ros_bt_py.ros_nodes.lookup_tf,
       ros_bt_py.ros_nodes.enum,
-      ros_bt_py.ros_nodes.explore_service,
-      ros_bt_py.ros_nodes.identify_service,
       ros_bt_py.capability,
   " />
 

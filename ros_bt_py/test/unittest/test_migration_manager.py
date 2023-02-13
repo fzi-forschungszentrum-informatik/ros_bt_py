@@ -47,8 +47,8 @@ from ros_bt_py_msgs.srv import (
 
 from ros_bt_py.testing_nodes import migrations_test_nodes
 
-from ros_bt_py.migration import MigrationManager
-from ros_bt_py.tree_manager import TreeManager
+from ros_bt_py.migration import MigrationManager, check_node_versions
+from ros_bt_py.tree_manager import TreeManager, get_available_nodes
 
 
 class TestMigrationManager(unittest.TestCase):
@@ -61,7 +61,7 @@ class TestMigrationManager(unittest.TestCase):
             ]
         )
 
-        response = tree_manager.get_available_nodes(request)
+        response = get_available_nodes(request)
         self.assertTrue(response.success)
 
         migration_manager = MigrationManager(tree_manager=tree_manager)
@@ -203,7 +203,7 @@ class TestMigrationManager(unittest.TestCase):
             ]
         )
 
-        response = tree_manager.get_available_nodes(request)
+        response = get_available_nodes(request)
         self.assertTrue(response.success)
 
         migration_manager = MigrationManager(tree_manager=tree_manager)
@@ -620,7 +620,7 @@ class TestMigrationManager(unittest.TestCase):
         tree_manager = TreeManager()
         request = GetAvailableNodesRequest(node_modules=["ros_bt_py.nodes.constant"])
 
-        response = tree_manager.get_available_nodes(request)
+        response = get_available_nodes(request)
         self.assertTrue(response.success)
 
         migration_manager = MigrationManager(tree_manager=tree_manager)
@@ -650,37 +650,37 @@ class TestMigrationManager(unittest.TestCase):
             ]
         )
 
-        response = tree_manager.get_available_nodes(request)
+        response = get_available_nodes(request)
         self.assertTrue(response.success)
 
         migration_manager = MigrationManager(tree_manager=tree_manager)
-
+        self.assertIsNotNone(migration_manager)
         tree = Tree()
         # package, but file does not exist
         tree.path = "package://ros_bt_py/etc/trees/notareal.file"
         migrate_request = MigrateTreeRequest(tree=tree)
-        migrate_reply = migration_manager.check_node_versions(migrate_request)
+        migrate_reply = check_node_versions(migrate_request)
         self.assertFalse(migrate_reply.success)
         self.assertFalse(migrate_reply.migrated)
 
         # file does not exist
         tree.path = "/notareal.file"
         migrate_request = MigrateTreeRequest(tree=tree)
-        migrate_reply = migration_manager.check_node_versions(migrate_request)
+        migrate_reply = check_node_versions(migrate_request)
         self.assertFalse(migrate_reply.success)
         self.assertFalse(migrate_reply.migrated)
 
         # file does not exist
         tree.path = "file://"
         migrate_request = MigrateTreeRequest(tree=tree)
-        migrate_reply = migration_manager.check_node_versions(migrate_request)
+        migrate_reply = check_node_versions(migrate_request)
         self.assertFalse(migrate_reply.success)
         self.assertFalse(migrate_reply.migrated)
 
         tree.path = "package://ros_bt_py/test/testdata/trees/" "migrations_action.yaml"
         migrate_request = MigrateTreeRequest(tree=tree)
 
-        migrate_reply = migration_manager.check_node_versions(migrate_request)
+        migrate_reply = check_node_versions(migrate_request)
         self.assertTrue(migrate_reply.success)
         self.assertTrue(migrate_reply.migrated)
 
@@ -688,7 +688,7 @@ class TestMigrationManager(unittest.TestCase):
         tree_manager = TreeManager()
         request = GetAvailableNodesRequest(node_modules=["ros_bt_py.nodes.constant"])
 
-        response = tree_manager.get_available_nodes(request)
+        response = get_available_nodes(request)
         self.assertTrue(response.success)
 
         migration_manager = MigrationManager(tree_manager=tree_manager)
@@ -701,7 +701,7 @@ class TestMigrationManager(unittest.TestCase):
             MigrateTreeResponse(success=Tree, tree=tree)
         )
 
-        migrate_reply = migration_manager.check_node_versions(migrate_request)
+        migrate_reply = check_node_versions(migrate_request)
         self.assertTrue(migrate_reply.success)
         self.assertTrue(migrate_reply.migrated)
 
@@ -710,7 +710,7 @@ class TestMigrationManager(unittest.TestCase):
         tree_manager = TreeManager()
         request = GetAvailableNodesRequest(node_modules=["ros_bt_py.nodes.constant"])
 
-        response = tree_manager.get_available_nodes(request)
+        response = get_available_nodes(request)
         self.assertTrue(response.success)
 
         mock_izip.side_effect = TypeError()

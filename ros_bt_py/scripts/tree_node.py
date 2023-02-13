@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2022-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -31,6 +31,7 @@
 """Module containing the main node for a ros_bt_py instance running the BT."""
 
 import rospy
+from diagnostic_msgs.msg import DiagnosticArray
 import std_msgs.msg
 
 from ros_bt_py_msgs.msg import Messages, Packages
@@ -116,6 +117,9 @@ class TreeNode(object):
         default_tree_tick_frequency_hz = rospy.get_param(
             "~default_tree_tick_frequency_hz", default=1
         )
+        default_tree_diagnostics_frequency_hz = rospy.get_param(
+            "~default_tree_diagnostics_frequency_hz", default=1
+        )
         default_tree_control_command = rospy.get_param(
             "~default_tree_control_command", default=2
         )
@@ -157,6 +161,16 @@ class TreeNode(object):
             "~debug/node_diagnostics", NodeDiagnostics, latch=True, queue_size=10
         )
 
+        self.node_diagnostics_pub = rospy.Publisher(
+            "~debug/node_diagnostics", NodeDiagnostics, latch=True, queue_size=10
+        )
+
+        node_in_namespace = rospy.get_namespace().strip("/")
+        namespace = rospy.get_namespace() if node_in_namespace else ""
+        self.ros_diagnostics_pub = rospy.Publisher(
+            f"/diagnostics/{namespace}", DiagnosticArray, queue_size=1
+        )
+
         self.debug_manager = DebugManager()
         self.tree_manager = TreeManager(
             module_list=node_module_names,
@@ -165,6 +179,8 @@ class TreeNode(object):
             publish_debug_info_callback=self.debug_info_pub.publish,
             publish_debug_settings_callback=self.debug_settings_pub.publish,
             publish_node_diagnostics_callback=self.node_diagnostics_pub.publish,
+            publish_diagnostic_callback=self.ros_diagnostics_pub.publish,
+            diagnostics_frequency=default_tree_diagnostics_frequency_hz,
             show_traceback_on_exception=show_traceback_on_exception,
         )
 
