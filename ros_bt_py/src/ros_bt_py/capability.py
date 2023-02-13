@@ -1,32 +1,31 @@
-#  -------- BEGIN LICENSE BLOCK --------
-#  Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2023-2023 FZI Forschungszentrum Informatik
 #
-#  Redistribution and use in source and binary forms, with or without
-#  modification, are permitted provided that the following conditions are met:
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
 #
-#     * Redistributions of source code must retain the above copyright
-#        notice, this list of conditions and the following disclaimer.
+#    * Redistributions of source code must retain the above copyright
+#      notice, this list of conditions and the following disclaimer.
 #
-#     * Redistributions in binary form must reproduce the above copyright
-#       notice, this list of conditions and the following disclaimer in the
-#       documentation and/or other materials provided with the distribution.
+#    * Redistributions in binary form must reproduce the above copyright
+#      notice, this list of conditions and the following disclaimer in the
+#      documentation and/or other materials provided with the distribution.
 #
-#     * Neither the name of the {copyright_holder} nor the names of its
-#        contributors may be used to endorse or promote products derived from
-#       this software without specific prior written permission.
+#    * Neither the name of the {copyright_holder} nor the names of its
+#      contributors may be used to endorse or promote products derived from
+#      this software without specific prior written permission.
 #
-#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-#  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-#  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-#  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-#  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-#  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-#  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-#  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-#  POSSIBILITY OF SUCH DAMAGE.
-#  -------- END LICENSE BLOCK --------
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
 """
 Module for handling BT nodes related to capabilities.
 
@@ -78,7 +77,7 @@ from ros_bt_py_msgs.srv import (
 
 from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.exceptions import BehaviorTreeException, TreeTopologyError
-from ros_bt_py.helpers import json_decode
+from ros_bt_py.helpers import json_decode, json_encode, rgetattr
 from ros_bt_py.node import define_bt_node, Leaf, Node
 from ros_bt_py.node_config import NodeConfig
 from ros_bt_py.ros_helpers import AsyncServiceProxy
@@ -699,11 +698,44 @@ class Capability(ABC, Leaf):
             except KeyError:
                 require_local_execution = False
 
+            tags: List[str] = self.options["inputs_names_for_implementation_tags"]
+            implementation_tags_dict = dict()
+            for tag in tags:
+                input_tags = tag.split(".", 1)
+                if len(input_tags) < 1:
+                    self.logerr(f"Specified attribute {tag} is not valid")
+                    self._cleanup()
+                    return NodeMsg.FAILED
+
+                input = input_tags[0]
+                try:
+                    input_value = self.inputs[input]
+                except KeyError:
+                    self.logerr(
+                        f"Specified attribute {tag} could not be found on inputs"
+                    )
+                    self._cleanup()
+
+                if len(input_tags) == 2 and input_tags[1] != "":
+                    try:
+                        implementation_tags_dict[tag] = rgetattr(
+                            input_value, input_tags[1]
+                        )
+                    except AttributeError:
+                        self.logerr(
+                            f"Specified attribute {input_tags[1]} could not be found on inputs"
+                        )
+                        self._cleanup()
+                        return NodeMsg.FAILED
+                else:
+                    implementation_tags_dict[tag] = input_value
+
             self._request_capability_execution_service_proxy.call_service(
                 RequestCapabilityExecutionRequest(
                     capability=self.capability_interface,
                     node_id=self._io_bridge_id,
                     require_local_execution=require_local_execution,
+                    implementation_tags_dict=json_encode(implementation_tags_dict),
                 )
             )
             self._internal_state = self.WAITING_FOR_ASSIGNMENT
@@ -1323,7 +1355,7 @@ def capability_node_class_from_capability_interface(
             options={
                 "require_local_execution": bool,
                 "execution_timeout_sec": float,
-                "attributes_required_for_assignment": list,
+                "inputs_names_for_implementation_tags": list,
             },
             inputs=inputs_dict,
             outputs=outputs_dict,

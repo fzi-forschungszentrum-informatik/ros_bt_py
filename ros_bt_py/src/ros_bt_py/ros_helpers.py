@@ -1,5 +1,5 @@
 #  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2022-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -288,14 +288,12 @@ class AsyncServiceProxy:
             self._thread.start()
 
     def get_response(self):
-        """Get the service response if it was already recieved."""
         if self._data["state"] == self.RESPONSE_READY:
             with self._data_lock:
                 self._data["state"] = self.IDLE
         return self._data["res"]
 
     def get_state(self):
-        """Get the current state of the service proxy."""
         return self._data["state"]
 
     @staticmethod
@@ -330,8 +328,8 @@ class AsyncServiceProxy:
             with lock:
                 data["timeout"] = None
                 data["state"] = AsyncServiceProxy.SERVICE_AVAILABLE
-        except AttributeError:
-            rospy.logerr("Service proxy is not present!")
+        except AttributeError as exc:
+            rospy.logerr(f"Service proxy is not present: {exc}")
             if abort.is_set():
                 unclaim_cb()
                 return
@@ -386,8 +384,8 @@ class AsyncServiceProxy:
             with lock:
                 data["res"] = res
                 data["state"] = AsyncServiceProxy.RESPONSE_READY
-        except AttributeError:
-            rospy.logerr("Service proxy is not present!")
+        except AttributeError as exc:
+            rospy.logerr(f"Service proxy is not present: {exc}")
             with lock:
                 data["state"] = AsyncServiceProxy.ERROR
         except rospy.exceptions.ROSInterruptException:
@@ -400,23 +398,17 @@ class AsyncServiceProxy:
 
 
 class LoggerLevel(object):
-    """Data class containing a logging level."""
-
     def __init__(self, logger_level="info"):
-        """Initialize a new LoggerLevel class."""
         self.logger_level = logger_level
 
 
 class EnumValue(object):
-    """Data class containing an enum value."""
-
     def __init__(self, enum_value=""):
-        """Initialize a new EnumValue class."""
         self.enum_value = enum_value
 
 
 def get_message_constant_fields(message_class):
-    """Return all constant fields of a message as a list."""
+    """Returns all constant fields of a message as a list"""
     if (
         inspect.isclass(message_class)
         and genpy.message.Message in message_class.__mro__
@@ -446,4 +438,4 @@ def get_message_constant_fields(message_class):
         ]
         return constants
     else:
-        raise BehaviorTreeException(f"{message_class} is not a ROS Message")
+        raise BehaviorTreeException("%s is not a ROS Message" % (message_class))

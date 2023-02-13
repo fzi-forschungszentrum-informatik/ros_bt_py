@@ -36,6 +36,7 @@ other nodes by using an auction protocol.
 # pylint: disable=no-name-in-module,import-error
 
 import dataclasses
+import json
 import threading
 from threading import RLock
 from typing import Dict, List, Tuple, Optional
@@ -105,7 +106,7 @@ from ros_bt_py.exceptions import BehaviorTreeException
 from ros_bt_py.nodes.sequence import Sequence
 from ros_bt_py.capability import set_capability_io_bridge_id
 from ros_bt_py.debug_manager import DebugManager
-from ros_bt_py.helpers import HashableCapabilityInterface
+from ros_bt_py.helpers import HashableCapabilityInterface, json_decode
 from ros_bt_py.migration import MigrationManager, check_node_versions
 from ros_bt_py.ros_helpers import AsyncServiceProxy
 from ros_bt_py.tree_manager import TreeManager
@@ -363,6 +364,14 @@ class MissionControl:
             rospy.logerr(service_response.error_message)
             return service_response
 
+        try:
+            tags: Dict[str, str] = json_decode(request.implementation_tags_dict)
+        except json.decoder.JSONDecodeError as exc:
+            service_response.error_message = f"Failed to load tasks: {exc}"
+            rospy.logwarn(service_response.error_message)
+            service_response.success = False
+            return service_response
+
         with self.__get_capability_implementations_proxy_lock:
             try:
                 self.__get_capability_implementations_proxy.wait_for_service(
@@ -399,7 +408,26 @@ class MissionControl:
             service_response.success = response.success
             return service_response
 
-        if len(response.implementations) < 1:
+        valid_implementations: List[CapabilityImplementation] = []
+
+        for implementation in response.implementations:
+            impl_tags: Dict[str, str] = json_decode(implementation.tags_dict)
+            rospy.logerr(f"Impl tags: {impl_tags}")
+
+            shared_tags = {
+                k: tags[k] for k in tags if k in impl_tags and tags[k] == impl_tags[k]
+            }
+            rospy.logerr(f"Shared tags: {shared_tags}")
+            if len(shared_tags) < len(impl_tags):
+                rospy.logwarn(
+                    "Requested interface does not match with all tags of "
+                    f"{implementation.name} with tags {impl_tags}"
+                )
+                continue
+            else:
+                valid_implementations.append(implementation)
+
+        if len(valid_implementations) < 1:
             service_response.success = False
             service_response.error_message = "No suitable implementation found!"
             return service_response
@@ -419,7 +447,7 @@ class MissionControl:
         )
 
         implementation_utility: Dict[str, float] = {}
-        for implementation in response.implementations:
+        for implementation in valid_implementations:
             tree = implementation.tree
 
             migration_request = MigrateTreeRequest(tree=tree)
@@ -949,6 +977,7 @@ class MissionControl:
                         capability=request.capability,
                         node_id=request.node_id,
                         mission_control_name=rospy.get_name(),
+                        implementation_tags_dict=request.implementation_tags_dict,
                     )
                 )
 
@@ -976,7 +1005,11 @@ class MissionControl:
             rospy.loginfo("Local execution required!")
 
         local_bid_response = self.get_local_bid(
-            GetLocalBidRequest(interface=request.capability, node_id=request.node_id)
+            GetLocalBidRequest(
+                interface=request.capability,
+                node_id=request.node_id,
+                implementation_tags_dict=request.implementation_tags_dict,
+            )
         )
 
         if local_bid_response.success:
