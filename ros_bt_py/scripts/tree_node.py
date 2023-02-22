@@ -31,12 +31,16 @@
 """Module containing the main node for a ros_bt_py instance running the BT."""
 
 import rospy
+import std_msgs
 from diagnostic_msgs.msg import DiagnosticArray
-import std_msgs.msg
-
-from ros_bt_py_msgs.msg import Messages, Packages
-
-from ros_bt_py_msgs.msg import Tree, DebugInfo, DebugSettings, NodeDiagnostics
+from ros_bt_py_msgs.msg import (
+    Tree,
+    DebugInfo,
+    DebugSettings,
+    NodeDiagnostics,
+    Messages,
+    Packages,
+)
 from ros_bt_py_msgs.srv import (
     AddNode,
     AddNodeAtIndex,
@@ -157,10 +161,6 @@ class TreeNode(object):
         self.debug_settings_pub = rospy.Publisher(
             "~debug/debug_settings", DebugSettings, latch=True, queue_size=1
         )
-        self.node_diagnostics_pub = rospy.Publisher(
-            "~debug/node_diagnostics", NodeDiagnostics, latch=True, queue_size=10
-        )
-
         self.node_diagnostics_pub = rospy.Publisher(
             "~debug/node_diagnostics", NodeDiagnostics, latch=True, queue_size=10
         )
