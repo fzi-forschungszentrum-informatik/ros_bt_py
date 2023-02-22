@@ -605,7 +605,8 @@ class TreeManager:
                 self.tick_sliding_window
             )
 
-            self.publish_tick_frequency(Float64(tick_frequency_avg))
+            if self.publish_tick_frequency is not None:
+                self.publish_tick_frequency(Float64(tick_frequency_avg))
             self.rate.sleep()
 
         with self._state_lock:
