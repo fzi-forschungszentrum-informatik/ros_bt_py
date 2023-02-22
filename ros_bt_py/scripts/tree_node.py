@@ -31,6 +31,7 @@
 """Module containing the main node for a ros_bt_py instance running the BT."""
 
 import rospy
+import std_msgs
 from diagnostic_msgs.msg import DiagnosticArray
 from ros_bt_py_msgs.msg import (
     Tree,

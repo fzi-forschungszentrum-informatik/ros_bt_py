@@ -163,6 +163,12 @@ class NodeConfig(object):
                 continue
             self.options[key] = other.options[key]
 
+        for optional_option in other.optional_options:
+            if optional_option in self.optional_options:
+                continue
+            else:
+                self.optional_options.append(optional_option)
+
         if duplicate_inputs or duplicate_outputs or duplicate_options:
             msg = "Duplicate keys: "
             keys_strings = []

@@ -102,8 +102,6 @@ class ServiceInput(Leaf):
 
             return NodeMsg.RUNNING
 
-        if not self._service_available:
-            return NodeMsg.FAILED
         # If the service name changed
         if self.inputs.is_updated("service_name"):
             if self._service_proxy is not None:
@@ -112,6 +110,7 @@ class ServiceInput(Leaf):
             self._service_proxy = AsyncServiceProxy(
                 self.inputs["service_name"], self.options["service_type"]
             )
+
         # If theres' no service call in-flight, and we have already reported
         # the result (see below), start a new call and save the request
         if (
@@ -371,14 +370,6 @@ class ServiceForSetType(ABC, Leaf):
 
             return NodeMsg.RUNNING
 
-        # If the service name changed
-        if self.inputs.is_updated("service_name"):
-            if self._service_proxy is not None:
-                self._do_reset()
-        if self._service_proxy is None:
-            self._service_proxy = AsyncServiceProxy(
-                self.inputs["service_name"], self.options["service_type"]
-            )
         if not self._service_available:
             return NodeMsg.FAILED
         # If theres' no service call in-flight, and we have already reported
@@ -459,7 +450,7 @@ class ServiceForSetType(ABC, Leaf):
                 )
 
         self.loginfo(f"Service {resolved_service} is unavailable or has wrong type.")
-        return UtilityBounds(can_execute=True)
+        return UtilityBounds()
 
 
 @define_bt_node(
