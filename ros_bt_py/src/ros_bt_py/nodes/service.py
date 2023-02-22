@@ -34,12 +34,13 @@ import rosservice
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import UtilityBounds
 
+from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.node import Leaf, define_bt_node
 from ros_bt_py.node_config import NodeConfig, OptionRef
 from ros_bt_py.ros_helpers import AsyncServiceProxy
 
 from abc import ABC, abstractmethod
-
+from typing import Optional, Dict
 
 @define_bt_node(
     NodeConfig(
@@ -305,6 +306,18 @@ class ServiceForSetType(ABC, Leaf):
                     return self.outputs[’MyServiceOutput']
     """
 
+    def __init__(self,
+        options: Optional[Dict] = None,
+        debug_manager: Optional[DebugManager] = None,
+        name: Optional[str] = None,
+        succeed_always: bool = False,
+        simulate_tick: bool = False) -> None:
+        super().__init__(options=options, debug_manager=debug_manager, name=name,
+                         succeed_always=succeed_always, simulate_tick=simulate_tick)
+
+        self._service_name = self.options["service_name"]
+        self.set_service_type()
+
     # Sets all outputs none (define output key while overwriting)
     @abstractmethod
     def set_output_none(self):
@@ -329,8 +342,6 @@ class ServiceForSetType(ABC, Leaf):
         self._service_type = "SERVICE_TYPE"
 
     def _do_setup(self):
-        self._service_name = self.options["service_name"]
-        self.set_service_type()
         self._service_available = True
         # Exception if service is not available
         try:
@@ -420,7 +431,7 @@ class ServiceForSetType(ABC, Leaf):
         self._service_proxy.shutdown()
 
     def _do_calculate_utility(self):
-        resolved_service = rospy.resolve_name(self._service_name)
+        resolved_service = rospy.resolve_name(self.options["service_name"])
 
         try:
             service_type_name = rosservice.get_service_type(resolved_service)
