@@ -24,5 +24,3 @@ include:
 
 clang-tidy-check:
   allow_failure: true
-
-
