@@ -169,7 +169,6 @@ class TreeNode(object):
             "~debug/tick_frequency", std_msgs.msg.Float64, latch=True, queue_size=10
         )
 
->>>>>>> ros_bt_py/scripts/tree_node.py
         node_in_namespace = rospy.get_namespace().strip("/")
         namespace = rospy.get_namespace() if node_in_namespace else ""
         self.ros_diagnostics_pub = rospy.Publisher(
