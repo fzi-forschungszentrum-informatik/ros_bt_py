@@ -35,8 +35,22 @@ class Wait(Migration):
     def adding_version(self):
         pass
 
+    @migration(from_version='0.9.0', to_version='0.9.1', changelog='changed option to float')
+    def change_option_type_to_float(self):
+        val = self.get_option(key='seconds_to_wait')
+        self.change_option_type(
+            key='seconds_to_wait',
+            data_type=float,
+            initial_value=float(val))
+
 
 class WaitInput(Migration):
     @migration(from_version="", to_version="0.9.0", changelog="adding version number")
     def adding_version(self):
         pass
+
+    @migration(from_version='0.9.0', to_version='0.9.1', changelog='changed input to float')
+    def change_input_type_to_float(self):
+        self.change_input_type(
+            key='seconds_to_wait',
+            data_type=float)
