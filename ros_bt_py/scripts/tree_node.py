@@ -165,6 +165,10 @@ class TreeNode(object):
             "~debug/node_diagnostics", NodeDiagnostics, latch=True, queue_size=10
         )
 
+        self.tick_frequency_pub = rospy.Publisher(
+            "~debug/tick_frequency", std_msgs.msg.Float64, latch=True, queue_size=10
+        )
+
         node_in_namespace = rospy.get_namespace().strip("/")
         namespace = rospy.get_namespace() if node_in_namespace else ""
         self.ros_diagnostics_pub = rospy.Publisher(
@@ -180,6 +184,7 @@ class TreeNode(object):
             publish_debug_settings_callback=self.debug_settings_pub.publish,
             publish_node_diagnostics_callback=self.node_diagnostics_pub.publish,
             publish_diagnostic_callback=self.ros_diagnostics_pub.publish,
+            publish_tick_frequency_callback=self.tick_frequency_pub.publish,
             diagnostics_frequency=default_tree_diagnostics_frequency_hz,
             show_traceback_on_exception=show_traceback_on_exception,
         )
