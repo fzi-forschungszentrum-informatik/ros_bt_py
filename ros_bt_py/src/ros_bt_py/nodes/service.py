@@ -42,6 +42,7 @@ from ros_bt_py.ros_helpers import AsyncServiceProxy
 from abc import ABC, abstractmethod
 from typing import Optional, Dict
 
+
 @define_bt_node(
     NodeConfig(
         version="0.9.0",
@@ -306,14 +307,21 @@ class ServiceForSetType(ABC, Leaf):
                     return self.outputs[’MyServiceOutput']
     """
 
-    def __init__(self,
+    def __init__(
+        self,
         options: Optional[Dict] = None,
         debug_manager: Optional[DebugManager] = None,
         name: Optional[str] = None,
         succeed_always: bool = False,
-        simulate_tick: bool = False) -> None:
-        super().__init__(options=options, debug_manager=debug_manager, name=name,
-                         succeed_always=succeed_always, simulate_tick=simulate_tick)
+        simulate_tick: bool = False,
+    ) -> None:
+        super().__init__(
+            options=options,
+            debug_manager=debug_manager,
+            name=name,
+            succeed_always=succeed_always,
+            simulate_tick=simulate_tick,
+        )
 
         self._service_name = self.options["service_name"]
         self.set_service_type()
