@@ -1,5 +1,4 @@
-#  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022-2023 FZI Forschungszentrum Informatik
+# Copyright 2018-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -11,7 +10,7 @@
 #      notice, this list of conditions and the following disclaimer in the
 #      documentation and/or other materials provided with the distribution.
 #
-#    * Neither the name of the {copyright_holder} nor the names of its
+#    * Neither the name of the FZI Forschungszentrum Informatik nor the names of its
 #      contributors may be used to endorse or promote products derived from
 #      this software without specific prior written permission.
 #
@@ -26,7 +25,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#  -------- END LICENSE BLOCK --------
+
 
 # pylint: disable=no-name-in-module,import-error
 import inspect
@@ -110,6 +109,7 @@ from ros_bt_py.node import Node, load_node_module, increment_name
 from ros_bt_py.node_config import OptionRef
 
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus
+from std_msgs.msg import Float64
 
 
 def is_edit_service(func):
@@ -322,6 +322,7 @@ class TreeManager:
         publish_debug_settings_callback=None,
         publish_node_diagnostics_callback=None,
         publish_diagnostic_callback=None,
+        publish_tick_frequency_callback=None,
         diagnostics_frequency=1.0,
         show_traceback_on_exception=False,
         capability_interfaces_callback=None,
@@ -348,6 +349,10 @@ class TreeManager:
         self.publish_diagnostic = publish_diagnostic_callback
         if self.publish_diagnostic is None:
             rospy.loginfo("No callback for publishing node diagnostics provided")
+
+        self.publish_tick_frequency = publish_tick_frequency_callback
+        if self.publish_tick_frequency is None:
+            rospy.loginfo("No callback for publishing tree frequency provided")
 
         self.debug_manager = debug_manager
         if not self.debug_manager:
@@ -377,6 +382,8 @@ class TreeManager:
 
         if tick_frequency_hz == 0.0:
             tick_frequency_hz = 10.0
+
+        self.tick_sliding_window = [tick_frequency_hz] * 10
 
         self.debug_manager.publish_debug_info = self.publish_info
         self.debug_manager.publish_debug_settings = self.publish_debug_settings
@@ -581,11 +588,24 @@ class TreeManager:
                     self.tree_msg.state = Tree.WAITING_FOR_TICK
                 return
 
-            if self.rate.remaining().to_nsec() < 0:
+            leftover = self.rate.remaining().to_sec()
+            tick_rate = self.tree_msg.tick_frequency_hz
+
+            if leftover < 0:
+                tick_rate = self.tree_msg.tick_frequency_hz + 1 / leftover
                 rospy.logwarn(
                     "Tick took longer than set period, cannot tick at "
                     f"{self.tree_msg.tick_frequency_hz:.2f} Hz"
                 )
+
+            self.tick_sliding_window.pop(0)
+            self.tick_sliding_window.append(tick_rate)
+            tick_frequency_avg = sum(self.tick_sliding_window) / len(
+                self.tick_sliding_window
+            )
+
+            if self.publish_tick_frequency is not None:
+                self.publish_tick_frequency(Float64(tick_frequency_avg))
             self.rate.sleep()
 
         with self._state_lock:

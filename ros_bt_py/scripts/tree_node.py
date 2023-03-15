@@ -1,6 +1,5 @@
 #!/usr/bin/env python
-#  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022-2023 FZI Forschungszentrum Informatik
+# Copyright 2018-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -12,7 +11,7 @@
 #      notice, this list of conditions and the following disclaimer in the
 #      documentation and/or other materials provided with the distribution.
 #
-#    * Neither the name of the {copyright_holder} nor the names of its
+#    * Neither the name of the FZI Forschungszentrum Informatik nor the names of its
 #      contributors may be used to endorse or promote products derived from
 #      this software without specific prior written permission.
 #
@@ -27,16 +26,21 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#  -------- END LICENSE BLOCK --------
+
+
 """Module containing the main node for a ros_bt_py instance running the BT."""
 
 import rospy
+import std_msgs
 from diagnostic_msgs.msg import DiagnosticArray
-import std_msgs.msg
-
-from ros_bt_py_msgs.msg import Messages, Packages
-
-from ros_bt_py_msgs.msg import Tree, DebugInfo, DebugSettings, NodeDiagnostics
+from ros_bt_py_msgs.msg import (
+    Tree,
+    DebugInfo,
+    DebugSettings,
+    NodeDiagnostics,
+    Messages,
+    Packages,
+)
 from ros_bt_py_msgs.srv import (
     AddNode,
     AddNodeAtIndex,
@@ -161,8 +165,8 @@ class TreeNode(object):
             "~debug/node_diagnostics", NodeDiagnostics, latch=True, queue_size=10
         )
 
-        self.node_diagnostics_pub = rospy.Publisher(
-            "~debug/node_diagnostics", NodeDiagnostics, latch=True, queue_size=10
+        self.tick_frequency_pub = rospy.Publisher(
+            "~debug/tick_frequency", std_msgs.msg.Float64, latch=True, queue_size=10
         )
 
         node_in_namespace = rospy.get_namespace().strip("/")
@@ -180,6 +184,7 @@ class TreeNode(object):
             publish_debug_settings_callback=self.debug_settings_pub.publish,
             publish_node_diagnostics_callback=self.node_diagnostics_pub.publish,
             publish_diagnostic_callback=self.ros_diagnostics_pub.publish,
+            publish_tick_frequency_callback=self.tick_frequency_pub.publish,
             diagnostics_frequency=default_tree_diagnostics_frequency_hz,
             show_traceback_on_exception=show_traceback_on_exception,
         )
