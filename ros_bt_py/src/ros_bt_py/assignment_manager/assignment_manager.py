@@ -119,7 +119,11 @@ class SimpleAssignmentManager(AssignmentManager):
             service_proxy = ServiceProxy(service_name, GetLocalBid)
             service_proxy.wait_for_service(timeout=rospy.Duration.from_sec(2))
             bid_response: GetLocalBidResponse = service_proxy.call(
-                GetLocalBidRequest(interface=goal.capability)
+                GetLocalBidRequest(
+                    interface=goal.interface,
+                    node_id=goal.node_id,
+                    implementation_tags_dict=goal.tags_dict,
+                )
             )
             if not bid_response.success:
                 rospy.logwarn(

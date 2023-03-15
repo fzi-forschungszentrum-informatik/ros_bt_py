@@ -287,7 +287,6 @@ class AsyncServiceProxy:
             self._thread.start()
 
     def get_response(self):
-        """Get the service response if it was already recieved."""
         if self._data["state"] == self.RESPONSE_READY:
             with self._data_lock:
                 self._data["state"] = self.IDLE
@@ -329,8 +328,8 @@ class AsyncServiceProxy:
             with lock:
                 data["timeout"] = None
                 data["state"] = AsyncServiceProxy.SERVICE_AVAILABLE
-        except AttributeError:
-            rospy.logerr("Service proxy is not present!")
+        except AttributeError as exc:
+            rospy.logerr(f"Service proxy is not present: {exc}")
             if abort.is_set():
                 unclaim_cb()
                 return
@@ -385,8 +384,8 @@ class AsyncServiceProxy:
             with lock:
                 data["res"] = res
                 data["state"] = AsyncServiceProxy.RESPONSE_READY
-        except AttributeError:
-            rospy.logerr("Service proxy is not present!")
+        except AttributeError as exc:
+            rospy.logerr(f"Service proxy is not present: {exc}")
             with lock:
                 data["state"] = AsyncServiceProxy.ERROR
         except rospy.exceptions.ROSInterruptException:
@@ -415,7 +414,7 @@ class EnumValue(object):
 
 
 def get_message_constant_fields(message_class):
-    """Return all constant fields of a message as a list."""
+    """Returns all constant fields of a message as a list"""
     if (
         inspect.isclass(message_class)
         and genpy.message.Message in message_class.__mro__

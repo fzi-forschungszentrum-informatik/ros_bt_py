@@ -1,6 +1,7 @@
 name: "TestCapabilityImplementation1"
 version: "1.0.1"
 preconditions: []
+tags_dict: '{}'
 tree:
   name: "test.yaml"
   path: ''

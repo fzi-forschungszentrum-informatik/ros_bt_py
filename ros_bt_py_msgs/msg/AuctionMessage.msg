@@ -14,6 +14,7 @@ time deadline
 
 CapabilityInterface interface
 string node_id
+string tags_dict
 float64 bid
 int64 number_of_executors
 string implementation_name

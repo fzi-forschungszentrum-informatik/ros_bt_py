@@ -1,7 +1,8 @@
 CapabilityInterface capability
 string node_id
 bool require_local_execution
-string relevant_parameter_values
+# Dictionary containing all relevant values from the user inputs.
+string implementation_tags_dict
 ---
 bool success
 string error_message
