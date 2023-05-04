@@ -5,7 +5,7 @@ History of changes and bugfixes for ros_bt_py
 ## [Unsynced]
 
 
-## [Dev Sync 04-05-2023]
+## [v1.1.0 - Dev Sync 04-05-2023]
 
 ### Added
 
@@ -13,6 +13,9 @@ History of changes and bugfixes for ros_bt_py
 - General Service and Action Nodes are added. Use them to make Calls more precise and get your
   desired outputs directly from the Caller Node
 - Capabilities are now added! New and Improved way to distribute Tasks
+- Versions! To better keep track on development and in preparation for our ROS 2 release at some
+  point in the future we introduced version tags - starting from v1.0.0, which is before
+  capabilities are introduced with this sync
 
 ### Changed
 
@@ -25,7 +28,7 @@ History of changes and bugfixes for ros_bt_py
 - Some Pre-Commit Style Issues
 
 
-## [Dev Sync 08-02-2023]
+## [v1.0.0 - Dev Sync 08-02-2023]
 
 ### Added
 
@@ -61,8 +64,8 @@ History of changes and bugfixes for ros_bt_py
 
 
 [Unsynced]: https://ids-git.fzi.de/ros/ros_bt_py/compare/master...dev
-[Dev Sync 04-05-2023]: https://ids-git.fzi.de/ros/ros_bt_py/compare/6d3e71ba...40d1da16
-[Dev Sync 08-02-2023]: https://ids-git.fzi.de/ros/ros_bt_py/compare/ba212432...6d3e71ba
+[v1.1.0 - Dev Sync 04-05-2023]: https://ids-git.fzi.de/ros/ros_bt_py/compare/6d3e71ba...40d1da16
+[v1.0.0 - Dev Sync 08-02-2023]: https://ids-git.fzi.de/ros/ros_bt_py/compare/ba212432...6d3e71ba
 [Dev Sync 20-01-2023]: https://ids-git.fzi.de/ros/ros_bt_py/commits/ba212432
 
 <!---
