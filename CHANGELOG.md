@@ -5,7 +5,7 @@ History of changes and bugfixes for ros_bt_py
 ## [Unsynced]
 
 
-## [Dev Sync DD-MM-YYYY]
+## [Dev Sync 04-05-2023]
 
 ### Added
 
@@ -61,7 +61,7 @@ History of changes and bugfixes for ros_bt_py
 
 
 [Unsynced]: https://ids-git.fzi.de/ros/ros_bt_py/compare/master...dev
-[Dev Sync 06-04-2023]: https://ids-git.fzi.de/ros/ros_bt_py/compare/OLDHASH...NEWHASH
+[Dev Sync 04-05-2023]: https://ids-git.fzi.de/ros/ros_bt_py/compare/6d3e71ba...40d1da16
 [Dev Sync 08-02-2023]: https://ids-git.fzi.de/ros/ros_bt_py/compare/ba212432...6d3e71ba
 [Dev Sync 20-01-2023]: https://ids-git.fzi.de/ros/ros_bt_py/commits/ba212432
 
