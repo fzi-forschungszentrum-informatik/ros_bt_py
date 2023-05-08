@@ -1,0 +1,119 @@
+name: "TestCapabilityImplementation1"
+version: "1.0.1"
+preconditions: []
+tags_dict: '{}'
+tree:
+  name: "test.yaml"
+  path: ''
+  root_name: ''
+  nodes:
+    -
+      module: "ros_bt_py.nodes.sequence"
+      node_class: "Sequence"
+      version: "0.9.0"
+      max_children: -1
+      name: "Sequence"
+      child_names:
+        - AddTwoCapability_InputDataBridge
+        - Operation
+        - AddTwoCapability_OutputDataBridge
+      options: []
+      inputs: []
+      outputs: []
+      state: "SHUTDOWN"
+    -
+      module: "ros_bt_py.capability.bridge"
+      node_class: "AddTwoCapability_InputDataBridge"
+      version: ''
+      max_children: 0
+      name: "AddTwoCapability_InputDataBridge"
+      child_names: []
+      options: []
+      inputs: []
+      outputs:
+        -
+          key: "operand1"
+          serialized_value: "null"
+          serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+        -
+          key: "operand2"
+          serialized_value: "null"
+          serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      state: "SHUTDOWN"
+    -
+      module: "ros_bt_py.nodes.maths"
+      node_class: "Operation"
+      version: "0.9.0"
+      max_children: 0
+      name: "Operation"
+      child_names: []
+      options:
+        -
+          key: "operand_type"
+          serialized_value: "{\"operand_type\": \"int\", \"py/object\": \"ros_bt_py.helpers.MathOperandType\"}"
+          serialized_type: "{\"py/type\": \"ros_bt_py.helpers.MathOperandType\"}"
+        -
+          key: "operator"
+          serialized_value: "{\"operator\": \"+\", \"py/object\": \"ros_bt_py.helpers.MathBinaryOperator\"}"
+          serialized_type: "{\"py/type\": \"ros_bt_py.helpers.MathBinaryOperator\"}"
+      inputs:
+        -
+          key: "a"
+          serialized_value: "null"
+          serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+        -
+          key: "b"
+          serialized_value: "null"
+          serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      outputs:
+        -
+          key: "result"
+          serialized_value: "null"
+          serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      state: "SHUTDOWN"
+    -
+      module: "ros_bt_py.capability.bridge"
+      node_class: "AddTwoCapability_OutputDataBridge"
+      version: ''
+      max_children: 0
+      name: "AddTwoCapability_OutputDataBridge"
+      child_names: []
+      options: []
+      inputs:
+        -
+          key: "result"
+          serialized_value: "null"
+          serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      outputs: []
+      state: "SHUTDOWN"
+  data_wirings:
+    -
+      source:
+        node_name: "AddTwoCapability_InputDataBridge"
+        data_kind: "outputs"
+        data_key: "operand1"
+      target:
+        node_name: "Operation"
+        data_kind: "inputs"
+        data_key: "a"
+    -
+      source:
+        node_name: "AddTwoCapability_InputDataBridge"
+        data_kind: "outputs"
+        data_key: "operand2"
+      target:
+        node_name: "Operation"
+        data_kind: "inputs"
+        data_key: "b"
+    -
+      source:
+        node_name: "Operation"
+        data_kind: "outputs"
+        data_key: "result"
+      target:
+        node_name: "AddTwoCapability_OutputDataBridge"
+        data_kind: "inputs"
+        data_key: "result"
+  tick_frequency_hz: 10.0
+  state: "EDITABLE"
+  public_node_data: []

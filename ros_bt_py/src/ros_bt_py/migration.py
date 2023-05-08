@@ -1,5 +1,4 @@
-#  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2018-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -11,7 +10,7 @@
 #      notice, this list of conditions and the following disclaimer in the
 #      documentation and/or other materials provided with the distribution.
 #
-#    * Neither the name of the {copyright_holder} nor the names of its
+#    * Neither the name of the FZI Forschungszentrum Informatik nor the names of its
 #      contributors may be used to endorse or promote products derived from
 #      this software without specific prior written permission.
 #
@@ -26,10 +25,16 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#  -------- END LICENSE BLOCK --------
-from copy import deepcopy
+
+
+"""Module providing the migration system, allowing nodes to be updated before runtime.
+
+This includes a versioning system and automated patches.
+"""
 import importlib
 import inspect
+from copy import deepcopy
+from typing import Any
 
 try:  # pragma: no cover
     from itertools import izip
@@ -42,21 +47,19 @@ import traceback
 import rospkg
 import rospy
 
-from ros_bt_py_msgs.msg import NodeData as NodeDataMsg, Tree
-from ros_bt_py_msgs.srv import (
-    GetAvailableNodesRequest,
-    MigrateTreeRequest,
-    MigrateTreeResponse,
-)
-
+from ros_bt_py.tree_manager import get_available_nodes, TreeManager, load_tree_from_file
+from ros_bt_py.exceptions import MigrationException
+from ros_bt_py.helpers import get_default_value, json_decode
 from ros_bt_py.node import increment_name, load_node_module
 from ros_bt_py.node_config import OptionRef
 from ros_bt_py.node_data import NodeData
 
-from ros_bt_py.exceptions import MigrationException
-
-from ros_bt_py.ros_helpers import LoggerLevel
-from ros_bt_py.helpers import get_default_value, json_encode, json_decode
+from ros_bt_py_msgs.msg import NodeData as NodeDataMsg, Tree, Node
+from ros_bt_py_msgs.srv import (
+    GetAvailableNodesRequest,
+    MigrateTreeResponse,
+    MigrateTreeRequest,
+)
 
 
 def load_migration_module(package_name):
@@ -67,17 +70,56 @@ def load_migration_module(package_name):
         return None
 
 
+def check_node_versions(request: MigrateTreeRequest) -> MigrateTreeResponse:
+    """Check the provided tree against the current version loaded from disk.
+
+    The function loads the tree from disk and compares all nodes against the nodes
+    loaded with the BT library.
+
+    :param request: Request to load a tree from the disk.
+    :type request: LoadTreeRequest
+    :return: Response if the nodes in the tree were migrated.
+    :rtype: MigrateTreeResponse
+    """
+    load_response = load_tree_from_file(request)
+
+    if not load_response.success:
+        return load_response
+
+    tree = load_response.tree
+
+    perform_migration = False
+
+    for msg in tree.nodes:
+        m = load_node_module(msg.module)
+        c = getattr(m, msg.node_class, None)
+
+        if c is None:
+            perform_migration = True
+        else:
+            rospy.loginfo(
+                'version in tree: "%s", loaded: "%s"',
+                msg.version,
+                c._node_config.version,
+                logger_name="migration",
+            )
+
+            if msg.version != c._node_config.version:
+                perform_migration = True
+
+    return MigrateTreeResponse(migrated=perform_migration, success=True)
+
+
 class MigrationManager(object):
     """Checks the loaded node modules for missing version tags, incorrect migrations, etc."""
 
-    def __init__(self, tree_manager):
-        rospy.loginfo("initializing MigrationManager")
+    def __init__(self, tree_manager: TreeManager):
+        """Create a new MigrationManager for a specific TreeManager and its tree."""
+        rospy.loginfo("initializing MigrationManager", logger_name="migration")
         self.rospack = rospkg.RosPack()
         self.migrations_classes = {}
         self.tree_manager = tree_manager
-        response = self.tree_manager.get_available_nodes(
-            request=GetAvailableNodesRequest()
-        )
+        response = get_available_nodes(request=GetAvailableNodesRequest())
         available_nodes = response.available_nodes
         # sort the list by module then name:
         available_nodes.sort(key=lambda node: (node.module, node.node_class))
@@ -85,27 +127,45 @@ class MigrationManager(object):
             self.check_for_available_migration(node)
 
     def check_for_available_migration(self, node, old_node=False):
+        """Check if any migration for the provided node is available.
+
+        This node will check for availbale migrations and return an error if none or incomplete
+        ones are found.
+
+        :param node: Behavior tree node to check for migrations.
+        :type node: Node
+        :param old_node: If the node is a old node no version info is expected, defaults to False.
+        :type old_node: bool, optional
+        """
         # check if a migration for this node exists
         index = node.module.rindex(".")
-        migrations_module = node.module[:index] + ".migrations" + node.module[index:]
-        migrations_module_name = migrations_module + "." + node.node_class
+        migrations_module = f"{node.module[:index]}.migrations{node.module[index:]}"
+        migrations_module_name = f"{migrations_module}.{node.node_class}"
         node_module_migrations = load_migration_module(migrations_module)
-        module_name = node.module + "." + node.node_class
+        module_name = f"{node.module}.{node.node_class}"
+
+        if node.module.find("capability") != -1:
+            rospy.loginfo_throttle(10, "Migrations for capabilities are disabled!")
+            return
 
         if node_module_migrations is None:
             if node.version == "":
-                rospy.logwarn(
-                    "%s has no version information, please add a version "
-                    "and a migration to that version!" % (module_name)
+                rospy.logwarn_throttle(
+                    30,
+                    f"{module_name} has no version information, please add a version and"
+                    " a migration to that version!",
+                    logger_name="migration",
                 )
                 Migration.migration_info.setdefault(
                     migrations_module_name, MigrationInfoCollection(valid=True)
                 )
             else:
-                rospy.logerr(
+                rospy.logwarn_throttle(
+                    30,
                     "%s has a version (%s) but no migration, "
                     'please add the missing migration "%s"!'
-                    % (module_name, node.version, migrations_module)
+                    % (module_name, node.version, migrations_module),
+                    logger_name="migration",
                 )
         else:
             # check if a migrations class is available
@@ -114,13 +174,15 @@ class MigrationManager(object):
                 if node.version == "":
                     rospy.logwarn(
                         "%s has no version information, please add a version "
-                        "and a migration to that version!" % (module_name)
+                        "and a migration to that version!" % (module_name),
+                        logger_name="migration",
                     )
                 else:
                     rospy.logwarn(
                         "%s has a version (%s) but no migration, "
                         'please add the missing migration "%s"!'
-                        % (module_name, node.version, migrations_module)
+                        % (module_name, node.version, migrations_module),
+                        logger_name="migration",
                     )
             else:
                 try:
@@ -132,7 +194,8 @@ class MigrationManager(object):
                     ):
                         rospy.logwarn(
                             "%s has a migration class (%s) but no migration functions, "
-                            "please fix this!" % (module_name, migrations_module_name)
+                            "please fix this!" % (module_name, migrations_module_name),
+                            logger_name="migration",
                         )
                     else:
                         module_migration_info = m.migration_info[
@@ -148,7 +211,8 @@ class MigrationManager(object):
                                     module_name,
                                     module_migration_info[0].from_version,
                                     module_migration_info[0].to_version,
-                                )
+                                ),
+                                logger_name="migration",
                             )
                             valid = False
                         else:
@@ -162,7 +226,8 @@ class MigrationManager(object):
                                         module_migration_info[0].function,
                                         module_migration_info[0].from_version,
                                         module_migration_info[0].to_version,
-                                    )
+                                    ),
+                                    logger_name="migration",
                                 )
                                 valid = False
                         migration_path = []
@@ -179,7 +244,8 @@ class MigrationManager(object):
                                         migration_info.function,
                                         migration_info.from_version,
                                         migration_info.to_version,
-                                    )
+                                    ),
+                                    logger_name="migration",
                                 )
                                 valid = False
                             migration_path.append(migration_info.from_version)
@@ -196,7 +262,8 @@ class MigrationManager(object):
                                     "%s has a broken migration! "
                                     '"%s" => "%s" is NOT AVAILABLE! '
                                     "This is a bug, please fix it!"
-                                    % (module_name, current_version, first)
+                                    % (module_name, current_version, first),
+                                    logger_name="migration",
                                 )
                                 valid = False
                                 break
@@ -215,46 +282,27 @@ class MigrationManager(object):
                                         module_migration_info[-1].from_version,
                                         module_migration_info[-1].to_version,
                                         node.version,
-                                    )
+                                    ),
+                                    logger_name="migration",
                                 )
                                 valid = False
                         m.migration_info[migrations_module_name].valid = valid
-                except TypeError:
+                except TypeError as e:
                     rospy.logwarn(
-                        "%s: no migration available, the exception was: %s"
-                        % (module_name, traceback.format_exc())
+                        f"{module_name}: no migration available, the exception was: "
+                        f"{e}",
+                        logger_name="migration",
                     )
 
-    def check_node_versions(self, request):
-        load_response = self.tree_manager.load_tree_from_file(request)
+    def migrate_tree(self, request: MigrateTreeRequest) -> MigrateTreeResponse:
+        """Migrate a tree by applying all available migrations to nodes.
 
-        if not load_response.success:
-            return load_response
-
-        tree = load_response.tree
-
-        perform_migration = False
-
-        for msg in tree.nodes:
-            m = load_node_module(msg.module)
-            c = getattr(m, msg.node_class, None)
-
-            if c is None:
-                perform_migration = True
-            else:
-                rospy.loginfo(
-                    'version in tree: "%s", loaded: "%s"',
-                    msg.version,
-                    c._node_config.version,
-                )
-
-                if msg.version != c._node_config.version:
-                    perform_migration = True
-
-        return MigrateTreeResponse(migrated=perform_migration, success=True)
-
-    def migrate_tree(self, request):
-        load_response = self.tree_manager.load_tree_from_file(request)
+        :param request: The request containg the tree to be migrated.
+        :type request: MigrateTreeRequest
+        :return: Response if the migration was successfull.
+        :rtype: MigrateTreeResponse
+        """
+        load_response = load_tree_from_file(request)
 
         if not load_response.success:
             return load_response
@@ -266,8 +314,8 @@ class MigrationManager(object):
 
         for msg in tree.nodes:
             index = msg.module.rindex(".")
-            migrations_module = msg.module[:index] + ".migrations" + msg.module[index:]
-            migrations_module_name = migrations_module + "." + msg.node_class
+            migrations_module = f"{msg.module[:index]}.migrations{msg.module[index:]}"
+            migrations_module_name = f"{migrations_module}.{msg.node_class}"
 
             node_module_migrations = load_node_module(migrations_module)
 
@@ -292,16 +340,12 @@ class MigrationManager(object):
                                 modified_tree.nodes.append(new_msg)
                             migration_performed = True
                     except MigrationException as e:
-                        msg = "Migration failed: %s" % e
+                        msg = f"Migration failed: {e}"
                         m.logwarn(msg)
                         return MigrateTreeResponse(error_message=msg)
                 except TypeError as e:
-                    msg = "%s.%s: no migration available: %s" % (
-                        msg.module,
-                        msg.node_class,
-                        e,
-                    )
-                    rospy.logerr(msg)
+                    msg = f"{msg.module}.{msg.node_class}: no migration available: {e}"
+                    rospy.logerr(msg, logger_name="migration")
                     return MigrateTreeResponse(error_message=msg)
 
         return MigrateTreeResponse(
@@ -309,39 +353,68 @@ class MigrationManager(object):
         )
 
 
-class FakeNode(object):
-    def __init__(self, name):
+class FakeNode:
+    """Fake node for testing purposes."""
+
+    def __init__(self, name: str):
+        """Create a new fake node with a name.
+
+        :param name: name of the fake node.
+        :type name: str
+        """
         self.name = name
         self.parent = None
 
 
-class MigrationInfoCollection(object):
+class MigrationInfoCollection:
+    """Collection of migration infos created on migration."""
+
     def __init__(self, valid=False):
+        """Create a new collection of migration infos.
+
+        :param valid: If all of the migrations were valid, defaults to False
+        :type valid: bool, optional
+        """
         self.info = []
         self.valid = valid
 
 
 class MigrationInfo(object):
-    def __init__(self, from_version, to_version, changelog):
+    """Information about a single migration with version info an a changelog."""
+
+    def __init__(self, from_version: str, to_version: str, changelog: str):
+        """Create a new migration information object describing one migration.
+
+        :param from_version: Node version before the migration.
+        :type from_version: str
+        :param to_version: Node version after the migration.
+        :type to_version: str
+        :param changelog: _description_
+        :type changelog: The changelog for the migration.
+        """
         self.from_version = from_version
         self.to_version = to_version
         self.changelog = changelog
         self.function = None
 
 
-class Migration(object):
-    """Helpers for node migrations"""
+class Migration:
+    """Helpers for node migrations."""
 
     migration_info = {}
 
-    class MigrationDecorator(object):
+    class MigrationDecorator:
+        """Decorator used to annotate migrations."""
+
         def __init__(self, from_version, to_version, changelog="no changelog provided"):
+            """Create a new MigrationInformation from the Decorator."""
             self.module_name = None
             self.migration_info = MigrationInfo(
                 from_version=from_version, to_version=to_version, changelog=changelog
             )
 
         def __call__(self, func, *args, **kwargs):
+            """Register the migration with the collection of available migrations."""
             current_frame = inspect.currentframe()
             outer_frame = inspect.getouterframes(current_frame, context=0)[1]
             try:
@@ -380,18 +453,26 @@ class Migration(object):
             )
             return inner_func
 
-    def __init__(self, msg, tree):
+    def __init__(self, msg: Node, tree: Tree):
+        """Create a new migration from a Node and a Tree.
+
+        :param msg: Node instance to be migrated.
+        :type msg: Node
+        :param tree: Tree to migrate the node in.
+        :type tree: Tree
+        """
         self.msg = deepcopy(msg)
         self.tree = deepcopy(tree)
 
     def migrate(self):
+        """Migrate the node within the tree."""
         self.loginfo("starting migration")
         self._do_migrate()
         self.loginfo("finished migration")
         return (self.msg, self.tree)
 
     def _do_migrate(self):
-        module_name = self.__module__ + "." + self.__class__.__name__
+        module_name = f"{self.__module__}.{self.__class__.__name__}"
         if module_name not in Migration.migration_info:
             self.logwarn("please add a migration")
         elif not Migration.migration_info[module_name].valid:
@@ -400,11 +481,12 @@ class Migration(object):
             # migrate away:
             for migration_info in Migration.migration_info[module_name].info:
                 if self.msg.version != migration_info.from_version:
-                    rospy.logwarn(
+                    rospy.loginfo(
                         'currently at version "%s", skipping migration from "%s" to "%s"',
                         self.msg.version,
                         migration_info.from_version,
                         migration_info.to_version,
+                        logger_name="migration",
                     )
                 else:
                     rospy.loginfo(
@@ -412,67 +494,138 @@ class Migration(object):
                         self.msg.version,
                         migration_info.from_version,
                         migration_info.to_version,
+                        logger_name="migration",
                     )
                     # calling migration function
                     getattr(self, migration_info.function)()
 
-    def change_node_class(self, new_node_class):
+    def change_node_class(self, new_node_class: str):
+        """Change the class of the node in serialized format.
+
+        :param new_node_class: The new class name for the node.
+        :type new_node_class: str
+        """
         self.msg.node_class = new_node_class
 
-    def change_module(self, new_module):
+    def change_module(self, new_module: str):
+        """Change the moule for the node class in serialized format.
+
+        :param new_module: The new cpython module for the node.
+        :type new_module: str
+        """
         self.msg.module = new_module
 
-    def _change_version(self, version, changelog="no changelog provided"):
-        """Changes the version field and logs the changes (if provided)"""
+    def _change_version(self, version: str, changelog="no changelog provided"):
+        """Change the version field and logs the changes (if provided)."""
         self.msg.version = version
 
-    def get_name(self):
+    def get_name(self) -> str:
+        """Get the name of the node.
+
+        :return: Name of the node.
+        :rtype: str
+        """
         return self.msg.name
 
-    def get_option(self, key):
+    def get_option(self, key: str) -> Any:
+        """Return an option form the node that is being migrated.
+
+        :param key: The option key.
+        :type key: str
+        :raises MigrationException: If no option with this key exists.
+        :return: The value of the option specified by the key.
+        :rtype: Any
+        """
         for option in self.msg.options:
             if option.key == key:
                 return json_decode(option.serialized_value)
-        raise MigrationException('option key "%s" does not exists!' % key)
+        raise MigrationException(f'option key "{key}" does not exists!')
 
-    def add_option(self, key, data_type, initial_value=None, static=False):
+    def add_option(self, key: str, data_type: Any, initial_value=None, static=False):
+        """Add a new option to the node.
+
+        :param key: The option key for the new option.
+        :type key: str
+        :param data_type: The data type for the new option.
+        :type data_type: Any
+        :param initial_value: The initial value of the type data_type, defaults to None
+        :type initial_value: data_type, optional
+        :param static: If the value can be changed or is static, defaults to False
+        :type static: bool, optional
+        :raises MigrationException: Raised if a option with the same key already exists.
+        """
         for option in self.msg.options:
             if option.key == key:
-                raise MigrationException('option key "%s" already exists!' % option.key)
+                raise MigrationException(f'option key "{option.key}" already exists!')
         self.msg.options.append(
             self._create_node_data(
                 key=key, data_type=data_type, initial_value=initial_value, static=static
             )
         )
 
-    def add_input(self, key, data_type):
+    def add_input(self, key: str, data_type: Any):
+        """Add a new input to the node.
+
+        :param key: The key for the new input parameter.
+        :type key: str
+        :param data_type: The data type of the new input.
+        :type data_type: Any
+        :raises MigrationException: If a parameter with the same key already exists.
+        """
         for node_input in self.msg.inputs:
             if node_input.key == key:
                 raise MigrationException(
-                    'input key "%s" already exists!' % node_input.key
+                    f'input key "{node_input.key}" already exists!'
                 )
         self.msg.inputs.append(self._create_node_data(key=key, data_type=data_type))
 
     def add_output(self, key, data_type):
+        """Add a new output to the node.
+
+        :param key: The key for the new input parameter.
+        :type key: str
+        :param data_type: The data type of the new output.
+        :type data_type: Any
+        :raises MigrationException: If a parameter with the same key already exists.
+        """
         for node_output in self.msg.outputs:
             if node_output.key == key:
                 raise MigrationException(
-                    'output key "%s" already exists!' % node_output.key
+                    f'output key "{node_output.key}" already exists!'
                 )
         self.msg.outputs.append(self._create_node_data(key=key, data_type=data_type))
 
-    def remove_option(self, key):
+    def remove_option(self, key: str):
+        """Remove a present option.
+
+        :param key: Option to remove.
+        :type key: str
+        """
         # TODO: exception on removal error?
         self.msg.options = [option for option in self.msg.options if option.key != key]
 
-    def rename_option(self, old_key, new_key):
+    def rename_option(self, old_key: str, new_key: str):
+        """Rename option to a new name.
+
+        :param old_key: The old key for the option.
+        :type old_key: str
+        :param new_key: The new key for the option.
+        :type new_key: str
+        """
         # TODO: exception on rename error?
         for option in self.msg.options:
             if option.key == old_key:
                 option.key = new_key
                 break
 
-    def change_input_type(self, key, data_type):
+    def change_input_type(self, key: str, data_type: Any):
+        """Change input type for a existing inputs.
+
+        :param key: Key for the input to use.
+        :type key: str
+        :param data_type: The new data type for the input.
+        :type data_type: str
+        """
         # TODO: exception on something really wrong
         for index, node_input in enumerate(self.msg.inputs):
             if node_input.key == key:
@@ -481,6 +634,13 @@ class Migration(object):
                 self.msg.inputs[index] = node_data
 
     def change_output_type(self, key, data_type):
+        """Change output type for a existing outputs.
+
+        :param key: Key for the input to use.
+        :type key: str
+        :param data_type: The new data type for the output.
+        :type data_type: str
+        """
         # TODO: exception on something really wrong
         for index, node_output in enumerate(self.msg.outputs):
             if node_output.key == key:
@@ -494,6 +654,15 @@ class Migration(object):
         data_type,
         initial_value=None,
     ):
+        """Change option type for a existing options.
+
+        :param key: Key for the input to use.
+        :type key: str
+        :param data_type: The new data type for the output.
+        :type data_type: str
+        :param initial_value: The initial value of the type data_type, defaults to None
+        :type initial_value: data_type, optional
+        """
         # TODO: exception on something really wrong
         for index, node_option in enumerate(self.msg.options):
             if node_option.key == key:
@@ -502,6 +671,7 @@ class Migration(object):
                 )
 
     def make_name_unique(self, name):
+        """Make a unique node name."""
         node_names = []
         for node in self.tree.nodes:
             node_names.append(node.name)
@@ -510,12 +680,14 @@ class Migration(object):
         return name
 
     def get_parent_node(self):
+        """Return the parent node of the node."""
         for node in self.tree.nodes:
             if self.msg.name in node.child_names:
                 return node
         return None
 
     def replace_at_parent(self, new_node_name):
+        """Move the node to a new parent."""
         parent = self.get_parent_node()
         child_index = -1
         for index, child in enumerate(parent.child_names):
@@ -526,17 +698,19 @@ class Migration(object):
         parent.child_names[child_index] = new_node_name
 
     def add_node(self, node):
+        """Add a node to the tree that is managed by the migration."""
         node.name = self.make_name_unique(node.name)
         self.tree.nodes.append(node.to_msg())
         return node.name
 
     def add_node_msg(self, node_msg):
+        """Add a node from a msg that is managed by the migration."""
         node_msg.name = self.make_name_unique(node_msg.name)
         self.tree.nodes.append(node_msg)
         return node_msg.name
 
     def make_node(self, name):
-        """Makes a node with the given name"""
+        """Make a node with the given name."""
         return FakeNode(name=name)
 
     def _create_node_data(self, key, data_type, initial_value=None, static=False):
@@ -550,8 +724,7 @@ class Migration(object):
                         break
                 if not available:
                     raise MigrationException(
-                        'Option key "%s" referenced by OptionRef does not exist!'
-                        % (data_type)
+                        f'Option key "{data_type}" referenced by OptionRef does not exist!'
                     )
             initial_value = get_default_value(data_type)
         data = NodeData(data_type=data_type, initial_value=initial_value, static=static)
@@ -565,21 +738,24 @@ class Migration(object):
     # name and type of the node so it's easier to trace errors.
 
     def logdebug(self, message):
-        """Wrapper for :func:rospy.logdebug
+        """Wrap :func:rospy.logdebug.
 
-        Adds this node's name, module and class to the given message"""
+        Adds this node's name, module and class to the given message
+        """
         rospy.logdebug(
             "%s (%s.%s): %s",
             self.msg.name,
             self.msg.module,
             self.msg.node_class,
             message,
+            logger_name="migration",
         )
 
     def loginfo(self, message):
-        """Wrapper for :func:rospy.loginfo
+        """Wrap :func:rospy.loginfo.
 
-        Adds this node's name, module and class to the given message"""
+        Adds this node's name, module and class to the given message
+        """
         rospy.loginfo(
             "%s (%s.%s): %s",
             self.msg.name,
@@ -589,9 +765,10 @@ class Migration(object):
         )
 
     def logwarn(self, message):
-        """Wrapper for :func:rospy.logwarn
+        """Wrap :func:rospy.logwarn.
 
-        Adds this node's name, module and class to the given message"""
+        Adds this node's name, module and class to the given message
+        """
         rospy.logwarn(
             "%s (%s.%s): %s",
             self.msg.name,
@@ -601,9 +778,10 @@ class Migration(object):
         )
 
     def logerr(self, message):
-        """Wrapper for :func:rospy.logerr
+        """Wrap :func:rospy.logerr.
 
-        Adds this node's name, module and class to the given message"""
+        Adds this node's name, module and class to the given message
+        """
         rospy.logerr(
             "%s (%s.%s): %s",
             self.msg.name,
@@ -613,9 +791,10 @@ class Migration(object):
         )
 
     def logfatal(self, message):
-        """Wrapper for :func:rospy.logfatal
+        """Wrap for :func:rospy.logfatal.
 
-        Adds this node's name, module and class to the given message"""
+        Adds this node's name, module and class to the given message
+        """
         rospy.logfatal(
             "%s (%s.%s): %s",
             self.msg.name,

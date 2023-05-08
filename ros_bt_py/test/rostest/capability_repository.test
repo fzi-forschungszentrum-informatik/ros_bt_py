@@ -1,0 +1,22 @@
+<launch>
+
+<!-- Add an argument to the launch file to turn on coverage -->
+  <arg name="coverage" default="false"/>
+
+  <!-- This fancy line forces nodes to generate coverage -->
+  <arg name="pythontest_launch_prefix" value="$(eval 'python3-coverage run -p' if arg('coverage') else '')"/>
+
+    <node
+      name="capability_repository"
+      pkg="ros_bt_py"
+      type="capability_repository_node.py"
+      output="log"
+      respawn="true"
+      launch-prefix="$(arg pythontest_launch_prefix)" />
+
+  <test test-name="test_capability_repository"
+        pkg="ros_bt_py"
+        type="test_capability_repository.py"
+        launch-prefix="$(arg pythontest_launch_prefix)" />
+
+</launch>

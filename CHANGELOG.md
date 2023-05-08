@@ -4,7 +4,31 @@ History of changes and bugfixes for ros_bt_py
 
 ## [Unsynced]
 
-## [Dev Sync 08-02-2023]
+
+## [v1.1.0 - Dev Sync 08-05-2023]
+
+### Added
+
+- Tick Frequency Topic can now be used to monitor BT Performance
+- General Service and Action Nodes are added. Use them to make Calls more precise and get your
+  desired outputs directly from the Caller Node
+- Capabilities are now added! New and Improved way to distribute Tasks
+- Versions! To better keep track on development and in preparation for our ROS 2 release at some
+  point in the future we introduced version tags - starting from v1.0.0, which is before
+  capabilities are introduced with this sync
+
+### Changed
+
+- Dev Sync Merge Template was improved
+- Wait Node time to wait is now float instead of int
+
+### Fixed
+
+- Debug Output for Action Server Success was removed
+- Some Pre-Commit Style Issues
+
+
+## [v1.0.0 - Dev Sync 08-02-2023]
 
 ### Added
 
@@ -40,7 +64,8 @@ History of changes and bugfixes for ros_bt_py
 
 
 [Unsynced]: https://ids-git.fzi.de/ros/ros_bt_py/compare/master...dev
-[Dev Sync 08-02-2023]: https://ids-git.fzi.de/ros/ros_bt_py/compare/ba212432...6d3e71ba
+[v1.1.0 - Dev Sync 08-05-2023]: https://ids-git.fzi.de/ros/ros_bt_py/compare/6d3e71ba...5ff6975a
+[v1.0.0 - Dev Sync 08-02-2023]: https://ids-git.fzi.de/ros/ros_bt_py/compare/ba212432...6d3e71ba
 [Dev Sync 20-01-2023]: https://ids-git.fzi.de/ros/ros_bt_py/commits/ba212432
 
 <!---

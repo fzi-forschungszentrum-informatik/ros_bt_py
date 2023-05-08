@@ -1,5 +1,4 @@
-#  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2018-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -11,7 +10,7 @@
 #      notice, this list of conditions and the following disclaimer in the
 #      documentation and/or other materials provided with the distribution.
 #
-#    * Neither the name of the {copyright_holder} nor the names of its
+#    * Neither the name of the FZI Forschungszentrum Informatik nor the names of its
 #      contributors may be used to endorse or promote products derived from
 #      this software without specific prior written permission.
 #
@@ -26,7 +25,8 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#  -------- END LICENSE BLOCK --------
+
+
 import rospy
 
 from ros_bt_py.helpers import loglevel_is, json_encode, json_decode
@@ -78,11 +78,7 @@ class NodeData(object):
             self.set(initial_value)
 
     def __repr__(self):
-        return "%s (%s) [%s]" % (
-            self._value,
-            self.data_type.__name__,
-            ("#" if self.updated else " "),
-        )
+        return f"{self._value} ({self.data_type.__name__}) [{'#' if self.updated else ' '}]"
 
     def __eq__(self, other):
         return (
@@ -207,7 +203,7 @@ class NodeDataMap(object):
         :raises KeyError: if `key` is not a valid key
         """
         if key not in self._map:
-            raise KeyError("%s is not a key of %s" % (key, self.name))
+            raise KeyError(f"{key} is not a key of {self.name}")
         if key not in self.callbacks:
             self.callbacks[key] = []
         if any([subscriber_name == name for _, name in self.callbacks[key]]):
@@ -225,7 +221,7 @@ class NodeDataMap(object):
         :raises KeyError: if `key` is not a valid key
         """
         if key not in self._map:
-            raise KeyError("%s is not a key of %s" % (key, self.name))
+            raise KeyError(f"{key} is not a key of {self.name}")
         if key not in self.callbacks:
             self.callbacks[key] = []
             rospy.loginfo(
@@ -287,7 +283,7 @@ class NodeDataMap(object):
         if not isinstance(value, NodeData):
             raise TypeError("Value must be a NodeData object!")
         if key in self._map:
-            raise KeyError("Key %s is already taken!" % key)
+            raise KeyError(f"Key {key} is already taken!")
         self._map[key] = value
 
     def is_updated(self, key):
@@ -305,7 +301,7 @@ class NodeDataMap(object):
         if key in self._map:
             self._map[key].set_updated()
         else:
-            raise KeyError("No member named %s" % key)
+            raise KeyError(f"No member named {key}")
 
     def reset_updated(self):
         """Reset the `updated` property of all data in this map."""
@@ -321,7 +317,7 @@ class NodeDataMap(object):
         :raises: KeyError
         """
         if key not in self._map:
-            raise KeyError("No member named %s" % key)
+            raise KeyError(f"No member named {key}")
         return self._map[key].set
 
     def get_serialized(self, key):
@@ -329,7 +325,7 @@ class NodeDataMap(object):
         Return the jsonpickle'd value of the NodeData object at `key`
         """
         if key not in self._map:
-            raise KeyError("No member named %s" % key)
+            raise KeyError(f"No member named {key}")
         return self._map[key].get_serialized()
 
     def get_serialized_type(self, key):
@@ -337,7 +333,7 @@ class NodeDataMap(object):
         Return the jsonpickle'd type of the NodeData object at `key`
         """
         if key not in self._map:
-            raise KeyError("No member named %s" % key)
+            raise KeyError(f"No member named {key}")
         return self._map[key].get_serialized_type()
 
     def get_type(self, key):
@@ -345,7 +341,7 @@ class NodeDataMap(object):
         Return the type of the NodeData object at `key`
         """
         if key not in self._map:
-            raise KeyError("No member named %s" % key)
+            raise KeyError(f"No member named {key}")
         return self._map[key].data_type
 
     def compatible(self, key, new_val):
@@ -357,12 +353,12 @@ class NodeDataMap(object):
 
     def __getitem__(self, key):
         if key not in self._map:
-            raise KeyError("No member named %s" % key)
+            raise KeyError(f"No member named {key}")
         return self._map[key].get()
 
     def __setitem__(self, key, value):
         if key not in self._map:
-            raise KeyError("No member named %s" % key)
+            raise KeyError(f"No member named {key}")
         self._map[key].set(value)
 
     def __iter__(self):
@@ -388,8 +384,4 @@ class NodeDataMap(object):
         return not self == other
 
     def __repr__(self):
-        return "NodeDataMap(name=%r), data:%r, callbacks:%r" % (
-            self.name,
-            self._map,
-            self.callbacks,
-        )
+        return f"NodeDataMap(name={self.name!r}), data:{self._map!r}, callbacks:{self.callbacks!r}"

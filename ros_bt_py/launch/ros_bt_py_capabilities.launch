@@ -1,0 +1,80 @@
+<launch>
+  <arg name="robot_namespace" default="/" />
+  <!-- start rqt_console by default -->
+  <arg name="rqt_console" default="false" />
+  <arg name="dual" default="false" />
+  <arg name="default_node_modules" default="
+      ros_bt_py.nodes.sequence,
+      ros_bt_py.nodes.fallback,
+      ros_bt_py.nodes.decorators,
+      ros_bt_py.nodes.mock_nodes,
+      ros_bt_py.nodes.action,
+      ros_bt_py.nodes.service,
+      ros_bt_py.nodes.topic,
+      ros_bt_py.nodes.compare,
+      ros_bt_py.nodes.getters,
+      ros_bt_py.nodes.setters,
+      ros_bt_py.nodes.passthrough_node,
+      ros_bt_py.nodes.shovable,
+      ros_bt_py.nodes.subtree,
+      ros_bt_py.nodes.io,
+      ros_bt_py.nodes.wait,
+      ros_bt_py.nodes.format,
+      ros_bt_py.nodes.list,
+      ros_bt_py.nodes.log,
+      ros_bt_py.nodes.constant,
+      ros_bt_py.nodes.file,
+      ros_bt_py.nodes.random_number,
+      ros_bt_py.nodes.parallel,
+      ros_bt_py.nodes.ros_param,
+      ros_bt_py.nodes.maths,
+      ros_bt_py.nodes.remote_capability_slot,
+      ros_bt_py.ros_nodes.message_converters,
+      ros_bt_py.ros_nodes.message_from_dict,
+      ros_bt_py.ros_nodes.ros_header,
+      ros_bt_py.ros_nodes.pose_distance,
+      ros_bt_py.ros_nodes.lookup_tf,
+      ros_bt_py.ros_nodes.enum,
+      ros_bt_py.capability,
+  " />
+
+  <group if="$(arg rqt_console)">
+    <node name="rqt_console" pkg="rqt_console" type="rqt_console" />
+  </group>
+
+  <!-- start web interface by default -->
+  <arg name="web_interface" default="true" />
+
+  <!-- port of the editor web interface -->
+  <arg name="port" value="8085" />
+
+  <!-- additional node_modules from other packages that are loaded into the editor
+       this must be a list of modules, for example:
+
+       <arg name="additional_node_modules" default="future_advanced_nodes.learning, future_advanced_nodes.doing," />
+  -->
+  <arg name="additional_node_modules" default="" />
+
+  <arg name="load_default_tree" default="false" />
+  <!-- loads the default tree in permissive mode which can mitigate some errors in the saved tree -->
+  <arg name="load_default_tree_permissive" default="false" />
+  <arg name="default_tree_path" default="package://ros_bt_py/etc/trees/examples/file_example.yaml" />
+  <arg name="default_tree_tick_frequency_hz" default="1" />
+  <!-- available commands are:
+    DO_NOTHING = 0
+    TICK_ONCE = 1
+    TICK_PERIODICALLY = 2
+    TICK_UNTIL_RESULT = 3
+  -->
+  <arg name="default_tree_control_command" default="0" />
+
+  <arg name="show_traceback_on_exception" default="false" />
+
+  <include file="$(find ros_bt_py)/launch/ros_bt_py.launch" pass_all_args="true"/>
+
+  <group ns="$(arg robot_namespace)">
+      <node name="capability_repository" pkg="ros_bt_py" type="capability_repository_node.py" output="log" respawn="true" />
+      <node name="assignment_manager" pkg="ros_bt_py" type="assignment_manager_node.py" output="log" respawn="true" />
+      <node name="mission_control" pkg="ros_bt_py" type="mission_control_node.py" output="log" respawn="true" />
+  </group>
+</launch>

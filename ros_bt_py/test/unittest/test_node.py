@@ -1,5 +1,4 @@
-#  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2018-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -11,7 +10,7 @@
 #      notice, this list of conditions and the following disclaimer in the
 #      documentation and/or other materials provided with the distribution.
 #
-#    * Neither the name of the {copyright_holder} nor the names of its
+#    * Neither the name of the FZI Forschungszentrum Informatik nor the names of its
 #      contributors may be used to endorse or promote products derived from
 #      this software without specific prior written permission.
 #
@@ -26,7 +25,8 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#  -------- END LICENSE BLOCK --------
+
+
 from copy import deepcopy
 import random
 import unittest
@@ -427,8 +427,8 @@ class TestPassthroughNode(unittest.TestCase):
         self.assertTrue(
             PassthroughNode.__name__ in Node.node_classes[PassthroughNode.__module__]
         )
-        self.assertEqual(
-            PassthroughNode,
+        self.assertListEqual(
+            [PassthroughNode],
             Node.node_classes[PassthroughNode.__module__][PassthroughNode.__name__],
         )
 
@@ -583,8 +583,8 @@ class TestPassthroughNode(unittest.TestCase):
         node_class = type(instance)
         self.assertTrue(node_class.__module__ in Node.node_classes)
         self.assertTrue(node_class.__name__ in Node.node_classes[node_class.__module__])
-        self.assertEqual(
-            node_class, Node.node_classes[node_class.__module__][node_class.__name__]
+        self.assertListEqual(
+            [node_class], Node.node_classes[node_class.__module__][node_class.__name__]
         )
 
         self.assertEqual(instance.options["passthrough_type"], int)

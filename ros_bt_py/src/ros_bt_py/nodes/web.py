@@ -1,5 +1,4 @@
-#  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2018-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -11,7 +10,7 @@
 #      notice, this list of conditions and the following disclaimer in the
 #      documentation and/or other materials provided with the distribution.
 #
-#    * Neither the name of the {copyright_holder} nor the names of its
+#    * Neither the name of the FZI Forschungszentrum Informatik nor the names of its
 #      contributors may be used to endorse or promote products derived from
 #      this software without specific prior written permission.
 #
@@ -26,7 +25,9 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#  -------- END LICENSE BLOCK --------
+
+
+"""BT node to retrieve information from the web."""
 import rospkg
 from ros_bt_py_msgs.msg import Node as NodeMsg
 
@@ -58,9 +59,9 @@ class DownloadImage(Leaf):
             self.output_path = None
             self.outputs["download_success"] = False
             self.outputs["download_error_msg"] = (
-                'File path "%s" is malformed. It needs to start with '
+                f'File path "{self.inputs["image_url"]}" is malformed. It needs to start with '
                 'either "file://" or "package://"'
-            ) % self.inputs["image_url"]
+            )
             self.logerr(self.outputs["download_error_msg"])
 
     def _do_tick(self):
@@ -91,7 +92,7 @@ class DownloadImage(Leaf):
                 self.outputs["download_success"] = False
                 self.outputs[
                     "download_error_msg"
-                ] = "Could not download image, http error code: %s" % (r.status_code)
+                ] = f"Could not download image, http error code: {r.status_code}"
                 self.outputs["filepath"] = ""
                 return NodeMsg.FAILED
 
@@ -113,6 +114,7 @@ class DownloadImage(Leaf):
         pass
 
     def expend_path(self, path):
+        """Expand the path to a absolute file path."""
         rospack = rospkg.RosPack()
         file_path = ""
         if path.startswith("file://"):

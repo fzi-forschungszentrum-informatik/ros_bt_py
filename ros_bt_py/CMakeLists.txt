@@ -71,6 +71,9 @@ catkin_install_python(PROGRAMS
   scripts/print_editor_url.py
   scripts/remote_tree_slot_node.py
   scripts/tree_node.py
+  scripts/mission_control_node.py
+  scripts/capability_repository_node.py
+  scripts/assignment_manager_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   )
 
@@ -114,12 +117,8 @@ if (CATKIN_ENABLE_TESTING)
   add_rostest(test/rostest/shovable.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
   add_rostest(test/rostest/shove_tree.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
   add_rostest(test/rostest/websocket_interface.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
+  add_rostest(test/rostest/capabilities.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
+  add_rostest(test/rostest/capabilities_no_auction.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
+  add_rostest(test/rostest/capability_repository.test ARGS coverage:=ENABLE_COVERAGE_TESTING)
 
-  if(ENABLE_COVERAGE_TESTING)
-    set(COVERAGE_EXCLUDES "*/${PROJECT_NAME}/test*,*/${PROJECT_NAME}/html*")
-    add_code_coverage(
-      NAME ${PROJECT_NAME}_coverage_report
-      DEPENDENCIES tests
-    )
-  endif()
 endif()

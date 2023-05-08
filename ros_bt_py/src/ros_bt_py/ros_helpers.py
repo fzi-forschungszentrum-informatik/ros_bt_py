@@ -1,5 +1,4 @@
-#  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2018-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -11,7 +10,7 @@
 #      notice, this list of conditions and the following disclaimer in the
 #      documentation and/or other materials provided with the distribution.
 #
-#    * Neither the name of the {copyright_holder} nor the names of its
+#    * Neither the name of the FZI Forschungszentrum Informatik nor the names of its
 #      contributors may be used to endorse or promote products derived from
 #      this software without specific prior written permission.
 #
@@ -26,7 +25,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#  -------- END LICENSE BLOCK --------
+
 
 import inspect
 from threading import Event, Lock, Thread
@@ -294,6 +293,7 @@ class AsyncServiceProxy:
         return self._data["res"]
 
     def get_state(self):
+        """Get the current state of the service proxy."""
         return self._data["state"]
 
     @staticmethod
@@ -328,8 +328,8 @@ class AsyncServiceProxy:
             with lock:
                 data["timeout"] = None
                 data["state"] = AsyncServiceProxy.SERVICE_AVAILABLE
-        except AttributeError:
-            rospy.logerr("Service proxy is not present!")
+        except AttributeError as exc:
+            rospy.logerr(f"Service proxy is not present: {exc}")
             if abort.is_set():
                 unclaim_cb()
                 return
@@ -384,8 +384,8 @@ class AsyncServiceProxy:
             with lock:
                 data["res"] = res
                 data["state"] = AsyncServiceProxy.RESPONSE_READY
-        except AttributeError:
-            rospy.logerr("Service proxy is not present!")
+        except AttributeError as exc:
+            rospy.logerr(f"Service proxy is not present: {exc}")
             with lock:
                 data["state"] = AsyncServiceProxy.ERROR
         except rospy.exceptions.ROSInterruptException:
@@ -398,12 +398,18 @@ class AsyncServiceProxy:
 
 
 class LoggerLevel(object):
+    """Data class containing a logging level."""
+
     def __init__(self, logger_level="info"):
+        """Initialize a new LoggerLevel class."""
         self.logger_level = logger_level
 
 
 class EnumValue(object):
+    """Data class containing an enum value."""
+
     def __init__(self, enum_value=""):
+        """Initialize a new EnumValue class."""
         self.enum_value = enum_value
 
 
@@ -438,4 +444,4 @@ def get_message_constant_fields(message_class):
         ]
         return constants
     else:
-        raise BehaviorTreeException("%s is not a ROS Message" % (message_class))
+        raise BehaviorTreeException(f"{message_class} is not a ROS Message")

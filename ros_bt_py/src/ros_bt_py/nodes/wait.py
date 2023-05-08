@@ -1,5 +1,4 @@
-#  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2018-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -11,7 +10,7 @@
 #      notice, this list of conditions and the following disclaimer in the
 #      documentation and/or other materials provided with the distribution.
 #
-#    * Neither the name of the {copyright_holder} nor the names of its
+#    * Neither the name of the FZI Forschungszentrum Informatik nor the names of its
 #      contributors may be used to endorse or promote products derived from
 #      this software without specific prior written permission.
 #
@@ -26,7 +25,8 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#  -------- END LICENSE BLOCK --------
+
+
 from time import time
 
 from ros_bt_py_msgs.msg import Node as NodeMsg
@@ -37,8 +37,8 @@ from ros_bt_py.node_config import NodeConfig
 
 @define_bt_node(
     NodeConfig(
-        version="0.9.0",
-        options={"seconds_to_wait": int},
+        version="0.9.1",
+        options={"seconds_to_wait": float},
         inputs={},
         outputs={},
         max_children=0,
@@ -60,7 +60,7 @@ class Wait(Leaf):
         now = time()
         if self.first_tick:
             self.start_time = now
-            self.end_time = self.start_time + float(self.options["seconds_to_wait"])
+            self.end_time = self.start_time + self.options["seconds_to_wait"]
             self.first_tick = False
         if now >= self.end_time:
             return NodeMsg.SUCCESS
@@ -85,9 +85,9 @@ class Wait(Leaf):
 
 @define_bt_node(
     NodeConfig(
-        version="0.9.0",
+        version="0.9.1",
         options={},
-        inputs={"seconds_to_wait": int},
+        inputs={"seconds_to_wait": float},
         outputs={},
         max_children=0,
     )
@@ -108,7 +108,7 @@ class WaitInput(Leaf):
         now = time()
         if self.first_tick:
             self.start_time = now
-            self.end_time = self.start_time + float(self.inputs["seconds_to_wait"])
+            self.end_time = self.start_time + self.inputs["seconds_to_wait"]
             self.first_tick = False
         if now >= self.end_time:
             return NodeMsg.SUCCESS

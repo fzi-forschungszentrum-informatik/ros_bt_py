@@ -1,0 +1,19 @@
+name: "remote_capability_slot.yaml"
+path: ''
+root_name: ''
+nodes: 
+  - 
+    module: "ros_bt_py.nodes.remote_capability_slot"
+    node_class: "RemoteCapabilitySlot"
+    version: ''
+    max_children: 0
+    name: "RemoteCapabilitySlot"
+    child_names: []
+    options: []
+    inputs: []
+    outputs: []
+    state: "SHUTDOWN"
+data_wirings: []
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: []

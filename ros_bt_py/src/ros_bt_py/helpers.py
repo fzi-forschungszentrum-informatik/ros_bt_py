@@ -1,5 +1,4 @@
-#  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2018-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -11,7 +10,7 @@
 #      notice, this list of conditions and the following disclaimer in the
 #      documentation and/or other materials provided with the distribution.
 #
-#    * Neither the name of the {copyright_holder} nor the names of its
+#    * Neither the name of the FZI Forschungszentrum Informatik nor the names of its
 #      contributors may be used to endorse or promote products derived from
 #      this software without specific prior written permission.
 #
@@ -26,16 +25,20 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#  -------- END LICENSE BLOCK --------
+
+
 import sys
 import jsonpickle
 import logging
 import rospy
 import functools
 from collections import OrderedDict
+
+from ros_bt_py_msgs.msg import CapabilityInterface
+
 from ros_bt_py.ros_helpers import EnumValue, LoggerLevel
 
-from ros_bt_py_msgs.srv import FixYamlResponse
+from ros_bt_py_msgs.srv import FixYamlResponse, FixYamlRequest
 
 try:  # pragma: no cover
     basestring
@@ -85,7 +88,12 @@ def rospy_log_level_to_logging_log_level(rospy_level):
         return logging.FATAL
 
 
-def fix_yaml(request):
+def fix_yaml(request: FixYamlRequest) -> FixYamlResponse:
+    """
+    Fixes a yaml file and ensures it conforms to the expected format for ros msg de-/serializing.
+    :param request: The ros service request containing the yaml file.
+    :return: Always returns successfully.
+    """
     response = FixYamlResponse()
 
     tree_yaml = request.broken_yaml
@@ -109,9 +117,7 @@ def fix_yaml(request):
 
         # now replace the search_string with the proper linebreak
         tree_yaml = (
-            tree_yaml[: index + replace_len]
-            + "\n"
-            + tree_yaml[index + replace_len + 1 :]
+            f"{tree_yaml[:index + replace_len]}\n{tree_yaml[index + replace_len + 1:]}"
         )
 
         # now check all newlines until they are not "\n- " any more
@@ -232,3 +238,57 @@ class MathOperandType(object):
 class MathUnaryOperandType(object):
     def __init__(self, operand_type):
         self.operand_type = operand_type
+
+
+class HashableCapabilityInterface:
+    """
+    Wrapper class to allow for the hashing of capability interfaces.
+    """
+
+    def __init__(self, interface: CapabilityInterface):
+        self.interface: CapabilityInterface = interface
+
+    def __eq__(self, other: object) -> bool:
+        def compare_node_data_lists(list1: list, list2: list) -> bool:
+            l1_node_data = {(x.key, json_decode(x.serialized_type)) for x in list1}
+            l2_node_data = {(x.key, json_decode(x.serialized_type)) for x in list2}
+
+            return l1_node_data == l2_node_data
+
+        if not isinstance(other, HashableCapabilityInterface):
+            return False
+
+        return (
+            (self.interface.name == other.interface.name)
+            and compare_node_data_lists(self.interface.inputs, other.interface.inputs)
+            and compare_node_data_lists(self.interface.outputs, other.interface.outputs)
+            and compare_node_data_lists(self.interface.options, other.interface.options)
+        )
+
+    def __ne__(self, other: object) -> bool:
+        return not self.__eq__(other)
+
+    def __hash__(self) -> int:
+        return hash(
+            (
+                self.interface.name,
+                frozenset(
+                    {
+                        (x.key, json_decode(x.serialized_type))
+                        for x in self.interface.inputs
+                    }
+                ),
+                frozenset(
+                    {
+                        (x.key, json_decode(x.serialized_type))
+                        for x in self.interface.outputs
+                    }
+                ),
+                frozenset(
+                    {
+                        (x.key, json_decode(x.serialized_type))
+                        for x in self.interface.options
+                    }
+                ),
+            )
+        )

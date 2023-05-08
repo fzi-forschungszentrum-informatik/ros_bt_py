@@ -1,5 +1,4 @@
-#  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2018-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -11,7 +10,7 @@
 #      notice, this list of conditions and the following disclaimer in the
 #      documentation and/or other materials provided with the distribution.
 #
-#    * Neither the name of the {copyright_holder} nor the names of its
+#    * Neither the name of the FZI Forschungszentrum Informatik nor the names of its
 #      contributors may be used to endorse or promote products derived from
 #      this software without specific prior written permission.
 #
@@ -26,7 +25,9 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#  -------- END LICENSE BLOCK --------
+
+
+"""BT node allowing the execution of remote subtrees using the shovable decorator."""
 from threading import Lock
 
 import rospy
@@ -41,7 +42,7 @@ from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message
 
 
 class RemoteTreeSlot(object):
-    """Provides an interface for a Behavior Tree to be 'shoved' into
+    """Provides an interface for a Behavior Tree to be 'shoved' into.
 
     This encompasses the following:
 
@@ -64,7 +65,7 @@ class RemoteTreeSlot(object):
     """
 
     def __init__(self, publish_slot_state):
-        """Initialize the `RemoteTreeSlot`
+        """Initialize the `RemoteTreeSlot`.
 
         :param function publish_slot_state:
 
@@ -85,7 +86,7 @@ class RemoteTreeSlot(object):
         self.tree_manager = TreeManager(publish_tree_callback=self.update_tree_msg)
 
     def evaluate_utility_handler(self, request):
-        """A service handler for :class:`ros_bt_py_msgs.srv.EvaluateUtility`
+        """Service handler for :class:`ros_bt_py_msgs.srv.EvaluateUtility`.
 
         Load the current tree and evaluate it. May respond with an
         empty response if there is another remote tree loaded and
@@ -109,7 +110,7 @@ class RemoteTreeSlot(object):
         )
         self.tree_manager.clear(None)
 
-        rospy.loginfo("Loading tree: %s" % str(request.tree))
+        rospy.loginfo(f"Loading tree: {str(request.tree)}")
         res = self.tree_manager.load_tree(LoadTreeRequest(tree=request.tree))
         if not get_success(res):
             rospy.logerr(get_error_message(res))
@@ -120,7 +121,7 @@ class RemoteTreeSlot(object):
         )
 
     def run_tree_handler(self, goal_handle):
-        """This is the `goal_callback` for the `RunTree` Action.
+        """`goal_callback` for the `RunTree` Action.
 
         The given behavior tree is loaded, but not executed until a
         :class:`ros_bt_py_msgs.srv.ControlTreeExecution` call lets us
@@ -143,11 +144,11 @@ class RemoteTreeSlot(object):
         )
         if not get_success(stop_res):
             rospy.loginfo(
-                "Rejected goal because shutting down the old tree failed with error %s"
-                % get_error_message(stop_res)
+                "Rejected goal because shutting down the old tree failed with error "
+                f"{get_error_message(stop_res)}"
             )
             goal_handle.set_rejected(
-                text=("Failed to shutdown old tree: %s" % get_error_message(stop_res))
+                text=f"Failed to shutdown old tree: {get_error_message(stop_res)}"
             )
             return
 
@@ -156,11 +157,11 @@ class RemoteTreeSlot(object):
         )
         if not get_success(res):
             rospy.loginfo(
-                "Rejected goal because loading the tree failed with error %s"
-                % get_error_message(res)
+                "Rejected goal because loading the tree failed with error "
+                f"{get_error_message(res)}"
             )
             goal_handle.set_rejected(
-                text=("Failed to load tree: %s" % get_error_message(res))
+                text=f"Failed to load tree: {get_error_message(res)}"
             )
             return
 
@@ -174,7 +175,7 @@ class RemoteTreeSlot(object):
         goal_handle.set_accepted()
 
     def control_tree_execution_handler(self, request):
-        """A Service handler for :class:`ros_bt_py_msgs.srv.ControlTreeExecution`
+        """Service handler for :class:`ros_bt_py_msgs.srv.ControlTreeExecution`.
 
         The request is forwarded to the current loaded remote subtree,
         if any.
@@ -197,12 +198,12 @@ class RemoteTreeSlot(object):
             ControlTreeExecutionRequest.RESET,
             ControlTreeExecutionRequest.SHUTDOWN,
         ]:
-            rospy.loginfo("Received invalid command: " + str(request.command))
+            rospy.loginfo(f"Received invalid command: {str(request.command)}")
             return ControlTreeExecutionResponse(
                 success=False,
                 error_message=(
-                    'RemoteTreeSlot does not allow ControlTreeExecution command "%s"'
-                    % request.command
+                    "RemoteTreeSlot does not allow ControlTreeExecution command "
+                    f'"{request.command}"'
                 ),
             )
         rospy.loginfo("Sending command %d to tree", request.command)
@@ -227,7 +228,7 @@ class RemoteTreeSlot(object):
         return res
 
     def cancel_run_tree_handler(self, goal_handle):
-        """A `cancel_callback` for the `RunTree` Action.
+        """`cancel_callback` for the `RunTree` Action.
 
         If this is called, the remote tree is stopped and the Action
         call marked as preempted.
@@ -255,7 +256,7 @@ class RemoteTreeSlot(object):
             )
             if not get_success(stop_res):
                 raise Exception(
-                    "Failed to stop tree in RemoteTreeSlot: %s" % get_success(stop_res)
+                    f"Failed to stop tree in RemoteTreeSlot: {get_success(stop_res)}"
                 )
 
             self.tree_manager.clear(None)
@@ -279,6 +280,7 @@ class RemoteTreeSlot(object):
             goal_handle.set_canceled()
 
     def update_tree_msg(self, msg):
+        """Update the tree message with the current state of the tree."""
         if self.run_tree_gh is None:
             return
         with self._lock:

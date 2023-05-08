@@ -1,5 +1,4 @@
-#  -------- BEGIN LICENSE BLOCK --------
-# Copyright 2022 FZI Forschungszentrum Informatik
+# Copyright 2018-2023 FZI Forschungszentrum Informatik
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -11,7 +10,7 @@
 #      notice, this list of conditions and the following disclaimer in the
 #      documentation and/or other materials provided with the distribution.
 #
-#    * Neither the name of the {copyright_holder} nor the names of its
+#    * Neither the name of the FZI Forschungszentrum Informatik nor the names of its
 #      contributors may be used to endorse or promote products derived from
 #      this software without specific prior written permission.
 #
@@ -26,11 +25,16 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-#  -------- END LICENSE BLOCK --------
+
+
+"""BT node to encapsulate a part of a tree in a reusable subtree."""
+from typing import Optional, Dict
+
 from ros_bt_py_msgs.msg import Node as NodeMsg
 from ros_bt_py_msgs.msg import UtilityBounds, Tree, NodeDataLocation
 from ros_bt_py_msgs.srv import LoadTreeRequest
 
+from ros_bt_py.debug_manager import DebugManager
 from ros_bt_py.exceptions import BehaviorTreeException
 from ros_bt_py.tree_manager import TreeManager, get_success, get_error_message
 from ros_bt_py.node import Leaf, define_bt_node
@@ -48,7 +52,7 @@ from ros_bt_py.node_config import NodeConfig
     )
 )
 class Subtree(Leaf):
-    """Loads a subtree from the location pointed to by `subtree_uri`
+    """Loads a subtree from the location pointed to by `subtree_uri`.
 
     This is the only node that modifies its `node_config` member - it
     will populate its inputs and outputs when its constructor is
@@ -60,12 +64,25 @@ class Subtree(Leaf):
     at that point we don't know their names or types yet.
     """
 
-    def __init__(self, options=None, debug_manager=None, name=None):
-        """Create the tree manager, load the subtree and call `super.__init__()`"""
-        super(Subtree, self).__init__(options, debug_manager, name)
+    def __init__(  # noqa: C901
+        self,
+        options: Optional[Dict] = None,
+        debug_manager: Optional[DebugManager] = None,
+        name: str = None,
+        succeed_always: bool = False,
+        simulate_tick: bool = False,
+    ):
+        """Create the tree manager, load the subtree."""
+        super(Subtree, self).__init__(
+            options=options,
+            debug_manager=debug_manager,
+            name=name,
+            succeed_always=succeed_always,
+            simulate_tick=simulate_tick,
+        )
 
         self.root = None
-        self.prefix = self.name + "."
+        self.prefix = f"{self.name}."
         # since the subtree gets a prefix, we can just have it use the
         # parent debug manager
         self.manager = TreeManager(name=name, debug_manager=debug_manager)
@@ -114,6 +131,7 @@ class Subtree(Leaf):
                 ):
                     modified_public_node_data.append(node_data)
             subtree_msg.public_node_data = modified_public_node_data
+
         for node_data in subtree_msg.public_node_data:
             # Remove the prefix from the node name to make for nicer
             # input/output names (and also not break wirings)
@@ -123,13 +141,13 @@ class Subtree(Leaf):
 
             if node_data.data_kind == NodeDataLocation.INPUT_DATA:
                 subtree_inputs[
-                    "%s.%s" % (node_name, node_data.data_key)
+                    f"{node_name}.{node_data.data_key}"
                 ] = self.manager.nodes[node_data.node_name].inputs.get_type(
                     node_data.data_key
                 )
             elif node_data.data_kind == NodeDataLocation.OUTPUT_DATA:
                 subtree_outputs[
-                    "%s.%s" % (node_name, node_data.data_key)
+                    f"{node_name}.{node_data.data_key}"
                 ] = self.manager.nodes[node_data.node_name].outputs.get_type(
                     node_data.data_key
                 )
@@ -160,11 +178,11 @@ class Subtree(Leaf):
             if node_data.data_kind == NodeDataLocation.INPUT_DATA:
                 if options.get("use_io_nodes") and node_data.node_name not in io_inputs:
                     self.logwarn(
-                        "removed an unconnected input (%s) from the subtree" % node_name
+                        f"removed an unconnected input ({node_name}) from the subtree"
                     )
                 else:
                     self.inputs.subscribe(
-                        key="%s.%s" % (node_name, node_data.data_key),
+                        key=f"{node_name}.{node_data.data_key}",
                         callback=self.manager.nodes[
                             node_data.node_name
                         ].inputs.get_callback(node_data.data_key),
@@ -179,7 +197,7 @@ class Subtree(Leaf):
                     self.manager.nodes[node_data.node_name].outputs.subscribe(
                         key=node_data.data_key,
                         callback=self.outputs.get_callback(
-                            "%s.%s" % (node_name, node_data.data_key)
+                            f"{node_name}.{node_data.data_key}"
                         ),
                     )
 
@@ -187,8 +205,8 @@ class Subtree(Leaf):
         self.root = self.manager.find_root()
         if self.root is None:
             raise BehaviorTreeException(
-                "Cannot find root in subtree, does the subtree %s exist?"
-                % (self.options["subtree_path"])
+                "Cannot find root in subtree, does the subtree "
+                f"{self.options['subtree_path']} exist?"
             )
         self.root.setup()
         if self.debug_manager and self.debug_manager.get_publish_subtrees():

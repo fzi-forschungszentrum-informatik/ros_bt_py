@@ -1,0 +1,155 @@
+name: "capability_test_local.yaml"
+path: ''
+root_name: "Sequence"
+nodes:
+  -
+    module: "ros_bt_py.nodes.sequence"
+    node_class: "Sequence"
+    version: "0.9.0"
+    max_children: -1
+    name: "Sequence"
+    child_names:
+      - Constant
+      - Constant_2
+      - AddTwoCapability
+      - Log
+    options: []
+    inputs: []
+    outputs: []
+    state: "SHUTDOWN"
+  -
+    module: "ros_bt_py.nodes.constant"
+    node_class: "Constant"
+    version: "0.9.0"
+    max_children: 0
+    name: "Constant"
+    child_names: []
+    options:
+      -
+        key: "constant_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      -
+        key: "constant_value"
+        serialized_value: "0"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    inputs: []
+    outputs:
+      -
+        key: "constant"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    state: "SHUTDOWN"
+  -
+    module: "ros_bt_py.nodes.constant"
+    node_class: "Constant"
+    version: "0.9.0"
+    max_children: 0
+    name: "Constant_2"
+    child_names: []
+    options:
+      -
+        key: "constant_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+      -
+        key: "constant_value"
+        serialized_value: "3"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    inputs: []
+    outputs:
+      -
+        key: "constant"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    state: "SHUTDOWN"
+  -
+    module: "ros_bt_py.capability"
+    node_class: "AddTwoCapability"
+    version: ''
+    max_children: 0
+    name: "AddTwoCapability"
+    child_names: []
+    options:
+      -
+        key: "require_local_execution"
+        serialized_value: "true"
+        serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
+      -
+        key: "execution_timeout_sec"
+        serialized_value: "1.2"
+        serialized_type: "{\"py/type\": \"__builtin__.float\"}"
+      -
+        key: "inputs_names_for_implementation_tags"
+        serialized_value: "[]"
+        serialized_type: "{\"py/type\": \"__builtin__.list\"}"
+    inputs:
+      -
+        key: "operand1"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+      -
+        key: "operand2"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    outputs:
+      -
+        key: "result"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    state: "SHUTDOWN"
+  -
+    module: "ros_bt_py.nodes.log"
+    node_class: "Log"
+    version: "2.0.0"
+    max_children: 0
+    name: "Log"
+    child_names: []
+    options:
+      -
+        key: "logger_level"
+        serialized_value: "{\"logger_level\": \"fatal\", \"py/object\": \"ros_bt_py.ros_helpers.LoggerLevel\"\
+  }"
+        serialized_type: "{\"py/type\": \"ros_bt_py.ros_helpers.LoggerLevel\"}"
+      -
+        key: "log_type"
+        serialized_value: "{\"py/type\": \"__builtin__.int\"}"
+        serialized_type: "{\"py/type\": \"__builtin__.type\"}"
+    inputs:
+      -
+        key: "in"
+        serialized_value: "null"
+        serialized_type: "{\"py/type\": \"__builtin__.int\"}"
+    outputs: []
+    state: "SHUTDOWN"
+data_wirings:
+  -
+    source:
+      node_name: "Constant"
+      data_kind: "outputs"
+      data_key: "constant"
+    target:
+      node_name: "AddTwoCapability"
+      data_kind: "inputs"
+      data_key: "operand1"
+  -
+    source:
+      node_name: "Constant_2"
+      data_kind: "outputs"
+      data_key: "constant"
+    target:
+      node_name: "AddTwoCapability"
+      data_kind: "inputs"
+      data_key: "operand2"
+  -
+    source:
+      node_name: "AddTwoCapability"
+      data_kind: "outputs"
+      data_key: "result"
+    target:
+      node_name: "Log"
+      data_kind: "inputs"
+      data_key: "in"
+tick_frequency_hz: 10.0
+state: "EDITABLE"
+public_node_data: []

@@ -1,8 +1,8 @@
 name: ''
 path: ''
 root_name: "FindMrFrog"
-nodes: 
-  - 
+nodes:
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.ros_nodes.message_from_dict"
@@ -10,24 +10,24 @@ nodes:
     max_children: 0
     name: "CreateTask"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "message_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._MissionTask.MissionTask\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "dict"
         serialized_value: "{}"
         serialized_type: "{\"py/type\": \"__builtin__.dict\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "message"
         serialized_value: "{\"py/object\": \"fzi_inspection_msgs.msg._MissionTask.MissionTask\", \"py/state\"\
   : [0, 0, \"\"]}"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._MissionTask.MissionTask\"}"
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.nodes.action"
@@ -35,57 +35,57 @@ nodes:
     max_children: 0
     name: "GraspObject"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "result_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskResult.ExecuteTaskResult\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "timeout_seconds"
         serialized_value: "120.2"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
-      - 
+      -
         key: "feedback_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskFeedback.ExecuteTaskFeedback\"\
   }"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "action_name"
         serialized_value: "\"/robot/manipulation/manipulateObject\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-      - 
+      -
         key: "action_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskAction.ExecuteTaskAction\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "wait_for_action_server_seconds"
         serialized_value: "5.2"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
-      - 
+      -
         key: "goal_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskGoal.ExecuteTaskGoal\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "goal"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskGoal.ExecuteTaskGoal\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "goal_status"
         serialized_value: "9"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "feedback"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskFeedback.ExecuteTaskFeedback\"\
   }"
-      - 
+      -
         key: "result"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskResult.ExecuteTaskResult\"}"
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.nodes.compare"
@@ -93,23 +93,23 @@ nodes:
     max_children: 0
     name: "CheckSuccessTrue"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "expected"
         serialized_value: "true"
         serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
-      - 
+      -
         key: "compare_type"
         serialized_value: "{\"py/type\": \"__builtin__.bool\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "in"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
     outputs: []
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.nodes.constant"
@@ -117,23 +117,23 @@ nodes:
     max_children: 0
     name: "ManipulationConstant_GraspObject"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "constant_value"
         serialized_value: "1"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "constant_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "constant"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.nodes.fallback"
@@ -145,7 +145,7 @@ nodes:
     inputs: []
     outputs: []
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.nodes.action"
@@ -153,59 +153,59 @@ nodes:
     max_children: 0
     name: "SweepPtuAction"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "result_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskResult.ExecuteTaskResult\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "timeout_seconds"
         serialized_value: "30.1"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
-      - 
+      -
         key: "feedback_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskFeedback.ExecuteTaskFeedback\"\
   }"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "action_name"
         serialized_value: "\"/robot/mission_control/sweep_ptu\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-      - 
+      -
         key: "action_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskAction.ExecuteTaskAction\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "wait_for_action_server_seconds"
         serialized_value: "5.1"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
-      - 
+      -
         key: "goal_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskGoal.ExecuteTaskGoal\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "goal"
         serialized_value: "{\"py/object\": \"fzi_inspection_msgs.msg._ExecuteTaskGoal.ExecuteTaskGoal\", \"\
   py/state\": [{\"py/object\": \"fzi_inspection_msgs.msg._MissionTask.MissionTask\"\
   , \"py/state\": [0, 0, \"\"]}]}"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskGoal.ExecuteTaskGoal\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "goal_status"
         serialized_value: "9"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "feedback"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskFeedback.ExecuteTaskFeedback\"\
   }"
-      - 
+      -
         key: "result"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskResult.ExecuteTaskResult\"}"
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.nodes.fallback"
@@ -217,7 +217,7 @@ nodes:
     inputs: []
     outputs: []
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.nodes.topic"
@@ -225,18 +225,18 @@ nodes:
     max_children: 0
     name: "TrackedObjectsSub"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "topic_type"
         serialized_value: "{\"py/type\": \"fzi_sbc_msgs.msg._ObjectArray.ObjectArray\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "topic_name"
         serialized_value: "\"/robot/perception/tracked_objects\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "message"
         serialized_value: "{\"py/object\": \"fzi_sbc_msgs.msg._ObjectArray.ObjectArray\", \"py/state\": [{\"\
   py/object\": \"std_msgs.msg._Header.Header\", \"py/state\": [5581, {\"py/object\"\
@@ -920,7 +920,7 @@ nodes:
   , \"py/state\": [0.0, 0.0, 0.0]}, false, 0.597358763217926, 0.1653365194797516]}]]}"
         serialized_type: "{\"py/type\": \"fzi_sbc_msgs.msg._ObjectArray.ObjectArray\"}"
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.nodes.setters"
@@ -928,36 +928,36 @@ nodes:
     max_children: 0
     name: "SetTaskIdManipulate"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "object_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._MissionTask.MissionTask\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "attr_name"
         serialized_value: "\"id_2\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-      - 
+      -
         key: "attr_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "object"
         serialized_value: "{\"py/object\": \"fzi_inspection_msgs.msg._MissionTask.MissionTask\", \"py/state\"\
   : [2, 0, \"\"]}"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._MissionTask.MissionTask\"}"
-      - 
+      -
         key: "attr_value"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "new_object"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._MissionTask.MissionTask\"}"
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.nodes.sequence"
@@ -969,7 +969,7 @@ nodes:
     inputs: []
     outputs: []
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.nodes.sequence"
@@ -981,7 +981,7 @@ nodes:
     inputs: []
     outputs: []
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.nodes.sequence"
@@ -993,7 +993,7 @@ nodes:
     inputs: []
     outputs: []
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.ros_nodes.message_from_dict"
@@ -1001,25 +1001,25 @@ nodes:
     max_children: 0
     name: "CreateExecuteGoal"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "message_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskGoal.ExecuteTaskGoal\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "dict"
         serialized_value: "{}"
         serialized_type: "{\"py/type\": \"__builtin__.dict\"}"
     inputs: []
-    outputs: 
-      - 
+    outputs:
+      -
         key: "message"
         serialized_value: "{\"py/object\": \"fzi_inspection_msgs.msg._ExecuteTaskGoal.ExecuteTaskGoal\", \"\
   py/state\": [{\"py/object\": \"fzi_inspection_msgs.msg._MissionTask.MissionTask\"\
   , \"py/state\": [0, 0, \"\"]}]}"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskGoal.ExecuteTaskGoal\"}"
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.nodes.getters"
@@ -1027,21 +1027,21 @@ nodes:
     max_children: 1
     name: "GetId"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "succeed_on_stale_data"
         serialized_value: "true"
         serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
-      - 
+      -
         key: "attr_name"
         serialized_value: "\"id\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-      - 
+      -
         key: "attr_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "object"
         serialized_value: "{\"py/object\": \"fzi_sbc_msgs.msg._Object.Object\", \"py/state\": [2, \"Frog\",\
   \ 0.43202224373817444, false, {\"py/object\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"\
@@ -1721,13 +1721,13 @@ nodes:
   , \"py/state\": [0.0, 0.0, 0.0, 1.0]}]}]}, {\"py/object\": \"geometry_msgs.msg._Point.Point\"\
   , \"py/state\": [0.0, 0.0, 0.0]}, false, 0.597358763217926, 0.1653365194797516]}"
         serialized_type: "{\"py/type\": \"__builtin__.object\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "attr"
         serialized_value: "2"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "plexnav_bt.find_highest_confidence_object"
@@ -1736,8 +1736,8 @@ nodes:
     name: "FindHighestConfidenceObject"
     child_names: []
     options: []
-    inputs: 
-      - 
+    inputs:
+      -
         key: "objects_array"
         serialized_value: "{\"py/object\": \"fzi_sbc_msgs.msg._ObjectArray.ObjectArray\", \"py/state\": [{\"\
   py/object\": \"std_msgs.msg._Header.Header\", \"py/state\": [5581, {\"py/object\"\
@@ -2420,8 +2420,8 @@ nodes:
   , \"py/state\": [0.0, 0.0, 0.0, 1.0]}]}]}, {\"py/object\": \"geometry_msgs.msg._Point.Point\"\
   , \"py/state\": [0.0, 0.0, 0.0]}, false, 0.597358763217926, 0.1653365194797516]}]]}"
         serialized_type: "{\"py/type\": \"fzi_sbc_msgs.msg._ObjectArray.ObjectArray\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "highest_confidence_object"
         serialized_value: "{\"py/object\": \"fzi_sbc_msgs.msg._Object.Object\", \"py/state\": [2, \"Frog\",\
   \ 0.43202224373817444, false, {\"py/object\": \"geometry_msgs.msg._PoseStamped.PoseStamped\"\
@@ -3102,7 +3102,7 @@ nodes:
   , \"py/state\": [0.0, 0.0, 0.0]}, false, 0.597358763217926, 0.1653365194797516]}"
         serialized_type: "{\"py/type\": \"fzi_sbc_msgs.msg._Object.Object\"}"
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.nodes.action"
@@ -3110,57 +3110,57 @@ nodes:
     max_children: 0
     name: "CheckGraspable"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "result_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskResult.ExecuteTaskResult\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "timeout_seconds"
         serialized_value: "60.2"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
-      - 
+      -
         key: "feedback_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskFeedback.ExecuteTaskFeedback\"\
   }"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "action_name"
         serialized_value: "\"/robot/manipulation/manipulateObject\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-      - 
+      -
         key: "action_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskAction.ExecuteTaskAction\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "wait_for_action_server_seconds"
         serialized_value: "5.2"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
-      - 
+      -
         key: "goal_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskGoal.ExecuteTaskGoal\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "goal"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskGoal.ExecuteTaskGoal\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "goal_status"
         serialized_value: "9"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "feedback"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskFeedback.ExecuteTaskFeedback\"\
   }"
-      - 
+      -
         key: "result"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskResult.ExecuteTaskResult\"}"
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.nodes.setters"
@@ -3168,37 +3168,37 @@ nodes:
     max_children: 0
     name: "SetObjId"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "object_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._MissionTask.MissionTask\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "attr_name"
         serialized_value: "\"id_1\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-      - 
+      -
         key: "attr_type"
         serialized_value: "{\"py/type\": \"__builtin__.int\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "object"
         serialized_value: "{\"py/object\": \"fzi_inspection_msgs.msg._MissionTask.MissionTask\", \"py/state\"\
   : [0, 0, \"\"]}"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._MissionTask.MissionTask\"}"
-      - 
+      -
         key: "attr_value"
         serialized_value: "2"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "new_object"
         serialized_value: "{\"py/object\": \"fzi_inspection_msgs.msg._MissionTask.MissionTask\", \"py/state\"\
   : [2, 0, \"\"]}"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._MissionTask.MissionTask\"}"
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.nodes.setters"
@@ -3206,38 +3206,38 @@ nodes:
     max_children: 0
     name: "SetTask"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "object_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskGoal.ExecuteTaskGoal\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "attr_name"
         serialized_value: "\"task\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-      - 
+      -
         key: "attr_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._MissionTask.MissionTask\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "object"
         serialized_value: "{\"py/object\": \"fzi_inspection_msgs.msg._ExecuteTaskGoal.ExecuteTaskGoal\", \"\
   py/state\": [{\"py/object\": \"fzi_inspection_msgs.msg._MissionTask.MissionTask\"\
   , \"py/state\": [0, 0, \"\"]}]}"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskGoal.ExecuteTaskGoal\"}"
-      - 
+      -
         key: "attr_value"
         serialized_value: "{\"py/object\": \"fzi_inspection_msgs.msg._MissionTask.MissionTask\", \"py/state\"\
   : [2, 0, \"\"]}"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._MissionTask.MissionTask\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "new_object"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskGoal.ExecuteTaskGoal\"}"
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.nodes.getters"
@@ -3245,31 +3245,31 @@ nodes:
     max_children: 1
     name: "GetSuccess"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "succeed_on_stale_data"
         serialized_value: "true"
         serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
-      - 
+      -
         key: "attr_name"
         serialized_value: "\"success\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-      - 
+      -
         key: "attr_type"
         serialized_value: "{\"py/type\": \"__builtin__.bool\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "object"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.object\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "attr"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"__builtin__.bool\"}"
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.nodes.sequence"
@@ -3281,7 +3281,7 @@ nodes:
     inputs: []
     outputs: []
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.nodes.sequence"
@@ -3293,7 +3293,7 @@ nodes:
     inputs: []
     outputs: []
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.nodes.setters"
@@ -3301,37 +3301,37 @@ nodes:
     max_children: 0
     name: "SetTaskManipulate"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "object_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskGoal.ExecuteTaskGoal\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "attr_name"
         serialized_value: "\"task\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-      - 
+      -
         key: "attr_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._MissionTask.MissionTask\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "object"
         serialized_value: "{\"py/object\": \"fzi_inspection_msgs.msg._ExecuteTaskGoal.ExecuteTaskGoal\", \"\
   py/state\": [{\"py/object\": \"fzi_inspection_msgs.msg._MissionTask.MissionTask\"\
   , \"py/state\": [0, 0, \"\"]}]}"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskGoal.ExecuteTaskGoal\"}"
-      - 
+      -
         key: "attr_value"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._MissionTask.MissionTask\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "new_object"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskGoal.ExecuteTaskGoal\"}"
     state: "UNINITIALIZED"
-  - 
+  -
     is_subtree: False
     subtree_data: ''
     module: "ros_bt_py.nodes.action"
@@ -3339,198 +3339,198 @@ nodes:
     max_children: 0
     name: "MoveToVisualAction"
     child_names: []
-    options: 
-      - 
+    options:
+      -
         key: "result_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskResult.ExecuteTaskResult\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "timeout_seconds"
         serialized_value: "120.2"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
-      - 
+      -
         key: "feedback_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskFeedback.ExecuteTaskFeedback\"\
   }"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "action_name"
         serialized_value: "\"/robot/mission_control/move_to_object_visual\""
         serialized_type: "{\"py/type\": \"__builtin__.basestring\"}"
-      - 
+      -
         key: "action_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskAction.ExecuteTaskAction\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-      - 
+      -
         key: "wait_for_action_server_seconds"
         serialized_value: "5.2"
         serialized_type: "{\"py/type\": \"__builtin__.float\"}"
-      - 
+      -
         key: "goal_type"
         serialized_value: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskGoal.ExecuteTaskGoal\"}"
         serialized_type: "{\"py/type\": \"__builtin__.type\"}"
-    inputs: 
-      - 
+    inputs:
+      -
         key: "goal"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskGoal.ExecuteTaskGoal\"}"
-    outputs: 
-      - 
+    outputs:
+      -
         key: "goal_status"
         serialized_value: "9"
         serialized_type: "{\"py/type\": \"__builtin__.int\"}"
-      - 
+      -
         key: "feedback"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskFeedback.ExecuteTaskFeedback\"\
   }"
-      - 
+      -
         key: "result"
         serialized_value: "null"
         serialized_type: "{\"py/type\": \"fzi_inspection_msgs.msg._ExecuteTaskResult.ExecuteTaskResult\"}"
     state: "UNINITIALIZED"
-data_wirings: 
-  - 
-    source: 
+data_wirings:
+  -
+    source:
       node_name: "TrackedObjectsSub"
       data_kind: "outputs"
       data_key: "message"
-    target: 
+    target:
       node_name: "FindHighestConfidenceObject"
       data_kind: "inputs"
       data_key: "objects_array"
-  - 
-    source: 
+  -
+    source:
       node_name: "FindHighestConfidenceObject"
       data_kind: "outputs"
       data_key: "highest_confidence_object"
-    target: 
+    target:
       node_name: "GetId"
       data_kind: "inputs"
       data_key: "object"
-  - 
-    source: 
+  -
+    source:
       node_name: "CreateTask"
       data_kind: "outputs"
       data_key: "message"
-    target: 
+    target:
       node_name: "SetObjId"
       data_kind: "inputs"
       data_key: "object"
-  - 
-    source: 
+  -
+    source:
       node_name: "GetId"
       data_kind: "outputs"
       data_key: "attr"
-    target: 
+    target:
       node_name: "SetObjId"
       data_kind: "inputs"
       data_key: "attr_value"
-  - 
-    source: 
+  -
+    source:
       node_name: "CreateExecuteGoal"
       data_kind: "outputs"
       data_key: "message"
-    target: 
+    target:
       node_name: "SweepPtuAction"
       data_kind: "inputs"
       data_key: "goal"
-  - 
-    source: 
+  -
+    source:
       node_name: "CreateExecuteGoal"
       data_kind: "outputs"
       data_key: "message"
-    target: 
+    target:
       node_name: "SetTask"
       data_kind: "inputs"
       data_key: "object"
-  - 
-    source: 
+  -
+    source:
       node_name: "SetObjId"
       data_kind: "outputs"
       data_key: "new_object"
-    target: 
+    target:
       node_name: "SetTask"
       data_kind: "inputs"
       data_key: "attr_value"
-  - 
-    source: 
+  -
+    source:
       node_name: "SetTask"
       data_kind: "outputs"
       data_key: "new_object"
-    target: 
+    target:
       node_name: "CheckGraspable"
       data_kind: "inputs"
       data_key: "goal"
-  - 
-    source: 
+  -
+    source:
       node_name: "CreateExecuteGoal"
       data_kind: "outputs"
       data_key: "message"
-    target: 
+    target:
       node_name: "SetTaskManipulate"
       data_kind: "inputs"
       data_key: "object"
-  - 
-    source: 
+  -
+    source:
       node_name: "SetObjId"
       data_kind: "outputs"
       data_key: "new_object"
-    target: 
+    target:
       node_name: "SetTaskIdManipulate"
       data_kind: "inputs"
       data_key: "object"
-  - 
-    source: 
+  -
+    source:
       node_name: "ManipulationConstant_GraspObject"
       data_kind: "outputs"
       data_key: "constant"
-    target: 
+    target:
       node_name: "SetTaskIdManipulate"
       data_kind: "inputs"
       data_key: "attr_value"
-  - 
-    source: 
+  -
+    source:
       node_name: "SetTaskIdManipulate"
       data_kind: "outputs"
       data_key: "new_object"
-    target: 
+    target:
       node_name: "SetTaskManipulate"
       data_kind: "inputs"
       data_key: "attr_value"
-  - 
-    source: 
+  -
+    source:
       node_name: "SetTask"
       data_kind: "outputs"
       data_key: "new_object"
-    target: 
+    target:
       node_name: "MoveToVisualAction"
       data_kind: "inputs"
       data_key: "goal"
-  - 
-    source: 
+  -
+    source:
       node_name: "SetTaskManipulate"
       data_kind: "outputs"
       data_key: "new_object"
-    target: 
+    target:
       node_name: "GraspObject"
       data_kind: "inputs"
       data_key: "goal"
-  - 
-    source: 
+  -
+    source:
       node_name: "CheckGraspable"
       data_kind: "outputs"
       data_key: "goal_status"
-    target: 
+    target:
       node_name: "GetSuccess"
       data_kind: "inputs"
       data_key: "object"
-  - 
-    source: 
+  -
+    source:
       node_name: "GetSuccess"
       data_kind: "outputs"
       data_key: "attr"
-    target: 
+    target:
       node_name: "CheckSuccessTrue"
       data_kind: "inputs"
       data_key: "in"

@@ -1,0 +1,123 @@
+<launch>
+
+<!-- Add an argument to the launch file to turn on coverage -->
+  <arg name="coverage" default="false"/>
+
+  <!-- This fancy line forces nodes to generate coverage -->
+  <arg name="pythontest_launch_prefix" value="$(eval 'python3-coverage run -p' if arg('coverage') else '')"/>
+
+    <arg name="default_node_modules" default="
+      ros_bt_py.nodes.sequence,
+      ros_bt_py.nodes.fallback,
+      ros_bt_py.nodes.decorators,
+      ros_bt_py.nodes.mock_nodes,
+      ros_bt_py.nodes.action,
+      ros_bt_py.nodes.service,
+      ros_bt_py.nodes.topic,
+      ros_bt_py.nodes.compare,
+      ros_bt_py.nodes.getters,
+      ros_bt_py.nodes.setters,
+      ros_bt_py.nodes.passthrough_node,
+      ros_bt_py.nodes.shovable,
+      ros_bt_py.nodes.subtree,
+      ros_bt_py.nodes.io,
+      ros_bt_py.nodes.wait,
+      ros_bt_py.nodes.format,
+      ros_bt_py.nodes.list,
+      ros_bt_py.nodes.log,
+      ros_bt_py.nodes.constant,
+      ros_bt_py.nodes.file,
+      ros_bt_py.nodes.random_number,
+      ros_bt_py.nodes.parallel,
+      ros_bt_py.nodes.ros_param,
+      ros_bt_py.nodes.maths,
+      ros_bt_py.nodes.remote_capability_slot,
+      ros_bt_py.ros_nodes.message_converters,
+      ros_bt_py.ros_nodes.move_base_action,
+      ros_bt_py.ros_nodes.message_from_dict,
+      ros_bt_py.ros_nodes.ros_header,
+      ros_bt_py.ros_nodes.pose_distance,
+      ros_bt_py.ros_nodes.lookup_tf,
+      ros_bt_py.ros_nodes.enum,
+      ros_bt_py.ros_nodes.explore_service,
+      ros_bt_py.ros_nodes.identify_service,
+      ros_bt_py.capability,
+  " />
+
+  <group ns="first">
+    <node
+      name="tree_node"
+      pkg="ros_bt_py"
+      type="tree_node.py"
+      output="screen"
+      launch-prefix="$(arg pythontest_launch_prefix)" >
+      <param name="target_tick_frequency_hz" value="10.0" />
+      <rosparam param="node_modules" subst_value="True">
+            [
+            $(arg default_node_modules)
+            ]
+          </rosparam>
+    </node>
+
+    <node
+      name="capability_repository"
+      pkg="ros_bt_py"
+      type="capability_repository_node.py"
+      output="log"
+      respawn="true"
+      launch-prefix="$(arg pythontest_launch_prefix)" />
+    <node
+      name="assignment_manager"
+      pkg="ros_bt_py"
+      type="assignment_manager_node.py"
+      output="log"
+      respawn="true"
+      launch-prefix="$(arg pythontest_launch_prefix)" />
+    <node
+      name="mission_control"
+      pkg="ros_bt_py"
+      type="mission_control_node.py"
+      output="log"
+      respawn="true"
+      launch-prefix="$(arg pythontest_launch_prefix)" />
+  </group>
+
+  <group ns="second">
+    <node
+      name="tree_node"
+      pkg="ros_bt_py"
+      type="tree_node.py"
+      output="screen"
+      launch-prefix="$(arg pythontest_launch_prefix)" >
+      <param name="target_tick_frequency_hz" value="10.0" />
+      <rosparam param="node_modules" subst_value="True">
+            [
+            $(arg default_node_modules)
+            ]
+          </rosparam>
+    </node>
+
+    <node
+      name="capability_repository"
+      pkg="ros_bt_py"
+      type="capability_repository_node.py"
+      output="log"
+      respawn="true"
+      launch-prefix="$(arg pythontest_launch_prefix)">
+      <param name="global_capability_topic_prefix" value="/gc2" />
+    </node>
+    <node
+      name="mission_control"
+      pkg="ros_bt_py"
+      type="mission_control_node.py"
+      output="log"
+      respawn="true"
+      launch-prefix="$(arg pythontest_launch_prefix)" />
+  </group>
+
+  <test test-name="test_capabilities_local"
+        pkg="ros_bt_py"
+        type="test_capabilities_local.py"
+        launch-prefix="$(arg pythontest_launch_prefix)" />
+
+</launch>
