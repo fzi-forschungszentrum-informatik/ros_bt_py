@@ -17,6 +17,7 @@ exclude = '''
   | tests/data
 )/
 '''
+
 [tool.coverage.run]
 omit='''
   /usr*
@@ -25,8 +26,9 @@ omit='''
   *test/*
   *tests/*
   */.local*
-  */install*
+  *install*
 '''
+
 [tool.coverage.paths]
 library='''
   ros_bt_py/
