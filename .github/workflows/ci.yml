@@ -28,6 +28,7 @@ jobs:
             ROS_REPO: main
           - ROS_DISTRO: noetic
             ROS_REPO: testing
+    name: build_${{ matrix.env.ROS_DISTRO }}_${{ matrix.env.ROS_REPO }}
 
     steps:
       - uses: actions/checkout@v1
