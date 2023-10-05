@@ -15,12 +15,12 @@ stages:
   - deploy
 
 include:
-  - project: 'continuous_integration/ci_scripts'
-    ref: dev
-    file: '/gitlab-ci-yml/catkin_pipeline_v3.yml'
-  - project: 'continuous_integration/ci_scripts'
-    ref: dev
-    file: '/gitlab-ci-yml/doc_sphinx.yml'
+  - project: "continuous_integration/ci_scripts"
+    ref: master
+    file: "/gitlab-ci-yml/catkin_pipeline.yml"
+  - project: "continuous_integration/ci_scripts"
+    ref: master
+    file: "/gitlab-ci-yml/doc_sphinx.yml"
 
 clang-tidy-check:
   allow_failure: true
