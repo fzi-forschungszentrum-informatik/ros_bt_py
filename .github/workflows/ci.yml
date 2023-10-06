@@ -1,0 +1,38 @@
+name: Industrial CI pipeline
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 7 * * *"
+
+jobs:
+  format_check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: "ros-industrial/industrial_ci@master"
+        env:
+          ROS_DISTRO: noetic
+          CLANG_FORMAT_CHECK: file
+          CLANG_FORMAT_VERSION: "9"
+
+  build:
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    strategy:
+      fail-fast: false
+      matrix:
+        env:
+          - ROS_DISTRO: noetic
+            ROS_REPO: main
+          - ROS_DISTRO: noetic
+            ROS_REPO: testing
+    name: build_${{ matrix.env.ROS_DISTRO }}_${{ matrix.env.ROS_REPO }}
+
+    steps:
+      - uses: actions/checkout@v1
+      - uses: "ros-industrial/industrial_ci@master"
+        env:
+          ROS_DISTRO: ${{ matrix.env.ROS_DISTRO }}
+          ROS_REPO: ${{ matrix.env.ROS_REPO }}
