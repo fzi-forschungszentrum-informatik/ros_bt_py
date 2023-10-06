@@ -17,31 +17,3 @@ exclude = '''
   | tests/data
 )/
 '''
-
-[tool.coverage.run]
-omit='''
-  /usr*
-  /opt*
-  */devel*
-  *test/*
-  *tests/*
-  */.local*
-  *install*
-'''
-
-[tool.coverage.paths]
-library='''
-  ros_bt_py/
-  /builds/*/ros_bt_py/ros_bt_py
-  /root/target_ws/src/ros_bt_py/ros_bt_py
-'''
-msgs='''
-  ros_bt_py_msgs/
-  /builds/*/ros_bt_py/ros_bt_py_msgs
-  /root/target_ws/src/ros_bt_py/ros_bt_py_msgs
-'''
-web='''
-  ros_bt_py_web_server/
-  /builds/*/ros_bt_py/ros_bt_py_web_server
-  /root/target_ws/src/ros_bt_py/ros_bt_py_web_server
-'''

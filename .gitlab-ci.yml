@@ -1,6 +1,7 @@
 variables:
-  CI_SCRIPTS_BRANCH: dev
+  CI_SCRIPTS_BRANCH: master
   DOCS_SOURCE: "ros_bt_py/doc/source"
+
 
 .build_matrix:
   parallel:
