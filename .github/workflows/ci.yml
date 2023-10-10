@@ -37,9 +37,10 @@ jobs:
           ROS_DISTRO: ${{ matrix.env.ROS_DISTRO }}
           ROS_REPO: ${{ matrix.env.ROS_REPO }}
           AFTER_SCRIPT: "cp -r /root/target_ws/build /root/target_ws/src/ros_bt_py/build;"
+          BASEDIR: ${{ GITHUB_WORKSPACE }}/.build
       - name: Publish Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
           files: |
-            build/**/*.xml
+            ${{ GITHUB_WORKSPACE }}/.build/target_ws/build/**/*.xml
