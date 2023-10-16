@@ -1,6 +1,8 @@
 name: Industrial CI pipeline
 on:
   push:
+    branches:
+      - master
   pull_request:
   schedule:
     - cron: "0 7 * * *"
@@ -36,3 +38,10 @@ jobs:
         env:
           ROS_DISTRO: ${{ matrix.env.ROS_DISTRO }}
           ROS_REPO: ${{ matrix.env.ROS_REPO }}
+          BASEDIR: ${{ github.workspace }}/.build
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: |
+            ${{ github.workspace }}/.build/target_ws/build/**/test_results/**/*.xml
