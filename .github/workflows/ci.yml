@@ -45,3 +45,5 @@ jobs:
         with:
           files: |
             ${{ github.workspace }}/.build/target_ws/build/**/test_results/**/*.xml
+      - name: Generate Coverage
+        run: ../scripts/python_coverage.sh
